@@ -1,50 +1,38 @@
-#!/bin/csh
+#! /bin/csh
+#-----------------------------------------------------------------------------
+# $Id$
+#-----------------------------------------------------------------------------
 
-set DIR = $MIR/at_friends
-
-source  /u/support/BOOK/BOOKENV.CSH
+  set DIR = $MIR/at_friends
+  source  /u/support/BOOK/BOOKENV.CSH
 
 # Generate a list of known users.
-
-  cat << "END-OF-FILE" > junk.awk
-{ s = substr($1,0,1); if ( s >= "a" && s <= "z" ) print $1;}
-"END-OF-FILE"
-
-  awk -f junk.awk $DIR/users.txt | sort | uniq > junk.known
+  awk '{s = substr($1,0,1); if (s >= "a" && s <= "z") print $1;}' \
+    $DIR/users.txt | sort -u >! bookings.users
 
 # Generate a list of users with bookings.
-
-  cat << "END-OF-FILE" > junk.awk
-BEGIN		{ arm = 0; }
-		{ if(arm && $1 != "#" && $4 != "" && $4 != ";" )print $4;}
-$1 == ";"	{ arm = 1; }
-"END-OF-FILE"
-
-  rm -f junk.users
-
-  foreach file ( $BOOK/DATA/*.DIARY )
-    awk -f junk.awk $file|sed -e 's/;//g' >> junk.users
+  cat /dev/null >! bookings.current
+  foreach file ($BOOK/DATA/*.DIARY)
+    awk 'BEGIN {arm = 0} \
+               {if (arm && $1 != "#" && $4 != "" && $4 != ";") print $4} \
+         $1 == ";" {arm = 1}' $file | sed -e 's/;//g' >> bookings.current
   end
 
-# See who is new.
-
-  sort junk.users | uniq | comm -13 junk.known - > junk.new
-
 # Send mail if there is someone new.
+  sort -u bookings.current | comm -1 -3 bookings.users - >! bookings.newusers
 
-  if ( ! -z junk.new ) then
-    if ( -e junk.mail ) rm -rf junk.mail
-    foreach user (`cat junk.new`)
-      grep -h $user $BOOK/DATA/*.DIARY >> junk.mail
+  if (! -z bookings.newusers) then
+    cat /dev/null >! bookings.mail
+    foreach user (`cat bookings.newusers`)
+      grep -h $user $BOOK/DATA/*.DIARY >> bookings.mail
     end
-    echo " " >> junk.mail
-    lynx -dump \
-     "http://www.atnf.csiro.au/people/current_visitors.html" | \
-     sed -e "s/\[[0-9]*\]//g" -e "/References/q" > $DIR/epp_visitors.txt
-    lynx -dump \
-     "http://www.narrabri.atnf.csiro.au/~rwark/visitors" > $DIR/nar_visitors.txt
-    cat $DIR/epp_visitors.txt >> junk.mail
-    mail -s "New users with bookings" at_friends < junk.mail
-  endif
 
-  rm -rf junk*
+    echo " " >> bookings.mail
+    lynx -dump "http://www.atnf.csiro.au/people/current_visitors.html" | \
+      sed -e "s/\[[0-9]*\]//g" -e "/References/q" > $DIR/epp_visitors.txt
+    lynx -dump "http://www.narrabri.atnf.csiro.au/~rwark/visitors" > \
+      $DIR/nar_visitors.txt
+    cat $DIR/epp_visitors.txt >> bookings.mail
+    mail -s "New users with bookings" \
+      at_friends@atnf.csiro.au,mirmgr@atnf.csiro.au, < bookings.mail
+  endif
