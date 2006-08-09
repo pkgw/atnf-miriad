@@ -136,7 +136,7 @@ c
         double precision value
         character*24 input,param,observatory,cvalue
 c  Define File handling param's
-        integer iostat,lu,length,istart,ifin
+        integer iostat,lu,length
         character*80 obsfile,line,mir_root
         character*80 file
 c  Lat / Long variables
