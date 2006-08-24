@@ -167,7 +167,7 @@ c       Open and read observatories.dat.
         call txtopen(lu,obsfile,'old',iostat)
         if(iostat.ne.0) then
            call bug('w','Error opening' // obsfile)
-           call bugno('w',iostat)
+           call bugno('f',iostat)
         else
            dowhile(iostat.eq.0)
              call txtread(lu,line,length,iostat)
