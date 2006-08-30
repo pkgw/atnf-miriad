@@ -335,6 +335,18 @@ FORCE :
 null : ;
 
 ifdef MIRRCS
+  ifneq "$(wildcard $(MIRRCS)/GNUmakedefs,v)" ""
+    $(MIRROOT)/GNUmakedefs : $(MIRRCS)/GNUmakedefs,v
+	 -@ $(CO) $(COFLAGS) $< $@
+	 -@ chmod 664 $@
+  endif
+
+  ifneq "$(wildcard $(RCSDIR)/GNUmakefile,v)" ""
+    GNUmakefile : $(RCSDIR)/GNUmakefile,v
+	  @ $(CO) $(COFLAGS) $< $@
+	  @ chmod 444 $@
+  endif
+  
   chkout : $(CODEDIR)
 	-@ for i in $$SUBDIRS ; do \
 	     if [ "$Q" != "@" -o "$(MAKELEVEL)" = 0 ] ; then \
@@ -345,6 +357,8 @@ ifdef MIRRCS
 	     fi ; \
 	     $(MAKE) -C $$i $@ ; \
 	   done
+
+  $(CODEDIR) : $(MIRSRCS:%=$(CODEDIR)/%)
 endif
 
 # Rules for creating system directories.
