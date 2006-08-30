@@ -31,6 +31,11 @@ endif
 #---------------------------------
 allsys :: $(MIREXES:%=$(MIRBIND)/%)
 
+ifneq "$(READLINELIB)" ""
+  $(MIRBIND)/miriad : $(CODEDIR)/miriad.c
+	$(CC) -DREADLINE $(CCOPT) -o $@ $< $(READLINELIB)
+endif
+
 $(MIRBIND)/mirnewer : $(CODEDIR)/mirnewer.c
 	$(CC) -Dposix $(CCOPT) -o $@ $<
 
@@ -48,6 +53,11 @@ ifeq "$(MAKEMODE)" "programmer"
   .PRECIOUS : $(PGMRBIND)/%
 
   all :: $(addprefix $(PGMRBIND)/, $(PGMREXES))
+
+  ifneq "$(READLINELIB)" ""
+    $(PGMRBIND)/miriad : miriad.c
+	$(CC) -DREADLINE $(CCDBG) -o $@ $< $(READLINELIB)
+  endif
 
   $(PGMRBIND)/mirnewer : mirnewer.c
 	$(CC) -Dposix $(CCDBG) -o $@ $<
