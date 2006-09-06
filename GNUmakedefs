@@ -334,7 +334,10 @@ FORCE :
 # Useful for just remaking included files, especially dependency lists.
 null : ;
 
+# Rules that are operative only if the RCS repositories are present.
 ifdef MIRRCS
+  # Rules for updating makedefs and the makefile itself.
+  #-----------------------------------------------------
   ifneq "$(wildcard $(MIRRCS)/GNUmakedefs,v)" ""
     $(MIRROOT)/GNUmakedefs : $(MIRRCS)/GNUmakedefs,v
 	 -@ $(CO) $(COFLAGS) $< $@
@@ -346,7 +349,9 @@ ifdef MIRRCS
 	  @ $(CO) $(COFLAGS) $< $@
 	  @ chmod 444 $@
   endif
-  
+
+  # Rules for checking out sources.
+  #--------------------------------
   chkout : $(CODEDIR)
 	-@ for i in $$SUBDIRS ; do \
 	     if [ "$Q" != "@" -o "$(MAKELEVEL)" = 0 ] ; then \
@@ -387,13 +392,6 @@ cleansys ::
 # Programmer-oriented rules.
 #---------------------------
 ifeq "$(MAKEMODE)" "programmer"
-  # Rule for updating the GNUmakefile itself.
-  ifneq "$(wildcard $(RCSDIR)/GNUmakefile,v)" ""
-     GNUmakefile : $(RCSDIR)/GNUmakefile,v
-	  @ $(CO) $(COFLAGS) $< $@
-	  @ chmod 444 $@
-  endif
-
   clean ::
 	-  $(RM) *~ *% a.out core
 
