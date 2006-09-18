@@ -5,9 +5,6 @@
 # $Id$
 #-----------------------------------------------------------------------------
 
-rm -f cheat.doc
-exec 1>cheat.doc
-
 cat << EOT
 %D Miriad tasks and keyword summary
 %: miscellaneous
