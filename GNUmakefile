@@ -11,11 +11,7 @@ ifeq "$(MAKEMODE)" "system"
   # Subdirectories in which to invoke "allsys", in order.
   #------------------------------------------------------
   ALLSYSD  := $(findstring linpack,$(SUBDIRS))
-  ALLSYSD  += tools subs prog spec
-
-  # Static and static pattern rules.
-  #---------------------------------
-  allsys :: MIRRC MIRRC.sh sysdirs $(ALLSYSD)
+  ALLSYSD  += scripts tools inc subs prog spec doc
 
   show ::
 	-@ echo ""
@@ -23,6 +19,16 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo "=============================================="
 	-@ echo ""
 	-@ echo "ALLSYSD  = $(ALLSYSD)"
+
+  # Static and static pattern rules.
+  #---------------------------------
+  allsys :: MIRRC MIRRC.sh sysdirs $(ALLSYSD)
+
+  help ::
+	-@ echo ""
+	-@ echo "Targets defined in the top-level GNUmakefile"
+	-@ echo "--------------------------------------------"
+	-@ echo "     allsys: recursively rebuild or update Miriad."
 
 else
   # Programmer-oriented rules.
