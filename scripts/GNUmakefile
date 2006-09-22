@@ -8,7 +8,11 @@
 include $(MIR)/GNUmakedefs
 
 ifeq "$(MAKEMODE)" "system"
+  # Note that scripts without a .csh or .sh suffix are not installed.
   MIRSCRPS := $(basename $(filter %.csh,$(MIRSRCS)))
+
+  # Only a few of the scripts have doc markup.
+  MIRDOCS  := mirbug mirhelp mirversion
 
   show ::
 	-@ echo ""
@@ -16,6 +20,7 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo "============================================"
 	-@ echo ""
 	-@ echo "MIRSCRPS = $(MIRSCRPS)"
+	-@ echo "MIRDOCS  = $(MIRDOCS)"
 
   # Pattern rules.
   #---------------
@@ -24,10 +29,31 @@ ifeq "$(MAKEMODE)" "system"
 	   cp $< $@
 	-@ chmod 775 $@
 
+  # Extract preamble comments into a Miriad "doc" file.
+  $(MIRDOCD)/%.doc : %.csh
+	-@ $(RM) $(MIRDOCD)/$*.doc
+	   $(MIRBIND)/doc -f $< > $@
+	-@ chmod 664 $@
+
 
   # Static and static pattern rules.
   #---------------------------------
-  allsys :: $(MIRSCRPS:%=$(MIRBIND)/%)
+  allsys :: bin doc
+  
+  bin : $(MIRSCRPS:%=$(MIRBIND)/%) ;
+
+  doc : $(MIRDOCS:%=$(MIRDOCD)/%.doc) ;
+
+  help ::
+	-@ echo ""
+	-@ echo "Targets defined in the prog makefile"
+	-@ echo "===================================="
+	-@ echo ""
+	-@ echo "System"
+	-@ echo "------"
+	-@ echo "     allsys: install all scripts."
+	-@ echo "        bin: install all scripts."
+	-@ echo "        doc: generate doc files for selected scripts."
 
 else
   # Programmer-oriented rules.
