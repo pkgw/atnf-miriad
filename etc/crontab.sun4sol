@@ -1,0 +1,2 @@
+0  2 * * 0-6 csh /nfs/applic/miriad/etc/Nightly.sun4sol
+0  20 * * 4  csh /nfs/applic/miriad/etc/Weekly.sun4sol
