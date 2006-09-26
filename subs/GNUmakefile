@@ -265,7 +265,7 @@ ifeq "$(MAKEMODE)" "system"
   # Insert an object module in libmir.a and extract the list of global symbols
   # that it defines.
   $(MIRLIBR)(%.o) : $(MIRTMPD)/%.o
-	-@ $(AR) $(ARFLAGS) $@ $<
+	 @ $(AR) $(ARFLAGS) $@ $<
 	   $(list-syms)
 	   $(wait-unlock)
 	-@ $(RM) $<
@@ -449,7 +449,8 @@ else
   % lib(%) lib(%.o) : $(PGMRLIBR)(%.o) ranlib ;
 
   $(PGMRLIBR)(%.o) : $(PGMRLIBD)/%.o
-	   $(AR) $(ARFLAGS) $@ $<
+	 @ $(AR) $(ARFLAGS) $@ $<
+	   $(wait-unlock)
 	-@ $(RM) $<
 
   # Making the timestamp a prerequisite of the Fortran object module prevents
