@@ -47,7 +47,7 @@ ifeq "$(MAKEMODE)" "system"
     # The Miriad distribution is split into RCS, code, compiled documentation,
     # and platform-specific binary kits.
     DISTRCS  := .rcs ./RCS ./*/RCS ./*/*/RCS ./*/*/*/RCS
-    DISTCODE := DISCLAIMER GNUmake* MIRRC* README.html cat guides inc linpack
+    DISTCODE := DISCLAIMER GNUmake* MIRRC* INSTALL.html cat guides inc linpack
     DISTCODE += prog scripts spec specdoc subs tests tools 
     DISTDOC  := doc html man progguide*.ps userguide*.ps
     DISTBINS := $(subst /bin,,$(wildcard */bin))
@@ -67,11 +67,15 @@ ifeq "$(MAKEMODE)" "system"
     VPATH := $(MIRROOT):$(MIRGUIDD)/user:$(MIRGUIDD)/prog
 
     $(MIRFTPD)/% : %
+	-@ $(RM) $@
 	   cp -p $< $@
+	-@ chmod 644 $@
 
     $(MIRFTPD)/%.gz : %
-	   cp -p $< $@
-	   gzip $@
+	-@ $(RM) $@
+	   cp -p $< $(MIRFTPD)/$*
+	   gzip $(MIRFTPD)/$*
+	-@ chmod 644 $@
 
 
     # Static and static pattern rules.
