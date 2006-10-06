@@ -33,6 +33,8 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo ""
 	-@ echo "MIRGIFS  = $(MIRGIFS)"
 	-@ echo "MIRHTMLS = $(MIRHTMLS)"
+	-@ echo ""
+	-@ echo "GUIDES   = $(GUIDES)"
 
 
   # Pattern rules.
@@ -79,7 +81,7 @@ ifeq "$(MAKEMODE)" "system"
   .PHONY : cheat html man symlinks taskindex tasks
 
   # The User Guide must be built before HTML in order to generate taskref.txt.
-  allsys :: symlinks cheat tasks man $(CODESUBS) html
+  allsys :: symlinks cheat tasks man $(GUIDES) html
 
   symlinks : $(MIRSDOCS:%=$(MIRDOCD)/%) ;
 
