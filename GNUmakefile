@@ -30,9 +30,6 @@ ifeq "$(MAKEMODE)" "system"
   initial :: FORCE
 	-@ echo ""
 	-@ echo "Rebuilding/updating Miriad for $(ARCH) machines."
-     ifdef MIRRCS
-	-@ $(MAKE) -C scripts chkout
-     endif
 
   help ::
 	-@ echo ""
@@ -87,6 +84,9 @@ ifeq "$(MAKEMODE)" "system"
 
     # Update the copy of the RPFITS library and include file via allsys.
     initial :: $(MIRINCD)/rpfits.inc $(MIRLIBD)/librpfits.a
+     ifdef MIRRCS
+	-@ $(MAKE) -C scripts chkout
+     endif
 
     $(MIRLIBD)/librpfits.a : /usr/local/lib/librpfits.a
 	-@ $(RM) $@
