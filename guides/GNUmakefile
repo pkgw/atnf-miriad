@@ -65,10 +65,10 @@ ifeq "$(MAKEMODE)" "system"
 
   # Generate HTML from doc.  taskref.txt lists all references to Miriad tasks
   # in the userguide and is generated from the HTML version of the userguide.
-  $(MIRHTMLD)/%.html : $(MIRDOCD)/%.doc $(MIRHTMLD)/taskref.txt
+  $(MIRHTMLD)/%.html : $(MIRDOCD)/%.doc taskref.txt
 	-@ $(RM) $@
-	-@ echo "doc2html doc/$*.doc html/taskref.txt > html/$*.html"
-	 @ ./doc2html $< $(MIRHTMLD)/taskref.txt > $@ || $(RM) $@
+	-@ echo "doc2html ../doc/$*.doc taskref.txt > ../html/$*.html"
+	 @ ./doc2html $< taskref.txt > $@ || $(RM) $@
 	-@ chmod 664 $@
 
 
