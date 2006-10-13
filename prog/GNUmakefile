@@ -407,7 +407,7 @@ else
   cleaner :: clean
 	$(RM) *.doc
 	$(RM) $(DPNDTMPD)/*.f
-	$(RM) $(DPNDAUXD)/prog.*
+	$(RM) -r $(DPNDAUXD)/prog.*
 
   cleanest :: clean
 	$(RM) $(PGMRBIND)/*
