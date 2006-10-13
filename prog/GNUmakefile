@@ -146,11 +146,11 @@ ifeq "$(MAKEMODE)" "system"
   # The nm-syms command sequence must be defined in makedefs to list the
   # global symbols defined by an object module.  If undefined this analysis is
   # skipped and each executable is made to depend on the library as a whole.
-  ifneq "$(nm-syms.$(ARCH))" ""
+  ifneq "$(nm-syms.$(MIRARCH))" ""
     define depend-objs
     -@ mkdir -p $(DPNDOBJD)
     -@ $(RM) $(DPNDOBJD)/$*
-    -@ OBJ="$@" ; $(nm-syms.$(ARCH)) | $(backsl)
+    -@ OBJ="$@" ; $(nm-syms.$(MIRARCH)) | $(backsl)
          sort | $(backsl)
          sort -m - $(DPNDSYML) | $(backsl)
          awk $(backsl)
@@ -367,6 +367,7 @@ else
   # makefile.
   $(PGMRBIND)/% : $(DPNDTMPD)/%.f $(DPNDINCD)/% $(PGMRLIBR) $(MIRLIBR)
 	   $(FC) $(FCDBG) $(LDDBG) -o $@ $< $(PGMRLIBR) $(MIRLIBR) $(XTRNLIBS)
+	   $(wait-unlock)
 	-@ chmod 775 $@
   
   $(DPNDTMPD)/%.f $(DPNDINCD)/% : %.for
