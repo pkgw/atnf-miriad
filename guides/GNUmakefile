@@ -42,7 +42,7 @@ ifeq "$(MAKEMODE)" "system"
   # Create a doc -> specdoc symlink.
   $(MIRDOCD)/%.doc :
 	-@ $(RM) $@
-	   ln -s ../specdoc/$*.doc $@
+	   $(LN_S) ../specdoc/$*.doc $@
 
   # Generate unix man page from doc.
   $(MIRMAND)/man1/%.1 : $(MIRDOCD)/%.doc
