@@ -38,7 +38,7 @@ ifeq "$(MAKEMODE)" "system"
 
   # Static and static pattern rules.
   #---------------------------------
-  allsys :: bin doc $(ARCH)
+  allsys :: bin doc $(MIRARCH)
   
   bin : $(MIRSCRPS:%=$(MIRBIND)/%) ;
 

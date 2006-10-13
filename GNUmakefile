@@ -29,7 +29,7 @@ ifeq "$(MAKEMODE)" "system"
   # Run chkout in scripts first to update architecture-specific GNUmakedefs.
   initial :: FORCE
 	-@ echo ""
-	-@ echo "Rebuilding/updating Miriad for $(ARCH) machines."
+	-@ echo "Rebuilding/updating Miriad for $(MIRARCH) machines."
 
   help ::
 	-@ echo ""
@@ -98,7 +98,7 @@ ifeq "$(MAKEMODE)" "system"
 	   cp $< $@
 	 @ ci -u -m"Updated from /usr/local/include/rpfits.inc." $@
 
-    ifeq "$(ARCH)" "sun4sol"
+    ifeq "$(MIRARCH)" "sun4sol"
       # Regenerate the Miriad ftp distribution kits.  Requires the sun4sol
       # version of tar.
       dist : allsys $(MIRFTPS:%=$(MIRFTPD)/%)
