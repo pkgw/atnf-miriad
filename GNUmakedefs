@@ -374,7 +374,7 @@ export CODESUBS
 #-----------------------------------------------------------------------------
 # Canned rule definitions for dependency analysis apply to system and
 # programmer alike with only minor differences determined by the values of
-# DPNDINCD, DPNDLOCK, and DPNDTMPD defined in the makefiles that use them
+# DPNDLOCK, DPNDINCD, and DPNDINCL defined in the makefiles that use them
 # (subs and prog).
 #
 # $(backsl) is used to insert a literal backslash.
