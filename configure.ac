@@ -112,7 +112,7 @@ AC_MSG_NOTICE([
 Checking for miscellaneous utilities...])
 
 AC_PATH_PROG([AR],    [ar])
-AC_PATH_PROG([MANDB], [mandb])
+AC_PATH_PROGS([MANDB], [mandb catman])
 AC_PATH_PROG([STRIP], [strip])
 AC_PROG_LN_S
 AC_PROG_RANLIB
