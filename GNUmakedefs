@@ -234,7 +234,7 @@ I8 := $(I7)$(null)    $(null)
 MAKEINDENT := $(I$(MAKELEVEL))
 
 # If we're within $(MIRROOT)/... it's a system compile, else programmer.
-MIRDIR  := $(shell cd $$MIR && /bin/pwd)
+MIRDIR  := $(shell cd $(MIR) && /bin/pwd)
 THISDIR := $(shell /bin/pwd)
 ifeq "$(findstring $(MIRDIR),$(THISDIR))" ""
   MAKEMODE = programmer
