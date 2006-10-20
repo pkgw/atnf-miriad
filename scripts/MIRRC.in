@@ -28,6 +28,7 @@
   setenv MIRARCHD $MIR/$MIRARCH
   setenv MIRBIN   $MIRARCHD/bin
   setenv MIRLIB   $MIRARCHD/lib
+  setenv MIRMAN   $MIRARCHD/man
 
 # Set up the user's directory to receive .def files.
   if (! $?MIRDEF) then

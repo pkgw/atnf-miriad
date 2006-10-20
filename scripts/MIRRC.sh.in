@@ -29,6 +29,7 @@
   MIRARCHD=$MIR/$MIRARCH ; export MIRARCHD
   MIRBIN=$MIRARCHD/bin   ; export MIRBIN
   MIRLIB=$MIRARCHD/lib   ; export MIRLIB
+  MIRMAN=$MIRARCHD/man   ; export MIRMAN
 
 # Set up the user's directory to receive .def files.
   if [ -z "$MIRDEF" ]
