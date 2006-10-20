@@ -2,7 +2,7 @@
 #-----------------------------------------------------------------------------
 # Usage: . MIRRC.sh
 #-----------------------------------------------------------------------------
-# Bourne shell (bash or ksh) version of MIRRC by George Martin.
+# Bourne shell (bash or ksh) version of MIRRC originally by George Martin.
 #
 # $Id$
 #-----------------------------------------------------------------------------
@@ -26,9 +26,9 @@
   fi
 
 # Miriad system subdirectories.
-  MIRARCHD=$MIR/$arch  ; export MIRARCHD
-  MIRBIN=$MIRARCHD/bin ; export MIRBIN
-  MIRLIB=$MIRARCHD/lib ; export MIRLIB
+  MIRARCHD=$MIR/$MIRARCH ; export MIRARCHD
+  MIRBIN=$MIRARCHD/bin   ; export MIRBIN
+  MIRLIB=$MIRARCHD/lib   ; export MIRLIB
 
 # Set up the user's directory to receive .def files.
   if [ -z "$MIRDEF" ]
