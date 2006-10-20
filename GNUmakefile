@@ -9,6 +9,7 @@ ifeq "$(MIR)" ""
   # works if make is invoked in the top-level Miriad directory.
   export MIR     := $(shell pwd)
   export MIRARCH := $(shell $(MIR)/scripts/mirarch)
+  export MIRBIN  := $(MIR)/$(MIRARCH)/bin
 endif
 
 # Get common makefile variables and rules.
