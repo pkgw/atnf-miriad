@@ -1,5 +1,7 @@
 #!/bin/sh
 #-----------------------------------------------------------------------------
+# Usage: Buildcheat
+#-----------------------------------------------------------------------------
 # Create the miriad task-and-keyword summary (cheat-sheet).
 #
 # $Id$
@@ -59,7 +61,7 @@ BEGIN {
   a = \$2;
 }
 /%D/ {
-  for (z=2; z<=NF; z++) b = sprintf("%s %s",b,\$z); 
+  for (z=2; z<=NF; z++) b = sprintf("%s %s",b,\$z);
   b = sprintf("%-9.8s%-70.70s",a,b);
   print b;
 }
@@ -80,7 +82,7 @@ END {
 }
 EOT
 
-for FILE in $MIRPDOC/*.doc
+for FILE in $MIR/doc/*.doc
 do
   NAME=`echo "$FILE" | sed -e '{s|.*/||;s|\..*||;}'`
 
