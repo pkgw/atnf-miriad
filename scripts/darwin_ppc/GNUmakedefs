@@ -22,6 +22,3 @@ FCSTD    := -ff90-intrinsics-hide
 
 # intf2c flags.
 F2CFLAGS := -s linux
-
-# C preprocessor defines; add -Dsun to -Ddarwin_ppc - both are used.
-CPPSTD   += -Dsun
