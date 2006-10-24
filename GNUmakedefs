@@ -344,11 +344,17 @@ MIRSRCS  := $(filter-out $(ALLSUBD),$(MIRSRCS))
 # be
 #
 #   $MIR/subs/unix/alpha_linux:$MIR/subs/unix:$MIR/subs
+#
+# Note that $MIR/subs/unix/alpha_linux/pack.c defines conversion routines
+# applicable to little-endian IEEE floating point machines which explains why
+# it is used for DEC alphas and a variety of Intel-based platforms apart from
+# linux.
 
 SUBSalpha      := alpha_linux
 SUBSconvex     := convex
 SUBScygwin     := alpha_linux
-SUBSdarwin     :=
+SUBSdarwin_ppc :=
+SUBSdarwin_x86 := alpha_linux
 SUBShpux       := hpux
 SUBSi86sol     := alpha_linux
 SUBSirix       :=
