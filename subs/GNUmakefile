@@ -326,6 +326,7 @@ ifeq "$(MAKEMODE)" "system"
   .PHONY : depend initial lib ranlib
 
   allsys :: $(MIRLIBR)
+	-@ chmod 664 $<
 
   $(MIRLIBR) : $(MIROBJS:%=$(MIRLIBR)(%)) ;
      ifneq "$(RANLIB)" ":"

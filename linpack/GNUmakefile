@@ -38,6 +38,7 @@ ifeq "$(MAKEMODE)" "system"
   # Static and static pattern rules.
   #---------------------------------
   allsys :: $(LINLIBR)
+	-@ chmod 664 $<
 
   $(LINLIBR) : $(LINOBJS:%=$(LINLIBR)(%)) ;
      ifneq "$(RANLIB)" ":"
