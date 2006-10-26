@@ -17,9 +17,6 @@
 # ratty flags.
 RATFLAGS := -b -s linux
 
-# Fortran compiler flags.
-FCSTD    := -ff90-intrinsics-hide
-
 # intf2c flags.
 F2CFLAGS := -s linux
 
