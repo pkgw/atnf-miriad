@@ -83,7 +83,7 @@ ifeq "$(MAKEMODE)" "system"
       -@ $(RM) $@
          cp $< $@
       -@ chgrp miriad $@
-      -@ case $(@F) in lib*.a) $(RANLIB) $@ ;; esac
+      -@ case $* in lib*.a) echo $(RANLIB) $@ ; $(RANLIB) $@ ;; esac
       -@ chmod 664 $@
     endef
 
