@@ -57,9 +57,9 @@ ifeq "$(MAKEMODE)" "system"
     # and platform-specific binary kits.
     DISTRCS  := .rcs RCS */RCS */*/RCS */*/*/RCS
     DISTCODE := GNUmake* config configure configure.ac
-    DISTCODE += guides inc linpack prog scripts spec subs tests tools
+    DISTCODE += guides inc linpack prog spec subs tests tools
     DISTCOMM := DISCLAIMER INSTALL.html progguide* userguide*
-    DISTCOMM += cat doc html man specdoc
+    DISTCOMM += cat doc html man scripts specdoc
     DISTBINS := $(subst /bin,,$(wildcard */bin))
 
     show ::
