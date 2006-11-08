@@ -118,7 +118,8 @@ GNUPLOT   := gnuplot
 GZIP      := gzip
 
 # For putting timestamps in the build log.
-TIMER     := date +"%a %Y/%m/%d %X %z, executing on $$HOST"
+HOST      := $(shell uname -n | sed -e 's/\..*//')
+TIMER     := date +"%a %Y/%m/%d %X %z, executing on $(HOST)"
 
 #-----------------------------------------------------------------------------
 # The search path for operating system specific routines is defined as
