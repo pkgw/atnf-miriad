@@ -1,1 +1,3 @@
-30 23 * * 0-6 csh /nfs/applic/miriad/etc/Nightly.linux64
+# The nightly linux64 build runs after linux but before sun4sol.
+# It has no special work to do.
+15 22 * * * . $HOME/.profile ; make MIRATNF=1 -C $MIR allsys

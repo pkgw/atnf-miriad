@@ -1,1 +1,2 @@
-0 23 * * 0-6 csh /nfs/applic/miriad/etc/Nightly.linux
+# The nightly linux build runs first and therefore remakes the doc files.
+00 22 * * * . $HOME/.profile ; make MIRATNF=1 -C $MIR allsys
