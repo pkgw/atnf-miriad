@@ -181,6 +181,7 @@ ifeq "$(MAKEMODE)" "system"
 	     gzip miriad-$$bin.tar ; \
 	     $(RM) $(MIRFTPD)/miriad-$$bin.tar.gz ; \
 	     echo "mv miriad-$$bin.tar.gz $(MIRFTPD)/" ; \
+	     chmod 664 miriad-$$bin.tar.gz ; \
 	     mv miriad-$$bin.tar.gz $(MIRFTPD)/ ; \
 	   done
 	-@ $(RM) .tarX
