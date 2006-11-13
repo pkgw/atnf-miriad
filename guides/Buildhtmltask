@@ -97,7 +97,7 @@ END {  i=1;j=1
           if ( i != wrap ) {
              if ( i == 1 ) {print "<tr>"}
              if(name != "" ){
-               print "<td align=\"center\" width=\""frac"%\"><a href=\""name".html\">"name"</a></td>";
+               print "<td align=\"center\" width=\""frac"%\"><a href=\"doc/"name".html\">"name"</a></td>";
              } else {
                print "<td align=\"center\" width=\""frac"%\"></td>";
              }
@@ -105,7 +105,7 @@ END {  i=1;j=1
           }
           else {
              if(name != "" ){
-               print "<td align=\"center\" width=\""frac"%\"><a href=\""name".html\">"name"</a></td>"
+               print "<td align=\"center\" width=\""frac"%\"><a href=\"doc/"name".html\">"name"</a></td>"
              } else {
                print "<td align=\"center\" width=\""frac"%\"></td>"
              }
