@@ -109,10 +109,10 @@ ifeq "$(MAKEMODE)" "system"
 
   # taskref.txt lists all references to Miriad tasks in the userguide.
   $(MIRGUIDD)/taskref.txt : $(USRHTMLD)/userhtml.html
-	   cd $(USRHTMLD) ; $(MIRGUIDD)/user/TaskRef.pl > $(MIRTMPD)/$@
+	   cd $(USRHTMLD) ; $(MIRGUIDD)/user/TaskRef.pl > $(MIRTMPD)/$(@F)
 	-@ if [ $$? = 0 ] ; then \
-	     $(RM) $@ ; \
-	     mv -f $(MIRTMPD)/$@ . ; \
+	     $(RM) $(@F) ; \
+	     mv -f $(MIRTMPD)/$(@F) . ; \
 	   fi
 
   cleansys ::
