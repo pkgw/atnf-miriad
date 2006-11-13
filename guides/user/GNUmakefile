@@ -112,7 +112,7 @@ ifeq "$(MAKEMODE)" "system"
 	   cd $(USRHTMLD) ; $(MIRGUIDD)/user/TaskRef.pl > $(MIRTMPD)/$(@F)
 	-@ if [ $$? = 0 ] ; then \
 	     $(RM) $(@F) ; \
-	     mv -f $(MIRTMPD)/$(@F) . ; \
+	     mv -f $(MIRTMPD)/$(@F) $@ ; \
 	   fi
 
   cleansys ::
