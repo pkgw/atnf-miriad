@@ -328,9 +328,11 @@ MIRTMPD  := $(MIRARCHD)/tmp
 MIRCATD  := $(MIRROOT)/cat
 MIRDOCD  := $(MIRROOT)/doc
 MIRHTMLD := $(MIRROOT)/html
+MIRHDOCD := $(MIRHTMLD)/doc
 
 SYSDIRS  := $(MIRARCHD) $(MIRAUXD) $(MIRBIND) $(MIRLIBD) $(MIRMAND)
 SYSDIRS  += $(MIRMAN1D) $(MIRTMPD) $(MIRCATD) $(MIRDOCD) $(MIRHTMLD)
+SYSDIRS  += $(MIRHDOCD)
 
 # For Miriad code distribution from ATNF (currently only accessible from
 # Solaris hosts).
@@ -831,6 +833,7 @@ show ::
 	-@ echo ""
 	-@ echo "MIRCATD    = $(MIRCATD)"
 	-@ echo "MIRHTMLD   = $(MIRHTMLD)"
+	-@ echo "MIRHDOCD   = $(MIRHDOCD)"
 	-@ echo "MIRFTPD    = $(MIRFTPD)"
 	-@ echo ""
 	-@ echo "SYSDIRS    = $(SYSDIRS)"
