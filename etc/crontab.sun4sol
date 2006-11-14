@@ -1,8 +1,10 @@
 # The nightly sun4sol build runs last, it remakes the User and Programmer
 # Guides as well as checking bookings and creating updates.
-00 23 * * 0-3,5,6 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR allsys bookings
+00 23 * * 0-3,5,6 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR allsys bookings updates
 #
 # In addition to the usual nightly tasks the weekly sun4sol build also
 # regenerates the ftp distribution kits, including binary kits for all of the
 # architectures that we build locally.
-00 23 * * 4 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR dist bookings
+00 23 * * 4 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR dist bookings updates
+#
+# $Id$
