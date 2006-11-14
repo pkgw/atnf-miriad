@@ -104,8 +104,7 @@ ifeq "$(MAKEMODE)" "system"
 	     mv $(TMPHTMLD) $(USRHTMLD) ; \
 	   fi
 	-@ $(RM) $(MIRFIGS:%.fig=%.ps) $(MIRGS:%.g=%.ps)
-	-@ $(RM) userguide.aux userguide.log userguide.lot userguide.toc
-	-@ $(RM) userguide.dvi titlepage.eps
+	-@ $(RM) userhtml.aux userhtml.dvi userhtml.log 
 
   # taskref.txt lists all references to Miriad tasks in the userguide.
   $(MIRGUIDD)/taskref.txt : $(USRHTMLD)/userhtml.html
