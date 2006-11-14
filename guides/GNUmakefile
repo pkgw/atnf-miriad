@@ -108,8 +108,7 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo ""
 	   $(MANDB) $(MIRMAND)
 
-  html : $(MIRHTMLD)/INSTALL.html $(MIRHTMLS:%=$(MIRHTMLD)/%) \
-    $(MIRGIFS:%=$(MIRHTMLD)/%) taskindex \
+  html : $(MIRHTMLS:%=$(MIRHTMLD)/%) $(MIRGIFS:%=$(MIRHTMLD)/%) taskindex \
     $(patsubst %.doc,$(MIRHTMLD)/doc/%.html,$(MIRDOCS) $(MIRSDOCS))
 
   $(MIRHTMLD)/INSTALL.html : $(MIRROOT)/INSTALL.html
