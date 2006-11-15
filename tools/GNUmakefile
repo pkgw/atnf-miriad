@@ -45,10 +45,6 @@ ifeq "$(MAKEMODE)" "system"
 	-@ chmod 775 $@
   endif
 
-  $(MIRBIND)/mirnewer : $(CODEDIR)/mirnewer.c
-	   $(CC) -Dposix $(CCOPT) -o $@ $<
-	-@ chmod 775 $@
-
   doc : $(MIREXES:%=$(MIRDOCD)/%.doc) ;
 
   help ::
@@ -83,9 +79,6 @@ else
     $(PGMRBIND)/miriad : miriad.c
 	$(CC) -DREADLINE $(CCDBG) -o $@ $< $(READLINELIB)
   endif
-
-  $(PGMRBIND)/mirnewer : mirnewer.c
-	$(CC) -Dposix $(CCDBG) -o $@ $<
 
   clean ::
 	$(RM) *.o
