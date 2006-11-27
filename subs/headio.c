@@ -24,6 +24,8 @@
 /*  pjt 22jun02   MIR4 prototypes and using int8 for long integers      */
 /*  rjs 02jan05   Fix up bug in rdhdl. Tidy.				*/
 /*  rjs 26nov05   Better handling of logical values.			*/
+/*  rjs 28jun06   Correct doc comment.					*/
+/*  rjs 27nov06   Get rdhdd to handle long integers			*/
 /************************************************************************/
 
 #include <stdlib.h>
@@ -231,7 +233,7 @@ void wrhdi_c(int thandle,Const char *keyword,int value)
 }
 /************************************************************************/
 void wrhdl_c(int thandle,Const char *keyword,int8 value)
-/** wrhdi -- Write an integer*8 valued header variable.			*/
+/** wrhdl -- Write an integer*8 valued header variable.			*/
 /*& pjt									*/
 /*: header-i/o								*/
 /*+ FORTRAN call sequence:
@@ -390,12 +392,12 @@ void rdhdi_c(int thandle,Const char *keyword,int *value,int defval)
 }
 /************************************************************************/
 void rdhdl_c(int thandle,Const char *keyword,int8 *value,int8 defval)
-/** rdhdl -- Read an integer-valued header variable.			*/
+/** rdhdl -- Read an integer*8-valued header variable.			*/
 /*& mjs									*/
 /*: header-i/o								*/
 /*+ FORTRAN call sequence:
 
-	subroutine rdhdi(tno,keyword,value,default)
+	subroutine rdhdl(tno,keyword,value,default)
 	integer tno
 	character keyword*(*)
 	integer*8 value,default
@@ -481,6 +483,7 @@ void rdhdd_c(int thandle,Const char *keyword,double *value,double defval)
   int iostat,itemp;
   off_t offset,length;
   float rtemp;
+  int8 ltemp;
 
 /* Firstly assume the variable is missing. Try to get it. If successful
    read it. */
@@ -499,6 +502,12 @@ void rdhdd_c(int thandle,Const char *keyword,double *value,double defval)
       if(offset + H_INT_SIZE == length){
 	hreadi_c(item,&itemp,offset,H_INT_SIZE,&iostat);
 	*value = itemp;
+      }
+    } else if(!memcmp(s,int8_item,ITEM_HDR_SIZE)){
+      offset = mroundup(ITEM_HDR_SIZE,H_INT8_SIZE);
+      if(offset + H_INT8_SIZE == length){
+        hreadl_c(item,&ltemp,offset,H_INT8_SIZE,&iostat);
+        *value = ltemp;
       }
     } else if(!memcmp(s,real_item,ITEM_HDR_SIZE)){
       offset = mroundup(ITEM_HDR_SIZE,H_REAL_SIZE);
