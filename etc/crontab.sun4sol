@@ -1,10 +1,10 @@
-# The nightly sun4sol build runs last, creates the update ftp files and also.
-# checks disk bookings.
-00 23 * * 0-3,5,6 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR allsys updates bookings
+# The nightly sun4sol build runs last, it creates the update ftp files and
+# also checks disk bookings.
+00 23 * * 0-3,5,6 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR allsys updates bookings 2>&1 | tee $MIRARCH/gmake.log
 #
 # In addition to the usual nightly tasks the weekly sun4sol build also
-# regenerates the ftp distribution kits, including binary kits for all of the
+# regenerates the ftp distribution kits including binary kits for all of the
 # architectures that we build locally.
-00 23 * * 4 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR dist updates bookings
+00 23 * * 4 . $HOME/.profile ; gmake MIRATNF=1 -C $MIR dist updates bookings 2>&1 | tee $MIRARCH/gmake.log
 #
 # $Id$
