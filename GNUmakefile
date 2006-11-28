@@ -134,7 +134,8 @@ ifeq "$(MAKEMODE)" "system"
     # Update the copy of the RPFITS library and include file via allsys.
     initial :: rpfits pgplot
       ifdef MIRRCS
-        # Update architecture-specific GNUmakedefs.
+        # Update local stuff and architecture-specific GNUmakedefs.
+	-@ $(MAKE) -C etc chkout
 	-@ $(MAKE) -C scripts chkout
       endif
 
