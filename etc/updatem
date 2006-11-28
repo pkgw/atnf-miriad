@@ -12,6 +12,7 @@
 # mirmgr.
 #
 # Original: 2006/10/19 MRC
+# $Id$
 #-----------------------------------------------------------------------------
 
   trap 'exit 1' 1 2 3 15
@@ -24,9 +25,13 @@
     # OK.
     ;;
   *)
+    echo "updatem: This script is only intended for Darwin platforms." 1>&2
     exit 1
     ;;
   esac
+
+  date "+Miriad $MIRARCH update started on %a %Y/%m/%d %T"
+  echo
 
   RSYNC="/usr/bin/rsync -v --archive --delete"
   RSYNC="$RSYNC --delete-excluded --exclude=RCS"
@@ -51,12 +56,16 @@
 
 
 # Now rebuild.
-  echo ""
+  echo
   gmake MIRATNF=1 2>&1 | tee $MIRARCH/gmake.log
 
 
 # Send the results back.
-  echo ""
-  echo ""
+  echo
+  echo
   echo "Sending $MIRARCH binaries back to atlas..."
   $RSYNC $MIRARCH/ atlas:/nfs/atapplic/miriad/$MIRARCH/
+
+  echo
+  echo
+  date "+Miriad $MIRARCH update finished on %a %Y/%m/%d %T"
