@@ -105,8 +105,10 @@ ifeq "$(MAKEMODE)" "system"
 
   # Special doc files are not converted to man pages.
   man : $(MIRDOCS:%.doc=$(MIRMAND)/man1/%.1)
+    ifneq "$(MANDB)" ":"
 	-@ echo ""
 	   $(MANDB) $(MIRMAND)
+    endif
 
   html : $(MIRHTMLS:%=$(MIRHTMLD)/%) $(MIRGIFS:%=$(MIRHTMLD)/%) taskindex \
     $(patsubst %.doc,$(MIRHTMLD)/doc/%.html,$(MIRDOCS) $(MIRSDOCS))
