@@ -8,8 +8,9 @@
 include $(MIR)/GNUmakedefs
 
 ifeq "$(MAKEMODE)" "system"
-  # Note that scripts without a .csh or .sh suffix are not installed.
-  MIRSCRPS := $(basename $(filter %.csh,$(MIRSRCS)))
+  # Scripts are not installed unless listed explicitly.
+  MIRSCRPS := mirarch mirbug mirexport mirhelp mirimport mirmerge mirsync
+  MIRSCRPS += mirtester mirversion pntfix
 
   # Only a few of the scripts have doc markup.
   MIRDOCS  := mirbug mirhelp mirversion
@@ -24,13 +25,13 @@ ifeq "$(MAKEMODE)" "system"
 
   # Pattern rules.
   #---------------
-  $(MIRBIND)/% : $(MIRSCRPD)/%.csh
+  $(MIRBIND)/% : $(MIRSCRPD)/%
 	-@ $(RM) $%
 	   cp $< $@
 	-@ chmod 775 $@
 
   # Extract preamble comments into a Miriad "doc" file.
-  $(MIRDOCD)/%.doc : %.csh
+  $(MIRDOCD)/%.doc : %
 	-@ $(RM) $(MIRDOCD)/$*.doc
 	   $(MIRBIND)/doc -f $< > $@
 	-@ chmod 664 $@
