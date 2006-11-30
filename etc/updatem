@@ -41,11 +41,10 @@
 
   FILES="DISCLAIMER GNUmakedefs GNUmakefile INSTALL.html MIRRC MIRRC.sh"
   FILES="$FILES configure configure.ac"
+  FILES="$FILES progguide.ps progguide_US.ps.gz"
+  FILES="$FILES userguide.ps userguide_US.ps.gz"
 
   DIRS="cat config etc guides inc linpack prog scripts spec subs tests tools"
-
-  # The Programmer and User Guides are not compiled on the Macs.
-  DIRS="$DIRS html/progguide html/userguide"
 
   for i in $FILES $DIRS
   do
@@ -53,6 +52,17 @@
   done
 
   $RSYNC atlas:"$SRC" .
+
+  # The Programmer and User Guides are not compiled on the Macs.
+  DIRS="html/progguide html/userguide"
+  SRC=
+
+  for i in $DIRS
+  do
+    SRC="$SRC /nfs/atapplic/miriad/$i"
+  done
+
+  $RSYNC atlas:"$SRC" html
 
 
 # Now rebuild.
