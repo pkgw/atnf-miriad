@@ -219,7 +219,7 @@ AC_SUBST([XTRALIBS])
 
 
 # X11 includes and libraries.
-if test "x$ac_x_libraries" != x ; then
+if test "x$no_x" = x ; then
   X11INCD=$ac_x_includes
   X11LIB="-L$ac_x_libraries -lX11"
   X11LIBS="-L$ac_x_libraries -lXaw -lXmu -lXext -lXt -lX11"
