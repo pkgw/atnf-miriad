@@ -93,7 +93,7 @@
     *)
       exec 1>&2
       echo ""
-      echo "Usage: mirsync [-h <host] [-u <user>]"
+      echo "Usage: mirsync -d [-h <host>] [-u <user>]"
       exit 1
       ;;
     esac
