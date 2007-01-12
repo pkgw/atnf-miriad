@@ -290,6 +290,7 @@ sma		latitude	+1  19 49 27.1389
 sma		longitude	+1 204 31 22.79606
 sma		mount		NASMYTH
 sma		nants		    8.0
+sma		subdiam		    0.35
 sma		systemp		  200.0
 
 # SZA - Sunyaev-Zeldovich Array of eight 3.5m antennas - part of CARMA.
