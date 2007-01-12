@@ -279,9 +279,10 @@ sest		height		 2400.0
 sest		latitude	-1  29 15 34.0
 sest		longitude	+1 070 44 04.0
 
-# Submillimeter Array (SMA).
+# Submillimeter Array (SMA`).
 # Supplied by Ramprasad Rao.
 sma		antdiam		    6.0
+sma		evector		    0.0
 sma		height		 4080.0
 sma		jyperk		  130.0
 sma		latitude	+1  19 49 33.8
