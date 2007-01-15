@@ -299,7 +299,8 @@ MIRSDOCD := $(MIRROOT)/specdoc
 MIRRCS   := $(wildcard $(MIRROOT)/RCS)
 
 # Miriad code directories.
-CODESUBD := $(shell echo $(THISDIR)/ | sed -e '{s=^$(MIRROOT)/==;s=/*$$==;}')
+miriad   := $(notdir $(MIRROOT))
+CODESUBD := $(shell echo $(THISDIR)/ | sed -e '{s=^.*/$(miriad)/==;s=/*$$==;}')
 CODEDIR  := $(patsubst %/,%,$(MIRROOT)/$(CODESUBD))
 
 ifdef MIRRCS
@@ -344,7 +345,6 @@ MIRFTPD  := /nfs/ftp/software/miriad
 # Programmer directories.
 ifeq "$(MAKEMODE)" "programmer"
   # The name of the root of the programmer workspace MUST accord with $MIR.
-  miriad   := $(notdir $(MIRROOT))
   PGMRROOT := $(shell echo $(THISDIR) | sed -e 's=^\(.*/$(miriad)\).*=\1=')
   PGMRINCD := $(PGMRROOT)/inc
   PGMRAUXD := $(PGMRROOT)/$(MIRARCH)/aux
