@@ -221,8 +221,14 @@ AC_SUBST([XTRALIBS])
 # X11 includes and libraries.
 if test "x$no_x" = x ; then
   X11INCD=$ac_x_includes
-  X11LIB="-L$ac_x_libraries -lX11"
-  X11LIBS="-L$ac_x_libraries -lXaw -lXmu -lXext -lXt -lX11"
+  if test "x$ac_x_libraries" = x ; then
+    # E.g. for Gentoo or Redhat which installs X11 libraries in /usr/lib.
+    X11LIB="-lX11"
+    X11LIBS="-lXaw -lXmu -lXext -lXt -lX11"
+  else
+    X11LIB="-L$ac_x_libraries -lX11"
+    X11LIBS="-L$ac_x_libraries -lXaw -lXmu -lXext -lXt -lX11"
+  fi
 fi
 
 AC_SUBST([X11INCD])
