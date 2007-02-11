@@ -3986,4 +3986,8 @@ and in a way to be consistent with all the other changes happening.
 24jan07 rjs	uvlin.for - options=nowin. Get the number of windows to depend
 		on MAXWIN.
 24jan07 rjs	uvdiff.for - Allow default linetype.
-24jan07 rjs	fits.for - More robust to bad antenna tables.
+24jan07	rjs	fits.for - More robust to bad antenna tables.
+26jan07 rjs	uvspec.for - Adjust size of title to avoid overflow.
+26jan07	rjs	fits.for - Fix bug I introduced two days ago!
+02feb07 rjs	uvdat.for - Correct call to uvgetvr for 'baseline'
+09feb07 jhz	fits.for,fits.h - Set MAXFREQ=MAXWIN so that it can read SMA FITS
