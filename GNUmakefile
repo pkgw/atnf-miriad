@@ -154,7 +154,9 @@ ifeq "$(MAKEMODE)" "system"
     ifeq "$(MIRARCH)" "sun4sol"
       # Regenerate the Miriad ftp distribution kits.  Requires the sun4sol
       # variant of tar.
-      dist : allsys $(MIRFTPS:%=$(MIRFTPD)/%) configure
+      allsys :: $(MIRFTPS:%=$(MIRFTPD)/%)
+
+      dist : allsys configure
 	-@ echo ""
 	-@ $(TIMER)
 	   cd .. ; tar cf miriad/miriad-rcs.tar $(DISTRCS:%=miriad/%)
