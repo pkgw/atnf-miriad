@@ -845,12 +845,16 @@ c
             nix(i) = .true.
           end if
         end if
+
         if (.not.nix(i)) none = .false.
       end do
+
       if (none) then
         do i = 1, n
           wout(i) = win(i)
         end do
+
+        valid = .true.
         return
       end if
 c
