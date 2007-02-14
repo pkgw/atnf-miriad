@@ -20,8 +20,7 @@
 RATFLAGS := -b -s sun
 
 # Fortran compiler flags.
-FCSTD    := -libmil
-FCOPT     = -O2 $(FCSTD)
+FCOPT     = -O2 -libmil $(FCSTD)
 
 # intf2c flags.
 F2CFLAGS := -s sun
