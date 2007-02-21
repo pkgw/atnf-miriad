@@ -654,7 +654,7 @@ c
       double precision crval(naxis), cdelt(naxis), crpix(naxis)
       character*(*) keyw(nkeys), out, version, ctype(naxis), btype*(*)
 cc
-      integer i
+      integer i, len1
       character itoaf*1, istr*1, aline*80
 c-----------------------------------------------------------------------
       call xyopen (lout, out, 'new', naxis, size)
