@@ -13,7 +13,6 @@
   MIRCAT=$MIR/cat  ; export MIRCAT
   MIRPDOC=$MIR/doc ; export MIRPDOC
   MIRINC=$MIR/inc  ; export MIRINC
-  MIRCHNG=$MIR/new ; export MIRCHNG
   MIRPROG=$MIR/prog; export MIRPROG
   MIRSUBS=$MIR/subs; export MIRSUBS
   [ -d $MIR/man ] && MIRMAN=$MIR/man ; export MIRMAN

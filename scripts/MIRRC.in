@@ -13,7 +13,6 @@
   setenv MIRCAT  $MIR/cat
   setenv MIRPDOC $MIR/doc
   setenv MIRINC  $MIR/inc
-  setenv MIRCHNG $MIR/new
   setenv MIRPROG $MIR/prog
   setenv MIRSUBS $MIR/subs
   if (-e $MIR/man) setenv MIRMAN $MIR/man
