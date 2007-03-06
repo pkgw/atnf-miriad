@@ -10,7 +10,7 @@ include $(MIR)/GNUmakedefs
 ifeq "$(MAKEMODE)" "system"
   # Scripts are not installed unless listed explicitly.
   MIRSCRPS := mirarch mirbug mirexport mirhelp mirimport mirmerge mirsync
-  MIRSCRPS += mirtester mirversion pntfix
+  MIRSCRPS += mirtester mirtree mirversion pntfix
 
   # Only a few of the scripts have doc markup.
   MIRDOCS  := mirbug mirhelp mirversion
