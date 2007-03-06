@@ -656,10 +656,14 @@ else
 	-@ echo "Targets defined in GNUmakedefs:"
 	-@ echo "-------------------------------"
 	-@ echo "        all: (default target) rebuild all in this directory."
-	-@ echo "      clean: delete intermediate files."
-	-@ echo "    cleaner: clean, and also delete source files checked out"
-	-@ echo "             without a lock (no write permission)."
-	-@ echo "   cleanest: cleaner, and also delete purify cache."
+	-@ echo "      clean: delete intermediate files (e.g. .o, .i, etc.)."
+	-@ echo "    cleaner: clean, and also delete preprocessed files (e.g."
+	-@ echo "             .f, .c, .doc), dependency lists, and source"
+	-@ echo "             files checked out without a lock (no write"
+	-@ echo "             permission)."
+	-@ echo "   cleanest: cleaner, and also delete generated files (e.g."
+	-@ echo "             the object library or executables depending on"
+	-@ echo "             the context)."
 endif
 
 
