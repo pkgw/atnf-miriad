@@ -640,7 +640,7 @@ else
   cleaner :: clean
 	-@ FILES="$(wildcard $(MIRSRCS))" ; DLIST="" ; \
 	   for i in $$FILES ; do \
-	     [ -w $$i ] || DLIST="$$i $$DLIST" ; \
+	     [ -w $$i -o -h $$i ] || DLIST="$$i $$DLIST" ; \
 	   done ; \
 	   if [ "$$DLIST" != "" ] ; then \
 	     echo "" ; \
