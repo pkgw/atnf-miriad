@@ -7,7 +7,10 @@
 # Get common makefile variables and rules.
 include $(MIR)/GNUmakedefs
 
-MIRINCS  := -I $(MIRPROGD) -I $(MIRINCD)
+# See note for DPNDINCS regarding -I options forming the include path.
+MIRINCS  := -I $(MIRPROGD)
+MIRINCS  += $(patsubst %,-I %, $(wildcard $(MIRINCD)/$(MIRARCH)))
+MIRINCS  += -I $(MIRINCD)
 MIRLIBR  := $(MIRLIBD)/libmir.a
 XTRNLIBS := $(RPFITSLIB) $(LINPACKLIB) $(PGPLOTLIB) $(X11LIB) $(XTRALIBS)
 MIREXES  := $(basename $(filter %.for,$(MIRSRCS)))
@@ -56,7 +59,9 @@ show ::
 #             modules (constructed by the subs GNUmakefile).
 #   DPNDTMPD: Full pathname of the area where intermediate files are staged.
 #
-#   DPNDINCS: -I include path sequence.
+#   DPNDINCS: -I include path sequence.  This is used by ratty, which requires
+#             a space following the "-I", as well as by cpp which doesn't
+#             care.
 #
 # Certain of these variables differ for system and programmer compilations and
 # are defined separately below.
@@ -281,7 +286,9 @@ else
 
   # Tell ratty to look for include files in the programmer directories first,
   # then in the relevant Miriad directories.
-  PGMRINCS := -I . -I $(PGMRINCD) $(MIRINCS)
+  PGMRINCS := -I .
+  PGMRINCS += $(patsubst %,-I %, $(wildcard $(PGMRINCD)/$(MIRARCH)))
+  PGMRINCS += -I $(PGMRINCD) $(MIRINCS)
   PGMRLIBR := $(wildcard $(PGMRLIBD)/libmir.a)
   PGMRLIBS := $(wildcard $(PGMRLIBD)/libmir.a) $(XTRNLIBS)
   PGMREXES := $(basename $(wildcard *.for))
