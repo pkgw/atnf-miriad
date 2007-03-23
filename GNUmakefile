@@ -137,6 +137,7 @@ ifeq "$(MAKEMODE)" "system"
         # Update local stuff and architecture-specific GNUmakedefs.
 	-@ $(MAKE) -C etc chkout
 	-@ $(MAKE) -C scripts chkout
+	-@ $(MAKE) -C inc chkout
       endif
 
     rpfits : $(MIRINCD)/rpfits.inc $(MIRLIBD)/librpfits.a
