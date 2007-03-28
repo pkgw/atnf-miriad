@@ -2,7 +2,6 @@
 # Process this file with autoconf-2.53 or later to produce a configure script.
 #-----------------------------------------------------------------------------
 # Author: Mark Calabretta, Australia Telescope National Facility
-# http://www.atnf.csiro.au/~mcalabre/index.html
 # $Id$
 #-----------------------------------------------------------------------------
 
@@ -19,6 +18,7 @@ AC_SUBST([MIRROOT])
 
 # Determine the Miriad architecture name.
 MIRARCH=`$MIRROOT/scripts/mirarch`
+AC_SUBST([MIRARCH])
 
 
 # Look for a Fortran compiler.
