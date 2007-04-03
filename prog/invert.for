@@ -333,8 +333,9 @@ c
 c
 c  Externals.
 c
-	character itoaf*10, polsc2p*3, versan*80
 	logical keyprsnt
+	integer nextpow2
+	character itoaf*10, polsc2p*3, versan*80
 c
 	data slops/'zero        ','interpolate '/
 c-----------------------------------------------------------------------
