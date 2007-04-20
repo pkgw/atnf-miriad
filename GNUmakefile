@@ -135,8 +135,14 @@ ifeq "$(MAKEMODE)" "system"
     initial :: rpfits pgplot
       ifdef MIRRCS
         # Update local stuff and architecture-specific GNUmakedefs.
+	-@ echo ""
+	-@ echo gmake[0]: $(MAKE) -C etc chkout
 	-@ $(MAKE) -C etc chkout
+	-@ echo ""
+	-@ echo gmake[0]: $(MAKE) -C scripts chkout
 	-@ $(MAKE) -C scripts chkout
+	-@ echo ""
+	-@ echo gmake[0]: $(MAKE) -C inc chkout
 	-@ $(MAKE) -C inc chkout
       endif
 
