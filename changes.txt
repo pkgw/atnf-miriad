@@ -3991,3 +3991,4 @@ and in a way to be consistent with all the other changes happening.
 26jan07	rjs	fits.for - Fix bug I introduced two days ago!
 02feb07 rjs	uvdat.for - Correct call to uvgetvr for 'baseline'
 09feb07 jhz	fits.for,fits.h - Set MAXFREQ=MAXWIN so that it can read SMA FITS
+08mar97 pjt	fitsio.for - Added support for reading BITPIX=-64 images.
