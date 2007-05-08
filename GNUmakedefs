@@ -589,7 +589,7 @@ ifeq "$(MAKEMODE)" "system"
   # Rules for creating system directories.
   sysdirs : $(SYSDIRS)
 
-  $(SYSDIRS) :
+  $(SYSDIRS) ::
 	 @ if [ ! -d "$@" ] ; then \
 	     mkdir -m 2775 $@ ; \
 	     echo "" ; \
