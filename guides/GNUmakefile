@@ -103,8 +103,13 @@ ifeq "$(MAKEMODE)" "system"
 	     chmod 664 $@ ; \
 	   fi
 
-  # Special doc files are not converted to man pages.
-  man : $(MIRDOCS:%.doc=$(MIRMAND)/man1/%.1)
+  man : $(MIRMAND) ;
+
+  # Special doc files are not converted to man pages.  The timestamp on the
+  # system-specific directory itself will be updated when the index is
+  # updated.  This is used because the index has different names on different
+  # systems.
+  $(MIRMAND) :: $(MIRDOCS:%.doc=$(MIRMAN1D)/%.1)
     ifneq "$(MANDB)" ":"
 	-@ echo ""
 	   $(MANDB) $(MIRMAND)
