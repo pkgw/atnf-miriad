@@ -88,16 +88,19 @@ ifeq "$(MAKEMODE)" "system"
       -@ chmod 664 $@
     endef
 
+    $(MIRLIBD)/% : /sw/lib/%
+	   $(mir-copy)
+
     $(MIRLIBD)/% : /usr/local/lib/%
 	   $(mir-copy)
 
     $(MIRLIBD)/% : /usr/local/gnu/lib/%
 	   $(mir-copy)
 
-    $(MIRLIBD)/% : /sw/lib/%
+    $(MIRLIBD)/% : /usr/lib/%
 	   $(mir-copy)
 
-    $(MIRLIBD)/% : /usr/lib/%
+    $(MIRBIND)/% : /sw/bin/%
 	   $(mir-copy)
 
     $(MIRBIND)/% : /usr/local/bin/%
