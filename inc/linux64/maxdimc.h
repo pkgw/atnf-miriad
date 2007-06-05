@@ -4,9 +4,10 @@
 *  Note that MAXBUF defined here is only used by the routines in xyzio.c
 *  which are only used by a handful of tasks.  It is NOT the same as the
 *  MAXBUF defined for Fortran use in maxdim.h and only needs to be large
-*  enough for efficient I/O.  xyzio actually allocates two buffers, one
-*  float and the other int.  The default value of 16MiB each should be
-*  plenty.
+*  enough for efficient I/O.  xyzio always allocates two buffers, one int
+*  and the other float, using malloc() for up to the maximum number of
+*  elements specified by MAXBUF.  The default value allows 64MiB each for
+*  4-byte ints and floats each should be plenty.
 *
 *  The remaining parameters must match those in maxdim.h, or maxnax.h for
 *  MAXNAX.
@@ -22,7 +23,7 @@
 * $Id$
 *---------------------------------------------------------------------------*/
 /* Maximum buffer size for xyzio (N.B. see comment above). */
-#define MAXBUF  4194304
+#define MAXBUF  16777216
 
 /* Maximum number of pixels on an image axis. */
 #define MAXDIM  16384
