@@ -263,6 +263,8 @@ c                 compiler.
 c     bpw 28feb01 Make it work under linux
 c     bpw 21may01 Add smooth keyword
 c     rjs 18sep05 Corrected type mismatch error.
+c     tw  21jun07 ngauss=1 default; fix seg fault when writing residual
+c                 cube; fix mask error on residual and model cubes
 c
 c $Id$
 c***********************************************************************
@@ -435,6 +437,7 @@ c dumprf(1) is unit to copy header from
          dumprf(1) = units(1)
          if( mdl.ne.' ' )
      *   call setopen( mdl,'new',units(3), naxis,axleni, dumprf,fitax)
+         dumprf(1) = units(1)
          if( res.ne.' ' )
      *   call setopen( res,'new',units(4), naxis,axleni, dumprf,fitax)
       endif
@@ -687,7 +690,7 @@ c     a0,a1,am1 keep flint quiet
 
 c        Get maximum number of gaussian components from keyword
          nchan = prfinfo(2)
-         call keyi( 'ngauss', ngauss(1), 0 )
+         call keyi( 'ngauss', ngauss(1), 1 )
          call assertl( nchan.gt.3*ngauss(1),
      *             'Not enough datapoints to fit this many parameters' )
 
@@ -1111,7 +1114,7 @@ c write model, residual to output datasets
      *        call gaussmod(model,nchan,gausspar,ngauss(4))
             do i = 1, nchan
                residual(i) = data(i) - model(i)
-               mask(i)     = .false.
+               mask(i)     = .true.
             enddo
          else
             do i = 1, nchan
