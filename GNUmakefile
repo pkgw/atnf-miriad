@@ -175,17 +175,17 @@ ifeq "$(MAKEMODE)" "system"
 	   gzip miriad-code.tar
 	-@ $(RM) $(MIRFTPD)/miriad-code.tar.gz
 	   mv miriad-code.tar.gz $(MIRFTPD)/
-	 @ $(RM) .tarX
 	-@ echo ""
 	-@ $(TIMER)
 	-@ $(RM) VERSION
 	   date -u +'%Y%m%d' > VERSION
 	-@ chmod 444 VERSION
-	   cd .. ; tar cf miriad/miriad-common.tar $(DISTCOMM:%=miriad/%)
+	   cd .. ; tar cXf miriad/.tarX miriad/miriad-common.tar $(DISTCOMM:%=miriad/%)
 	-@ $(RM) VERSION
 	   gzip miriad-common.tar
 	-@ $(RM) $(MIRFTPD)/miriad-common.tar.gz
 	   mv miriad-common.tar.gz $(MIRFTPD)/
+	 @ $(RM) .tarX
 	-@ echo ""
 	 @ for bin in $(DISTBINS) ; do \
 	     echo "" ; \
