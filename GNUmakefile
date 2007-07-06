@@ -171,6 +171,7 @@ ifeq "$(MAKEMODE)" "system"
 	-@ $(TIMER)
 	-@ $(RM) .tarX
 	 @ cd .. ; find miriad -name RCS | sort > miriad/.tarX
+	 @ cd .. ; ls miriad/*/GNUmakedefs >> miriad/.tarX
 	   cd .. ; tar cXf miriad/.tarX miriad/miriad-code.tar $(DISTCODE:%=miriad/%)
 	   gzip miriad-code.tar
 	-@ $(RM) $(MIRFTPD)/miriad-code.tar.gz
@@ -185,13 +186,11 @@ ifeq "$(MAKEMODE)" "system"
 	   gzip miriad-common.tar
 	-@ $(RM) $(MIRFTPD)/miriad-common.tar.gz
 	   mv miriad-common.tar.gz $(MIRFTPD)/
-	 @ $(RM) .tarX
 	-@ echo ""
 	 @ for bin in $(DISTBINS) ; do \
 	     echo "" ; \
 	     $(TIMER) ; \
 	     echo "tar cf miriad-$$bin.tar $$bin" ; \
-	     echo miriad/$$bin/GNUmakedefs > .tarX ; \
 	     tar cXf .tarX miriad-$$bin.tar -C .. miriad/$$bin ; \
 	     echo "gzip miriad-$$bin.tar" ; \
 	     gzip miriad-$$bin.tar ; \
