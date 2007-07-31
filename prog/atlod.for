@@ -262,8 +262,8 @@ c  Externals.
 c
 	character itoaf*8, rperr*32, versan*80
 c-----------------------------------------------------------------------
-	version = versan ('atlod',
-     :    '$Id$')
+      version = versan ('atlod',
+     :  '$Id$')
 c
 c  Get the input parameters.
 c
@@ -1493,7 +1493,7 @@ c
 	    else
 	      stemp = mdata(1) + 273.15
 	      spress = 97.5*mdata(2)
-	      shumid = 0.01*data(3)
+	      shumid = 0.01*mdata(3)
 	    endif
 	    call opacGet(nifs,freq0,real(el),stemp,spress,shumid,
      *					     		   fac,Tb)
