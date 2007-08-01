@@ -188,8 +188,8 @@ c
 c----------------------------------------------------------------------c
 c
 c  Don't report the program ID so that gif and ps output can be piped.
-       version = versan ('-mbspect',
-      :  '$Id$')
+      version = versan ('-mbspect',
+     :  '$Id$')
 c
 c  Get inputs
 c
@@ -2009,7 +2009,7 @@ c
 c
 c  Log results
 c
-	if(.not.skip50.and..not.skip20) then
+	if(.not.skip50 .or. .not.skip20) then
          call output(' ')
          call output('      Width maximiser:')
          call output('                             50%            20%')
