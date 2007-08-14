@@ -742,8 +742,6 @@ c
       character*(*) ctype(naxis)
 cc
       include 'mirconst.h'
-      double precision r2d
-      parameter (r2d = 180.0d0/dpi)
 c
       integer i, j, k, frqax
       double precision fac
@@ -753,7 +751,7 @@ c-----------------------------------------------------------------------
       fac = 1.0
       ustr = ' radians'
       if (.not.radians) then
-        fac = r2d
+        fac = DR2D
         ustr = ' degrees'
       end if
 
