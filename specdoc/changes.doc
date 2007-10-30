@@ -1,29 +1,29 @@
-		of channels etc in RPFITS file. Increase buffer space.
-14jun00 rjs	reorder.for -- Copy across llrot keyword.
-13jun00 rjs	uvindex.for -- Handle blank source names somewhat better.
-16jun00 rjs	uvio.c -- Handle bad antenna numbers somewhat better.
-16jun00 rjs	select.for -- Check for bad antenna numbers in selection.
-04jul00 rjs	noise.for -- Changes to be more robust to bad computer
-		rounding.
-11jul00 rjs	regrid.for - Added "rotate" keyword, and eliminate "norot"
-		option.
-13jul00 rjs	moment.for - Copy across llrot.
-13jul00 rjs	cgdisp.for -- Plot beam correctly when there is a rotation of
-		the pixel grid.
-13jul00 rjs	assert.for -- Use hexists rather than FORTRAN INQUIRE
-		to check for file existence (and to avoid Digital UNIX bug).
-17jul00 rjs	attsys.for -- Apply or unapply ATCA Tsys correction.
-27jul00 nebk    impol.for -- position angle error was factor of 2 too big in a second
-            	             place.  grrr.
-28jul00 rjs	select.for -- Change on 16-Jul was buggy and could give spurious
-		error messages ... correct it.
-07aug00 rjs	zapchan.for,vblank.for,uvputhd.for -- Updated from BIMA.
-14aug00 rjs	mfclean.for -- Added output log file.
-14aug00 rjs	model.for -- Re-include external sources.
-25aug00 nebk    imrm.for -- bump to 20 images.  subroutine chkdes should not
-                  be checking cdelt/crpix on frequency axis
-28aug00 rjs	clean.for - Increase max complexity of region-of-interest.
-05sep00 rjs	uvedit.for -- Change some code to double precision to avoid
-		rounding problem.
+01aug97 rjs	prthd.for -- Better format for bmaj,bmin
+01aug97 rjs	gpedit.for -- Added options=zmean.
+01aug97 rjs	mosmem.for -- Make it more robust in the face of poor
+		defaults.
+04aug97 rjs	linmos.for -- Doc change only.
+05aug97 rjs	fits.for -- Make treatment of EPOCH keyword more robust.
+05aug97 rjs	regrid.for -- Give messages about what is happening with
+		equinox conversion.
+07aug97 rjs	cotra.for -- Correct usage of epo2jul.
+11aug97 rjs	closure.for -- Minor improvements.
+11aug97 rjs	gaupar.for -- More robust when beams are perfectly circular.
+12aug97 rjs	calc.for -- Know pi
+12aug97 rjs	fft.for -- Drop -NCP projection in some circumstances.
+12aug97 rjs	blcal.for -- Fix bug introduced on 31jul, and improve
+		polarisation handling.
+19aug97 rjs	uvspec.for -- Added axis=lag
+19aug97 rjs	gpcal.for -- options=vsolve and change to normalisation.
+21aug97 rjs	cgdisp.for -- Call initco earlier for type=box
+21aug97 rjs	psrplt.for -- Count the number of good correlations.
+21aug97 rjs	sfind.for -- Call initco earlier.
+22aug97 rjs	fits.for -- More robust. Put all unknown keywords into history.
+22aug98 rjs	calflux.for -- Somewhat better printing.
+25aug97 rjs	selfcal.for -- Correct summing of weights in "merger"
+25aug97 rjs	linmos.for -- Better doc and an extra error message.
+25aug97 rjs	tin.for -- Text file input handling subroutines.
+25aug97 rjs	uvgen.for -- Tidy up. Free-format input of text files. Some
+		better defaults. Some change to handling of "corr" files.
  
 See $MIR/changes.txt for a history of earlier changes.
