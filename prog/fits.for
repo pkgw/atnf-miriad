@@ -280,9 +280,11 @@ c		     allow for new FITS standard.
 c    rjs  05-aug-97  More robust in interpretation of epoch keyword.
 c    rjs  22-aug-97  More robust again. Also treat unrecognised keywords
 c		     as history comments.
+c    rjs  25-aug-97  Fix up bug I created on Friday.
+c    rjs  20-sep-97  Replace julfdate and fdatejul with julday and dayjul.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Fits: version 1.1 22-Aug-97')
+	parameter(version='Fits: version 1.1 20-Sep-97')
 	character in*128,out*128,op*8,uvdatop*12
 	integer velsys
 	real altrpix,altrval
@@ -1201,7 +1203,7 @@ c
 	if(rdate.eq.' ')then
 	  timeref = fuvGetT0(lu)
 	else
-	  call fdatejul(rdate,timeref)
+	  call dayjul(rdate,timeref)
 	endif
 c
 c  Get velocity definition information, just in case this is a spectral
@@ -1604,7 +1606,7 @@ c  Determine the reference time.
 c
 	call fitrdhda(lu,'RDATE',rdate,' ')
 	if(rdate.ne.' ')then
-	  call fdatejul(rdate,jrdate)
+	  call dayjul(rdate,jrdate)
 	else
 	  jrdate = jdateobs
 	endif
@@ -2550,7 +2552,7 @@ c
 	call fitwrhdd(tOut,'GSTIA0',gstia0)
 	call fitwrhdd(tOut,'DEGPDY',degpdy)
 	call fitwrhdd(tOut,'FREQ',  rfreq)
-	call julfdate(rtime,rdate)
+	call julday(rtime,'F',rdate)
 	call fitwrhda(tOut,'RDATE',rdate)
 	call fitwrhdd(tOut,'POLARX',0.d0)
 	call fitwrhdd(tOut,'POLARY',0.d0)
@@ -3169,7 +3171,7 @@ c
 c
 	call fitrdhda(lu,'DATE-OBS',rdate,' ')
 	if(rdate.ne.' ')then
-	  call fdatejul(rdate,dtemp)
+	  call dayjul(rdate,dtemp)
 	  call wrhdd(tno,'obstime',dtemp)
 	else if(epoch.gt.1800)then
 	  dtemp = Epo2Jul(dble(epoch),' ')
@@ -3200,20 +3202,21 @@ c
 	character key*(*)
 	real value
 c------------------------------------------------------------------------
-	character string*32
+	character card*80,type*8
 	integer k1,k2
 	logical ok
 	double precision dtemp
 c
-	integer len1
-c
-	call fitrdhda(lu,key,string,' ')
-	call ucase(string)
-	k2 = len1(string)
-	k1 = 1
-	if(string(1:1).eq.'J'.or.string(1:1).eq.'B')k1 = 2
-	if(k1.le.k2)then
-	  call atodf(string(k1:k2),dtemp,ok)
+	call fitsrch(lu,key,ok)
+	if(ok)then
+	  call fitcdio(lu,card)
+	  call ucase(card)
+	  call getvalue(card,type,k1,k2)
+	  ok = k1.le.k2
+	endif
+	if(ok)then
+	  if(card(k1:k1).eq.'B'.or.card(k1:k1).eq.'J')k1 = k1 + 1
+	  call atodf(card(k1:k2),dtemp,ok)
 	  if(.not.ok)call bug('f','Error decoding EPOCH/EQUINOX')
 	  value = dtemp
 	else
@@ -3495,7 +3498,7 @@ c  Write out other coordinates.
 c
 	call rdhdd(tno,'obstime',obstime,-1.d0)
 	if(obstime.gt.0) then
-	  call julfdate(obstime,date)
+	  call julday(obstime,'F',date)
 	  call fitwrhda(lu,'DATE-OBS',date)
 	endif
 	call rdhdd(tno,'restfreq',restfreq,-1.d0)
