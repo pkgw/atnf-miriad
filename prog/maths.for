@@ -109,7 +109,6 @@ c                  increased stringlength for expr etc. (from 64 -> 256)
 c   rjs  21sep93 - Fiddles with the order in which things are done so that
 c		   there is a template to the Boxinp routine.
 c   pjt   8jun94 - clarified region=
-c   rjs   3dec94   Copy across mosaic table.
 c------------------------------------------------------------------------
 	INCLUDE 'maths.h'
 	INTEGER ERROR,VECTOR,SCALAR,CONSTANT
@@ -428,7 +427,7 @@ c------------------------------------------------------------------------
 	integer i,lblc,ltrc
 	real def,crpix
 	integer nkeys
-	parameter(nkeys=40)
+	parameter(nkeys=39)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -443,7 +442,7 @@ c
      *	  'ltype   ','lstart  ','lstep   ','lwidth  ','pbfwhm  ',
      *	  'instrume','niters  ','object  ','telescop','xshift  ',
      *	  'yshift  ','restfreq','vobs    ','observer','obsra   ',
-     *	  'obsdec  ','btype   ','mostable'/
+     *	  'obsdec  ','btype   '/
 C
 	do i=1,nkeys
 	  call hdcopy(lIn,lOut,keyw(i))
