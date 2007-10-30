@@ -3647,3 +3647,13 @@ and in a way to be consistent with all the other changes happening.
 10jan01 rjs	uvplt.for - Plot axes of az, el and lst.
 12jan01 dpr     linux/mirclnk - forced removal of files 
 16jan01 dpr     bugfix mirexport.pl
+17jan01 rjs	uvplanet.for -- Handle large shifts of the planets and
+		limb darkening models.
+17jan01 rjs	nswc.for -- Included a few more subroutines.
+18jan01 dpr     cgslice - add third labtyp
+20jan01	rjs	uvplt.for - Change default number of potential baselines
+		to plot to allow for possible presence of autocorrelations.
+21jan01 rjs	uvplanet.for - Protect the limb darking calculation from
+		zero spacings.
+30jan01 rjs	closure.for - Get it to work for polarization parameters other
+		than the parallel hands.
