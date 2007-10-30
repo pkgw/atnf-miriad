@@ -34,8 +34,6 @@ c		  broke it.
 c    rjs  02mar93 Break out "Inc" routines.
 c    rjs  06sep93 Change ownership. Fix bug which inverted (!) the masking
 c		  file.
-c    rjs  07feb96 Handle 4th, etc, dimension.
-c    rjs  02jul97 cellscal change.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
@@ -104,7 +102,7 @@ c
 	do i=1,naxis
 	  nOut(i) = nIn(idx(i))
 	enddo
-	call xyopen(lOut,out,'new',naxis,nOut)
+	call xyopen(lOut,out,'new',n,nOut)
 	call Header(lIn,lOut,nIn,sgn,idx,naxis,version)
 c
 	size = max(nIn(1)*nIn(2),nOut(1)*nOut(2))
@@ -267,18 +265,15 @@ c
 c  Header keywords.
 c
 	integer nkeys
-	parameter(nkeys=22)
+	parameter(nkeys=23)
 	character keyw(nkeys)*8
 c
-c  Externals.
-c
-	character itoaf*8
-c
 	data keyw/   'bmaj    ','bmin    ','bpa     ','bunit   ',
-     *    'obstime ','epoch   ','history ','instrume',
+     *    'date-obs','epoch   ','history ','instrume',
      *	  'ltype   ','lstart  ','lwidth  ','lstep   ',
      *	  'niters  ','object  ','observer','obsra   ','obsdec  ',
-     *	  'pbfwhm  ','restfreq','telescop','vobs    ','cellscal'/
+     *	  'pbfwhm  ','restfreq','telescop','vobs    ','xshift  ',
+     *	  'yshift  '/
 c
 c  Copy header keywords.
 c
@@ -289,7 +284,7 @@ c
 c  Copy the coordinate information.
 c
 	do i=1,naxis
-	  numo = itoaf(i)
+	  numo = char(i+ichar('0'))
 	  same = idx(i).eq.i.and.sgn(i).eq.1
 	  if(same)then
 	    call hdcopy(lIn,lOut,'ctype'//numo)
@@ -311,8 +306,7 @@ c
 	enddo
 c
 	call hisopen(lOut,'append')
-	line = 'REORDER: Miriad '//version
-	call hiswrite(lOut,line)
+	call hiswrite(lOut,version)
 	call hisinput(lOut,'REORDER')
 	call hisclose(lOut)
 c
