@@ -3314,3 +3314,18 @@ and in a way to be consistent with all the other changes happening.
 		frequency and bandwidth.
 27feb98 mwp	moment.for -- Added mom=-2 for peak temperature
 05aug98 mchw    obspar.for -- Added mount and nants to ovro.
+*********************************** 07aug98 Sent changes to Doug Roberts
+19aug98 rjs	immerge.for -- Fix bug introduced on 16 March where the first
+		plane in the output was the last plane in the selected region 
+                for factor determination.
+19aug98 rjs	uvlist.for - Correct printing of longitude in options=array
+19aug98 rjs	fits.for -- Added options=lefty and made the uv writer check obspar
+		for observatory latitude/longitude if it was missing
+		from the vis dataset.
+*********************************** 19aug98 Sent changes to Doug Roberts
+19aug98 rjs	gpcal.for -- Changes in ampsol and ampsolxy to avoid an SGI compiler bug
+31aug98 rjs	imframe.for -- Correct incorrect default arg in call to rdhdd
+		and eliminate flint complaints.
+02sep98 rjs	miriad.h -- Added macros of uvgetvr and uvrdvr
+02sep98 rjs	immerge.for -- Change a subroutine name to avoid a LINUX
+		complaint.
