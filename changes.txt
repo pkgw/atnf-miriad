@@ -3712,3 +3712,5 @@ and in a way to be consistent with all the other changes happening.
 31jul01 rjs	planet.for - Improved brightness temperature for
 		Mercury
 30jul01 rjs	sdip.for - Slightly improved plotting.
+08aug01 rjs	sdip.for - Include CMB temperature. Echo theoretical values.
+07sep01 rjs	opplt.for - Give log file output.
