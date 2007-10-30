@@ -19,28 +19,28 @@ c 4) Change name to imspec.for
 
 c plot and options for IMSTAT
 c      parameter    ( NAME = 'IMSTAT' )
-c      character    plotopts*(*)
+c      character*28 plotopts
 c      parameter    ( plotopts = 'mean,sum,rms,maximum,minimum' )
-c      character    defplt*(*), idstr*(*)
+c      character    defplt*3, idstr*10
 c      parameter    ( defplt = 'rms', idstr = 'statistics' )
-c      character    commonop*(*)
+c      character*80 commonop
 c      parameter    ( commonop =
 c     *'tb,noheader,nolist,list,eformat,style,title,xmin,xmax,ymin,ymax')
 
 c plot and options for IMSPEC
       parameter    ( NAME = 'IMSPEC' )
-      character    plotopts*(*)
+      character*21 plotopts
       parameter    ( plotopts = 'mean,sum,flux,pbcflux' )
-      character    defplt*(*), idstr*(*)
+      character    defplt*4, idstr*8
       parameter    ( defplt = 'flux', idstr = 'spectrum' )
-      character    commonop*(*)
+      character*80 commonop
       parameter    ( commonop =
-     *'tb,noheader,nolist,list,eformat,hanning,boxcar,deriv,style,'//
-     *'title,xmin,xmax,ymin,ymax' )
+     *'tb,noheader,nolist,list,eformat,hanning,boxcar,deriv,style,title,
+     *xmin,xmax,ymin,ymax' )
 
 c common variables for IMSTAT and IMSPEC
 
-      character    styles*(*)
+      character*20 styles
       parameter    ( styles = 'connect,step,histo' )
 
       integer      NPLOTV, NPLOTR, NPLOTP
@@ -73,13 +73,14 @@ c plotpar(1-5)
       integer      XLABP, YLABP, INFOP, BOXP, TITLE
       parameter    ( XLABP=1, YLABP=2, INFOP=3, BOXP=4, TITLE=5 )
 
-      integer      cindex(MAXNAX),cIn
+      integer      crpix(MAXNAX)
+      double precision crval(MAXNAX), cdelt(MAXNAX)
       character*9  ctype(MAXNAX)
 
       integer      NSTATS
       parameter    ( NSTATS = 6 )
       common /VAR/ plotvar, plotrnge
-      common /CRD/ cindex,cIn
+      common /CRD/ crval, cdelt, crpix
       common /CHR/ plotpar, ctype
 
       integer      SUMBM, KPERJY, BEAMX, BEAMY
