@@ -121,10 +121,12 @@ c    rjs  31jan95 Accomodate model.for changes.
 c    rjs   1oct96 Major tidy up.
 c    rjs  11nov98 Make "time" array double precision to avoid precision
 c		  problems.
+c    rjs  01dec98 More warning messages.
+c    rjs  22mar00 Relax implicit assumption that XX/YY much stronger than XY/YX.
 c------------------------------------------------------------------------
 	include 'gpscal.h'
 	character version*(*)
-	parameter(version='GpsCal: version 1.0 11-Nov-98')
+	parameter(version='GpsCal: version 1.0 22-Mar-00')
 	integer MAXSELS,nhead
 	parameter(MAXSELS=256,nhead=5)
 c
@@ -139,7 +141,7 @@ c
 c
 c  Externals.
 c
-	logical keyprsnt
+	logical keyprsnt,hdprsnt
 	character PolsC2P*2
 	external Header
 c
@@ -204,6 +206,11 @@ c  Open the visibility file, check that it is interferometer data, and set
 c  the line type if necessary.
 c
 	call uvopen(tvis,vis,'old')
+	if(hdprsnt(tvis,'bandpass'))then
+	  call bug('w',
+     *	    'Gpscal does not apply pre-existing bandpass tables')
+	  call bug('w','Bandpass table ignored')
+	endif
 	if(doline)call uvset(tvis,'data',ltype,nchan,lstart,lwidth,
      *								lstep)
 c
@@ -1131,7 +1138,7 @@ c
 	do j=2,nants
 	  do i=1,j-1
 	    k = k + 1
-	    if(SumMM(XX,k).gt.0.and.SumMM(YY,k).gt.0)then
+	    if(SumMM(XX,k)+SumMM(YY,k)+SumMM(XY,k)+SumMM(YX,k).gt.0)then
 	      nbld = nbld + 1
 	      if(Indx(i).eq.0)then
 	        nantsd = nantsd + 1
@@ -1488,7 +1495,7 @@ c    xyp	The initial xyphases.
 c------------------------------------------------------------------------
 	include 'gpscal.h'
 	integer i,n,item,iostat,count(MAXANT)
-	real theta,phase(MAXANT),sd(MAXANT)
+	real theta,phase(MAXANT),fac
 c
 c  Externals.
 c
@@ -1497,19 +1504,17 @@ c
 c  See if there is an XY phase table associated with this data file.
 c  If so use this.
 c
-	call GetXY(tIn,phase,sd,count,MAXANT,n)
-	n = min(n,nants)
-	do i=1,n
+	call GetXY(tIn,fac,phase,count,MAXANT,n)
+	do i=n+1,nants
+	  count(i) = 0
+	enddo
+	do i=1,nants
 	  if(count(i).gt.0)then
 	    theta = phase(i)
 	    xyp(i) = cmplx(cos(theta),sin(theta))
 	  else
 	    xyp(i) = (1.,0.)
 	  endif
-	enddo
-c
-	do i=n+1,nants
-	  xyp(i) = (1.,0.)
 	enddo
 c
 c  Initialise the leakage terms. See if there is already a leakage
@@ -1605,7 +1610,7 @@ c
 	enddo
 c
 	do i=1,nbl
-	  SVM(i) = SumVM(XX,i) + SumVM(YY,i)
+	  SVM(i) = SumVM(XX,i) + SumVM(YY,i) + SumVM(XY,i) + SumVM(YX,i)
 	enddo
 c
 	Factor = 0.8
