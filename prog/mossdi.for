@@ -38,17 +38,14 @@ c    rjs 31oct94 - Original version.
 c    rjs  6feb95 - Copy mosaic table to output component table.
 c    rjs 27feb97 - Fix glaring bug in the default value for "clip".
 c    rjs 28feb97 - Last day of summer. Add options=positive.
-c    rjs 02jul97 - cellscal change.
-c    rjs 23jul97 - add pbtype.
-c    rjs 28nov97 - Increase max number of boxes.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='MosSDI: version 1.0 28-Nov-97')
+	parameter(version='MosSDI: version 1.0 28-Feb-97')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
 	integer MAXRUN,MAXBOXES
-	parameter(MAXRUN=3*maxdim,MAXBOXES=3076)
+	parameter(MAXRUN=3*maxdim,MAXBOXES=1024)
 c
 	character MapNam*64,BeamNam*64,ModelNam*64,OutNam*64,line*64
 	integer Boxes(MAXBOXES),Run(3,MAXRUN),nRun,blc(3),trc(3),nAlloc
@@ -409,7 +406,7 @@ c------------------------------------------------------------------------
 	real crpix1,crpix2,crpix3
 	character line*72,txtblc*32,txttrc*32,num*2
 	integer nkeys
-	parameter(nkeys=17)
+	parameter(nkeys=15)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -419,7 +416,7 @@ c
 	data keyw/   'obstime ','epoch   ','history ','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ','pbfwhm  ',
      *	  'observer','telescop','restfreq','vobs    ','btype   ',
-     *	  'mostable','cellscal','pbtype  '/
+     *	  'mostable'/
 c
 c  Fill in some parameters that will have changed between the input
 c  and output.
