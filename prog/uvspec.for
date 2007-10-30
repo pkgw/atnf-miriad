@@ -50,7 +50,9 @@ c		         the rms amplitude. by default it does vector averaging.
 c	   'nobase'      Plot all the baselines on one plot.
 c	   'avall'       Average all the baselines together before plotting.
 c	   'dots'        Plot phases with dots instead of filled circles.
-c	   'flagged'     Plot flagged data instead of unflagged data.
+c	   'flagged'     Plot flagged data instead of unflagged data. The
+c	                 default is to plot only unflagged data.
+c	   'all'         Plot both flagged and unflagged data.
 c@ axis
 c	This gives two strings, which determine the X and Y axes of each plot.
 c	The values can be abbreviated to uniqueness.
@@ -59,6 +61,7 @@ c	   channel       X-axis is channel number.
 c	   frequency     X-axis is frequency, in GHz.
 c	   velocity      X-axis is velocity in radio convention, in km/sec.
 c	   felocity	 X-axis is velocity in optical convention, in km/sec.
+c	   lag           X-axis is lag number.
 c	Possible values for the Y axis are:
 c	   amplitude     Plot amplitude.
 c	   phase         Plot phase.
@@ -92,6 +95,15 @@ c    rjs  22sep93 Rms averaging option.
 c    rjs  23dec93 Added 'felocity' axis (velocity using optical definition).
 c    rjs   8mar94 Handle data which are not in time order.
 c    nebk 22mar94 Add options=flagged
+c    rjs  17aug94 Better offset handling.
+c    rjs  26sep95 Discard bad spectra as soon as possible.
+c    rjs  28sep95 Fix bug I introduced two days ago.
+c    rjs  17oct95 Correct initialisation bug when first integration is all
+c		  bad.
+c    rjs  19oct95 options=all
+c    rjs  16nov95 Use different colours and PGRNGE.
+c    rjs  14dec95 Increase buffer in averaging (MAXAVER).
+c    rjs  19aug97 Added axis=lag
 c  Bugs:
 c------------------------------------------------------------------------
 	include 'mirconst.h'
@@ -100,16 +112,16 @@ c------------------------------------------------------------------------
         parameter (maxco=15)
 c
 	character version*(*)
-	parameter(version='UvSpec: version 1.0 22-Mar-94')
+	parameter(version='UvSpec: version 1.0 19-Oct-95')
 	character uvflags*8,device*64,xaxis*12,yaxis*12,logf*64
 	character xtitle*64,ytitle*64
 	logical ampsc,rms,nobase,avall,first,buffered,doflush,dodots
-	logical doshift,doflag
-	double precision interval,T0,T1,preamble(4)
+	logical doshift,doflag,doall,dolag
+	double precision interval,T0,T1,preamble(4),shift(2),shft(2)
 	integer tIn,vupd
-	integer nxy(2),nchan,nread
-	real yrange(2),inttime,shift(2)
-	double precision x(MAXCHAN)
+	integer nxy(2),nchan,nread,nplot
+	real yrange(2),inttime
+	double precision x(2*MAXCHAN-2)
 	complex data(MAXCHAN)
 	logical flags(MAXCHAN)
 	integer hann
@@ -117,23 +129,24 @@ c
 c
 c  Externals.
 c
+	integer nextpow2
 	logical uvDatOpn,uvVarUpd
 c
 c  Get the input parameters.
 c
 	call output(version)
-        call bug ('i', 'New options=flagged available')
 	call keyini
-	call GetOpt(uvflags,ampsc,rms,nobase,avall,dodots,doflag)
+	call GetOpt(uvflags,ampsc,rms,nobase,avall,dodots,doflag,doall)
 	call GetAxis(xaxis,yaxis)
+	dolag = xaxis.eq.'lag'
 	call uvDatInp('vis',uvflags)
 	call keyd('interval',interval,0.d0)
         call keyi('hann',hann,1)
 	call keya('device',device,' ')
 	call keyi('nxy',nxy(1),0)
 	call keyi('nxy',nxy(2),0)
-	call keyr('offset',shift(1),0.)
-	call keyr('offset',shift(2),shift(1))
+	call keyd('offset',shift(1),0.d0)
+	call keyd('offset',shift(2),0.d0)
 	call keyr('yrange',yrange(1),0.)
 	call keyr('yrange',yrange(2),yrange(1)-1)
         call keya('log',logf,' ')
@@ -182,6 +195,13 @@ c
 c  Loop over the data.
 c
 	  call uvDatRd(preamble,data,flags,maxchan,nread)
+	  nplot = nread
+	  if(dolag)nplot = nextpow2(2*(nread-1))
+	  if(doshift)then
+	    call coInit(tIn)
+	    call coCvt(tIn,'ow/ow',shift,'op/op',shft)
+	    call coFin(tIn)
+	  endif
 	  nchan = nread
 	  T1 = preamble(3)
 	  T0 = T1
@@ -189,7 +209,7 @@ c
 c
 c  Shift the data if needed.
 c
-	    if(doshift)call ShiftIt(tIn,preamble,data,nchan,shift)
+	    if(doshift)call ShiftIt(tIn,preamble,data,nchan,shft)
 c
 c  Determine if we need to flush out the averaged data.
 c
@@ -204,19 +224,18 @@ c  in the case of time averaging.
 c
 	    if(doflush)then
 	      call BufFlush(ampsc,rms,nobase,dodots,hann,hc,hw,first,
-     *	        device,x,nchan,xtitle,ytitle,nxy,yrange,logf)
+     *	        device,x,nplot,xtitle,ytitle,nxy,yrange,logf)
 	      T0 = preamble(3)
 	      T1 = T0
 	      buffered = .false.
-	      first = .false.
 	    endif
 c
 c  Accumulate more data, if we are time averaging.
 c
-	    if(.not.buffered)call GetXAxis(tIn,xaxis,xtitle,x,nread)
+	    if(.not.buffered)call GetXAxis(tIn,xaxis,xtitle,x,nplot)
 	    if(avall)preamble(4) = 257
 	    call uvrdvrr(tIn,'inttime',inttime,0.)
-	    call BufAcc(doflag,preamble,inttime,data,flags,nread)
+	    call BufAcc(doflag,doall,preamble,inttime,data,flags,nread)
 	    buffered = .true.
 	    nchan = nread
 c
@@ -229,14 +248,13 @@ c  Flush out and plot anything remaining.
 c
 	  if(buffered)then
 	    call BufFlush(ampsc,rms,nobase,dodots,hann,hc,hw,first,
-     *	      device,x,nchan,xtitle,ytitle,nxy,yrange,logf)
+     *	      device,x,nplot,xtitle,ytitle,nxy,yrange,logf)
 	    buffered = .false.
-	    first = .false.
 	  endif
 	  call uvDatCls
 	enddo
 c
-	if(first)call bug('f','Error opening input')
+	if(first)call bug('f','Nothing to plot')
 	if(logf.ne.' ') call LogClose
 	call pgend
 	end
@@ -246,7 +264,7 @@ c
 	implicit none
 	integer tIn,nchan
 	double precision uv(2)
-	real shift(2)
+	double precision shift(2)
 	complex data(nchan)
 c
 c  Shift the data.
@@ -293,7 +311,7 @@ c------------------------------------------------------------------------
 	integer VELO
 	parameter(VELO=3)
 c
-	integer i
+	integer i,i0
 	double precision data(6),start,step
 	character vel*32
 c
@@ -326,6 +344,13 @@ c
 	else if(xaxis.eq.'frequency')then
 	  xtitle = 'Frequency (GHz)'
 	  call uvinfo(tIn,'sfreq',x)
+	else if(xaxis.eq.'lag')then
+	  i0 = -nchan/2
+	  do i=1,nchan
+	    x(i) = i0
+	    i0 = i0 + 1
+	  enddo
+	  xtitle = 'Lag Number'
 	else
 	  call bug('f','Unrecognised xaxis')
 	endif
@@ -364,11 +389,12 @@ c    xaxis
 c    yaxis
 c------------------------------------------------------------------------
 	integer NX,NY
-	parameter(NX=4,NY=4)
+	parameter(NX=5,NY=4)
 c
 	integer n
 	character xaxes(NX)*9,yaxes(NY)*9
-	data xaxes/'channel  ','frequency','velocity ','felocity '/
+	data xaxes/'channel  ','frequency','velocity ','felocity ',
+     *		   'lag      '/
 	data yaxes/'amplitude','phase    ','real     ','imaginary'/
 c
 	call keymatch('axis',NX,xaxes,1,xaxis,n)
@@ -377,10 +403,11 @@ c
 	if(n.eq.0)yaxis = yaxes(1)
 	end
 c************************************************************************
-	subroutine GetOpt(uvflags,ampsc,rms,nobase,avall,dodots,doflag)
+	subroutine GetOpt(uvflags,ampsc,rms,nobase,avall,dodots,
+     *		doflag,doall)
 c
 	implicit none
-        logical ampsc,rms,nobase,avall,dodots,doflag
+        logical ampsc,rms,nobase,avall,dodots,doflag,doall
 	character uvflags*(*)
 c
 c  Determine the flags to pass to the uvdat routines.
@@ -393,14 +420,15 @@ c    nobase
 c    avall
 c    dodots
 c    doflag
+c    doall
 c------------------------------------------------------------------------
 	integer nopts
-	parameter(nopts=9)
+	parameter(nopts=10)
 	character opts(nopts)*9
 	logical present(nopts),docal,dopol,dopass
 	data opts/'nocal    ','nopol    ','ampscalar','nopass   ',
      *		  'nobase   ','avall    ','dots     ','rms      ',
-     *            'flagged  '/
+     *            'flagged  ','all      '/
 c
 	call options('options',opts,present,nopts)
 	docal = .not.present(1)
@@ -414,6 +442,9 @@ c
 	avall  =   present(6)
         dodots =   present(7)
         doflag =   present(9)
+	doall  =   present(10)
+	if(doflag.and.doall)call bug('f',
+     *	  'The "flagged" and "all" options are mutually exclusive')
 c
 	uvflags = 'dsl'
 	if(docal) uvflags(4:4) = 'c'
@@ -449,24 +480,23 @@ c  Plot the averaged data. On the first time through, also initialise the
 c  plot device.
 c
 c------------------------------------------------------------------------
-	include 'mirconst.h'
 	include 'uvspec.h'
 	integer PolMin,PolMax
 	parameter(PolMin=-8,PolMax=4)
 	integer MAXPLT,MAXPNT
 	parameter(MAXPNT=32168,MAXPLT=1024)
-	real xp(MAXPNT),yp(MAXPNT),xrange(2),temp,inttime
+	real xp(MAXPNT),yp(MAXPNT),xrange(2),inttime
 	integer plot(MAXPLT+1)
 	double precision time
-	integer i,j,k,ngood,ng,ntime,npnts,nplts,nprev,p
-	complex ctemp
-	logical doamp,doampsc,dorms,dophase,doreal,doimag,dopoint
+	integer i,j,ngood,ng,ntime,npnts,nplts,nprev,p
+	logical doamp,doampsc,dorms,dophase,doreal,doimag,dopoint,dolag
 	logical Hit(PolMin:PolMax)
 	integer npol,pol(MAXPOL)
 c
 c  Determine the conversion of the data.
 c
 	doamp = ytitle.eq.'Amplitude'
+	dolag = xtitle.eq.'Lag Number'
 	doampsc = doamp.and.ampsc
 	dorms   = doamp.and.rms
 	if(doampsc)doamp = .false.
@@ -489,6 +519,7 @@ c
 	ng = ngood
 	if(nobase) ng = 1
 	if(first)call PltIni(device,ng,nxy)
+	first = .false.
 c
 c  Autoscale the X axis.
 c
@@ -523,35 +554,17 @@ c
 		Hit(Pols(i,j)) = .true.
 	      endif
 	      nprev = npnts
-	      p = pnt(i,j) - 1
+	      p = pnt(i,j)
 	      if(cntp(i,j).ge.1)then
-	        do k=1,nchan(i,j)
-		  if(count(k+p).gt.0)then
-		    if(doamp)then
-		      temp = abs(buf(k+p)) / count(k+p)
-		    else if(doampsc)then
-		      temp = bufr(k+p) / count(k+p)
-		    else if(dorms)then
-		      temp = sqrt(buf2(k+p) / count(k+p))
-		    else if(dophase)then
-		      ctemp = buf(k+p)
-		      if(abs(real(ctemp))+abs(aimag(ctemp)).eq.0)then
-			temp = 0
-		      else
-			temp = 180/pi * atan2(aimag(ctemp),real(ctemp))
-		      endif
-		    else if(doreal)then
-		      temp = real(buf(k+p)) / count(k+p)
-		    else if(doimag)then
-		      temp = aimag(buf(k+p)) / count(k+p)
-		    endif
-		    npnts = npnts + 1
-		    if(npnts.gt.MAXPNT)call bug('f',
-     *		     'Buffer overflow(points), when accumulating plots')
-		    xp(npnts) = x(k)
-		    yp(npnts) = temp
-		  endif
-		enddo
+		if(dolag)then
+		  call LagExt(x,buf(p),count(p),nchan(i,j),n,
+     *		    xp,yp,MAXPNT,npnts)
+		else
+		  call VisExt(x,buf(p),buf2(p),bufr(p),count(p),
+     *		    nchan(i,j),
+     *		    doamp,doampsc,dorms,dophase,doreal,doimag,
+     *		    xp,yp,MAXPNT,npnts)
+		endif
 	      endif
 c
 c  Did we find another plot.
@@ -595,14 +608,102 @@ c
 c
 	end
 c************************************************************************
-	subroutine BufAcc(doflag,preambl,inttime,data,flags,nread)
+	subroutine VisExt(x,buf,buf2,bufr,count,nchan,
+     *		    doamp,doampsc,dorms,dophase,doreal,doimag,
+     *		    xp,yp,MAXPNT,npnts)
+c
+	implicit none
+	integer nchan,npnts,MAXPNT,count(nchan)
+	logical doamp,doampsc,dorms,dophase,doreal,doimag
+	real buf2(nchan),bufr(nchan),xp(MAXPNT),yp(MAXPNT)
+	double precision x(nchan)
+	complex buf(nchan)
+c------------------------------------------------------------------------
+	include 'mirconst.h'
+	integer k
+	real temp
+	complex ctemp
+c
+	do k=1,nchan
+	  if(count(k).gt.0)then
+	    if(doamp)then
+	      temp = abs(buf(k)) / count(k)
+	    else if(doampsc)then
+	      temp = bufr(k) / count(k)
+	    else if(dorms)then
+	      temp = sqrt(buf2(k) / count(k))
+	    else if(dophase)then
+	      ctemp = buf(k)
+	      if(abs(real(ctemp))+abs(aimag(ctemp)).eq.0)then
+		temp = 0
+	      else
+		temp=180/pi*atan2(aimag(ctemp),real(ctemp))
+	      endif
+	    else if(doreal)then
+	      temp = real(buf(k)) / count(k)
+	    else if(doimag)then
+	      temp = aimag(buf(k)) / count(k)
+	    endif
+	    npnts = npnts + 1
+	    if(npnts.gt.MAXPNT)call bug('f',
+     *	      'Buffer overflow(points), when accumulating plots')
+	    xp(npnts) = x(k)
+	    yp(npnts) = temp
+	  endif
+	enddo
+c
+	end
+c************************************************************************
+	subroutine LagExt(x,buf,count,nchan,n,
+     *		    xp,yp,MAXPNT,npnts)
+c
+	implicit none
+	integer nchan,n,npnts,MAXPNT,count(nchan)
+	double precision x(n)
+	real xp(MAXPNT),yp(MAXPNT)
+	complex buf(nchan)
+c------------------------------------------------------------------------
+	include 'maxdim.h'
+	real rbuf(2*(MAXCHAN-1))
+	complex cbuf(MAXCHAN)
+	integer k,k0
+c
+c  Normalise.
+c
+	do k=1,nchan
+	  if(count(k).gt.0)then
+	    cbuf(k) = buf(k) / count(k)
+	  else
+	    cbuf(k) = 0
+	  endif
+	enddo
+	do k=nchan+1,n/2+1
+	  cbuf(k) = 0
+	enddo
+c
+	call fftcr(cbuf,rbuf,-1,n)
+c
+	k0 = n/2
+	do k=1,n
+	  k0 = k0 + 1
+	  if(k0.gt.n)k0 = k0 - n
+	  npnts = npnts + 1
+	  if(npnts.gt.MAXPNT)call bug('f',
+     *		'Buffer overflow: Too many points to plot')
+	  xp(npnts) = x(k)
+	  yp(npnts) = rbuf(k0)
+	enddo
+c
+	end
+c************************************************************************
+	subroutine BufAcc(doflag,doall,preambl,inttime,data,flags,nread)
 c
 	implicit none
 	integer nread
 	double precision preambl(4)
 	real inttime
 	complex data(nread)
-	logical flags(nread),doflag
+	logical flags(nread),doflag,doall
 c
 c  This accumulates the visibility data. The accumulated data is left
 c  in common.
@@ -618,6 +719,17 @@ c------------------------------------------------------------------------
 	include 'uvspec.h'
 	integer i,i1,i2,p,bl,pol
 	real t
+	logical ok
+c
+c  Does this spectrum contain some good data.
+c
+	ok = doall
+	if(.not.ok)then
+	  do i=1,nread
+	    ok = ok.or.(flags(i).neqv.doflag)
+	  enddo
+	endif
+	if(.not.ok)return
 c
 c  Determine the baseline number.
 c
@@ -677,8 +789,7 @@ c  Copy across the new data.
 c
 	  p = pnt(p,bl) - 1
 	  do i=1,nread
-	    if( (doflag.and..not.flags(i)) .or. 
-     *          (.not.doflag.and.flags(i)) )then
+	    if(doall.or.(doflag.neqv.flags(i)))then
 	      buf(i+p) = data(i)
 	      t = abs(data(i))
               bufr(i+p) = t
@@ -700,8 +811,7 @@ c
 	  nchan(p,bl) = nread
 	  p = pnt(p,bl) - 1
 	  do i=1,nread
-	    if( (doflag.and..not.flags(i)) .or. 
-     *          (.not.doflag.and.flags(i)) )then
+	    if(doall.or.(doflag.neqv.flags(i)))then
 	      t = abs(data(i))
 	      buf(i+p) = buf(i+p) + data(i)
               bufr(i+p) = bufr(i+p) + t
@@ -764,7 +874,7 @@ c    npnts
 c  Output:
 c    range
 c------------------------------------------------------------------------
-	double precision dmax,dmin,delta,maxv
+	double precision dmax,dmin
 	integer i
 c
 	dmax = data(1)
@@ -774,12 +884,8 @@ c
 	  dmin = min(data(i),dmin)
 	enddo
 c
-	delta = 0.05*(dmax - dmin)
-	maxv = max(abs(dmax),abs(dmin))
-	if(delta.le.1e-4*maxv) delta = 0.01*maxv
-	if(delta.eq.0) delta = 1
-	range(1) = dmin - delta
-	range(2) = dmax + delta
+	call pgrnge(real(dmin),real(dmax),range(1),range(2))
+c
 	end
 c************************************************************************
 	subroutine SetAxisR(data,npnts,range)
@@ -828,23 +934,19 @@ c
 c
 c  Draw a plot
 c------------------------------------------------------------------------
+	integer NCOL
+	parameter(NCOL=12)
 	integer hr,mins,sec,b1,b2,l,i,j,xl,yl,symbol,lp,lt
 	character title*64,baseline*12,tau*16,line*80
 	character pollab*32
 	double precision T0
 	real yranged(2)
 c
-	integer NCOL
-	parameter(NCOL=12)
-	integer cols(NCOL)
-	save cols
-c
 c  Externals.
 c
 	integer len1
 	character itoaf*4,PolsC2P*2
 c
-	data cols/1,7,2,5,3,4,6,8,9,10,11,12/
 c
         symbol = 17
         if (dodots) symbol = 1
@@ -860,7 +962,7 @@ c
 c
 	call pgbox('BCNST',0.,0.,'BCNST',0.,0.)
 	do i=1,nplts
-	  call pgsci(cols(mod(i-1,NCOL)+1))
+	  call pgsci(mod(i-1,NCOL)+1)
 	  if(dopoint)then
 	    call pgpt(plot(i+1)-plot(i),xp(plot(i)),yp(plot(i)),symbol)
 	  else
