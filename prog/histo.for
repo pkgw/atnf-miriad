@@ -32,9 +32,6 @@ c    10apr92 nebk  Add flux density to output
 c     1may92 rjs   Increase maxruns. Various trivial other mods.
 c     2mar93 rjs   Use maxnax.h.
 c    19nov93 rjs   Better summary of flux or sum.
-c    31jan96 nebk  More grace when no valid pixels in region.  
-c    08oct96 nebk  Make accumulation sums double precision
-c    28feb97 nebk  Add object to output
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
@@ -42,18 +39,16 @@ c------------------------------------------------------------------------
 	character version*(*)
 	parameter(nbindef=16,nbinmax=40,maxboxes=2048)
 	parameter(maxruns=80000)
-	parameter(version = 'version 08-Oct-96' )
+	parameter(version = 'version 1.0 19-Nov-93' )
 c
-	character file*64,asterisk*30,line*72,coord*64,bunit*32,
-     +   object*32
+	character file*40,asterisk*30,line*72,coord*64,bunit*32
 	integer nsize(MAXNAX),plane(MAXNAX),maxv(MAXNAX),minv(MAXNAX)
 	integer blc(MAXNAX),trc(MAXNAX)
 	integer i,j,k,under,over,bin(nbinmax),maxbin
 	integer naxis,indx,lun,npoints,length,nbin
 	integer boxes(maxboxes),runs(3,maxruns),nruns
-	real dat(maxdim),rmax,rmin,blo,bhi,x,xinc,r
+	real dat(maxdim),rmax,rmin,sum,sum2,av,rms,blo,bhi,x,xinc,r
 	real bscale,bmaj,bmin,barea,cdelt1,cdelt2
-        double precision sum,sum2,av,rms
 	logical first, done, newmin, newmax, norange
 c
 c  Externals.
@@ -81,8 +76,6 @@ c
 	call rdhdi(lun,'naxis',naxis,0)
 	naxis = min(naxis,MAXNAX)
 	if(nsize(1).gt.maxdim)call bug('f','Input file too big for me')
-        call rdhda(lun,'object',object,' ')
-
 c
 c  Determine the min and max value, if needed.
 c
@@ -181,12 +174,8 @@ c
 c
 c  Determine average, rms etc.
 c
-        if (npoints.gt.0) then
-  	  av = sum/npoints
-  	  rms = sqrt(abs(sum2/npoints-av*av))
-        else
-          call bug ('f', 'No valid pixels in selected region')
-        end if
+	av = sum/npoints
+	rms = sqrt(abs(sum2/npoints-av*av))
 c
         call rdhdr(lun,'bmaj',bmaj,0.0)
         call rdhdr(lun,'bmin',bmin,0.0)
@@ -197,11 +186,6 @@ c
         if (cdelt1*cdelt2.ne.0.0) 
      *    barea = 1.1331 * bmaj * bmin / abs(cdelt1*cdelt2)
 c
-        if (object.ne.' ') then
-          line = 'Object  '//object
-          call output (line)
-        end if
-
         if (barea.gt.0.0 .and. bunit.eq.'JY/BEAM') then
           write(line,100) av,rms,sum/barea
 	else if (bunit.eq.'JY/PIXEL') then
