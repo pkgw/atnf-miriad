@@ -25,22 +25,25 @@ c	Iterating stops if the maximum falls below this level. The
 c	default is 0.
 c@ clip
 c	This sets the relative clip level. Values are typically 0.75 to 0.9.
-c	The default is 0.9.
+c	The default is conservative and image dependent.
 c@ region
-c	The standard region of interest keyword. See the help on "region" for
-c	more information. The default is the entire image.
+c	The standard region of interest keyword. See `help region' for more
+c	information. The default is the entire image.
 c@ options
-c	Extra processing options. There is just one of these at the moment.
-c	  positive   Constrain the deconvolved image to be positive valued.
+c	Task enrichment parameters. Several can be given, separated by
+c	commas. Minimum match is used. Possible values are:
+c	  asym       The beam for at least one pointing is asymmetric. By
+c	             default MOSSDI assumes the beam has 180 degree rotation
+c	             symmetry, which is the norm for beams in radio-astronomy.
+c	  pad        Double the beam size by padding it with zeros. This
+c	             will give better stability if you did not use the
+c	             `double' option in INVERT.
 c--
 c  History:
 c    rjs 31oct94 - Original version.
-c    rjs  6feb95 - Copy mosaic table to output component table.
-c    rjs 27feb97 - Fix glaring bug in the default value for "clip".
-c    rjs 28feb97 - Last day of summer. Add options=positive.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='MosSDI: version 1.0 28-Feb-97')
+	parameter(version='MosSDI: version 1.0 31-Oct-94')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
@@ -48,15 +51,17 @@ c------------------------------------------------------------------------
 	parameter(MAXRUN=3*maxdim,MAXBOXES=1024)
 c
 	character MapNam*64,BeamNam*64,ModelNam*64,OutNam*64,line*64
-	integer Boxes(MAXBOXES),Run(3,MAXRUN),nRun,blc(3),trc(3),nAlloc
+	character flags*4
+	integer Boxes(MAXBOXES),Run(3,MAXRUN),nRun,blc(3),trc(3),maxMap
 	integer nPoint
 	integer lMap,lBeam,lModel,lOut
 	integer i,k,imin,imax,jmin,jmax,kmin,kmax,xmin,xmax,ymin,ymax
 	integer naxis,nMap(3),nbeam(3),nout(MAXNAX),nModel(3)
-	integer pStep,pStepR,pRes,pEst,pWt
+	integer pStep,pStepR,pRes,pEst
 	integer maxniter,niter,ncomp
-	logical more,dopos
-	real dmin,dmax,drms,cutoff,clip,gain,flux
+	logical more
+	real dmin,dmax,drms,cutoff,clip,gain
+	logical asym,pad
 c
 c  Externals.
 c
@@ -70,18 +75,19 @@ c
 	call keya('beam',BeamNam,' ')
 	call keya('model',ModelNam,' ')
 	call keya('out',OutNam,' ')
-	if(MapNam.eq.' '.or.BeamNam.eq.' '.or.OutNam.eq.' ')
-     *	  call bug('f','A file name was missing from the parameters')
 	call keyi('niters',maxniter,100)
-	if(maxniter.lt.0)call bug('f','NITERS has bad value')
 	call keyr('cutoff',cutoff,0.0)
 	call keyr('gain',gain,0.1)
-	if(gain.le.0.or.gain.gt.1)call bug('f','Invalid gain value')
-	call keyr('clip',clip,0.9)
-	if(clip.le.0)call bug('f','Invalid clip value')
+	call keyr('clip',clip,0.0)
 	call BoxInput('region',MapNam,Boxes,MaxBoxes)
-	call GetOpt(dopos)
+	call GetOpt(asym,pad)
 	call keyfin
+c
+c  Check everything makes sense.
+c
+	if(maxniter.lt.0)call bug('f','NITERS has bad value')
+	if(MapNam.eq.' '.or.BeamNam.eq.' '.or.OutNam.eq.' ')
+     *	  call bug('f','A file name was missing from the parameters')
 c
 c  Open the input map.
 c
@@ -108,7 +114,11 @@ c
 c
 c  Allocate arrays to hold everything.
 c
-	nAlloc = 0
+	MaxMap = nOut(1)*nOut(2)
+	call MemAlloc(pStep, MaxMap,'r')
+	call MemAlloc(pStepR,MaxMap,'r')
+	call MemAlloc(pEst,  MaxMap,'r')
+	call MemAlloc(pRes,  MaxMap,'r')
 c
 c  Open the model if needed, and check that is is the same size as the
 c  output.
@@ -125,8 +135,12 @@ c
 c
 c  Initialise the convolution routines.
 c
+	call output('Initialising the convolutioner ...')
 	call xyopen(lBeam,BeamNam,'old',3,nBeam)
-	call mcInitF(lBeam)
+	flags = ' '
+	if(.not.asym) flags(1:1) = 's'
+	if(pad)       flags(2:2) = 'e'
+	call mosCnvlI(lBeam,flags)
 c
 c  Loop.
 c
@@ -139,69 +153,43 @@ c
 c
 	  call BoxRuns(1,k,' ',boxes,Run,MaxRun,nRun,
      *					xmin,xmax,ymin,ymax)
-	  call BoxCount(Run,nRun,nPoint)
-c
-c  Allocate the memory, if needed.
-c
-	  if(nPoint.gt.0)then
-	    if(nPoint.gt.nAlloc)then
-	      if(nAlloc.gt.0)then
-		call memFree(pStep, nAlloc,'r')
-		call memFree(pStepR,nAlloc,'r')
-		call memFree(pEst,  nAlloc,'r')
-		call memFree(pRes,  nAlloc,'r')
-		call memFree(pWt,   nAlloc,'r')
-	      endif
-	      nAlloc = nPoint
-	      call memAlloc(pStep, nAlloc,'r')
-	      call memAlloc(pStepR,nAlloc,'r')
-	      call memAlloc(pEst,  nAlloc,'r')
-	      call memAlloc(pRes,  nAlloc,'r')
-	      call memAlloc(pWt,   nAlloc,'r')
-	    endif
+	  call mosCnvlS(lMap,k,Run,nRun)
 c
 c  Get the Map.
 c
-	    call mcPlaneR(lMap,k,Run,nRun,nPoint)
-	    call xysetpl(lMap,1,k)
-	    call GetPlane(lMap,Run,nRun,0,0,nMap(1),nMap(2),
-     *				memr(pRes),nAlloc,nPoint)
-	    call mcSigma2(memr(pWt),nPoint,.false.)
+	  call xysetpl(lMap,1,k)
+	  call GetPlane(lMap,Run,nRun,0,0,nMap(1),nMap(2),
+     *				memr(pRes),MaxMap,nPoint)
 c
 c  Get the Estimate and Residual. Also get information about the
 c  current situation.
 c
-	    if(ModelNam.eq.' ')then
-	      call Zero(nPoint,memr(pEst))
-	    else
-	      call xysetpl(lModel,1,k-kmin+1)
-	      call GetPlane(lModel,Run,nRun,1-imin,1-jmin,
-     *			nModel(1),nModel(2),memr(pEst),nAlloc,nPoint)
-	      call Diff(memr(pEst),memr(pRes),memr(pStep),nPoint,
-     *							     Run,nRun)
-	      call swap(pRes,pStep)
-	    endif
+	  if(ModelNam.eq.' ')then
+	    call Zero(nPoint,memr(pEst))
+	  else
+	    call xysetpl(lModel,1,k-kmin+1)
+	    call GetPlane(lModel,Run,nRun,1-imin,1-jmin,
+     *			nModel(1),nModel(2),memr(pEst),MaxMap,nPoint)
+	    call Diff(memr(pEst),memr(pRes),memr(pStep),nPoint,Run,nRun)
+	    call swap(pRes,pStep)
+	  endif
 c
 c  Do the real work.
 c
-	    niter = 0
-	    more = .true.
-	    dowhile(more)
-	      call Steer(memr(pEst),memr(pRes),memr(pStep),memr(pStepR),
-     *	        memr(pWt),nPoint,Run,nRun,
-     *	        gain,clip,dopos,dmin,dmax,drms,flux,ncomp)
-	      niter = niter + ncomp
-	      line = 'Steer Iterations: '//itoaf(niter)
-	      call output(line)
-	      write(line,'(a,1p3e12.3)')' Residual min,max,rms: ',
+	  niter = 0
+	  more = .true.
+	  dowhile(more)
+	    call Steer(memr(pEst),memr(pRes),memr(pStep),memr(pStepR),
+     *	      nPoint,Run,nRun,gain,clip,dmin,dmax,drms,ncomp)
+	    line = ' Components subtracted: '//itoaf(ncomp)
+	    call output(line)
+	    write(line,'(a,1p3e12.3)')' Residual min,max,rms: ',
      *					dmin,dmax,drms
-	      call output(line)
-	      write(line,'(a,1pe12.3)') ' Total CLEANed flux: ',Flux
-	      call output(line)
-	      more = niter.lt.maxniter.and.
+	    call output(line)
+	    niter = niter + ncomp
+	    more = niter.lt.maxniter.and.
      *		   max(abs(dmax),abs(dmin)).gt.cutoff
-	    enddo
-	  endif
+	  enddo
 c
 c  Write out this plane.
 c
@@ -214,16 +202,6 @@ c  Make the header of the output.
 c
 	call Header(lMap,lOut,blc,trc,version,niter)
 c
-c  Free up memory.
-c
-	if(nAlloc.gt.0)then
-	  call memFree(pStep, nAlloc,'r')
-	  call memFree(pStepR,nAlloc,'r')
-	  call memFree(pEst,  nAlloc,'r')
-	  call memFree(pRes,  nAlloc,'r')
-	  call memFree(pWt,   nAlloc,'r')
-	endif
-c
 c  Close up the files. Ready to go home.
 c
 	call xyclose(lMap)
@@ -235,15 +213,36 @@ c  Thats all folks.
 c
 	end
 c************************************************************************
-	subroutine Steer(Est,Res,Step,StepR,Wt,nPoint,Run,nRun,
-     *	  gain,clip,dopos,dmin,dmax,drms,flux,ncomp)
+	subroutine GetOpt(asym,pad)
+c
+	implicit none
+	logical asym,pad
+c
+c  Get extra processing options.
+c
+c  Output:
+c    asym	Beam is asymmetric.
+c    pad	Double beam size.
+c------------------------------------------------------------------------
+	integer NOPT
+	parameter(NOPT=2)
+	logical present(NOPT)
+	character opts(NOPT)*8
+	data opts/'asym    ','pad     '/
+c
+	call options('options',opts,present,NOPT)
+	asym = present(1)
+	pad  = present(2)
+c
+	end
+c************************************************************************
+	subroutine Steer(Est,Res,Step,StepR,nPoint,Run,nRun,
+     *	  gain,clip,dmin,dmax,drms,ncomp)
 c
 	implicit none
 	integer nPoint,nRun,Run(3,nRun),ncomp
-	real gain,clip,dmin,dmax,drms,flux
+	real gain,clip,dmin,dmax,drms
 	real Est(nPoint),Res(nPoint),Step(nPoint),StepR(nPoint)
-	real Wt(nPoint)
-	logical dopos
 c
 c  Perform a Steer iteration.
 c
@@ -252,8 +251,6 @@ c    nPoint	Number of points in the input.
 c    Run,nRun	This describes the region-of-interest.
 c    gain	CLEAN loop gain.
 c    clip	Steer clip level.
-c    Wt		The array of 1/Sigma**2 -- which is used as a weight
-c		when determining the maximum residual.
 c  Input/Output:
 c    Est	The current deconvolved image estimate.
 c    Res	The current residuals.
@@ -265,32 +262,23 @@ c    dmin,dmax,drms Min, max and rms residuals after this iteration.
 c    ncomp	Number of components subtracted off this time.
 c------------------------------------------------------------------------
 	integer i
-	real g,thresh
-	logical ok
-	double precision SS,RS,RR
+	real thresh,g
+	double precision RR,RS
+c
+c  Externals.
+c
+	integer isamax
 c
 c  Determine the threshold.
 c
-	thresh = 0
-	if(dopos)then
-	  do i=1,nPoint
-	    if(Est(i).gt.(-gain*Res(i)))
-     *	      thresh = max(thresh,Res(i)*Res(i)*Wt(i))
-	  enddo
-	else
-	  do i=1,nPoint
-	    thresh = max(thresh,Res(i)*Res(i)*Wt(i))
-	  enddo
-	endif
-	thresh = clip * clip * thresh
+	i = isamax(nPoint,Res,1)
+	thresh = clip * abs(Res(i))
 c
 c  Get the step to try.
 c
 	ncomp = 0
 	do i=1,nPoint
-	  ok = Res(i)*Res(i)*Wt(i).gt.thresh
-	  if(dopos.and.ok) ok = Est(i).gt.(-gain*Res(i))
-	  if(ok)then
+	  if(abs(Res(i)).gt.thresh)then
 	    Step(i) = Res(i)
 	    ncomp = ncomp + 1
 	  else
@@ -298,22 +286,23 @@ c
 	  endif
 	enddo
 c
-	if(ncomp.eq.0)call bug('f','Could not find components')
-c
 c  Convolve this step.
 c
-	call mcCnvlR(Step,Run,nRun,StepR)
+	call mosCnvlR(Step,Run,nRun,StepR)
 c
 c  Now determine the amount of this step to subtract which would
 c  minimise the residuals.
 c
-	SS = 0
+	RR = 0
 	RS = 0
+	thresh = 1e-4*thresh
 	do i=1,nPoint
-	  SS = SS + Wt(i) * StepR(i) * StepR(i)
-	  RS = RS + Wt(i) * Res(i)   * StepR(i)
+	  if(abs(StepR(i)).gt.thresh)then
+	    RR = RR + Res(i)*Res(i)
+	    RS = RS + Res(i)*StepR(i)
+	  endif
 	enddo
-	g = min(1., real(RS / SS) )
+	g = RR / RS
 c
 c  Subtract off a fraction of this, and work out the new statistics.
 c
@@ -321,14 +310,12 @@ c
 	dmin = Res(1) - g*StepR(1)
 	dmax = dmin
 	RR = 0
-	flux = 0
 	do i=1,nPoint
 	  Res(i) = Res(i) - g * StepR(i)
 	  dmin = min(dmin,Res(i))
 	  dmax = max(dmax,Res(i))
 	  RR = RR + Res(i)*Res(i)
 	  Est(i) = Est(i) + g * Step(i)
-	  flux = flux + Est(i)
 	enddo
 c
 	drms = sqrt(RR/nPoint)
@@ -345,7 +332,7 @@ c  Determine the residuals for this model.
 c------------------------------------------------------------------------
 	integer i
 c
-	call mcCnvlR(Est,Run,nRun,Res)
+	call mosCnvlR(Est,Run,nRun,Res)
 c
 	do i=1,nPoint
 	  Res(i) = Map(i) - Res(i)
@@ -401,29 +388,27 @@ c    trc	Trc of the bounding region.
 c    niter	The maximum number of iterations performed.
 c
 c------------------------------------------------------------------------
-	include 'maxnax.h'
 	integer i,lblc,ltrc
 	real crpix1,crpix2,crpix3
-	character line*72,txtblc*32,txttrc*32,num*2
+	character line*72,txtblc*32,txttrc*32
 	integer nkeys
-	parameter(nkeys=15)
+	parameter(nkeys=23)
 	character keyw(nkeys)*8
 c
 c  Externals.
 c
 	character itoaf*8
 c
-	data keyw/   'obstime ','epoch   ','history ','lstart  ',
+	data keyw/   'cdelt1  ','cdelt2  ','cdelt3  ','crval1  ',
+     *	  'crval2  ','crval3  ','ctype1  ','ctype2  ','ctype3  ',
+     *    'obstime ','epoch   ','history ','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ','pbfwhm  ',
-     *	  'observer','telescop','restfreq','vobs    ','btype   ',
-     *	  'mostable'/
+     *	  'observer','telescop','restfreq','vobs    ','btype   '/
 c
 c  Fill in some parameters that will have changed between the input
 c  and output.
 c
 	call wrhda(lOut,'bunit','JY/PIXEL')
-	call wrhdi(lOut,'niters',Niter)
-c
 	call rdhdr(lMap,'crpix1',crpix1,1.)
 	call rdhdr(lMap,'crpix2',crpix2,1.)
 	call rdhdr(lMap,'crpix3',crpix3,1.)
@@ -433,14 +418,7 @@ c
 	call wrhdr(lOut,'crpix1',crpix1)
 	call wrhdr(lOut,'crpix2',crpix2)
 	call wrhdr(lOut,'crpix3',crpix3)
-c
-	do i=1,MAXNAX
-	  num = itoaf(i)
-	  if(i.gt.3)call hdcopy(lMap,lOut,'crpix'//num)
-	  call hdcopy(lMap,lOut,'cdelt'//num)
-	  call hdcopy(lMap,lOut,'crval'//num)
-	  call hdcopy(lMap,lOut,'ctype'//num)
-	enddo
+	call wrhdi(lOut,'niters',Niter)
 c
 c  Copy all the other keywords across, which have not changed and add history
 c
@@ -466,22 +444,4 @@ c
 	call hiswrite(lOut,'MOSSDI: Total Iterations = '//itoaf(Niter))
 	call hisclose(lOut)
 c
-	end
-c************************************************************************
-	subroutine GetOpt(dopos)
-c
-	implicit none
-	logical dopos
-c
-c  Output:
-c    dopos	Constrain the model to be positive valued.
-c------------------------------------------------------------------------
-	integer NOPTS
-	parameter(NOPTS=1)
-	logical present(NOPTS)
-	character opts(NOPTS)*8
-	data opts/'positive'/
-c
-	call options('options',opts,present,NOPTS)
-	dopos = present(1)
 	end
