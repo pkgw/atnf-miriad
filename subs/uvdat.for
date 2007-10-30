@@ -71,10 +71,7 @@ c    rjs  28may96 Initialise "line" variable to a blank!
 c    rjs  31jul96 Support QQ and UU.
 c    rjs  16aug96 Change phasing convention for circularly polarised feeds,
 c		  and add QQ and UU support for circulars.
-c    rjs  06jan98 Change uvgetvrr to uvrdvrr when getting chi.
-c    rjs  06jan98 Change in uvlkcorr to sidestep a compiler bug on IRIX machines.
-c    rjs  26mar98 Comment change only.
-c    rjs   6sep99 Added "lflag" parameter to "line" keyword.
+c    rjs  06jan97 Change uvgetvrr to uvrdvrr when getting chi.
 c
 c  User-Callable Routines:
 c    uvDatInp(key,flags)
@@ -91,7 +88,10 @@ c    uvDatPrb(object,dval)
 c
 c  Bugs and Shortcomings:
 c    uvDatWRd does not return processed polarisations.
-c    Only circular and linear polarisation. Only uniform parallactic angle.
+c    Only circular and linear polarisation.
+c    There is a inconsistency between the leakage correction of circular
+c     polarisations and the conversion to Stokes. Leakage correction is
+c     NOT correct.
 c************************************************************************
 c* uvDatInp -- Get command line uv data parameters.
 c& rjs
@@ -207,7 +207,7 @@ c  Determine the input linetype.
 c
 	line = ' '
 	if(dodata)then
-	  call keygline(line,nchan,lstart,lwidth,lstep,lflag)
+	  call keyline(line,nchan,lstart,lwidth,lstep)
 	  if(line.eq.' '.and.index(flags,'1').gt.0)nchan = 1
 	endif
 c
@@ -326,10 +326,8 @@ c
 	    endif
 	  endif
 c
-	  if(dodata)then
- 	    call uvset(tno,'data',line,nchan,lstart,lwidth,lstep)
-	    call uvset(tno,'gflag',' ',nint(lflag),0.0,0.0,0.0)
-	  endif
+	  if(dodata)
+     * 	    call uvset(tno,'data',line,nchan,lstart,lwidth,lstep)
 	  if(doref)
      *	    call uvset(tno,'reference',ref,1,rstart,rwidth,rwidth)
 	  if(dowave)
@@ -1386,8 +1384,7 @@ c    type	The polarisation type corresponding to each coefficient.
 c    coeffs	The value of the coefficient.
 c------------------------------------------------------------------------
 	integer i1,i2,n,i,j
-	complex G(4),t,ta,tb
-	real tr
+	complex G(4),t
 	integer indx(4,4),cf1(4),cf2(4),off
 	data indx/1,4,3,2, 2,3,4,1, 3,2,1,4, 4,1,2,3/
 	data cf1 /1,2,1,2/
@@ -1421,12 +1418,8 @@ c
      *	     + coeffs(i) * Leaks(cf1(j),i1) * conjg(Leaks(cf2(j),i2))
 	enddo
 c
-	ta = (1.,0.) - Leaks(1,i1)*Leaks(2,i1)
-	tb = (1.,0.) - Leaks(1,i2)*Leaks(2,i2)
-	t = ta * conjg(tb)
-	tr = real(t)*real(t) + aimag(t)*aimag(t)
-	t = conjg(t)/tr
-c
+	t =  1. / ((1 - Leaks(1,i1)*Leaks(2,i1)) *
+     *	      conjg(1 - Leaks(1,i2)*Leaks(2,i2)) )
 	ncoeff = 4
 	do i=1,4
 	  coeffs(i) = t*G(i)
