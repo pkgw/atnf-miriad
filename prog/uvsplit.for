@@ -25,20 +25,7 @@ c@ options
 c	This gives extra processing options. Several options can be given,
 c	each separated by commas. They may be abbreivated to the minimum
 c	needed to avoid ambiguity.
-c	  nocopy    By default, uvsplit copies any calibration tables
-c	            present in the input to the output. The nocopy
-c	            option suppresses this.
-c	  mosaic    Typically this option is used when splitting datasets
-c	            observed in mosaic mode. UVSPLIT attempts to place all
-c	            pointing centres of the source of interest into the one
-c	            output dataset. This requires that the field names of
-c	            the different pointings be composed of two parts,
-c	            separated by an underscore, viz
-c	                  a_b
-c	            Where "a" is common to all field names (typically
-c	            a source) and "b" is a field-specific name (typically
-c	            a field number). For example field 123 of a mosaic
-c	            experiment of the LMC might be called "lmc_123"
+c
 c	The following three options determine which data-set characteristics
 c	result in UVSPLIT generating different output data-sets.
 c	  nosource  Do not produce new data-sets based on source name. That
@@ -51,36 +38,28 @@ c	            frequency switches.
 c	  nowindow  Do not generate a separate output data-set for each
 c	            spectral window. The default is to create a new
 c	            output for each spectral window.
+c	  nocopy    By default, uvsplit copies any calibration tables
+c	            present in the input to the output. The nocopy
+c	            option suppresses this.
 c--
 c  History:
 c    rjs  13oct93 Original version.
-c    rjs  29aug94 W-axis change.
-c    rjs   6sep94 Use MAXWIN in maxdim.h. Better treatment of xyphase.
-c    rjs  25jan95 Added options=mosaic.
-c    rjs  21feb95 Get select=win to work.
-c    rjs  22sep95 Re-added support for pulsar binning.
-c    rjs  05oct95 Handle xyphase and systemp being temporarily
-c		  missing.
-c    rjs  29may96 Added nbin to uvvariables.
-c    rjs  05aug96 Increased maxfiles.
-c    rjs  23jul97 Added pbtype.
-c    rjs  16aug04 Added various variables to the list to be copied across.
+c
 c  Bugs:
-c   Perfect?
+c    * Not written yet.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer MAXSELS
 	parameter(MAXSELS=256)
 	character version*(*)
-	parameter(version='UvSplit: version 1.0 16-Aug-04')
+	parameter(version='UvSplit: version 1.0 13-Oct-93')
 c
 	character vis*64,dtype*1
 	integer tvis
 	real sels(MAXSELS)
-	integer length,i
+	integer length
 	logical dosource,dofreq,dowin,updated,dowide,docomp,docopy
-	logical mosaic
-	logical more,first,winsel,selwins(MAXWIN)
+	logical more,first
 c
 c  Externals.
 c
@@ -90,7 +69,7 @@ c  Get the input parameters.
 c
 	call output(version)
 	call keyini
-	call GetOpt(dosource,dofreq,dowin,docopy,mosaic)
+	call GetOpt(dosource,dofreq,dowin,docopy)
 	call keyf('vis',vis,' ')
 	call SelInput('select',sels,MAXSELS)
 	call keyfin
@@ -108,19 +87,8 @@ c
      *	  call bug('f','UvSplit does not support select=vis')
 	if(SelProbe(sels,'polarization?',0.d0))
      *	  call bug('f','UvSplit does not support select=pol')
-	winsel = SelProbe(sels,'window?',0.d0)
-	if(winsel.and..not.dowin)call bug('f',
-     *	  'UvSplit does not support select=win with options=nowin')
-c
-c  Determine the selected windows.
-c
-	do i=1,MAXWIN
-	  if(winsel)then
-	    selwins(i) = SelProbe(sels,'window',dble(i))
-	  else
-	    selwins(i) = .true.
-	  endif
-	enddo
+	if(SelProbe(sels,'window?',0.d0))
+     *	  call bug('f','UvSplit does not support select=win')
 c
 c  Loop the loop.
 c
@@ -131,20 +99,17 @@ c
 c  Open the input, and determine some things about it.
 c
 	  call uvopen(tVis,vis,'old')
-	  call uvset(tVis,'preamble','uvw/time/baseline',0,0.,0.,0.)
-	  call uvset(tVis,'selection','window',0,0.,0.,0.)
 	  call SelApply(tVis,sels,.true.)
 	  if(first)then
 	    call uvprobvr(tVis,'corr',dtype,length,updated)
 	    dowide = dtype.eq.' '
 	    docomp = dtype.eq.'j'
-	    call FileSup(tVis,dowide,docomp,dowin,
-     *				selwins,MAXWIN,version)
+	    call FileSup(tVis,dowide,docomp,dowin,version)
 	  endif
 c
 c  Read through the file.
 c
-	  call Process(tVis,dosource,dofreq,dowin,dowide,mosaic)
+	  call Process(tVis,dosource,dofreq,dowin,dowide)
 c
 	  first = .false.
 	  call FileFin(docopy,more)
@@ -153,11 +118,11 @@ c
 c
 	end
 c************************************************************************
-	subroutine Process(tVis,dosource,dofreq,dowin,dowide,mosaic)
+	subroutine Process(tVis,dosource,dofreq,dowin,dowide)
 c
 	implicit none
 	integer tVis
-	logical dosource,dofreq,dowin,dowide,mosaic
+	logical dosource,dofreq,dowin,dowide
 c
 c  Do a pass through the data file.
 c
@@ -167,7 +132,6 @@ c    dosource
 c    dofreq
 c    dowin
 c    dowide
-c    mosaic
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer MAXINDX
@@ -175,7 +139,7 @@ c------------------------------------------------------------------------
 c
 	complex data(MAXCHAN)
 	logical flags(MAXCHAN),skip
-	double precision preamble(5)
+	double precision preamble(4)
 	integer nchan,nindx,vCheck,indx(MAXINDX),nschan(MAXINDX)
 	integer i,offset
 c
@@ -197,7 +161,7 @@ c
 c  Update the indices if necessary.
 c
 	  if(uvVarUpd(vCheck))then
-	    call GetIndx(tVis,dosource,dofreq,dowin,dowide,mosaic,
+	    call GetIndx(tVis,dosource,dofreq,dowin,dowide,
      *	      indx,nschan,nIndx,MAXINDX)
 	    skip = .true.
 	    do i=1,nIndx
@@ -225,22 +189,22 @@ c
 c
 	end
 c************************************************************************
-	subroutine GetIndx(tVis,dosource,dofreq,dowin,dowide,mosaic,
+	subroutine GetIndx(tVis,dosource,dofreq,dowin,dowide,
      *	  Indx,nschan,nIndx,MAXINDX)
 c
 	implicit none
 	integer tVis,nIndx,MAXINDX,nschan(MAXINDX),Indx(MAXINDX)
-	logical dosource,dofreq,dowin,dowide,mosaic
+	logical dosource,dofreq,dowin,dowide
 c
 c  Determine the current indices of interest.
 c
 c------------------------------------------------------------------------
-	include 'maxdim.h'
+	integer MAXSPECT
+	parameter(MAXSPECT=16)
 	character base*32,source*32,c*1
 	integer maxi,n,nchan,nwide,length,lenb,i
-	double precision sdf(MAXWIN),sfreq(MAXWIN)
-	real wfreq(MAXWIN)
-	logical discard
+	double precision sdf(MAXSPECT),sfreq(MAXSPECT)
+	real wfreq(MAXSPECT)
 c
 c  Externals.
 c
@@ -249,7 +213,7 @@ c
 c
 c  Initialise.
 c
-	maxi = min(MAXINDX,MAXWIN)
+	maxi = min(MAXINDX,MAXSPECT)
 c
 c  Generate the base name.
 c
@@ -258,12 +222,9 @@ c
 	  call uvrdvra(tVis,'source',source,' ')
 	  length = min(len1(source),len(base))
 	  lenb = 0
-	  discard = .false.
 	  do i=1,length
 	    c = source(i:i)
-	    if(discard.or.(c.eq.'_'.and.mosaic))then
-	      discard = .true.
-	    else if((c.ge.'a'.and.c.le.'z').or.
+	    if((c.ge.'a'.and.c.le.'z').or.
      *	       (c.ge.'A'.and.c.le.'Z').or.
      *	       (c.ge.'0'.and.c.le.'9').or.
      *	       c.eq.'-'.or.c.eq.'+'.or.c.eq.'_'.or.c.eq.'.')then
@@ -387,10 +348,10 @@ c------------------------------------------------------------------------
 c
 	end
 c************************************************************************
-	subroutine GetOpt(dosource,dofreq,dowin,docopy,mosaic)
+	subroutine GetOpt(dosource,dofreq,dowin,docopy)
 c
 	implicit none
-	logical dosource,dofreq,dowin,docopy,mosaic
+	logical dosource,dofreq,dowin,docopy
 c
 c  Determine extra processing options.
 c
@@ -398,48 +359,33 @@ c  Output:
 c    dosource
 c    dofreq
 c    dowin
-c    docopy
-c    mosaic
 c------------------------------------------------------------------------
 	integer NOPTS
-	parameter(NOPTS=5)
+	parameter(NOPTS=4)
 	logical present(NOPTS)
 	character opts(NOPTS)*8
-	data opts/'nosource','nofreq  ','nowindow','nocopy  ',
-     *		  'mosaic  '/
+	data opts/'nosource','nofreq  ','nowindow','nocopy  '/
 c
 	call options('options',opts,present,NOPTS)
 	dosource = .not.present(1)
 	dofreq   = .not.present(2)
 	dowin    = .not.present(3)
 	docopy   = .not.present(4)
-	mosaic   =      present(5)
 c
 	end
 c************************************************************************
-	subroutine FileSup(tVis,tdowide,tdocomp,tdoif,
-     *						wins1,nwins1,tvers)
+	subroutine FileSup(tVis,tdowide,tdocomp,tdoif,tvers)
 c
 	implicit none
-	integer tVis,nwins1
-	logical tdowide,tdocomp,tdoif,wins1(nwins1)
+	integer tVis
+	logical tdowide,tdocomp,tdoif
 	character tvers*(*)
 c
 c  Initialise the File* routines.
 c------------------------------------------------------------------------
 	include 'uvsplit.h'
-	integer i
 c
 	version = 'UVSPLIT: Miriad '//tvers
-c
-c  Copy the record of selected windows.
-c
-	nwins = nwins1
-	if(nwins.gt.MAXWIN)
-     *	  call bug('f','Window selection buffer overflow')
-	do i=1,nwins1
-	  wins(i) = wins1(i)
-	enddo
 c
 	lVis = tVis
 	call rdhdi(lVis,'npol',npol,0)
@@ -455,7 +401,7 @@ c************************************************************************
 c
 	implicit none
 	integer tindx,nchan
-	double precision preamble(5)
+	double precision preamble(4)
 	complex data(nchan)
 	logical flags(nchan)
 c
@@ -510,9 +456,13 @@ c    lOut
 c    nchan
 c    ifno
 c------------------------------------------------------------------------
+	integer MAXSPECT
+	parameter(MAXSPECT=16)
 	include 'maxdim.h'
-	integer nwide
-	real wfreq(MAXWIN),wwidth(MAXWIN)
+	integer nwide,off,nsystemp,nants
+	logical usyst
+	character type*1
+	real wfreq(MAXSPECT),wwidth(MAXSPECT),wsystemp(MAXANT*MAXSPECT)
 c
 	if(nchan.ne.1)call bug('f','Inconsistency!!')
 c
@@ -524,9 +474,22 @@ c
 	call uvputvrr(lOut,'wfreq',wfreq(ifno),1)
 	call uvputvrr(lOut,'wwidth',wwidth(ifno),1)
 c
-c  Now the wide-band system temperature.
+c  Now for (*&%** system temperatures -- the more troublesome one.
 c
-	call UpdVar(lVis,lOut,ifno,nwide,'wsystemp')
+	call uvprobvr(lVis,'wsystemp',type,nsystemp,usyst)
+	usyst = type.eq.'r'.and.nsystemp.lt.MAXANT*MAXSPECT
+	if(usyst)then
+	  call uvgetvrr(lVis,'wsystemp',wsystemp,nsystemp)
+	  call uvrdvri(lVis,'nants',nants,0)
+	  if(nsystemp.lt.nants*nwide)then
+	    nsystemp = min(nsystemp,nants)
+	    off = 1
+	  else
+	    nsystemp = nants
+	    off = (ifno-1)*nants + 1
+	  endif
+	  call uvputvrr(lOut,'wsystemp',wsystemp(off),nsystemp)
+	endif
 c
 	end
 c************************************************************************
@@ -543,10 +506,15 @@ c    lOut
 c    nchan
 c    ifno
 c------------------------------------------------------------------------
+	integer MAXSPECT
+	parameter(MAXSPECT=16)
 	include 'maxdim.h'
-	integer nspect
-	double precision sdf(MAXWIN),sfreq(MAXWIN)
-	double precision restfreq(MAXWIN)
+	integer nspect,off,nsystemp,nants
+	logical usyst
+	character type*1
+	double precision sdf(MAXSPECT),sfreq(MAXSPECT)
+	double precision restfreq(MAXSPECT)
+	real systemp(MAXANT*MAXSPECT)
 c
 	call uvrdvri(lVis,'nspect',nspect,1)
 	if(ifno.gt.nspect)call bug('f','Something is screwy')
@@ -561,40 +529,21 @@ c
 	call uvputvrd(lOut,'sfreq',sfreq(ifno),1)
 	call uvputvrd(lOut,'restfreq',restfreq(ifno),1)
 c
-c  Update the system temperature and the XY phase.
+c  Now for (*&%** system temperatures -- the more troublesome one.
 c
-	call UpdVar(lVis,lOut,ifno,nspect,'systemp')
-	call UpdVar(lVis,lOut,ifno,nspect,'xyphase')
-c
-	end
-c************************************************************************
-	subroutine UpdVar(lVis,lOut,ifno,nspect,var)
-c
-	implicit none
-	integer lVis,lOut,ifno,nspect
-	character var*(*)
-c
-c  Update a variable which is of dimension (nants,nspect).
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	integer n,nants,off
-	real buf(MAXANT*MAXWIN)
-	logical upd
-	character type*1
-c
-	call uvprobvr(lVis,var,type,n,upd)
-	upd = type.eq.'r'.and.n.le.MAXANT*MAXWIN.and.n.gt.0
-	if(upd)then
-	  call uvgetvrr(lVis,var,buf,n)
+	call uvprobvr(lVis,'systemp',type,nsystemp,usyst)
+	usyst = type.eq.'r'.and.nsystemp.lt.MAXANT*MAXSPECT
+	if(usyst)then
+	  call uvgetvrr(lVis,'systemp',systemp,nsystemp)
 	  call uvrdvri(lVis,'nants',nants,0)
-	  if(n.lt.nants*nspect)then
-	    n = min(n,nants)
+	  if(nsystemp.lt.nants*nspect)then
+	    nsystemp = min(nsystemp,nants)
 	    off = 1
 	  else
-	    n = nants
+	    nsystemp = nants
 	    off = (ifno-1)*nants + 1
 	  endif
-	  call uvputvrr(lOut,var,buf(off),n)
+	  call uvputvrr(lOut,'systemp',systemp(off),nsystemp)
 	endif
 c
 	end
@@ -619,7 +568,6 @@ c
 c  Do we already have this file.
 c
 	tindx = 0
-	if(.not.wins(tifno))return
 	if(nfiles.gt.0)tindx = binsrcha(name,out,nfiles)
 	if(tindx.gt.0)tindx = indx(tindx)
 c
@@ -689,7 +637,7 @@ c------------------------------------------------------------------------
 	character line*64
 c
 	integer NCOPY,NSCHECK,NWCHECK
-	parameter(NCOPY=81,NSCHECK=8,NWCHECK=3)
+	parameter(NCOPY=64,NSCHECK=7,NWCHECK=3)
 	character copy(NCOPY)*8,scheck(NSCHECK)*8,wcheck(NWCHECK)*8
         data copy/    'airtemp ','antdiam ','antpos  ','atten   ',
      *     'axisrms ','chi     ','corbit  ','corbw   ','corfin  ',
@@ -703,14 +651,10 @@ c
      *     'plmin   ','pltb    ','precipmm','ra      ','relhumid',
      *     'source  ','telescop','temp    ','tpower  ','ut      ',
      *     'veldop  ','veltype ','version ','vsource ','winddir ',
-     *     'windmph ','delay0  ','npol    ','pol     ','bin     ',
-     *	   'nbin    ','pbtype  ','xtsys   ','ytsys   ','xsampler',
-     *	   'ysampler','xyamp   ','antaz   ','antel   ','axismax ',
-     *	   'calcode ','name    ','pntra   ','pntdec  ','pressmb ',
-     *	   'project ','wind    '/
+     *     'windmph ','xyphase ','delay0  ','npol    ','pol     '/
 c
 	data SCheck/  'nspect  ','restfreq','ischan  ','nschan  ',
-     *     'sfreq   ','sdf     ','systemp ','xyphase '/
+     *     'sfreq   ','sdf     ','systemp '/
         data WCheck/  'wfreq   ','wwidth  ','wsystemp'/
 c
 c  Open the file, and set the correlation type.
@@ -718,7 +662,6 @@ c
 	line = 'Creating '//name
 	call output(line)
 	call uvopen(lOut,name,'new')
-	call uvset(lOut,'preamble','uvw/time/baseline',0,0.,0.,0.)
 	if(dowide)then
 	  call uvset(lOut,'data','wide',0,0.,0.,0.)
 	else
