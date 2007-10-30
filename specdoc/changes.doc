@@ -1,29 +1,29 @@
-06apr98 rjs	atlod.for -- Increase the max size of an integration.
-21apr98 rjs	fits.for -- Increased max number of antenna configurations.
-20apr98 amh	sfind.for -- Various changes to the log file.
-23apr98 rjs	cgcurs.for -- Increase size of "bunit" variable.
-21apr98 mchw	imfit.for -- more precise Offset position.
-27apr98 rjs	imfit.for -- Merged above two sets of changes.
-01may98 pjt	log.for -- Check that logopen gets called.
-07may98 rjs	atlod.for -- New way of handling jstat.eq.5 returned by rpfitsin.
-07may98 rjs	log.for -- Fix to PJT's change.
-07may98 rjs	cgslice.for -- Increase size of "bunit" variable.
-08may98 rjs	imsad.for -- Do not call logclose unless needed.
-11may98 rjs	fitsio.for -- Change it so that NaNs and Infs in floating
-		point FITS are always recognised as blanked.
-14may98 rjs	atlod.for -- Changes to handle high-time-resolution
-		data.
-14may96 rjs	clfind.for,clstats.for,clplot.for -- New programs from
-		Maryland.
-16may98 nebk    cgrego.for -- COnvert regions to overlays
-18may98 rjs	cgrego.for -- Fortran standardisation.
-18may98 rjs	imspect.for -- Correct velocity axis labelling.
-22may98 rjs	uvgen.for -- Include circular polarization handling.
-22may98	rjs	gpcal.for -- Turn off xyref on early iterations of weakly polarised
-		source.
-
-16jun98 nebk    cgdisp.for -- FIx problem in posdec2 where ocen2 was of 
-                size 2 instead of 3. Was stuffing up in w2wco for ellipses.
-18jun98 nebk    uvplt.for -- Document nofqav option better
+05jan00 rjs	plproc.for,plproc.h -- Planetary subroutines.
+07feb00 rjs	gethd.for -- Added "format" keyword.
+29feb00 rjs	psrplt.for -- mode keyword.
+07feb00 rjs	planets.for -- Print out SysI and SysII for Jupiter
+10mar00 rjs	uvplt.for -- Set maxbase2=91.
+15mar00 rjs	blcal.for -- Change in meaning of options=nopolsol
+21mar00 rjs	fitsio.for,fitsio.h -- Handle FITS vis files with freq before
+		pol axis.
+22mar00 rjs	mc.for -- Protect against convolving up to something larger than
+		MAXDIM.
+22mar00 rjs	gpscal.for -- Relax implicit assumption that XX/YY much stronger
+		than RL/LR.
+28mar00 rjs	uvplt.for -- Correctly handle colour indices when there are more
+		than 12 inputs.
+31mar00	rjs	obspar.for -- Added SEST/
+30mar00 lss,vk	hanning.for -- Adapted from hanning to include boxcar
+05apr00 mchw	velplot.for - specify RA and DEC cuts with a range and increment.
+07apr00 rjs	key.for -- Check for file existence in keyf.
+11apr00 rjs	fits.for - uvout was always writing multi-source files
+		(incorrectly).
+03may00 rjs	atjones.for -- Strip out common subroutine from offpol and offaxis,
+		and support C and X band data.
+03may00 rjs	offpol.for -- Several minor enhancements including support for
+		C and X band.
+03may00 rjs	offaxis.for -- Support for C and X band.
+04may00 rjs	uvplt.for -- Relax requirements for lat/long variables in the
+		header.
  
 See $MIR/changes.txt for a history of earlier changes.
