@@ -1,29 +1,29 @@
-05jan00 rjs	plproc.for,plproc.h -- Planetary subroutines.
-07feb00 rjs	gethd.for -- Added "format" keyword.
-29feb00 rjs	psrplt.for -- mode keyword.
-07feb00 rjs	planets.for -- Print out SysI and SysII for Jupiter
-10mar00 rjs	uvplt.for -- Set maxbase2=91.
-15mar00 rjs	blcal.for -- Change in meaning of options=nopolsol
-21mar00 rjs	fitsio.for,fitsio.h -- Handle FITS vis files with freq before
-		pol axis.
-22mar00 rjs	mc.for -- Protect against convolving up to something larger than
-		MAXDIM.
-22mar00 rjs	gpscal.for -- Relax implicit assumption that XX/YY much stronger
-		than RL/LR.
-28mar00 rjs	uvplt.for -- Correctly handle colour indices when there are more
-		than 12 inputs.
-31mar00	rjs	obspar.for -- Added SEST/
-30mar00 lss,vk	hanning.for -- Adapted from hanning to include boxcar
-05apr00 mchw	velplot.for - specify RA and DEC cuts with a range and increment.
-07apr00 rjs	key.for -- Check for file existence in keyf.
-11apr00 rjs	fits.for - uvout was always writing multi-source files
-		(incorrectly).
-03may00 rjs	atjones.for -- Strip out common subroutine from offpol and offaxis,
-		and support C and X band data.
-03may00 rjs	offpol.for -- Several minor enhancements including support for
-		C and X band.
-03may00 rjs	offaxis.for -- Support for C and X band.
-04may00 rjs	uvplt.for -- Relax requirements for lat/long variables in the
-		header.
+25sep00 rjs	tvclip.for -- Doc change only.
+25sep00 rjs	uvplt.for -- Correct code dealing with uvangle.
+03oct00 rjs	imcomb.for -- Output image can be arbitrarily large.
+04oct00 rjs	fits.for -- Output image can be abitrarily large.
+10oct00 rjs	boxes.for - Fix bungle in the above.
+17oct00 rjs	maths.for -- Added options=unmask
+18oct00 rjs	noise.for -- Setting the seed was not working on "vms-style"
+		machines (e.g. LINUX).
+20oct00 rjs	closure.for -- Print out number of points.
+27oct00 rjs	basant.for,uvio.c,select.for - Generalisation in baseline
+		numbering convention to allow Miriad to support up to 2047
+		antennas.
+27oct00 rjs	uvgen.for -- Call antbas subroutine to compute baseline
+		number for a particular antenna pair.
+01nov00 dpr     fits.for -- Change CROTAn to AIPS convention for xyout
+08nov00 dpr     imbin.for -- Make 3-axis bin specs unnecessary for 2-D 
+                images.
+09nov00 dpr     psrfix -- handle (+n,-n) in binsl
+15nov00 dpr     gaufit -- keyf bugfix
+27nov00 dpr     fits --  fix stokes convention for xyin
+08dec00 dpr     immask -- doc only
+14dec00 dpr     imhist -- added xrange key
+03jan01 dpr     mirexport.pl -- users can generate their own updates
+03jan01 dpr     ellint -- allow radii with non-integral number of steps
+08jan01 rjs	gpscal.for - Fix buggy error message.
+08jan01 dpr     tidy up scripts
+10jan01 rjs	uvplt.for - Plot axes of az, el and lst.
  
 See $MIR/changes.txt for a history of earlier changes.
