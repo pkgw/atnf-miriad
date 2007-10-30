@@ -20,6 +20,9 @@ c		  more coarsely than the data.
 c    29mar96 rjs  Some tidying of the cgains routines!!
 c     7may96 rjs  Improved goodness measure in uvgnpsma.
 c    23sep96 rjs  Mark memory as deallocated after deallocating!
+c    26jun97 rjs  Correct channel numbering when there are multiple
+c		  windows and bandpass averaging taking place.
+c    10dec97 rjs  Check gain table size is correct.
 c************************************************************************
 	subroutine uvGnIni(tno1,dogains1,dopass1)
 	implicit none
@@ -88,6 +91,10 @@ c------------------------------------------------------------------------
 	include 'uvgn.h'
 	integer iostat
 c
+c  Externals.
+c
+	integer hsize
+c
 	call rdhdi(tno,'nsols', nsols,0)
 	call rdhdd(tno,'interval',dtime,0.d0)
 	if(nsols.le.0) call bug('f',
@@ -97,6 +104,12 @@ c
 c
 	call haccess(tno,gitem,'gains','read',iostat)
 	if(iostat.ne.0)call UvGnBug(iostat,'accessing gains table')
+c
+c  Check that its the right size.
+c
+	if(hsize(gitem).ne.8+(ngains+1)*8*nsols)
+     *		call bug('f','Gain table size is incorrect')
+
 c
 c  Read in the first gain solution.
 c
@@ -1187,7 +1200,8 @@ c
 	      else
 	        do i=1,nschan0(j)
 	          ibeg = max(1,nint(chan-hwidth)+ischan(i0))
-	          iend = min(nint(chan+hwidth)+ischan(i0),nschan(i0))
+	          iend = min(nint(chan+hwidth)+ischan(i0),
+     *					ischan(i0)+nschan(i0)-1)
 	          n = 0
 	          dat(off,k) = 0
 		  do l=ibeg,iend
