@@ -16,10 +16,10 @@ c A few items must be treated in a special way, as described below.
 c
 c - The following items are copied directly:
 c    'history ','bmaj    ','bmin    ','bpa     ','bunit   ',
-c    'obstime ','epoch   ','instrume','ltype   ','lstart  ',
+c    'date-obs','epoch   ','instrume','ltype   ','lstart  ',
 c    'lwidth  ','lstep   ','niters  ','object  ','observer',
 c    'obsdec  ','obsra   ','pbfwhm  ','restfreq','telescop',
-c    'vobs    ','cellscal','btype   ','llrot   '
+c    'vobs    ','xshift  ','yshift  ','btype'
 c
 c - The datamin and datamax items are explicitly excluded. One should
 c recalculate the min and max of the output dataset and update these
@@ -71,32 +71,29 @@ c    bpw  05aug91  Add axnum(1)=0 possibility
 c    bpw  11dec92  Add btype
 c    bpw  16dec92  No special copy for btype, per Neil's remark
 c    bpw   1feb93  Made crpix double precision too
-c    pjt  15mar95  fixed statement order for f2c (linux)
-c    rjs  02jul97  cellscal change.
-c    rjs  23jul97  added pbtype.
-c    rjs  20nov98  added llrot.
 c
 c***********************************************************************
 
+      integer          NKEYS
+      parameter        ( NKEYS = 29 )
+      character*8      keyw(NKEYS)
+      data keyw/
+     *    'crpix   ','crval   ','cdelt   ','crota   ','ctype   ',
+     *    'history ',
+     *    'bmaj    ','bmin    ','bpa     ','bunit   ',
+     *    'date-obs','epoch   ','instrume',
+     *	  'ltype   ','lstart  ','lwidth  ','lstep   ',
+     *    'niters  ','object  ','observer','obsdec  ','obsra   ',
+     *    'pbfwhm  ','restfreq','telescop','vobs    ',
+     *    'xshift  ','yshift  ','btype'/
+
       character*8      c
+
       integer          n, k
       character*1      itoaf
       double precision dvalue
       character*80     avalue
       logical          hdprsnt
-
-      integer          NKEYS
-      parameter        ( NKEYS = 30 )
-      character*8      keyw(NKEYS)
-      data keyw/
-     *    'crpix   ','crval   ','cdelt   ','crota   ','ctype   ',
-     *    'history ','cellscal',
-     *    'bmaj    ','bmin    ','bpa     ','bunit   ',
-     *    'obstime ','epoch   ','instrume',
-     *	  'ltype   ','lstart  ','lwidth  ','lstep   ',
-     *    'niters  ','object  ','observer','obsdec  ','obsra   ',
-     *    'pbfwhm  ','restfreq','telescop','vobs    ',
-     *    'btype   ','pbtype  ','llrot   '/
 
       do k = 1, 5
          do n = 1, naxis
