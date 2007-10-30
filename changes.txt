@@ -1,4 +1,4 @@
-1History of Miriad program changes:-
+History of Miriad program changes:-
 MPLOT   31aug89 mchw - Changed header items in annotation.
 test.csh  Sept 1989  mchw  New script to test uv linetypes and imaging.
 #    3nov89	mchw	added other line types
@@ -3296,7 +3296,8 @@ and in a way to be consistent with all the other changes happening.
 22may98	rjs	gpcal.for -- Turn off xyref on early iterations of weakly polarised
 		source.
 *********************************** 04jun98 Sent changes to Doug Roberts
-
 16jun98 nebk    cgdisp.for -- FIx problem in posdec2 where ocen2 was of 
                 size 2 instead of 3. Was stuffing up in w2wco for ellipses.
 18jun98 nebk    uvplt.for -- Document nofqav option better
+25jun98 nebk    cgdisp.for -- Add Chris PHillip's change to OLAY
+                with overlay type 'sym'
