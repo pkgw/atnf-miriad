@@ -3657,3 +3657,21 @@ and in a way to be consistent with all the other changes happening.
 		zero spacings.
 30jan01 rjs	closure.for - Get it to work for polarization parameters other
 		than the parallel hands.
+02feb01 rjs	varplt.for -- Added options=equal.
+04feb01	rjs	opcal.for,opplt.for - New tasks to correct for and to
+		plot atmospheric opacity and sky brightness.
+04feb01 rjs	planet.for,calred.for - Removed subroutine pltbs from
+		calred, and included it in the subroutines planet.for.
+04feb01	rjs	plplt.for -- New task. Plot the visibility function of
+		a planet.
+05feb01 rjs	string.for - Various tidying. Added subroutines stcat,streal.
+05feb01 rjs	gperror.for - Use basant routine.
+05feb01 dpr     opplt.for - update doc and error messages
+05feb01 rjs	plboot.for - New task. Flux bootstrapping program, using
+		planets as calibrators.
+14feb01 rjs	lagflg.for - New task. Flag bad lags in the lag spectrum.
+14feb01 dpr     cgdisp.fr - Add beamtyp keyword
+15feb01 dpr/pjt moment.for - Add rngmsk keyword
+16feb01 dpr     co.for - Increase MAXITERS in comixed
+27feb01 dpr     cgdisp.for - Add scale-bar
+28feb01 dpr4tao calstokes - Changed values for 3C48 and 3C147
