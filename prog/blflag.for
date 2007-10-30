@@ -16,7 +16,6 @@ c	  Left-Button  Left mouse button flags the nearest visibility.
 c	  Right-Button Right mouse button causes BLFLAG to precede to the
 c	               next baseline.
 c	  <CR>         Carriage-return gives help.
-c	  ?            Help.
 c	  a	       Flag nearest visibility (same as left mouse button).
 c	  c            Clear the flagging for this baseline, and redraw plot.
 c	  h            Give help (same as carriage return).
@@ -29,10 +28,7 @@ c	               You can delete vertices with the middle mouse
 c	               button (or d).
 c	  q            Abort completely. This does not apply flagging.
 c	  r            Redraw plot.
-c	  u            Unzoom.
 c	  x            Move to next baseline (same as right mouse button).
-c	  z            Zoom in. You follow this by clicking the mouse on the
-c	               left and right limits to zoom.
 c@ vis
 c	Input visibility dataset to be flagged. No default.
 c@ line
@@ -57,7 +53,6 @@ c	axis values are:
 c	  time         (the default for the X axis)
 c	  lst	       Local apparent sidereal time.
 c	  uvdistance   sqrt(u**2+v**2)
-c	  hangle       (hour angle)
 c	  amplitude    (the default for the Y axis)
 c	  phase
 c	  real
@@ -72,13 +67,6 @@ c	  selgen  Generate a file appropriate for selecting the bad
 c	          data (via a "select" keyword). The output is a text
 c	          file called "blflag.select".
 c	  noapply Do not apply the flagging.
-c         rms     When processing spectra, blflag normally plots the
-c	          mean value of the spectra. Using options=rms causes
-c	          if to plot the rms value instead.
-c	  scalar  When processing spectra, blflag normally forms an
-c	          average value by vector averaging. The "scalar" option
-c	          causes it to generate the scalar average. This option
-c	          should be used with significant caution.
 c	The following options can be used to disable calibration.
 c	  nocal   Do not apply antenna gain calibration.
 c	  nopass  Do not apply bandpass correction.
@@ -86,23 +74,14 @@ c	  nopol   Do not apply polarisation leakage correction.
 c--
 c  History:
 c    26jun96 rjs  Original version.
-c    30jul96 rjs  Correct labelling of uvdist plots.
-c    26feb97 rjs  Fix bug in the dimensioning of ltemp.
-c     6may97 rjs  Better auto-range determination. Change zoom somewhat. Better
-c		  doc and help.
-c    12may97 rjs  Check that linetype is OK for flagging.
-c    09nov98 rjs  Added "hangle" axis type.
-c    12jan99 rjs  Doc change only.
-c    09apr99 rjs  Add an extra error check only.
-c    05oct99 rjs  Added options=scalar
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)
 	integer MAXDAT,MAXPLT,MAXEDIT
-	parameter(version='BlFlag: version 05-Oct-99')
-	parameter(MAXDAT=500000,MAXPLT=20000,MAXEDIT=20000)
+	parameter(version='BlFlag: version 26-Jun-96')
+	parameter(MAXDAT=200000,MAXPLT=20000,MAXEDIT=20000)
 c
-	logical present(MAXBASE),nobase,selgen,noapply,rms,scalar
+	logical present(MAXBASE),nobase,selgen,noapply
 	integer tno,i,j,k,length,npol
 	character xaxis*12,yaxis*12,title*32,device*64
 	character val*16,uvflags*12
@@ -118,7 +97,7 @@ c
 	integer nplt,blplt(MAXPLT)
 	double precision timeplt(MAXPLT)
 	real xplt(MAXPLT),yplt(MAXPLT)
-	logical ltemp(MAXDAT)
+	logical ltemp(MAXPLT)
 c
 c  The editting buffer.
 c
@@ -138,7 +117,7 @@ c
 	call keya('device',device,' ')
 	if(device.eq.' ')call bug('f','A PGPLOT device must be given')
 	call GetAxis(xaxis,yaxis)
-	call GetOpt(nobase,selgen,noapply,rms,scalar,uvflags)
+	call GetOpt(nobase,selgen,noapply,uvflags)
 	call uvDatInp('vis',uvflags)
 	call keyfin
 c
@@ -163,7 +142,7 @@ c
 c
 c  Get the data.
 c
-	call GetDat(tno,rms,scalar,xaxis,yaxis,present,MAXBASE,
+	call GetDat(tno,xaxis,yaxis,present,MAXBASE,
      *		xdat,ydat,bldat,timedat,ndat,MAXDAT)
 	if(ndat.eq.0)call bug('f','No points to flag')
 c
@@ -402,13 +381,11 @@ c
 	  else if(mode.eq.'r')then
 	    call Draw(xmin,xmax,xplt,yplt,flag,nplt,
      *			xaxis,yaxis,title,xs,ys)
-	  else if(mode.eq.'h'.or.mode.le.' '.or.mode.eq.'?')then
+	  else if(mode.eq.'h'.or.mode.le.' ')then
 	    call output('-------------------------------------')
 	    call output('Single key commands are')
-	    call output(' Left-button  Delete nearest point')
-	    call output(' Right-button Next baseline')
+	    call output(' Left-button Delete nearest point')
 	    call output(' <CR>      Help')
-	    call output(' ?         Help')
 	    call output(' a         Delete nearest point')
 	    call output(' c         Clear flagging of this baseline')
 	    call output(' h         Help -- these messages')
@@ -427,10 +404,9 @@ c
 	  else if(mode.eq.'x')then
 	    more = .false.
 	  else if(mode.eq.'z')then
-	    call output('Click on left-hand edge of the zoomed region')
-	    call pgcurs(xmin,yv,mode)
-	    call output('Click on right-hand edge of the zoomed region')
 	    call pgcurs(xmax,yv,mode)
+	    xmin = min(xv,xmax)
+	    xmax = max(xv,xmax)
 	    call Draw(xmin,xmax,xplt,yplt,flag,nplt,
      *			xaxis,yaxis,title,xs,ys)
 	  else if(mode.eq.'a')then
@@ -581,7 +557,7 @@ c
 c------------------------------------------------------------------------
 	integer i
 	logical first
-	real x1,x2,delta,absmax
+	real x1,x2
 c
 	first = .true.
 	do i=1,nplt
@@ -597,14 +573,9 @@ c
 	  endif
 	enddo
 c
-	delta = 0.05*(x2-x1)   
-        absmax = max(abs(x2),abs(x1))
-        if(delta.le.1e-4*absmax) delta = 0.01*absmax
-        if(delta.eq.0) delta = 1
-        lo = x1 - delta
-        hi = x2 + delta
+	call pgrnge(x1,x2,lo,hi)
 c
-	if(axis.eq.'time'.or.axis.eq.'lst'.or.axis.eq.'hangle')then
+	if(axis.eq.'time'.or.axis.eq.'lst')then
 	  flags = 'BCNSTHZ0' 
 	else
 	  flags = 'BCNST'
@@ -688,13 +659,13 @@ c
 c
 	end	  
 c************************************************************************
-	subroutine GetDat(tno,rms,scalar,xaxis,yaxis,present,maxbase1,
+	subroutine GetDat(tno,xaxis,yaxis,present,maxbase1,
      *		xdat,ydat,bldat,timedat,ndat,MAXDAT)
 c
 	implicit none
 	integer tno,maxbase1,MAXDAT,ndat
 	integer bldat(MAXDAT)
-	logical present(maxbase1),rms,scalar
+	logical present(maxbase1)
 	double precision timedat(MAXDAT)
 	real xdat(MAXDAT),ydat(MAXDAT)
 	character xaxis*(*),yaxis*(*)
@@ -704,9 +675,8 @@ c------------------------------------------------------------------------
 	parameter(TTOL=1d0/86400d0)
 c
 	logical flags(MAXCHAN),ok
-	complex data(MAXCHAN)
-	complex corr(MAXBASE),corr1(MAXBASE),corr2(MAXBASE)
-	double precision preamble(4),time,time0,tprev,lst,ra
+	complex data(MAXCHAN),corr(MAXBASE)
+	double precision preamble(4),time,time0,tprev,lst
 	real uvdist2(MAXBASE)
 	integer i,n,bl,i1,i2,nants,npnt(MAXBASE),mbase,nchan
 c
@@ -721,8 +691,6 @@ c
 	  npnt(i)    = 0
 	  uvdist2(i) = 0
 	  corr(i)    = 0
-	  corr1(i)   = 0
-	  corr2(i)   = 0
 	enddo
 	ndat = 0
 c
@@ -730,13 +698,10 @@ c  Lets get going.
 c
 	call output('Reading the data ...')
 	call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
-	if(nchan.eq.0)call bug('f','No visibility data found')
-	call flagchk(tno)
 	nants = 0
 	tprev = preamble(3)
 	time0 = int(tprev - 0.5d0) + 0.5d0
 	call uvrdvrd(tno,'lst',lst,0.d0)
-	call uvrdvrd(tno,'ra',ra,0.d0)
 	dowhile(nchan.gt.0)
 	  call BasAnt(preamble(4),i1,i2)
 	  bl = (i2*(i2-1))/2 + i1
@@ -744,8 +709,8 @@ c
 	  if(ok)then
 	    time = preamble(3)
 	    if(abs(time-tprev).gt.TTOL)then
-	      if(nants.gt.0)call IntFlush(nants,rms,scalar,ra,lst,tprev,
-     *		uvdist2,corr,corr1,corr2,xaxis,yaxis,npnt,
+	      if(nants.gt.0)call IntFlush(nants,lst,tprev,uvdist2,corr,
+     *		xaxis,yaxis,npnt,
      *		time0,present,mbase,xdat,ydat,timedat,bldat,ndat,MAXDAT)
 	      nants = 0
 	      tprev = time
@@ -757,9 +722,6 @@ c
 		n = n + 1
 	        npnt(bl) = npnt(bl) + 1
 		corr(bl) = corr(bl) + data(i)
-		corr1(bl) = corr1(bl) + abs(data(i))
-		corr2(bl) = corr2(bl) +
-     *			    cmplx(real(data(i))**2,aimag(data(i))**2)
 	      endif
 	    enddo
 	    if(n.gt.0)then
@@ -772,22 +734,21 @@ c
 	enddo
 c
 	if(nants.gt.0)
-     *      call IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,
-     *		corr,corr1,corr2,xaxis,yaxis,npnt,
+     *      call IntFlush(nants,lst,time,uvdist2,corr,xaxis,yaxis,npnt,
      *		time0,present,mbase,xdat,ydat,timedat,bldat,ndat,MAXDAT)
 c
 	end
 c************************************************************************
-	subroutine IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,
-     *	  corr,corr1,corr2,xaxis,yaxis,npnt,
+	subroutine IntFlush(nants,lst,time,uvdist2,corr,
+     *	  xaxis,yaxis,npnt,
      *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,ndat,MAXDAT)
 c
 	implicit none
 	integer MAXBASE,MAXDAT,nants,npnt(MAXBASE),bldat(MAXDAT),ndat
-	double precision ra,lst,time,time0,timedat(MAXDAT)
+	double precision lst,time,time0,timedat(MAXDAT)
 	real uvdist2(MAXBASE),xdat(MAXDAT),ydat(MAXDAT)
-	complex corr(MAXBASE),corr1(MAXBASE),corr2(MAXBASE)
-	logical present(MAXBASE),rms,scalar
+	complex corr(MAXBASE)
+	logical present(MAXBASE)
 	character xaxis*(*),yaxis*(*)
 c
 c------------------------------------------------------------------------
@@ -804,70 +765,46 @@ c
 	    if(npnt(k).gt.0)then
 	      ndat = ndat + 1
 	      if(ndat.gt.MAXDAT)call bug('f','Too many points')
-	      xdat(ndat) = GetVal(xaxis,uvdist2(k),corr(k),corr1(k),
-     *		corr2(k),npnt(k),lst,time,ra,time0,rms,scalar)
-	      ydat(ndat) = GetVal(yaxis,uvdist2(k),corr(k),corr1(k),
-     *		corr2(k),npnt(k),lst,time,ra,time0,rms,scalar)
+	      xdat(ndat) = GetVal(xaxis,uvdist2(k),corr(k),npnt(k),
+     *		lst,time,time0)
+	      ydat(ndat) = GetVal(yaxis,uvdist2(k),corr(k),npnt(k),
+     *		lst,time,time0)
 	      bldat(ndat) = k
 	      timedat(ndat) = time
 	      present(k) = .true.
 	      npnt(k) = 0
 	      uvdist2(k) = 0
 	      corr(k) = 0
-	      corr1(k) = 0
-	      corr2(k) = 0
 	    endif
 	  enddo
 	enddo
 c
 	end
 c************************************************************************
-	real function GetVal(axis,uvdist2,corr,corr1,corr2,npnt,
-     *		lst,time,ra,time0,rms,scalar)
+	real function GetVal(axis,uvdist2,corr,npnt,lst,time,time0)
 c
 	implicit none
 	character axis*(*)
 	real uvdist2
-	complex corr,corr1,corr2
-	double precision time,time0,lst,ra
+	complex corr
+	double precision time,time0,lst
 	integer npnt
-	logical rms,scalar
 c------------------------------------------------------------------------
 	include 'mirconst.h'
-	complex data
-	double precision dtemp
-c
-	if(rms)then
-	  data = cmplx(sqrt(real(corr2)/npnt - real(corr/npnt)**2),
-     *		       sqrt(aimag(corr2)/npnt- aimag(corr/npnt)**2))
-	else if(scalar)then
-	  data = corr1/npnt
-	else
-	  data = corr/npnt
-	endif
-c
 	if(axis.eq.'real')then
-	  GetVal = real(data)
+	  GetVal = real(corr)/npnt
 	else if(axis.eq.'imaginary')then
-	  GetVal = aimag(data)
+	  GetVal = aimag(corr)/npnt
 	else if(axis.eq.'amplitude')then
-	  GetVal = abs(data)
+	  GetVal = abs(corr)/npnt
 	else if(axis.eq.'phase')then
-	  GetVal = 180/pi * atan2(aimag(data),real(data))
+	  GetVal = 180/pi * atan2(aimag(corr),real(corr))
 	else if(axis.eq.'uvdistance')then
-	  GetVal = 0.001 * sqrt(uvdist2/npnt)
+	  GetVal = sqrt(uvdist2/npnt)
 	else if(axis.eq.'time')then
 	  GetVal = 86400*(time - time0)
 	else if(axis.eq.'lst')then
 	  GetVal = 86400*lst/(2*pi)
-	else if(axis.eq.'hangle')then
-	  dtemp = lst - ra
-	  if(dtemp.gt.DPI)then
-	    dtemp = dtemp - 2*DPI
-	  else if(dtemp.lt.-DPI)then
-	    dtemp = dtemp + 2*DPI
-	  endif
-	  GetVal = 86400d0*dtemp/(2*DPI)
 	else
 	  call bug('f','I should never get here')
 	endif
@@ -879,66 +816,41 @@ c
 	character xaxis*(*),yaxis*(*)
 c------------------------------------------------------------------------
 	integer NAX
-	parameter(NAX=8)
+	parameter(NAX=7)
 	integer n
 	character axes(NAX)*12
 	data axes/'amplitude   ','phase       ',
      *		  'real        ','imaginary   ',
      *		  'time        ','uvdistance  ',
-     *		  'lst         ','hangle      '/
+     *		  'lst         '/
 	call keymatch('axis',NAX,axes,1,xaxis,n)
 	if(n.eq.0)xaxis = 'time'
 	call keymatch('axis',NAX,axes,1,yaxis,n)
 	if(n.eq.0)yaxis = 'amplitude'
 	end
 c************************************************************************
-	subroutine GetOpt(nobase,selgen,noapply,rms,scalar,uvflags)
+	subroutine GetOpt(nobase,selgen,noapply,uvflags)
 c
 	implicit none
-	logical nobase,selgen,noapply,rms,scalar
+	logical nobase,selgen,noapply
 	character uvflags*(*)
 c
 c  Get extra processing options.
 c------------------------------------------------------------------------
 	integer NOPTS
-	parameter(NOPTS=8)
+	parameter(NOPTS=6)
 	logical present(NOPTS)
 	character opts(NOPTS)*8
 	data opts/'nobase  ','nocal   ','nopass  ','nopol   ',
-     *		  'selgen  ','noapply ','rms     ','scalar  '/
+     *		  'selgen  ','noapply '/
 c
 	call options('options',opts,present,NOPTS)
 c
 	nobase = present(1)
 	selgen = present(5)
 	noapply= present(6)
-	rms    = present(7)
-	scalar = present(8)
-	if(scalar.and.rms)
-     *	  call bug('f','Options scalar and rms cannot be used together')
 	uvflags = 'sdlwb'
 	if(.not.present(2))uvflags(6:6) = 'c'
 	if(.not.present(3))uvflags(7:7) = 'f'
 	if(.not.present(4))uvflags(8:8) = 'e'
-	end
-c************************************************************************
-	subroutine flagchk(tno)
-c
-	implicit none
-	integer tno
-c
-c  Check that the user's linetype is not going to cause the flagging
-c  routine to vomit when the flagging is applied.
-c
-c------------------------------------------------------------------------
-	integer CHANNEL,WIDE
-	parameter(CHANNEL=1,WIDE=2)
-	double precision line(6)
-c
-	call uvinfo(tno,'line',line)
-	if(nint(line(1)).ne.CHANNEL.and.nint(line(1)).ne.WIDE)
-     *	  call bug('f','Can only flag "channel" or "wide" linetypes')
-	if(nint(line(4)).ne.1)
-     *	  call bug('f','Cannot flag when the linetype width is not 1')
-c
 	end
