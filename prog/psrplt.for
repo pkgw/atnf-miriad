@@ -45,31 +45,25 @@ c	  nopol     This option suppresses polarisation calibration. The
 c	            default behaviour is to apply polarisation calibration.
 c	  nopass    This option suppresses bandpass calibration. The
 c	            default behaviour is to apply bandpass calibration.
-c@ log
-c	File in which to write the data, if y-axis is amplitude.
-c	The default is no logfile.
 c--
 c  History:
 c    rjs  03jun96 Original version.
-c    rjs  21aug97 Count the number of accepted correlations.
-c    bmg  26nov97 Added log keyword
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mirconst.h'
 	integer MAXPOL,MAXBIN,PolMin,PolMax
 	character version*(*)
 	parameter(MAXPOL=4,MAXBIN=32,PolMin=-9,PolMax=4)
-	parameter(version='PsrPlt: version 1.0 21-Aug-97')
+	parameter(version='PsrPlt: version 1.0 3-Jun-96')
 c
-	character uvflags*16,device*32,logfile*80
+	character uvflags*16,device*32
 	logical docal,dopol,dopass,doshift,doimag,dogrey,dochan
 c
 	integer nchan,nread,nbin,npol,ipol,ibin,i,j,k,nout,tno,mpol
-	integer ngood,nbad,llog
 	integer polIndx(PolMin:PolMax),pols(MAXPOL)
 	double precision preamble(4),offset(2),shift(2)
 	complex data(MAXCHAN)
-	logical flags(MAXCHAN),dolog
+	logical flags(MAXCHAN)
 	complex acc(MAXCHAN,MAXBIN,MAXPOL)
 	real    wt(MAXCHAN,MAXBIN,MAXPOL),sig2,w
 	double precision sfreq(MAXCHAN)
@@ -77,12 +71,12 @@ c
 	integer NXAXES,NYAXES
 	parameter(NXAXES=1,NYAXES=3)
 	character xaxes(NXAXES)*9,yaxes(NYAXES)*9,xaxis*9,yaxis*9
+
 c
 c  Externals.
 c
-	logical uvDatOpn,keyprsnt
+	logical uvDatOpn
 	integer pgbeg
-	character itoaf*8
 c
 	data xaxes/'bin      '/
 	data yaxes/'amplitude','frequency','channel  '/
@@ -99,8 +93,6 @@ c
 	if(nout.eq.0)yaxis = yaxes(1)
 	dogrey = yaxis.ne.'amplitude'
 	dochan = yaxis.eq.'channel'
-	dolog = (keyprsnt('log').and.(.not.dogrey))
-	if(dolog) call keyf('log',logfile,' ')
 c
 c  Determine the shift.
 c
@@ -157,8 +149,6 @@ c  Convert the shift to radians.
 c
 	shift(1) = pi/180/3600 * shift(1)
 	shift(2) = pi/180/3600 * shift(2)
-	ngood = 0
-	nbad  = 0
 c
 c  Loop the loop until we have no more files.
 c
@@ -209,9 +199,6 @@ c
 	      if(flags(i))then
 		acc(i,ibin,ipol) = acc(i,ibin,ipol) + w*data(i)
 		wt (i,ibin,ipol) = wt (i,ibin,ipol) + w
-		ngood = ngood + 1
-	      else
-		nbad = nbad + 1
 	      endif
 	    enddo
 c
@@ -223,17 +210,13 @@ c
      *		'Number of channels changed while reading data')
 	  call uvDatCls
 	enddo
-	if(nbad.gt.0)call bug('w',
-     *	  'Number of flagged correlations rejected: '//itoaf(nbad))
-	call output('Number of correlations accepted: '//itoaf(ngood))
-	if(ngood.eq.0)call bug('f','No correlations to plot')
 c
 	if(dogrey)then
 	  call FrPlot(sfreq,acc,wt,MAXCHAN,nchan,nbin,pols(1),
      *							doimag,dochan)
 	else
 	  call PrPlot(acc,wt,MAXCHAN,MAXBIN,nchan,npol,nbin,
-     *	                 	pols,doimag,llog,dolog,logfile)
+     *							pols,doimag)
 	  continue
 	endif
 c
@@ -362,23 +345,20 @@ c
 c
 	end
 c************************************************************************
-	subroutine PrPlot(acc,wt,mchan,mbin,nchan,npol,nbin,pols,doimag,
-     + 	 	llog,dolog,logfile)
+	subroutine PrPlot(acc,wt,mchan,mbin,nchan,npol,nbin,pols,doimag)
 c
 	implicit none
-	character logfile*80,line*256
-	character polsc2p*2
-	integer nchan,npol,nbin,mchan,mbin,llog
+	integer nchan,npol,nbin,mchan,mbin
 	integer pols(npol)
-	logical doimag,dolog
+	logical doimag
 	complex acc(mchan,mbin,npol)
 	real    wt (mchan,mbin,npol)
 c------------------------------------------------------------------------
 	integer MAXPOL,MAXBIN
 	parameter(MAXPOL=4,MAXBIN=32)
 	real ymin,ymax,xlo,xhi,ylo,yhi
-	real x(MAXBIN,MAXPOL),y(MAXBIN,MAXPOL),loglist(MAXBIN,MAXPOL)
-	integer npnt(MAXPOL),i,j,k,iostat,len1	
+	real x(MAXBIN,MAXPOL),y(MAXBIN,MAXPOL)
+	integer npnt(MAXPOL),i,j,k
 	complex ctemp
 	real vtemp,wtemp
 	logical first
@@ -439,44 +419,6 @@ c
 	  endif
 	enddo
 	call pgsci(1)
-c
-c  Write the data to a file if log option is present
-c
-      if (dolog) then
-         call txtopen(llog,logfile,'new',iostat)
-         if(iostat.NE.0) then
-            call bug('i','Error opening logfile')
-            call bugno('f',iostat)
-         endif
-	 do i=1,nbin
-	   do j=1,npol
-	      loglist(i,j)=0.
-	      do k=1,npnt(j)
-		  if (int(x(k,j)).eq.i) loglist(i,j) = y(k,j)
-	      enddo
-	   enddo
-	 enddo
-	 write(line,'(''  Bin   '',4(5x,a2,8x))') 
-     +             (polsc2p(pols(i)),i=1,npol)
-         call txtwrite(llog,line,len1(line),iostat)
-         if(iostat.ne.0) then
-               call bug('i','Error writing to logfile')
-               call bugno('f',iostat)
-         endif
-	 write(line,'(1x)')
-         call txtwrite(llog,line,len1(line),iostat)
-
-         do i=1,nbin
-           write(line,'(x,i4,4(3x,e12.5))') i,(loglist(i,j), j=1,npol)
-           call txtwrite(llog,line,len1(line),iostat)
-           if(iostat.ne.0) then
-               call bug('i','Error writing to logfile')
-               call bugno('f',iostat)
-           endif
-         enddo
-         call txtclose(llog)
-      endif
-c
 c
 	end
 c************************************************************************
