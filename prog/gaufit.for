@@ -243,6 +243,10 @@ c     bpw 26feb99 Make compiler more silent by avoiding warnings
 c     bpw  4mar99 Fixed fitting selected channel range, add cutval=
 c     rjs 23jan00 Change some subroutine args to real-valued to avoid
 c	          compiler complaints.
+c     rjs 28jan00 Some FORTRAN standardization to get it through a
+c		  compiler.
+c     rjs 08may00 Change incorrect call to keyf to keya.
+c     dpr 15nov00 Change incorrect call to keyf to keya.
 c************************************************************************
 
 c The main program first gets all inputs and then calls the workhorse.
@@ -340,10 +344,10 @@ c Initialize keyword routines
 
 c Read names of datasets
       call keya( 'in',       inp, ' ' )
-      call keyf( 'model',    mdl, ' ' )
-      call keyf( 'residual', res, ' ' )
+      call keya( 'model',    mdl, ' ' )
+      call keya( 'residual', res, ' ' )
       call keyf( 'parinp',   pin, ' ' )
-      call keyf( 'params',   par, ' ' )
+      call keya( 'params',   par, ' ' )
       call assertl( inp.ne.' ' .or. pin.ne.' ',
      *              'You must specify an input file' )
 
@@ -643,7 +647,9 @@ c        Ask for expected rms; check if filename given
          call assertl( keyprsnt('rmsest'),
      *                 'It is necessary to use the rmsest keyword' )
          rmsest = -1.
-         call keyf( 'rmsest', rms, ' ' )
+c  dpr 15-11-00 ->
+         call keya( 'rmsest', rms, ' ' )
+c  <-
          call hopen( i, rms, 'old', iostat )
          if( iostat.ne.0 ) then
             call atorf( rms, rmsest, ok )
@@ -2570,7 +2576,7 @@ c************************************************************************
       data          primes / 23, 19, 17, 13, 11, 7, 5, 3, 2 /
       character*80  messages(20)
       save          messages
-      data          messages /
+      data          messages/
 c ier>100
      *              'DRVMRQ: No convergence after .. iterations',
 c ier=2,3,4
@@ -2582,24 +2588,21 @@ c ier=5,6,7
      *              'The profile is a constant, no fit can be done',
      *              'No gaussian found by estimator',
 c ier=-8 (+8 on call)
-     *              'rms too high',
 c ier=9,10,11
-     *           'fitted amplitude differs significantly from estimate',
-     *              'fitted velocity shifted by more than one FWHM',
-     *              'fitted width differs significantly from estimate',
+     *          'rms too high',
+     *          'fitted amplitude differs significantly from estimate',
+     *          'fitted velocity shifted by more than one FWHM',
+     *          'fitted width differs significantly from estimate',
 c ier (<0 on call) (ier=-12, -13 or product of errornumbers)
 c mod(-ier,[23,19,17,13,11, 7, 5, 3, 2]) gives message
 c           12,13,14,15,16,17,18,19,20
-     *              'Negative amplitudes not allowed',
-     *              'Amplitude below specified minimum',
-     *              'Amplitude above specified maximum',
-     *              'Width larger than profile length',
-     *              'Width insignificant',
-     *              'Center outside range',
-     *              'Width error too large',
-     *              'Velocity error too large',
-     *              'Amplitude error too large'
-     *              /
+     *          'Negative amplitudes not allowed',
+     *          'Amplitude below specified minimum',
+     *          'Amplitude above specified maximum',
+     *          'Width larger than profile length',
+     *		'Width insignificant',
+     *          'Center outside range','Width error too large',
+     *          'Velocity error too large','Amplitude error too large'/
 
       if(      ier.gt.100 ) then
          write( messages(1)(30:31), '( i2 )' ) ier-100
