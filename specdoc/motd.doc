@@ -1,17 +1,15 @@
-Year 2000 Issues:
-=================
-Miriad should not have any problems with the coming of the year 2000.
-The final modifications to Miriad to handle the changes to the FITS and RPFITS
-date formats were distributed in January 1999.
 
-You will note that the format that you use to specify an absolute time (mostly
-in visibility data selection) includes a two-digit year format (e.g. 99oct29
-for 29th October 1999). This two-digit year selects within the century
-1940 to 2039. There are some years before this should become an issue.
-So 00jan01 will correspond to 1st January 2000.
+	Use options=noauto in atlod
+	===========================
+	A minor bug in new ATCA correlator software (introduced in
+	December 2000) means that RPFITS files can erroneously contain
+	autocorrelation data. This occurs only when averaging is used
+	on-line. These autocorrelations should be ignored. Many Miriad
+	tasks do indeed ignore these autocorrelations - where this makes
+	sense. However, it is suggested that you use the "noauto" option
+	of "atlod" to discard any autocorrelations early on, and so
+	avoid any confusion.
 
-Bob Sault
-rsault@atnf.csiro.au
-16 December 1999
-
+						Bob Sault
+						24 January 2001.
 
