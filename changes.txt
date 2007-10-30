@@ -3229,5 +3229,21 @@ and in a way to be consistent with all the other changes happening.
 07jan98 rjs	qvack.for -- Added options=anticipate, and the interval
 		parameter capable of two inputs.
 07jan98 rjs	atlod.for -- Print source names after the de-mangling process.
-09jan97 rjs	julday.for -- Make it tolerant of dates containing blanks.
-09jan97 rjs	model.for -- Break a statement into two to avoid a compiler bug.
+09jan98 rjs	julday.for -- Make it tolerant of dates containing blanks.
+09jan98 rjs	model.for -- Break a statement into two to avoid a compiler bug.
+*********************************** 05feb98 Sent changes to Doug Roberts
+07feb98 rjs	gpboot.for -- Doc change only.
+15feb98 pjt	imfit.fir -- More precision in outputing results.
+23feb98 rjs	mosmem.for -- Better protection against underflow.
+24feb98 rjs	prthd.for -- Use MAXWIDE rather than MAXWIN for number of wide
+		channels.
+24feb98 rjs	uvgn.for -- Handle applying "bandpass" functions to wide-only
+		files.
+24feb98 rjs	plotone.for -- Some fortran standardisation.
+24feb98	rjs	uvsector.for -- Handle near vertical and horizontal regions
+		more robustly.
+24feb98 rjs	mossen.for -- Write bunit keyword to the output.
+25feb98 rjs	restor.for -- Honour documentation so that a beam is not
+		needed with mode=convolve.
+25feb98 rjs	gaupar.for -- Fix bug in determining outout "bunit" value, Problem
+		introduced in December 98 I think.
