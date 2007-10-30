@@ -30,9 +30,6 @@ c	   point      A point source.
 c	   gaussian   An elliptical or circular gaussian.
 c	   disk       An elliptical or circular disk.
 c	   j1x        A J1(x)/x function
-c	   shell      2D projection of an optically-thin spherical shell
-c	   comet      2D projection of a parent molecule in comet.
-c	   cluster    standard isothermal 2D projection for cluster gas.
 c@ spar
 c	Parameters which give the characteristics of the object. The
 c	parameters are given as a sequence of values, with one to six
@@ -48,10 +45,6 @@ c	   point                  amp,x,y
 c	   gaussian               amp,x,y,bmaj,bmin,pa
 c	   disk                   amp,x,y,bmaj,bmin,pa
 c	   j1x                    amp,x,y,bmaj,bmin,pa
-c	   shell                  amp,x,y,bmaj
-c	   comet                  amp,x,y,scalelength
-c	   cluster                amp,x,y,core radius 
-c
 c	Here "offset" is the offset level, "rms" is the rms value of
 c	the noise, "amp" is the normally peak value of the object (but
 c	see options=totflux below), "x" and "y" are the offset positions (in
@@ -60,8 +53,7 @@ c	"bmin" are the major and minor axes FWHM (in arcsec), and "pa" is
 c	the position angle of an elliptical component (in degrees). The
 c	position angle is measured from north towards east.
 c	The default is an object of unit amplitude, at the reference pixel,
-c	with a FWHM of 5 arcsec. Comet scalelength, and cluster core radius
-c	are in arcsec units.
+c	with a FWHM of 5 arcsec.
 c@ imsize
 c	If not input image is given, then this determines the size, in
 c	pixels, of the output image. Either one or two numbers can be
@@ -110,31 +102,17 @@ c    mchw  19may93  Merged lgm and mchw versions; Adjust doc to match code.
 c    rjs   19aug94  Major rework. Multiple objects. Position angle. Better
 c		    coords.
 c    rjs   12sep94  totflux option.
-c    bmg   08may96  Added object=shell
-c    rjs   24sep96  Some corrections to object=shell.
-c    rjs   13dec96  Increase max number of objects.
-c    rjs   02jul97  cellscal change.
-c    rjs   14jul97  Check when there are too many objects and increase
-c		    max number of objects.
-c    rjs   23jul97  added pbtype.
-c    mchw  23oct97  added comet model for parent molecule.
-c    rjs   29oct97  Check that the coordinates for a point source fall
-c		    within the image.
-c    rjs   11dec97  Make total flux option consistent when there is an
-c		    input image.
-c    rjs   19mar98  Copy across mosaic table.
-c    mchw  19mar99  Add model isothermal 2D projection for cluster gas.
 c  Bugs/Wishlist:
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Imgen: version 1.1 19-Mar-99' )
+	parameter(version='Imgen: version 1.1 12-Sep-94' )
 	include 'mirconst.h'
 	include 'maxdim.h'
 	include 'maxnax.h'
 	integer n1,n2,n3,i,j,k,lIn,lOut,nsize(MAXNAX),naxis
 	double precision crpix1,crpix2,cdelt1,cdelt2,crval1,crval2
 	double precision x1(3),x2(3)
-	real factor,bmaj,bmin,bpa,fac
+	real factor,bmaj,bmin,bpa
 	character In*80,Out*80
 	logical totflux
 	real Buff(maxdim)
@@ -142,7 +120,7 @@ c
 c  Source parameters.
 c
 	integer MAXOBJS
-	parameter(MAXOBJS=3000)
+	parameter(MAXOBJS=32)
 	real fwhm1(MAXOBJS),fwhm2(MAXOBJS),posang(MAXOBJS)
 	real amp(MAXOBJS),x(MAXOBJS),y(MAXOBJS)
 	real fwhm1d(MAXOBJS),fwhm2d(MAXOBJS),posangd(MAXOBJS)
@@ -150,17 +128,11 @@ c
 	character objs(MAXOBJS)*8
 c
 	integer NOBJECTS
-	parameter(NOBJECTS=9)
+	parameter(NOBJECTS=6)
 	integer nobjs
 	character objects(NOBJECTS)*8
-c
-c  Externals.
-c
-	logical keyprsnt
-c
 	data objects/'level   ','noise   ','point   ',
-     *		     'gaussian','disk    ','j1x     ',
-     *               'shell   ','comet   ','cluster '/
+     *		     'gaussian','disk    ','j1x     '/
 c
 c  Get the parameters from the user.
 c
@@ -174,7 +146,6 @@ c
 	  objs(1) = 'gaussian'
 	  nobjs = 1
 	endif
-	if(keyprsnt('object'))call bug('f','Too many object for me!')
 c
 c  Get the source parameters.
 c
@@ -199,18 +170,6 @@ c
 	    if(min(fwhm1(i),fwhm2(i)).le.0)
      *	      call bug('f','BMAJ and BMIN parameters must be positive')
 	    posang(i) = posang(i) * pi/180.
-	  elseif(objs(i).eq.'shell'.or.objs(i).eq.'comet') then
-            call keyr('spar',fwhm1(i),5.)
-	    fwhm1(i) = fwhm1(i) / 3600. * pi/180.
-	    if(fwhm1(i).le.0)
-     *	      call bug('f','BMAJ and BMIN parameters must be positive')
-	    fwhm2(i) = fwhm1(i)
-	    posang(i) = 0
-	  elseif(objs(i).eq.'cluster') then
-	    call keyr('spar',fwhm1(i),50.)
-	    fwhm1(i) = fwhm1(i) / 3600. * pi/180.
-	    fwhm2(i) = fwhm1(i)
-	    posang(i) = 0
 	  else
 	    fwhm1(i) = 0
 	    fwhm2(i) = 0
@@ -251,20 +210,12 @@ c
 	  do i=4,naxis
 	    nsize(i) = 1
 	  enddo
-	  call rdhdr(lIn,'bmaj',bmaj,0.)
-	  call rdhdr(lIn,'bmin',bmin,0.)
-	  call rdhdr(lIn,'bpa',bpa,0.)
-	  call rdhdd(lIn,'cdelt1',cdelt1,1d0*cdelt1)
-	  call rdhdd(lIn,'cdelt2',cdelt2,1d0*cdelt2)
 	else
 	  naxis = 2
 	  nsize(1) = n1
 	  nsize(2) = n2
 	  nsize(3) = n3
 	  lIn = 0
-	  bmaj = 0
-	  bmin = 0
-	  bpa = 0
 	  if(n1.le.0.or.n2.le.0)call bug('f','Image size error')
 	endif
 	if(n1.gt.MAXDIM)call bug('f','Image dimension too big')
@@ -272,8 +223,7 @@ c
 c  If we have a single gaussian object, use this as the beam
 c  parameters.
 c
-	if(nobjs.eq.1.and.objs(1).eq.'gaussian'.and..not.
-     *		totflux.and.abs(bmaj*bmin).eq.0)then
+	if(nobjs.eq.1.and.objs(1).eq.'gaussian'.and..not.totflux)then
 	  if(fwhm1(1).gt.fwhm2(1))then
 	    bmaj = fwhm1(1)
 	    bmin = fwhm2(1)
@@ -285,6 +235,10 @@ c
 	  endif
 	  if(bpa.lt.-90)bpa = bpa + 180
 	  if(bpa.gt. 90)bpa = bpa - 180
+	else
+	  bmaj = 0
+	  bmin = 0
+	  bpa = 0
 	endif
 c
 c  Now open the output, and add a header to it.
@@ -325,25 +279,13 @@ c
 	    endif
 	  enddo
 c
-c  Convert the flux units.
-c
-	  if(totflux)then
-	    if(abs(bmaj*bmin).gt.0)then
-	      fac = 0.25*PI/log(2.0)*abs(bmaj*bmin/(cdelt1*cdelt2))
-	    else
-	      fac = 1
-	    endif
-	  else
-	    fac = 0
-	  endif
-c
 c  Do the real work.
 c
 	  do j=1,n2
 	    call GetBuf(lIn,j,Buff,n1,factor)
 	    do i=1,nobjs
 	      call DoMod(j,objs(i),Buff,n1,amp(i),fwhm1d(i),fwhm2d(i),
-     *                    posangd(i),xd(i),yd(i),fac)
+     *                    posangd(i),xd(i),yd(i),totflux)
 	    enddo
 	    call xywrite(lOut,j,Buff)
 	  enddo
@@ -410,7 +352,7 @@ c  Make a header for the output image.
 c
 c------------------------------------------------------------------------
 	integer nkeys
-	parameter(nkeys=45)
+	parameter(nkeys=43)
 	character line*64
 	integer i
 	character keyw(nkeys)*8
@@ -419,11 +361,10 @@ c------------------------------------------------------------------------
      *	  'crpix1  ','crpix2  ','crpix3  ','crpix4  ','crpix5  ',
      *	  'crval1  ','crval2  ','crval3  ','crval4  ','crval5  ',
      *	  'ctype1  ','ctype2  ','ctype3  ','ctype4  ','ctype5  ',
-     *	  'epoch   ','ltype   ','lstart  ','lwidth  ','mostable',
+     *	  'epoch   ','ltype   ','lstart  ','lwidth  ',
      *	  'lstep   ','mask    ','niters  ','object  ','history ',
      *    'observer','obsra   ','obsdec  ','restfreq','telescop',
-     *	  'vobs    ','cellscal','obstime ','pbfwhm  ','btype   ',
-     *	  'pbtype  '/
+     *	  'vobs    ','xshift  ','yshift  ','pbfwhm  ','btype   '/
 c
 c  Either create a new header, or copy the old one.
 c
@@ -461,23 +402,24 @@ c
 	end
 c************************************************************************
 	subroutine DoMod(j0,object,Data,n1,amp,fwhm1,fwhm2,posang,x,y,
-     *								fac)
+     *								totflux)
 c
 	implicit none
 	integer n1,j0
 	character object*(*)
 	real Data(n1)
-        real amp,fwhm1,fwhm2,posang,x,y,fac
+        real amp,fwhm1,fwhm2,posang,x,y
+	logical totflux
 c
 c  Add the contribution of a particular component.
 c
 c  Input:
-c    fac	Flux adjustment.
+c    totflux	The "amp" parameter is the total flux.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mirconst.h'
-	integer i,j,ymin,ymax,xmin,xmax,maxit,it
-	real xx,yy,xp,yp,scale,cospa,sinpa,t,a,log2,limit,p,theta,sum
+	integer i,j,ymin,ymax,xmin,xmax
+	real xx,yy,xp,yp,scale,cospa,sinpa,t,a,log2,limit
 	real Buff(maxdim)
 c
 c  Externals.
@@ -492,8 +434,8 @@ c  Note: pi/4/log(2) == 1.1331.
 c
 	if(object.eq.'gaussian')then
 	  log2 = log(2.0)
-	  if(fac.ne.0)then
-	    a = fac * amp / (pi/4/log2 * fwhm1 * fwhm2)
+	  if(totflux)then
+	    a = amp / (pi/4/log2 * fwhm1 * fwhm2)
 	  else
 	    a = amp
 	  endif
@@ -520,8 +462,8 @@ c  Handle a J1(x)/x function.
 c
 	else if(object.eq.'j1x')then
 	  scale = 3.83
-	  if(fac.ne.0)then
-	    a = fac * amp / (4*pi/scale/scale * fwhm1 * fwhm2)
+	  if(totflux)then
+	    a = amp / (4*pi/scale/scale * fwhm1 * fwhm2)
 	  else
 	    a = amp
 	  endif
@@ -536,43 +478,11 @@ c
 	    data(i) = data(i) + 2 * a * j1xbyx(sqrt(t))
 	  enddo
 c
-c  Handle a comet.
-c
-	else if(object.eq.'comet')then
-	  maxit = 50
-	  yy = (j0-y)
-	  do i=1,n1
-	    xx = (i-x)
-	    p = sqrt(xx*xx+yy*yy)
-            sum = 0.
-            do it = -maxit+1,maxit-1
-              theta = it*pi/2./maxit
-              sum = sum +
-     *          exp(-p/fwhm1/(cos(theta)))*pi/2./(maxit-2)
-            enddo
-	    if(p.ne.0.)then
-	      a = amp / p * sum 
-	      data(i) = data(i) + a
-	    endif
-	  enddo
-c
-c  Handle a cluster isothermal gas projection.
-c
-	else if(object.eq.'cluster')then
-	  yy = (j0-y)
-	  do i=1,n1
-	    xx = (i-x)
-	    p = (xx*xx+yy*yy)/(fwhm1*fwhm1)
-	    a = amp * (1. + p)**-0.5
-c	    a = amp * (1. + p)**(0.5-1.5*beta)
-	    data(i) = data(i) + a
-	  enddo
-c
 c  Handle a disk.
 c
 	else if(object.eq.'disk')then
-	  if(fac.ne.0)then
-	    a = fac * amp / (pi/4 * fwhm1 * fwhm2)
+	  if(totflux)then
+	    a = amp / (pi/4 * fwhm1 * fwhm2)
 	  else
 	    a = amp
 	  endif
@@ -592,34 +502,7 @@ c
               t = (xp*xp)/(fwhm2*fwhm2) + (yp*yp)/(fwhm1*fwhm1)
 	      if(t.lt.0.25) data(i) = data(i) + a
 	    enddo
-	  endif 
-c
-c  Handle a spherical shell.
-c
-	else if(object.eq.'shell')then
-	  if(fac.ne.0)then
-	    a = fac * amp / (pi * sqrt(fwhm1 * fwhm1))
-	  else
-	    a = amp
 	  endif
-	  cospa = cos(posang)
-	  sinpa = sin(posang)
-	  limit = 0.5 * max(fwhm1,fwhm1)
-	  ymin = nint(y-limit)
-	  ymax = nint(y+limit)
-	  xmin = max(nint(x-limit),1)
-	  xmax = min(nint(x+limit),n1)
-	  if(ymin.le.j0.and.j0.le.ymax)then
-	    yy = (j0-y)
-	    do i=xmin,xmax
-	      xx = (i-x)
-              yp =  yy*cospa + xx*sinpa
-              xp = -yy*sinpa + xx*cospa
-              t = (xp*xp)/(fwhm1*fwhm1) + (yp*yp)/(fwhm1*fwhm1)
-	      if(t.lt.0.25) data(i) = data(i) + a/0.5/fwhm1/
-      *            sqrt(1.-4.*t)
-	    enddo
-	  endif 
 c
 c  Handle a DC level.
 c
@@ -641,8 +524,7 @@ c
 	else if(object.eq.'point')then
 	  i = nint(x)
 	  j = nint(y)
-	  if(j.eq.j0.and.i.ge.1.and.i.le.n1)
-     *		Data(i) = Data(i) + Amp
+	  if(j.eq.j0)Data(i) = Data(i) + Amp
 c
 c  Should never get here.
 c
