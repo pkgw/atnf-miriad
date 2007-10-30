@@ -8,7 +8,7 @@ c: utility
 c+
 c	TELEPAR gives the characteristics of various observatories.
 c	Its main use is to check that the characteristics are correct.
-c@ observ
+c@ telescop
 c	Name of the observatory. Several can be given. If none are
 c	given, TELEPAR simply lists the known observatories.
 c--
@@ -16,10 +16,12 @@ c  History:
 c    rjs  20jun91 Original version.
 c    rjs   2jun93 Better formating.
 c    rjs  15dec95 List observatories.
+c    rjs  06dec96 Print altitude.
+c    rjs  09jun97 Standardize keyword.
 c------------------------------------------------------------------------
 	character version*(*)
 	integer MAXOBS
-	parameter(version='Telepar: version 1.0 15-Dec-95')
+	parameter(version='Telepar: version 1.0 09-JUN-96')
 	parameter(MAXOBS=16)
 	include 'mirconst.h'
 	character string*20,line*64,observs(MAXOBS)*12,observ*12
@@ -31,7 +33,7 @@ c
 c
 	call output(version)
 	call keyini
-	call mkeya('observ',observs,MAXOBS,nobs)
+	call mkeya('telescop',observs,MAXOBS,nobs)
 	call keyfin
 c
 	if(nobs.eq.0)then
@@ -60,10 +62,19 @@ c
 	    call output('Longitude:           '//string)	
 	  endif
 c
+	  call obspar(observ,'height',value,ok)
+	  if(ok)then
+	    n = n + 1
+	    write(line,'(a,f6.1,a)')'Height               ',value,
+     *				  ' metres'
+	    call output(line)
+	  endif
+c
 	  call obspar(observ,'evector',value,ok)
 	  if(ok)then
 	    n = n + 1
-	    write(line,'(a,f7.1)')'Feed Offset angle:',180/pi*value
+	    write(line,'(a,f7.1,a)')'Feed Offset angle:',180/pi*value,
+     *				    ' degrees'
 	    call output(line)
 	  endif
 c
