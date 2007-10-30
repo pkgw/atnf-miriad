@@ -20,6 +20,8 @@ c    01mar97 rjs  Added new leap second.
 c    21mar97 rjs  Added llh2xyz.
 c    07jul97 rjs  Included fk45z and fk54z (from slalib), as well as
 c		  making lmn2sph return RA in range 0 to 2*PI.
+c    16jul97 rjs  Added azel.
+c    15jan99 rjs  Added new leap second.
 c
 c  General Reference:
 c    Explanatory Supplement to the Astronomical Almanac. 1993.
@@ -146,6 +148,37 @@ c
 	ra2 = r0 + M + N*sin(rm)*tan(dm)
 	dec2 = d0 + N*cos(rm)
 c
+	end
+c************************************************************************
+c* azel -- Calculate azimuth and elevation from ra/dec.
+c& rjs
+c: utilities
+c+
+	subroutine azel(obsra,obsdec,lst,latitude,az,el)
+c
+	implicit none
+	double precision obsra,obsdec,lst,latitude
+	double precision az,el
+c
+c  This computes the azimuth and elevation.
+c
+c  Input:
+c    obsra )	Apparent RA and DEC of the source of interest (radians).
+c    obsdec)
+c    lst	Local sidereal time (radians).
+c    latitude	Observatory geodetic latitude (radians).
+c
+c  Output:
+c    az,el	Azimuth and elevation angle (radians).
+c--
+c------------------------------------------------------------------------
+	double precision ha
+c
+	ha = lst - obsra
+        el = asin(sin(latitude)*sin(obsdec) +
+     *	    cos(latitude)*cos(obsdec)*cos(ha))
+        az = atan2(-cos(obsdec)*sin(ha),
+     *      cos(latitude)*sin(obsdec)-sin(latitude)*cos(obsdec)*cos(ha))
 	end
 c************************************************************************
 c* Parang -- Calculate parallactic angle.
@@ -443,7 +476,7 @@ c------------------------------------------------------------------------
 c
 	logical init
 	integer NLEAP
-	parameter(NLEAP=21)
+	parameter(NLEAP=22)
 	character leap(NLEAP)*7
 	double precision dtime(NLEAP)
 	save init,leap
@@ -456,7 +489,7 @@ c
      *		   '77JAN01','78JAN01','79JAN01','80JAN01','81JUL01',
      *		   '82JUL01','83JUL01','85JUL01','88JAN01','90JAN01',
      *		   '91JAN01','92JUL01','93JUL01','94JUL01','96JAN01',
-     *		   '97JUL01'/
+     *		   '97JUL01','99JAN01'/
 c
 c  Initialise the table of leap seconds.
 c
