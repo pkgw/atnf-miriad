@@ -13,10 +13,7 @@
 #    -k    Get help about a specific task keyword.
 # 
 #--
-#  History:
-#    Dark-ages rjs  Original version
-#    22-feb-01 rjs  Added matching for possible tasks.
-#    02-mar-01 rjs  Slight change to make it compatible with more UNIX systems.
+
 set noglob
 
 set task = ""
@@ -51,40 +48,20 @@ foreach arg ($argv)
   endif
 end
 
-if ( "$task" == "" ) set task = "miriad"
+set message = "No task name given"
+if ( "$task" == "" ) goto usage
 
 if ( $doweb ) then
   set web = "http://www.atnf.csiro.au/computing/software/miriad/$task.html"
   if  ( "$key" != "" ) set web = "$web#$key"
   netscape -remote "OpenURL($web)"
-  if ( $status ) then
-    netscape -install "$web" &
-  endif
+  if ( $status ) netscape -install "$web"
 else
   set file = $MIRPDOC/$task.doc
   if ( -f $task.doc ) set file = $task.doc
-  if ( ! -f $file ) then
-    set matches = ()
-    unset noglob
-    set nonomatch
-    foreach f ($MIRPDOC/${task}*.doc)
-      set t = $f:t
-      set t = $t:r
-      set matches = ($matches $t)
-    end
-    set noglob
-    unset nonomatch
-    if ( "$matches" == "${task}*" ) then
-      echo "### Fatal: No task matching '$task' was found"
-    else
-      echo "### Warning: A task called '$task' was not found"
-      echo "### Warning: Possible matches are: $matches"
-    endif
-  else
-    if ( "$key" != "" ) set file = "$file -k $key"
-    if ( ! $?PAGER ) set PAGER = "more"
-    docfmt $file | $PAGER
-  endif
+  if ( "$key" != "" ) set file = "$file -k $key"
+  if ( ! $?PAGER ) set PAGER = "more"
+  docfmt $file | $PAGER
 endif
 exit 0
 
@@ -92,8 +69,9 @@ usage:
 if ( "$message" != "" ) echo "### Fatal: $message"
 echo " "
 echo "  Usage:"
-echo "    mirhelp [-w] [-k keyword] task"
+echo "    mirhelp [-w?] [-k keyword] task"
 echo " "
 echo "  Options:"
-echo "   -w   View help in a netscape browser"
+echo "   -w   Direct help to netscape browser"
+echo "   -?   Give this help message"
 echo "   -k   Give help on a specific keyword"
