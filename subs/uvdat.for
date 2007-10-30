@@ -58,20 +58,6 @@ c    rjs  23aug93 New routine uvDatRew to appease nebk.
 c    rjs  13dec93 Sign of V(linear) and sign of U(circular) fudge.
 c    nebk 29mar94 Don't reissue calibration messages after uvdatrew
 c    rjs  21jul94 Give message about planet rotation position angle.
-c    rjs  26jul94 More accurate equation used in polarisation leakage
-c		  correction.
-c    rjs   9sep94 Support felocity and default values for this and velo.
-c    rjs  23sep94 W coordinate support.
-c    rjs  31jul95 Handle plangle in the polarization conversion software.
-c    rjs  10nov95 uvDatSet can disable calibration/Stokes conversion.
-c		  Initialise nPol.
-c    rjs  06dec95 line=chan,0 defaults to selecting all channels.
-c    nebk 10dec95 Be a bit cleverer (?) with reissuing calibration messages
-c    rjs  28may96 Initialise "line" variable to a blank!
-c    rjs  31jul96 Support QQ and UU.
-c    rjs  16aug96 Change phasing convention for circularly polarised feeds,
-c		  and add QQ and UU support for circulars.
-c    rjs  06jan97 Change uvgetvrr to uvrdvrr when getting chi.
 c
 c  User-Callable Routines:
 c    uvDatInp(key,flags)
@@ -130,11 +116,10 @@ c		 'b'	Input must be a single file.
 c		 'c'	Apply gain/phase and delay corrections.
 c		 'e'	Apply polarisation leakage corrections.
 c		 'f'	Apply bandpass corrections.
-c		 '3'    Return w in the preamble (as preamble(3)).
 c--
 c------------------------------------------------------------------------
 	include 'uvdat.h'
-	integer offset,length,i,n
+	integer offset,length,i,n,nout
 	character In*128
 	logical dostokes,dosingle
 c
@@ -142,6 +127,13 @@ c  Externals.
 c
 	integer len1
 	logical SelProbe
+c
+c  Line types.
+c
+	integer NTYPES
+	parameter(NTYPES=3)
+	character types(NTYPES)*8
+	data types/'channel ','velocity','wide    '/
 c
 c  Initialise miscellaneous parameters.
 c
@@ -157,17 +149,6 @@ c
 	dosingle = index(flags,'b').gt.0
 	dosels   = index(flags,'d').gt.0
 	doleak	 = index(flags,'e').gt.0
-	dow	 = index(flags,'3').gt.0
-	if(dow)then
-	  npream = 5
-	  idxT = 4
-	  idxBL = 5
-	else
-	  npream = 4
-	  idxT = 3
-	  idxBL = 4
-	endif
-c
 	if(auto.and.cross)
      *	  call bug('f','Data cannot be both auto and cross correlation')
 	plinit   = .false.
@@ -177,10 +158,6 @@ c
 	pnt = 0
 	tno = 0
 	nPolF = 0
-	nPol = 0
-        do i = 1, maxIn
-          calmsg(i) = .false.
-        end do
 c
 c  Get the input file names.
 c
@@ -205,16 +182,28 @@ c
 c
 c  Determine the input linetype.
 c
-	line = ' '
 	if(dodata)then
-	  call keyline(line,nchan,lstart,lwidth,lstep)
-	  if(line.eq.' '.and.index(flags,'1').gt.0)nchan = 1
+	  nchan = 0
+	  if(index(flags,'1').gt.0) nchan = 1
+	  call keymatch('line',NTYPES,types,1,line,nout)
+	  call keyi('line',nchan,nchan)
+	  call keyr('line',lstart,1.)
+	  call keyr('line',lwidth,1.)
+	  call keyr('line',lstep,lwidth)
+	else
+	  line = ' '
+	  nchan = 0
+	  lstart = 1.
+	  lwidth = 1.
+	  lstep  = lwidth
 	endif
 c
 c  Determine the reference line, if required.
 c
 	if(doref)then
-	  call keyrline(ref,rstart,rwidth)
+	  call keymatch('ref',NTYPES,types,1,ref,nout)
+	  call keyr('ref',rstart,1.)
+	  call keyr('ref',rwidth,1.)
 	  doref = ref.ne.' '
 	endif
 c
@@ -268,10 +257,6 @@ c
 	  nPol = nPol + 1
 	  if(type.eq.'ii'.or.type.eq.'II')then
 	    Pols(nPol) = 0
-	  else if(type.eq.'qq'.or.type.eq.'QQ')then
-	    Pols(nPol) = 5
-	  else if(type.eq.'uu'.or.type.eq.'UU')then
-	    Pols(nPol) = 6
 	  else
 	    Pols(nPol) = PolsP2C(type)
 	  endif
@@ -299,21 +284,23 @@ c--
 c------------------------------------------------------------------------
 	include 'uvdat.h'
 	integer length
-	logical update,present,shortcut,willpass
-	character obstype*16,type*1,umsg*80
+	logical update,present,shortcut,willpass,first
+	character obstype*16,type*1,umsg*64
 c
 c  Externals.
 c
 	logical hdprsnt
+        save first
+        data first /.true./
 c
 	if(tno.ne.0)
      *	  call bug('f','UV data file already open, in UVDatOpn')
+        if(first) dunrew=.false.
+        first = .false.
 	pnt = pnt + 1
 	if(pnt.le.nIn)then
 	  call uvopen(tno,InBuf(k1(pnt):k2(pnt)),'old')
 	  if(dosels)call SelApply(tno,sels,.true.)
-	  if(dow)call uvset(tno,'preamble','uvw/time/baseline',
-     *							0,0.,0.,0.)
 c
 c  Linetype, etc, setup.
 c
@@ -372,8 +359,7 @@ c
 	  WillCal = docal.and.hdprsnt(tno,'gains')
 	  willpass = dopass.and.(hdprsnt(tno,'bandpass').or.
      *	  	hdprsnt(tno,'cgains').or.hdprsnt(tno,'wgains'))
-	  if(willpass.and.
-     *		(line.eq.'velocity'.or.line.eq.'felocity'))then
+	  if(willpass.and.line.eq.'velocity')then
 	    umsg = 'Cannot apply bandpass correction, for '//
      *	      'velocity linetype, to '//InBuf(k1(pnt):k2(pnt))
 	    call bug('w',umsg)
@@ -452,23 +438,22 @@ c
 c
 c  Give output messages.
 c
-	  if(willpass.and..not.calmsg(pnt))then
+	  if(willpass.and..not.dunrew)then
 	    umsg = 'Applying bandpass corrections to '//
      *	      InBuf(k1(pnt):k2(pnt))
 	    call output(umsg)
 	  endif
-	  if(WillCal.and..not.calmsg(pnt)) then
+	  if(WillCal.and..not.dunrew) then
 	    umsg = 'Applying gain corrections to '//
      *	      InBuf(k1(pnt):k2(pnt))
 	    call output(umsg)
 	  endif
-	  if(WillLeak.and..not.calmsg(pnt))then
+	  if(WillLeak.and..not.dunrew)then
 	    umsg = 'Applying polarization leakage corrections to '//
      *	      InBuf(k1(pnt):k2(pnt))
 	    call output(umsg)
 	  endif
 	  WillCal = WillCal.or.willpass
-          if(willpass.or.willcal.or.willleak) calmsg(pnt) = .true.
 c
 c  All done. Return with the bacon.
 c
@@ -488,7 +473,7 @@ c+
 c
 	implicit none
 	integer n,nread
-	double precision preamble(*)
+	double precision preamble(4)
 	complex data(n)
 	logical flags(n)
 c
@@ -506,8 +491,7 @@ c    nread	The number of channels read.
 c--
 c------------------------------------------------------------------------
 	include 'uvdat.h'
-	double precision linepar(6)
-	character umsg*80
+	character umsg*64
 c
 c  Get the data.
 c
@@ -515,20 +499,8 @@ c
 	  call uvPolGet(preamble,data,flags,n,nread)
 	else
 	  call uvread(tno,preamble,data,flags,n,nread)
-	  if(WillCal.and.nread.gt.0)call uvGnFac(preamble(idxT),
-     *	    real(preamble(idxBL)),0,.false.,data,flags,nread)
-	endif
-c
-c  Fill in velocity/felocity defaults if needed.
-c
-	if(nchan*lwidth.eq.0.and.
-     *	  (line.eq.'velocity'.or.line.eq.'felocity'))then
-	  call uvinfo(tno,'line',linepar)
-	  line = 'velocity'
-	  nchan = nint(linepar(2))
-	  lstart = linepar(3)
-	  lwidth = linepar(4)
-	  lstep  = linepar(5)
+	  if(WillCal.and.nread.gt.0)call uvGnFac(preamble(3),
+     *	    real(preamble(4)),0,.false.,data,flags,nread)
 	endif
 c
 c  Perform planet initialisation if necessary.
@@ -564,6 +536,7 @@ c------------------------------------------------------------------------
 	if(tno.ne.0)call bug('f',
      *		'Uv files still open, when uvDatRew called')
 	pnt = 0
+        dunrew = .true.
 	end
 c************************************************************************
 c* uvDatCls -- Close a uv data file from a multi-file set.
@@ -588,7 +561,7 @@ c
 c************************************************************************
 	subroutine uvPolGet(preamble,data,flags,n,nread)
 c
-	double precision preamble(*)
+	double precision preamble(4)
 	integer n,nread
 	complex data(n)
 	logical flags(n)
@@ -650,9 +623,10 @@ c
 	  iPol = 0
 	  return
 	endif
-	do i=1,npream
-	  preamble(i) = Spreambl(i)
-	enddo
+	preamble(1) = Spreambl(1)
+	preamble(2) = Spreambl(2)
+	preamble(3) = Spreambl(3)
+	preamble(4) = Spreambl(4)
 c
 c  Use linear combinations of the
 c  measured polarisations to get the desired one. Several polarisations
@@ -855,14 +829,13 @@ c  Form Stokes Q from raw polarisations.
 c
 	  else if(Pols(i).eq.PolQ)then
 	    if(circx)then
-	      if(NoChi)call uvPolChi(NoChi,Cos2Chi,Sin2Chi)
 	      ncoeff(i) = 2
-	      coeffs(1,i) = (0.5,0.0) * cmplx(Cos2Chi,-Sin2Chi)
-	      coeffs(2,i) = (0.5,0.0) * cmplx(Cos2Chi, Sin2Chi)
+	      coeffs(1,i) = (0.5,0.0)
+	      coeffs(2,i) = (0.5,0.0)
 	      type(1) = PolRL
 	      type(2) = PolLR
 	    else if(lin2.and.linx)then
-	      if(NoChi)call uvPolChi(NoChi,Cos2Chi,Sin2Chi)
+	      if(NoChi)call uvPolChi(tno,NoChi,Cos2Chi,Sin2Chi)
 	      ncoeff(i) = 4
 	      coeffs(1,i) = cmplx( 0.5*Cos2Chi,0.0)
 	      coeffs(2,i) = cmplx(-0.5*Cos2Chi,0.0)
@@ -878,14 +851,13 @@ c  Form Stokes U from raw polarisations.
 c
 	  else if(Pols(i).eq.PolU)then
 	    if(circx)then
-	      if(NoChi)call uvPolChi(NoChi,Cos2Chi,Sin2Chi)
 	      ncoeff(i) = 2
-	      coeffs(1,i) = (0.0,-0.5) * cmplx(Cos2Chi, Sin2Chi)
-	      coeffs(2,i) = (0.0, 0.5) * cmplx(Cos2Chi,-Sin2Chi)
+	      coeffs(1,i) = (0.0,-0.5)
+	      coeffs(2,i) = (0.0, 0.5)
 	      type(1) = PolLR
 	      type(2) = PolRL
 	    else if(lin2.and.linx)then
-	      if(NoChi)call uvPolChi(NoChi,Cos2Chi,Sin2Chi)
+	      if(NoChi)call uvPolChi(tno,NoChi,Cos2Chi,Sin2Chi)
 	      ncoeff(i) = 4
 	      coeffs(1,i) = cmplx( 0.5*Sin2Chi,0.0)
 	      coeffs(2,i) = cmplx(-0.5*Sin2Chi,0.0)
@@ -913,34 +885,6 @@ c
 	      type(1) = PolXY
 	      type(2) = PolYX
 	    endif
-	  else if(Pols(i).eq.PolQQ)then
-	    if(circx)then
-	      ncoeff(i) = 2
-	      coeffs(1,i) = (0.5,0.0)
-	      coeffs(2,i) = (0.5,0.0)
-	      type(1) = PolRL
-	      type(2) = PolLR
-	    elseif(lin2)then
-	      ncoeff(i) = 2
-	      coeffs(1,i) = ( 0.5,0.0)
-	      coeffs(2,i) = (-0.5,0.0)
-	      type(1) = PolXX
-	      type(2) = PolYY
-	    endif
-	  else if(Pols(i).eq.PolUU)then
-	    if(circx)then
-	      ncoeff(i) = 2
-	      coeffs(1,i) = (0.0,-0.5)
-	      coeffs(2,i) = (0.0, 0.5)
-	      type(1) = PolLR
-	      type(2) = PolRL
-	    else if(linx)then
-	      ncoeff(i) = 2
-	      coeffs(1,i) = (0.5,0.0)
-	      coeffs(2,i) = (0.5,0.0)
-	      type(1) = PolXY
-	      type(2) = PolYX
-	    endif
 	  endif
 c
 c  If polarisation leakage correction should be performed, but we do not
@@ -959,8 +903,8 @@ c  cannot do the work. In this case, ncoeff(i) is set to zero.
 c
 c  Correct there coefficients for polarisation leakage.
 c
-	  if(doLkCorr) call uvLkCorr(Spreambl(idxBL),maxPol,ncoeff(i),
-     *	      type,coeffs(1,i),Leaks,nLeaks)
+	  if(doLkCorr) call uvLkCorr(Spreambl(4),maxPol,ncoeff(i),type,
+     *	      coeffs(1,i),Leaks,nLeaks)
 c
 c  Calculate the sum of the weights of the coefficients -- to that
 c  we can work out the correct variance later on.
@@ -978,8 +922,8 @@ c
 	    do j=1,ncoeff(i)
 	      k = indx(type(j))
 	      indices(j,i) = k
-	      if(.not.caled(k))call uvGnFac(Spreambl(idxT),
-     *		real(Spreambl(idxBL)),type(j),.false.,Sdata(1,k),
+	      if(.not.caled(k))call uvGnFac(Spreambl(3),
+     *		real(Spreambl(4)),type(j),.false.,Sdata(1,k),
      *		Sflags(1,k),Snread)
 	      caled(k) = .true.
 	    enddo
@@ -997,29 +941,26 @@ c
 c
 	end
 c************************************************************************
-	subroutine uvPolChi(NoChi,Cos2Chi,Sin2Chi)
+	subroutine uvPolChi(tno,NoChi,Cos2Chi,Sin2Chi)
 c
 	implicit none
+	integer tno
 	logical NoChi
 	real Cos2Chi,Sin2Chi
 c
 c  This determines the Cosine and Sine of the parallactic angle. It is
 c  used to rotate polarisation data.
 c
+c  Input:
+c    tno	The handle of the uv file.
 c  Output:
 c    NoChi	Set to false.
 c    Cos2Chi,Sin2Chi Set to cos(2*Chi) and sin(2*Chi), respectively.
 c------------------------------------------------------------------------
-	include 'mirconst.h'
-	include 'uvdat.h'
-	real Chi,pa
+	real Chi
 c
 	NoChi = .false.
-	call uvrdvrr(tno,'chi',chi,0.0)
-	if(plinit)then
-	  call uvrdvrr(tno,'plangle',pa,plangle)
-	  chi = chi - pi/180.*(pa - plangle)
-	endif
+	call uvgetvrr(tno,'chi',chi,1)
 	Cos2Chi = cos(2*Chi)
 	Sin2Chi = sin(2*Chi)
 	end
@@ -1114,8 +1055,6 @@ c
 	  if(nPol.gt.0) then
 	    ival(1) = Pols(max(iPol,1))
 	    if(ival(1).eq.PolII) ival(1) = PolI
-	    if(ival(1).eq.PolQQ) ival(1) = PolQ
-	    if(ival(1).eq.PolUU) ival(1) = PolU
 	  else
 	    call uvrdvri(tno,'pol',ival,PolI)
 	  endif
@@ -1155,8 +1094,6 @@ c
 	    do i=1,npol
 	      ival(i) = pols(i)
 	      if(ival(i).eq.PolII) ival(i) = PolI
-	      if(ival(i).eq.PolQQ) ival(i) = PolQ
-	      if(ival(i).eq.PolUU) ival(i) = PolU
 	    enddo
 	  endif
 c
@@ -1193,6 +1130,9 @@ c  Input:
 c    object	This is a string describing the information to return.
 c		Possible values are:
 c		 'variance'Returns variance of the data.
+c		 'lstart'  Returns the linetype start value, in "rval".
+c		 'lwidth'  Returns the linetype width value, in "rval".
+c		 'lstep'   Returns the linetype step  value, in "rval".
 c  Output:
 c    rval	Real valued output.
 c--
@@ -1204,6 +1144,24 @@ c
 	  call uvinfo(tno,'variance',variance)
 	  rval = variance
 	  if(WillPol)rval = SumWts(iPol) * rval
+	else if(object.eq.'lstart')then
+	  if(dodata)then
+	    rval = lstart
+	  else
+	    rval = 1
+	  endif
+	else if(object.eq.'lwidth')then
+	  if(dodata)then
+	    rval = lwidth
+	  else
+	    rval = 1
+	  endif
+	else if(object.eq.'lstep')then
+	  if(dodata)then
+	    rval = lstep
+	  else
+	    rval = 1
+	  endif
 	else
 	  call bug('f','Unrecognised object in uvDatGtr')
 	endif
@@ -1268,8 +1226,6 @@ c		Stokes/polarisations will be returned. Valid codes for
 c		polarisations are:
 c		I 1, Q 2, U 3, V 4, RR -1, LL -2, RL -3, LR -4,
 c		XX -5, YY -6, XY -7, YX -8, II 0.
-c    'disable'  This turns off calibration and Stokes conversion
-c		(but not visibility selection or linetype processing).
 c--
 c------------------------------------------------------------------------
 	include 'uvdat.h'
@@ -1281,11 +1237,6 @@ c
 	  if(value.lt.PolMin.or.value.gt.PolMax)
      *	    call bug('f','Invalid polarisation, in uvDatSet')
 	  pols(npol) = value
-	else if(object.eq.'disable')then
-	  docal = .false.
-	  dopass = .false.
-	  doleak = .false.
-	  nPol = 0
 	else
 	  call bug('f','Invalid object in uvDatSet')
 	endif
@@ -1384,7 +1335,7 @@ c    type	The polarisation type corresponding to each coefficient.
 c    coeffs	The value of the coefficient.
 c------------------------------------------------------------------------
 	integer i1,i2,n,i,j
-	complex G(4),t
+	complex G(4)
 	integer indx(4,4),cf1(4),cf2(4),off
 	data indx/1,4,3,2, 2,3,4,1, 3,2,1,4, 4,1,2,3/
 	data cf1 /1,2,1,2/
@@ -1392,8 +1343,9 @@ c------------------------------------------------------------------------
 c
 	n = ncoeff
 	ncoeff = 0
-c
-	call basant(baseline,i1,i2)
+	i2 = nint(baseline)
+	i1 = i2 / 256
+	i2 = i2 - 256 * i1
 	if(i1.lt.1.or.i1.gt.nLeaks.or.i2.lt.1.or.i2.gt.nLeaks)return
 c
 	off = 0
@@ -1403,8 +1355,7 @@ c
 	G(indx(1,j)) =  coeffs(1)
 	G(indx(2,j)) = -coeffs(1) *       Leaks(cf1(j),i1)
 	G(indx(3,j)) = -coeffs(1) * conjg(Leaks(cf2(j),i2))
-	G(indx(4,j)) =  coeffs(1) * Leaks(cf1(j),i1) * 
-     *			      conjg(Leaks(cf2(j),i2))
+	G(indx(4,j)) = (0.,0.)
 c
 	do i=2,n
 	  j = off - type(i)
@@ -1414,15 +1365,11 @@ c
      *	     - coeffs(i) *	 Leaks(cf1(j),i1)
 	  G(indx(3,j)) = G(indx(3,j))
      *	     - coeffs(i) * conjg(Leaks(cf2(j),i2))
-	  G(indx(4,j)) = G(indx(4,j))
-     *	     + coeffs(i) * Leaks(cf1(j),i1) * conjg(Leaks(cf2(j),i2))
 	enddo
 c
-	t =  1. / ((1 - Leaks(1,i1)*Leaks(2,i1)) *
-     *	      conjg(1 - Leaks(1,i2)*Leaks(2,i2)) )
 	ncoeff = 4
 	do i=1,4
-	  coeffs(i) = t*G(i)
+	  coeffs(i) = G(i)
 	  type(i) = off - i
 	enddo
 c	
