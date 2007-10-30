@@ -4,8 +4,8 @@ c
 	include 'maxdim.h'
 	integer ATIF,ATANT,ATPOL,ATDATA,ATBASE,ATBIN,ATCONT
 	parameter(ATIF=2,ATANT=6,ATPOL=4,ATBASE=((ATANT+1)*ATANT)/2)
-	parameter(ATBIN=16,ATCONT=33)
-	parameter(ATDATA=MAXCHAN*ATBASE)
+	parameter(ATBIN=32,ATCONT=33)
+	parameter(ATDATA=2*MAXCHAN*ATBASE)
 	integer nifs,nfreq(ATIF),nstoke(ATIF),polcode(ATIF,ATPOL)
 	double precision sfreq(ATIF),sdf(ATIF),restfreq(ATIF)
 	double precision time
@@ -14,7 +14,7 @@ c
 	real xyphase(ATIF,ATANT),xyamp(ATIF,ATANT)
 	real xsampler(3,ATIF,ATANT),ysampler(3,ATIF,ATANT)
 	complex data(ATDATA)
-	integer pnt(ATIF,ATPOL,ATBASE,ATBIN),maxbin,edge(ATIF)
+	integer pnt(ATIF,ATPOL,ATBASE,ATBIN),nbin(ATIF),edge(ATIF)
 	integer bchan(ATIF)
 	real inttime(ATBASE)
 	logical flag(ATIF,ATPOL,ATBASE,ATBIN),dosw(ATBASE)
@@ -23,13 +23,15 @@ c
 	logical dowt,doxyp
 	real wts(2*ATCONT-2)
 	double precision obsra,obsdec,lat,long,ra,dec
+	character sname*64
 c
+	common/atlodd/sname
 	common/atlodc/sfreq,sdf,restfreq,time,obsra,obsdec,lat,long,
      *	    ra,dec,
      *	  data,
      *	  xtsys,ytsys,chi,xyphase,xyamp,xsampler,ysampler,u,v,w,inttime,
      *	    wts,
-     *	  pnt,maxbin,nused,tno,nants,nifs,nfreq,nstoke,polcode,edge,
+     *	  pnt,nbin,nused,tno,nants,nifs,nfreq,nstoke,polcode,edge,
      *	    bchan,
      *	  flag,dosw,dosam,dohann,birdie,dowt,doxyp,doif,dobary,newfreq,
      *	  newsc,newpnt
