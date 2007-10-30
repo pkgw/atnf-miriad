@@ -28,10 +28,12 @@ c	   level      An offset (DC) level.
 c	   noise      Noise (gaussian distribution).
 c	   point      A point source.
 c	   gaussian   An elliptical or circular gaussian.
+c	   gauss3     A 3D elliptical or circular gaussian (for cubes).
 c	   disk       An elliptical or circular disk.
 c	   j1x        A J1(x)/x function
 c	   shell      2D projection of an optically-thin spherical shell
 c	   comet      2D projection of a parent molecule in comet.
+c	   cluster    standard isothermal 2D projection for cluster gas.
 c@ spar
 c	Parameters which give the characteristics of the object. The
 c	parameters are given as a sequence of values, with one to six
@@ -45,19 +47,24 @@ c	   level                  offset
 c	   noise                  rms
 c	   point                  amp,x,y
 c	   gaussian               amp,x,y,bmaj,bmin,pa
+c	   gauss3                 amp,x,y,z,bmaj,bmin,pa,bz
 c	   disk                   amp,x,y,bmaj,bmin,pa
 c	   j1x                    amp,x,y,bmaj,bmin,pa
 c	   shell                  amp,x,y,bmaj
 c	   comet                  amp,x,y,scalelength
-c	Here "offset" is the offset level, "rms" is the rms value of
-c	the noise, "amp" is the normally peak value of the object (but
-c	see options=totflux below), "x" and "y" are the offset positions (in
-c	arcsec) of the object relative to the reference pixel, "bmaj" and
-c	"bmin" are the major and minor axes FWHM (in arcsec), and "pa" is
-c	the position angle of an elliptical component (in degrees). The
-c	position angle is measured from north towards east.
-c	The default is an object of unit amplitude, at the reference pixel,
-c	with a FWHM of 5 arcsec.
+c	   cluster                amp,x,y,core radius 
+c
+c       Here "offset" is the offset level, "rms" is the rms value of
+c       the noise, "amp" is the normally peak value of the object (but
+c       see options=totflux below), "x" and "y" are the offset positions (in
+c       arcsec) of the object relative to the reference pixel, "z" is the
+c       absolute pixel position on the third axis, "bmaj" and "bmin" are the 
+c       major and minor axes FWHM (in arcsec), "pa" is the position angle of
+c       an elliptical component (in degrees), and "bz" is the FWHM (in pixels)
+c       in the 3rd dimension. The position angle is measured from north 
+c       towards east. The default is an object of unit amplitude, at the 
+c       reference pixel, with a FWHM of 5 arcsec in x and y and 5 pixels in
+c       z. Comet scalelength, and cluster core radius are in arcsec units.
 c@ imsize
 c	If not input image is given, then this determines the size, in
 c	pixels, of the output image. Either one or two numbers can be
@@ -119,17 +126,19 @@ c		    within the image.
 c    rjs   11dec97  Make total flux option consistent when there is an
 c		    input image.
 c    rjs   19mar98  Copy across mosaic table.
+c    mchw  19mar99  Add model isothermal 2D projection for cluster gas.
+c    lss   07jul99  Add 3D gaussian model for cubes.
 c  Bugs/Wishlist:
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Imgen: version 1.1 19-Mar-98' )
+	parameter(version='Imgen: version 1.1 19-Mar-99' )
 	include 'mirconst.h'
 	include 'maxdim.h'
 	include 'maxnax.h'
 	integer n1,n2,n3,i,j,k,lIn,lOut,nsize(MAXNAX),naxis
 	double precision crpix1,crpix2,cdelt1,cdelt2,crval1,crval2
 	double precision x1(3),x2(3)
-	real factor,bmaj,bmin,bpa,fac
+	real factor,bmaj,bmin,bpa,fac,fac3
 	character In*80,Out*80
 	logical totflux
 	real Buff(maxdim)
@@ -137,15 +146,16 @@ c
 c  Source parameters.
 c
 	integer MAXOBJS
-	parameter(MAXOBJS=4000)
+	parameter(MAXOBJS=3000)
 	real fwhm1(MAXOBJS),fwhm2(MAXOBJS),posang(MAXOBJS)
-	real amp(MAXOBJS),x(MAXOBJS),y(MAXOBJS)
+	real fwhm3(MAXOBJS)
+	real amp(MAXOBJS),x(MAXOBJS),y(MAXOBJS),z(MAXOBJS)
 	real fwhm1d(MAXOBJS),fwhm2d(MAXOBJS),posangd(MAXOBJS)
 	real xd(MAXOBJS),yd(MAXOBJS)
 	character objs(MAXOBJS)*8
 c
 	integer NOBJECTS
-	parameter(NOBJECTS=8)
+	parameter(NOBJECTS=10)
 	integer nobjs
 	character objects(NOBJECTS)*8
 c
@@ -155,7 +165,8 @@ c
 c
 	data objects/'level   ','noise   ','point   ',
      *		     'gaussian','disk    ','j1x     ',
-     *               'shell   ','comet   '/
+     *               'shell   ','comet   ','cluster ',
+     *               'gauss3  '/
 c
 c  Get the parameters from the user.
 c
@@ -184,11 +195,13 @@ c
 	    x(i) = 0
 	    y(i) = 0
 	  endif
-	  if(objs(i).eq.'gaussian'.or.objs(i).eq.'disk'.or.
+	  if(objs(i).eq.'gauss3') call keyr('spar',z(i),0.)
+	  if(objs(i)(1:5).eq.'gauss'.or.objs(i).eq.'disk'.or.
      *	     objs(i).eq.'j1x')then
 	    call keyr('spar',fwhm1(i),5.)
 	    call keyr('spar',fwhm2(i),5.)
 	    call keyr('spar',posang(i),0.)
+	    if(objs(i).eq.'gauss3') call keyr('spar',fwhm3(i),5.)
 	    fwhm1(i) = fwhm1(i) / 3600. * pi/180.
 	    fwhm2(i) = fwhm2(i) / 3600. * pi/180.
 	    if(min(fwhm1(i),fwhm2(i)).le.0)
@@ -199,6 +212,11 @@ c
 	    fwhm1(i) = fwhm1(i) / 3600. * pi/180.
 	    if(fwhm1(i).le.0)
      *	      call bug('f','BMAJ and BMIN parameters must be positive')
+	    fwhm2(i) = fwhm1(i)
+	    posang(i) = 0
+	  elseif(objs(i).eq.'cluster') then
+	    call keyr('spar',fwhm1(i),50.)
+	    fwhm1(i) = fwhm1(i) / 3600. * pi/180.
 	    fwhm2(i) = fwhm1(i)
 	    posang(i) = 0
 	  else
@@ -262,7 +280,7 @@ c
 c  If we have a single gaussian object, use this as the beam
 c  parameters.
 c
-	if(nobjs.eq.1.and.objs(1).eq.'gaussian'.and..not.
+	if(nobjs.eq.1.and.objs(1)(1:5).eq.'gauss'.and..not.
      *		totflux.and.abs(bmaj*bmin).eq.0)then
 	  if(fwhm1(1).gt.fwhm2(1))then
 	    bmaj = fwhm1(1)
@@ -332,8 +350,16 @@ c
 	  do j=1,n2
 	    call GetBuf(lIn,j,Buff,n1,factor)
 	    do i=1,nobjs
-	      call DoMod(j,objs(i),Buff,n1,amp(i),fwhm1d(i),fwhm2d(i),
-     *                    posangd(i),xd(i),yd(i),fac)
+c
+c  Find flux density for gauss3.
+c
+	      if(objs(i).eq.'gauss3') then
+	        fac3=exp(-2.0*log(4.0)*(real(k)-z(i))**2/fwhm3(i)**2)
+	      else
+		fac3=1.0
+	      endif
+	      call DoMod(j,objs(i),Buff,n1,fac3*amp(i),fwhm1d(i),
+     *                    fwhm2d(i),posangd(i),xd(i),yd(i),fac)
 	    enddo
 	    call xywrite(lOut,j,Buff)
 	  enddo
@@ -480,7 +506,7 @@ c  processing those regions.
 c
 c  Note: pi/4/log(2) == 1.1331.
 c
-	if(object.eq.'gaussian')then
+	if(object(1:5).eq.'gauss')then
 	  log2 = log(2.0)
 	  if(fac.ne.0)then
 	    a = fac * amp / (pi/4/log2 * fwhm1 * fwhm2)
@@ -544,6 +570,18 @@ c
 	      a = amp / p * sum 
 	      data(i) = data(i) + a
 	    endif
+	  enddo
+c
+c  Handle a cluster isothermal gas projection.
+c
+	else if(object.eq.'cluster')then
+	  yy = (j0-y)
+	  do i=1,n1
+	    xx = (i-x)
+	    p = (xx*xx+yy*yy)/(fwhm1*fwhm1)
+	    a = amp * (1. + p)**-0.5
+c	    a = amp * (1. + p)**(0.5-1.5*beta)
+	    data(i) = data(i) + a
 	  enddo
 c
 c  Handle a disk.
