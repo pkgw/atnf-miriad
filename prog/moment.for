@@ -3,7 +3,7 @@ c************************************************************************
 	implicit none
 c
 c= MOMENT -  Calculate moments of a Miriad image.
-c& mchw
+c& rjs
 c: image analysis
 c+
 c	MOMENT calculates the nth moment of a Miriad image. Currently only
@@ -18,6 +18,7 @@ c	on how to specify this. Only the bounding box is supported.
 c@ out
 c	The output image. No default.
 c@ mom
+c       -2      Peak temperature (units are same as individual channels)
 c       -1      Average intensity. (units are same as individual channels)
 c        0      Integrated intensity. (e.g. units I x km/s)
 c        1      1st moment = sum(I*v)/sum(I)
@@ -30,8 +31,12 @@ c	The axis for which the moment is calculated. Default = 3.
 c@ clip
 c	Two values. Exclude pixels with values in the range clip(1) to clip(2).
 c	If only one value is given, then exclude -abs(clip) to abs(clip).
-c--
-c   Other things to be improved in this code:
+c@ rngmsk
+c       Rangemask. Mask pixels as bad when the 1st moment gives a 1st
+c       moment out of range of that of the axis. This option can only be
+c       activated for mom=1. Default: false
+c
+c-- Other things to be improved in this code:
 c	
 c	- when items such as cdeltX, crvalX are missing, assume reasonable
 c	  defaults. I recently fixed the ctypeX problem.
@@ -60,10 +65,14 @@ c    26nov96 rjs   Increase length of input and output file names.
 c    07mar97 rjs   Improve a message.
 c    30jun97 rjs   Change units of 0th moment image to be jy/beam.km/s
 c    23jul97 rjs   Added pbtype.
+c    27feb98 mwp   Added mom=-2 for peak temperature
+c    13jul00 rjs   Copy across llrot keyword.
+c    12feb00 pjt   Mask pixels if their velocity is out of range
+c    15feb00 dpr   Truncate rangemask key to rngmsk - doh!
 c------------------------------------------------------------------------
 	include 'maxdim.h'
  	character version*(*)
-	parameter(version='version 1.0 30-Jun-97')
+	parameter(version='version 1.0 12-feb-00')
 	integer maxnax,maxboxes,maxruns,naxis
 	parameter(maxnax=3,maxboxes=2048)
 	parameter(maxruns=3*maxdim)
@@ -73,6 +82,7 @@ c------------------------------------------------------------------------
 	real blo,bhi,clip(2)
 	character in*64, out*64
 	character line*72
+	logical Qmask
 	integer mom
 c
 c  External
@@ -83,6 +93,7 @@ c Get inputs.
 c
 	call output('Moment: '//version)
 	call bug('i','Units for the 0th order moment have been changed')
+	call bug('i','new mom=-2 option available for peak flux map')
 	call keyini
 	call keya('in',in,' ')
 	call BoxInput('region',in,boxes,maxboxes)
@@ -96,14 +107,15 @@ c
 	  clip(2) = abs(clip(1))
 	  clip(1) = -clip(2)
 	endif
+	call keyl('rngmsk',Qmask,.FALSE.)
 	call keyfin
 c
 c Check inputs.
 c
 	if(in .eq. ' ') call bug('f','No input specified. (in=)')
 	if(out .eq. ' ') call bug('f','No output specified. (out=)')
-	if(mom.lt.-1 .or. mom.gt.2)
-     *	   call bug('f','moment must be between -1 and 2')
+	if(mom.lt.-2 .or. mom.gt.2)
+     *	   call bug('f','moment must be between -2 and 2')
 	if(clip(2).lt.clip(1)) call bug('f','clip range out of order')
 	call xyopen(lin,in,'old',maxnax,nsize)
 	call rdhdi(lin,'naxis',naxis,0)
@@ -147,7 +159,7 @@ c
 c
 c  Calculate moment.
 c
-	call makemom(lIn,lOut,naxis,blc,trc,mom,axis,clip)
+	call makemom(lIn,lOut,naxis,blc,trc,mom,axis,clip,qmask)
 c
 c  Update history and close files.
 c
@@ -185,11 +197,11 @@ c
 c  Be careful that nkeys and nckeys match the number of keywords.
 c
 	integer nkeys,nckeys
-	parameter (nkeys=22, nckeys=4)
+	parameter (nkeys=23, nckeys=4)
 	character keyw(nkeys)*8, ckeyw(nckeys)*5
 c
 	data keyw/   'bmaj    ','bmin    ','bpa     ',
-     *    'obstime ','epoch   ','history ',  
+     *    'obstime ','epoch   ','history ','llrot   ',
      *    'ltype   ','lstart  ','lstep   ','lwidth  ','pbfwhm  ',
      *    'instrume','niters  ','object  ','telescop','pbtype  ',
      *    'restfreq','vobs    ','observer','obsra   ',
@@ -236,7 +248,7 @@ c
 c
 c  bunit is usually a pain.  For this program it is relatively simple.
 c
-	if(mom.eq.-1)then
+	if(mom.le.-1)then
 	  call hdcopy(lin,lout,'bunit')
 	else if(mom.eq.0)then
 	  call rdhda(lin,'bunit',atemp,' ')
@@ -271,10 +283,11 @@ c
 	call wrhda(lout,'ctype3', ctype)
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
-	subroutine makemom(lIn,lOut,naxis,blc,trc,mom,axis,clip)
+	subroutine makemom(lIn,lOut,naxis,blc,trc,mom,axis,clip,qmask)
 	implicit none
 	integer lin,lOut,naxis,blc(naxis),trc(naxis),mom,axis
 	real clip(2)
+	logical qmask
 c
 c  Calculate the scale factor and channel offset for moments.
 c
@@ -285,13 +298,14 @@ c    blc,trc	The corners of the input image.
 c    mom	The moment to be calculated. Default = 0.
 c    axis	The axis for which the moment is calculated.
 c    clip	Pixel values in range clip(1) to clip(2) are excluded.
+c    qmask      Also set pixels flagged if mom=1 and outside axis range
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mirconst.h'
 	include 'mem.h'
 	real scale,restfreq,offset
 	real crpix,cdelt,crval
-	integer n1,n2,pSum,pFlags
+	integer n1,n2,pSum,pFlags,pTemps
 	character ctype*9,cin*1
 c
 c  Externals.
@@ -321,6 +335,7 @@ c
 	  endif
 	  if(mom.eq.0)scale = abs(scale)
 	endif
+	if(mom.eq.-2) scale=1.0
 c
 c  Get offset in channels.
 c
@@ -336,7 +351,8 @@ c
 c  Compute the moment.
 c
 	if(axis.eq.1)then
-	  call moment1(lIn,lOut,naxis,blc,trc,mom,scale,offset,clip)
+	  call moment1(lIn,lOut,naxis,blc,trc,mom,scale,offset,clip,
+     *                 qmask)
 	else if(axis.eq.2)then
 	  call bug('f','axis 2 is not implemented.')
 	else if(axis.eq.3)then
@@ -344,18 +360,22 @@ c
 	  n2 = trc(2) - blc(2) + 1
 	  call memalloc(pSum,3*n1*n2,'r')
 	  call memalloc(pFlags,n1*n2,'l')
+	  call memalloc(pTemps,n1*n2,'r')
 	  call moment3(lIn,lOut,naxis,blc,trc,mom,scale,offset,clip,
-     *	    memr(pSum),meml(pFlags),n1,n2)
+     *	    memr(pSum),meml(pFlags),n1,n2,memr(pTemps),qmask)
 	  call memfree(pFlags,n1*n2,'l')
 	  call memfree(pSum,3*n1*n2,'r')
+	  call memfree(pTemps,n1*n2,'r')
 	endif
 c
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
-	subroutine moment1(lIn,lOut,naxis,blc,trc,mom,scale,offset,clip)
+	subroutine moment1(lIn,lOut,naxis,blc,trc,mom,scale,offset,clip,
+     *                     qmask)
 	implicit none
 	integer lIn,lOut,naxis,blc(naxis),trc(naxis),mom
 	real scale,offset,clip(2)
+	logical qmask
 c
 c  Calculate the moment for axis 1.
 c
@@ -367,12 +387,16 @@ c    mom	The moment to be calculated. Default = 0.
 c    scale	Scale factor to convert from channels to km/s
 c    offset	Offset in channels.
 c    clip	Pixels with values in range clip(1:2) are excluded.
+c    qmask      Also set pixels flagged if mom=1 and outside axis range
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	real buf(maxdim),sum(maxdim),sum1(maxdim),sum2(maxdim)
-	real chan,chan2,flux,sigsq
+	real chan,chan2,flux,sigsq,vmin,vmax
 	integer i,j,k
 	logical flags(maxdim), outflags(maxdim)
+c
+	vmin = (blc(1)-offset)*scale
+	vmax = (trc(1)-offset)*scale
 c
 	do k = blc(3),trc(3)
 	  call xysetpl(lIn,1,k)
@@ -412,6 +436,18 @@ c
 		  flags(j) = .false.
 		endif
 	      endif
+	      if(qmask) then
+		 if (vmin.lt.vmax. and. 
+     *		      (sum1(j).lt.vmin .or. sum1(j).gt.vmax) .or.
+     *		     vmin.gt.vmax. and. 
+     *		      (sum1(j).lt.vmax .or. sum1(j).gt.vmin)) then
+		    flags(j) = .false.
+		    sum(j)  = 0.
+		    sum1(j) = 0.
+		    sum2(j) = 0.
+		 endif
+	      endif
+
 	    else
 	      sum1(j) = 0.
 	      sum2(j) = 0.
@@ -429,12 +465,14 @@ c
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
 	subroutine moment3(lIn,lOut,naxis,blc,trc,mom,scale,offset,clip,
-     *	  sum,outflag,n1,n2)
+     *	  sum,outflag,n1,n2,pTemps,qmask)
 c
 	implicit none
 	integer lIn,lOut,naxis,blc(naxis),trc(naxis),mom,n1,n2
 	real scale,offset,clip(2),sum(n1,n2,3)
 	logical outflag(n1,n2)
+	real pTemps(n1,n2)
+	logical qmask
 c
 c  Calculate the moments for axis 3.
 c
@@ -446,13 +484,15 @@ c    mom	The moment to be calculated. Default = 0.
 c    scale	Scale factor to convert from channels to km/s
 c    offset	Offset in channels.
 c    clip	Pixels with value in range clip(1),clip(2) are excluded.
+c    qmask      Also set pixels flagged if mom=1 and outside axis range
 c  Scratch:
 c    sum	Used to accumulate the moments.
 c    outflag	Flagging info for the output array.
+c    pTemps     use to calculate max temperature (flux) map if mom=-2
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	real buf(maxdim),flux
-	real chan,chan2,sigsq
+	real chan,chan2,sigsq,vmin,vmax
 	integer i,j,k,i0,j0
 	logical flags(maxdim),good
 c
@@ -461,6 +501,15 @@ c
 	if(trc(2)-blc(2)+1.ne.n2.or.
      *	   trc(1)-blc(1)+1.ne.n1)call bug('f',
      *	  'Dimension inconsistency in MOMENT3')
+c
+c  intialize the max temperature array
+c	(should really use some kind of POSIX-type MINFLOAT here)
+	do j=1,n2
+	   do i = 1,n1
+	      	  pTemps(i,j) = -1e38
+	   enddo
+	enddo
+
 c
 c  Zero the array to accumulate the moments.
 c
@@ -474,12 +523,17 @@ c
 c
 c  Loop through the velocity channels.
 c
+	if (Qmask) then
+	   vmin = (blc(3)-offset)*scale
+	   vmax = (trc(3)-offset)*scale
+	   write(*,*) 'moment3: rangemask ',vmin,vmax
+	endif
 	do k = blc(3),trc(3)
 	  call xysetpl(lIn,1,k)
 	  chan = (k-offset)*scale
 	  chan2 = chan*chan
 c
-c  Accumulate the moments.
+c  Accumulate the moments, one row at a time
 c
 	  j0 = 1
 	  do j = blc(2),trc(2)
@@ -489,7 +543,14 @@ c
 	    do i = blc(1),trc(1)
 	      good=flags(i).and.(buf(i).le.clip(1).or.buf(i).ge.clip(2))
 	      if(good) then
+		if(mom.eq.-2) then 
+			if(buf(i).gt.pTemps(i,j)) then
+				pTemps(i,j)=buf(i) 
+				sum(i0,j0,1) = pTemps(i,j)
+			endif
+		else
 			     sum(i0,j0,1) = sum(i0,j0,1) + buf(i)
+		endif
 	        if(mom.ge.1) sum(i0,j0,2) = sum(i0,j0,2) + buf(i)*chan
 		if(mom.ge.2) sum(i0,j0,3) = sum(i0,j0,3) + buf(i)*chan2
 	      endif
@@ -516,6 +577,17 @@ c
 	          sum(i,j,3) = 0.
 	          outflag(i,j) = .false.
 	        endif
+	      endif
+	      if(qmask) then
+		 if (vmin.lt.vmax. and. 
+     *		      (sum(i,j,2).lt.vmin .or. sum(i,j,2).gt.vmax) .or.
+     *		     vmin.gt.vmax. and. 
+     *		      (sum(i,j,2).lt.vmax .or. sum(i,j,2).gt.vmin)) then
+		    outflag(i,j) = .false.
+		    sum(i,j,1) = 0.
+		    sum(i,j,2) = 0.
+		    sum(i,j,3) = 0.
+		 endif
 	      endif
 	    else
 	      sum(i,j,2) = 0.
