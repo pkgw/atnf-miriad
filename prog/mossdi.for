@@ -25,23 +25,16 @@ c	Iterating stops if the maximum falls below this level. The
 c	default is 0.
 c@ clip
 c	This sets the relative clip level. Values are typically 0.75 to 0.9.
-c	The default is 0.9.
+c	The default is conservative and image dependent.
 c@ region
-c	The standard region of interest keyword. See the help on "region" for
-c	more information. The default is the entire image.
-c@ options
-c	Extra processing options. There is just one of these at the moment.
-c	  positive   Constrain the deconvolved image to be positive valued.
+c	The standard region of interest keyword. See `help region' for more
+c	information. The default is the entire image.
 c--
 c  History:
 c    rjs 31oct94 - Original version.
-c    rjs  6feb95 - Copy mosaic table to output component table.
-c    rjs 27feb97 - Fix glaring bug in the default value for "clip".
-c    rjs 28feb97 - Last day of summer. Add options=positive.
-c    rjs 02jul97 - cellscal change.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='MosSDI: version 1.0 28-Feb-97')
+	parameter(version='MosSDI: version 1.0 31-Oct-94')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
@@ -56,7 +49,7 @@ c
 	integer naxis,nMap(3),nbeam(3),nout(MAXNAX),nModel(3)
 	integer pStep,pStepR,pRes,pEst,pWt
 	integer maxniter,niter,ncomp
-	logical more,dopos
+	logical more
 	real dmin,dmax,drms,cutoff,clip,gain,flux
 c
 c  Externals.
@@ -71,18 +64,18 @@ c
 	call keya('beam',BeamNam,' ')
 	call keya('model',ModelNam,' ')
 	call keya('out',OutNam,' ')
-	if(MapNam.eq.' '.or.BeamNam.eq.' '.or.OutNam.eq.' ')
-     *	  call bug('f','A file name was missing from the parameters')
 	call keyi('niters',maxniter,100)
-	if(maxniter.lt.0)call bug('f','NITERS has bad value')
 	call keyr('cutoff',cutoff,0.0)
 	call keyr('gain',gain,0.1)
-	if(gain.le.0.or.gain.gt.1)call bug('f','Invalid gain value')
-	call keyr('clip',clip,0.9)
-	if(clip.le.0)call bug('f','Invalid clip value')
+	call keyr('clip',clip,0.0)
 	call BoxInput('region',MapNam,Boxes,MaxBoxes)
-	call GetOpt(dopos)
 	call keyfin
+c
+c  Check everything makes sense.
+c
+	if(maxniter.lt.0)call bug('f','NITERS has bad value')
+	if(MapNam.eq.' '.or.BeamNam.eq.' '.or.OutNam.eq.' ')
+     *	  call bug('f','A file name was missing from the parameters')
 c
 c  Open the input map.
 c
@@ -190,7 +183,7 @@ c
 	    dowhile(more)
 	      call Steer(memr(pEst),memr(pRes),memr(pStep),memr(pStepR),
      *	        memr(pWt),nPoint,Run,nRun,
-     *	        gain,clip,dopos,dmin,dmax,drms,flux,ncomp)
+     *	        gain,clip,dmin,dmax,drms,flux,ncomp)
 	      niter = niter + ncomp
 	      line = 'Steer Iterations: '//itoaf(niter)
 	      call output(line)
@@ -237,14 +230,13 @@ c
 	end
 c************************************************************************
 	subroutine Steer(Est,Res,Step,StepR,Wt,nPoint,Run,nRun,
-     *	  gain,clip,dopos,dmin,dmax,drms,flux,ncomp)
+     *	  gain,clip,dmin,dmax,drms,flux,ncomp)
 c
 	implicit none
 	integer nPoint,nRun,Run(3,nRun),ncomp
 	real gain,clip,dmin,dmax,drms,flux
 	real Est(nPoint),Res(nPoint),Step(nPoint),StepR(nPoint)
 	real Wt(nPoint)
-	logical dopos
 c
 c  Perform a Steer iteration.
 c
@@ -267,39 +259,27 @@ c    ncomp	Number of components subtracted off this time.
 c------------------------------------------------------------------------
 	integer i
 	real g,thresh
-	logical ok
 	double precision SS,RS,RR
 c
 c  Determine the threshold.
 c
 	thresh = 0
-	if(dopos)then
-	  do i=1,nPoint
-	    if(Est(i).gt.(-gain*Res(i)))
-     *	      thresh = max(thresh,Res(i)*Res(i)*Wt(i))
-	  enddo
-	else
-	  do i=1,nPoint
-	    thresh = max(thresh,Res(i)*Res(i)*Wt(i))
-	  enddo
-	endif
-	thresh = clip * clip * thresh
+	do i=1,nPoint
+	  thresh = max(thresh,Res(i)*Res(i)*Wt(i))
+	enddo
+	thresh = clip * thresh
 c
 c  Get the step to try.
 c
 	ncomp = 0
 	do i=1,nPoint
-	  ok = Res(i)*Res(i)*Wt(i).gt.thresh
-	  if(dopos.and.ok) ok = Est(i).gt.(-gain*Res(i))
-	  if(ok)then
+	  if(Res(i)*Res(i)*Wt(i).gt.thresh)then
 	    Step(i) = Res(i)
 	    ncomp = ncomp + 1
 	  else
 	    Step(i) = 0
 	  endif
 	enddo
-c
-	if(ncomp.eq.0)call bug('f','Could not find components')
 c
 c  Convolve this step.
 c
@@ -314,7 +294,7 @@ c
 	  SS = SS + Wt(i) * StepR(i) * StepR(i)
 	  RS = RS + Wt(i) * Res(i)   * StepR(i)
 	enddo
-	g = min(1., real(RS / SS) )
+	g = RS / SS
 c
 c  Subtract off a fraction of this, and work out the new statistics.
 c
@@ -407,7 +387,7 @@ c------------------------------------------------------------------------
 	real crpix1,crpix2,crpix3
 	character line*72,txtblc*32,txttrc*32,num*2
 	integer nkeys
-	parameter(nkeys=16)
+	parameter(nkeys=14)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -416,8 +396,7 @@ c
 c
 	data keyw/   'obstime ','epoch   ','history ','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ','pbfwhm  ',
-     *	  'observer','telescop','restfreq','vobs    ','btype   ',
-     *	  'mostable','cellscal'/
+     *	  'observer','telescop','restfreq','vobs    ','btype   '/
 c
 c  Fill in some parameters that will have changed between the input
 c  and output.
@@ -467,22 +446,4 @@ c
 	call hiswrite(lOut,'MOSSDI: Total Iterations = '//itoaf(Niter))
 	call hisclose(lOut)
 c
-	end
-c************************************************************************
-	subroutine GetOpt(dopos)
-c
-	implicit none
-	logical dopos
-c
-c  Output:
-c    dopos	Constrain the model to be positive valued.
-c------------------------------------------------------------------------
-	integer NOPTS
-	parameter(NOPTS=1)
-	logical present(NOPTS)
-	character opts(NOPTS)*8
-	data opts/'positive'/
-c
-	call options('options',opts,present,NOPTS)
-	dopos = present(1)
 	end
