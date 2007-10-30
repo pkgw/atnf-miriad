@@ -29,18 +29,18 @@ c     *'tb,noheader,nolist,list,eformat,style,title,xmin,xmax,ymin,ymax')
 
 c plot and options for IMSPEC
       parameter    ( NAME = 'IMSPEC' )
-      character*21 plotopts
+      character    plotopts*(*)
       parameter    ( plotopts = 'mean,sum,flux,pbcflux' )
-      character    defplt*4, idstr*8
+      character    defplt*(*), idstr*(*)
       parameter    ( defplt = 'flux', idstr = 'spectrum' )
-      character*80 commonop
+      character   commonop*(*)
       parameter    ( commonop =
-     *'tb,noheader,nolist,list,eformat,hanning,boxcar,deriv,style,title,
-     *xmin,xmax,ymin,ymax' )
+     *'tb,noheader,nolist,list,eformat,hanning,boxcar,deriv,style,'//
+     *'title,xmin,xmax,ymin,ymax' )
 
 c common variables for IMSTAT and IMSPEC
 
-      character*20 styles
+      character    styles*(*)
       parameter    ( styles = 'connect,step,histo' )
 
       integer      NPLOTV, NPLOTR, NPLOTP
@@ -49,26 +49,31 @@ c common variables for IMSTAT and IMSPEC
       real         plotrnge( NPLOTR )
       character*80 plotpar(  NPLOTP )
 
+c plotvar(1-9)
       integer      SEL, HEAD, LIST, EFMT, DUNIT, STYLE
+      integer      DOSMOOTH, SMOWID, DERIV
       parameter    ( SEL=1, HEAD=2, LIST=3, EFMT=4, DUNIT=5, STYLE=6 )
+      parameter    ( DOSMOOTH=7, SMOWID=8, DERIV=9 )
+
+c values of plotvar(DUNIT)
       integer      ORIG, JANSKY, KELVIN
       parameter    ( ORIG=1, JANSKY=2, KELVIN=3 )
-      integer      DOSMOOTH, SMOWID, DERIV
-      parameter    ( DOSMOOTH=6, SMOWID=7, DERIV=8 )
+c values of plotvar(DOSMOOTH)
       integer      HANNING, BOXCAR
       parameter    ( HANNING=1, BOXCAR=2 )
 
+c plotrng2(1-10)
       integer      XLOW, XUPP, YLOW, YUPP, FLXL, FLXU, FLYL, FLYU
       parameter    ( XLOW=1,  XUPP=2,  YLOW=3,  YUPP=4 )
       parameter    ( FLXL=5,  FLXU=6,  FLYL=7,  FLYU=8 )
       integer      XTITLE, YTITLE
       parameter    ( XTITLE=9, YTITLE=10 )
 
+c plotpar(1-5)
       integer      XLABP, YLABP, INFOP, BOXP, TITLE
       parameter    ( XLABP=1, YLABP=2, INFOP=3, BOXP=4, TITLE=5 )
 
-      integer      crpix(MAXNAX)
-      double precision crval(MAXNAX), cdelt(MAXNAX)
+      double precision crval(MAXNAX), cdelt(MAXNAX), crpix(MAXNAX)
       character*9  ctype(MAXNAX)
 
       integer      NSTATS
