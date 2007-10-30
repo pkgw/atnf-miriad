@@ -2,10 +2,9 @@
 	include 'maxnax.h'
 c
 c  Parameters setting internal buffers.
-c  NOTE: We should ensure that 13*MAXCHAN is greater than MAXDIM.
 c
 	integer MAXSIZE,MAXCARDS,MAXOPEN
-	parameter(MAXSIZE=13*MAXCHAN,MAXCARDS=16,MAXOPEN=4)
+	parameter(MAXSIZE=13*MAXCHAN,MAXCARDS=16,MAXOPEN=2)
 c
 c  Parameters associated with the FITS file as a whole.
 c  NOTE: DatOff,DatBase and new are used by higher level routines.
@@ -26,7 +25,6 @@ c
 	integer BypPix(MAXOPEN)
 	logical float(MAXOPEN)
 	real bscale(MAXOPEN),bzero(MAXOPEN)
-	integer BlankVal(MAXOPEN)
 c
 c  For Image files.
 c
@@ -44,7 +42,6 @@ c
 	integer nRanFile(MAXOPEN),nRanProg(MAXOPEN)
 	integer ncomplex(MAXOPEN),pols(MAXOPEN),freqs(MAXOPEN)
 	integer visibs(MAXOPEN)
-	integer nts1(MAXOPEN),nts2(MAXOPEN),nts3(MAXOPEN)
 c
 c  Parameters related to arrays returned by the uv routines.
 c
@@ -55,18 +52,18 @@ c
 c
 c  Scratch arrays used by all and sundry.
 c
-	integer array(MAXSIZE),arrayd(MAXSIZE)
-	real rarray(MAXSIZE),rarrayd(MAXSIZE)
+	integer array(MAXSIZE)
+	real rarray(MAXSIZE)
 c
 c  The common block which contains this mess.
 c
-	common/fitscom/TimOff,curlu,curcard,item,bscale,bzero,
+	common/fits/TimOff,curlu,curcard,item,bscale,bzero,
      *	  scales1,scales2,zeros,axes,DatOff,HdOff,DatSize,HdSize,
-     *	  DatBase,PixBase,BypPix,BlankVal,ncards,nRanFile,nRanProg,
-     *	  ncomplex,indices1,indices2,visibs,nts1,nts2,nts3,pols,freqs,
-     *	  array,arrayd,WtScal,rarray,rarrayd,
-     *	  new,opened,float
-	common/fitscomc/carray
+     *	  DatBase,PixBase,BypPix,ncards,nRanFile,nRanProg,ncomplex,
+     *	  indices1,indices2,visibs,pols,freqs,WtScal,new,opened,
+     *	  float,array
+	common/fitsc/carray
+	equivalence(array,rarray)
 c
 c  Info to help find an extension table that we are interested in.
 c
@@ -89,26 +86,24 @@ c  Variables for i/o on an "A3DTABLE"
 c
 c  MAXCOL	Max number of columns a table can have.
 c  rows		Number of rows in the table.
-c  cols		Number of columns in the table
+c  cols		Number of columns in the table.
 c  width	The width of a row of a table, in bytes.
 c  ColForm	Gives the data type of a column. Its value with be
 c		one of the "Form" parameter values.
-c  ColCnt	Size of the data in this column, for one row, in bits.
+c  ColCnt	Size of the data in this column, for one row, in bytes.
 c  ColOff	Offset, in bytes, to the start of the data in each row.
 c  ColType	The "TTYPE" value.
 c  ColUnits	The "TUNIT" value.
 c  
 	integer MAXCOL,NFORMS
-	parameter(MAXCOL=400,NFORMS=10)
+	parameter(MAXCOL=32,NFORMS=5)
 	integer rows(MAXOPEN),cols(MAXOPEN),width(MAXOPEN)
 	integer ColForm(MAXCOL,MAXOPEN),ColCnt(MAXCOL,MAXOPEN)
 	integer ColOff(MAXCOL,MAXOPEN)
-	character ColType(MAXCOL,MAXOPEN)*32
+	character ColType(MAXCOL,MAXOPEN)*16
 	character ColUnits(MAXCOL,MAXOPEN)*16
 c
-        integer FormI,FormJ,FormA,FormE,FormD,FormX,FormL,FormC
-	integer FormM,FormP
-	parameter(FormJ=1,FormI=2,FormA=3,FormE=4,FormD=5,FormX=6,
-     *            FormL=7,FormC=8,FormM=9,FormP=10)
+	integer FormI,FormJ,FormA,FormE,FormD
+	parameter(FormJ=1,FormI=2,FormA=3,FormE=4,FormD=5)
 	common/fitstab/rows,cols,width,ColForm,ColCnt,ColOff
 	common/fitstabc/ColType,ColUnits
