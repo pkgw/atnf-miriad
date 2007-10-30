@@ -3147,3 +3147,20 @@ and in a way to be consistent with all the other changes happening.
 25aug97 rjs	tin.for -- Text file input handling subroutines.
 25aug97 rjs	uvgen.for -- Tidy up. Free-format input of text files. Some
 		better defaults. Some change to handling of "corr" files.
+*********************************** 29aug97 Sent changes to Doug Roberts
+08sep97 rjs	pops.for -- Use ephem's azel.
+08sep97 rjs	tin.for -- Improved error message.
+09sep97 rjs	regrid.for -- Added options=nearest
+11sep97 rjs/jm	julday.for -- Added "caljul" and generalised the routines
+		to support new IAU formats.
+10sep97 rjs	refract.for -- Routines to calculate the complex
+		refractivity of air (dry and wet).
+15sep97 rjs	uvio.c -- Fix pointing selection.
+*********************************** 15sep97 Sent changes to Doug Roberts
+10sep97 mchw	velplot.for,velplot.h -- Upgraded, Report absolute positions
+		with cursor. Fix new bug at exactly 45.0 position angle.
+05sep97 mchw	pb.for -- Change lower freq for HATCREEK to 24 GHz.
+17sep97 rjs	demos.for -- Doc change only.
+21sep97 rjs	fits.for,fitsio.for -- Replace julfdate,fdatejul with julday,dayjul
+25sep97 rjs	refract.for -- Minor changes.
+25sep97 rjs	julday.for -- Added subroutine julcal.
