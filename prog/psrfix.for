@@ -30,11 +30,6 @@ c       of 4 and 5 minus 6, and the last will contain the sum of
 c       7 and 8. It is possible to have any combinations of bins.
 c       However, the number of output bins must be less than or
 c       equal to the number of input bins.
-c
-c	NOTE: This simply adds and differences multiple bins. It does
-c	NOT perform any normalization of the result. For example, if
-c	you sum three bins of equal value, you will get three times the
-c	flux of each bin in the output
 c@ out
 c	The name of the output uv data set. No default.
 c@ options
@@ -48,18 +43,13 @@ c	  nopass  This option suppresses bandpass calibration. The
 c	          default behaviour is to apply bandpass calibration.
 c--
 c  History:
-c    bs,rjs 28may96 Original version.
-c    rjs  29jul96 Fix calibration options, and som FORTRAN standardisation.
-c    rjs  10dec96 Better error message when nbin is missing.
-c    rjs  12dec96 Fix writing of variables to the right moment.
-c    rjs  21apr99 Allow bin selection and de-dispersation in the one go.
-c    dpr  09nov00 Fix (+n,-n) bug in bin selection
+c    rjs  28may96 Original version.
 c------------------------------------------------------------------------
 c
 c  Common block to communicate to the "process" routine.
 c
 	integer MAXBIN
-	parameter(MAXBIN=32)
+	parameter(MAXBIN=8)
 	integer obins
 	integer addarr(MAXBIN,MAXBIN)
 	common/pcom/addarr,obins
@@ -67,12 +57,10 @@ c
 c
 	include 'maxdim.h'
 	character version*(*)
-	parameter(version='PsrFix: version 1.0 09-Nov-00')
+	parameter(version='PsrFix: version 1.0 28-May-96')
 	character uvflags*16,ltype*16,out*64,binsl(MAXBIN)*64
-	integer tIn,tOut,nchan
-	integer i,j,l,n,s
-	character state*1,c*1
-	logical ok
+	integer tIn,tOut,nchan,nbin,add
+	integer plgth,pnlgth,cnlgth,k,i,j
 	logical first,flags(MAXCHAN)
 	complex data(MAXCHAN)
 	double precision preamble(5),Tprev
@@ -81,7 +69,7 @@ c
 c  Externals.
 c
 	logical uvDatOpn,keyprsnt
-	integer len1
+	integer rindex
 c
 c  Get the input parameters.
 c
@@ -110,70 +98,47 @@ c
 c
 c  Initialize the adding array.
 c
+	nbin = MAXBIN
 	do i=1,obins
-	  do j=1,MAXBIN
-	    addarr(i,j) = 0
-	  enddo
+	   do j=1,nbin
+	      addarr(i,j) = 0
+	   enddo
 	enddo
 c
 c  Decode the bin selection.
 c
+
 	do i=1,obins
-	  l = len1(binsl(i))
-	  ok = .false.
-	  if(l.gt.3)ok = binsl(i)(1:1).eq.'('.and.
-     *		         binsl(i)(l:l).eq.')'
-	  if(.not.ok)call bug('f','Invalid bin selection: '//binsl(i))
-c  dpr 09-11-00:
-c  n is the bin num we to add/subtract this time through
-c  for this output chan
-	  n = 0
-c  s is sign
-	  s = +1
-c  state is what to expect next:
-c  's' - start?
-c  'd' - integer
-c  ',' - comma
-c  c is the current character
-	  state ='s'
-	  do j=2,l-1
-	    c = binsl(i)(j:j)
-	    if(state.eq.'s'.and.c.eq.'-')then
-	      s = -1
-	      state= 'd'
-	    else if(state.eq.'s'.and.c.eq.'+')then
-	      s = +1
-	      state = 'd'
-	    else if(state.eq.','.and.c.eq.',')then
-	      if(n.eq.0.or.n.gt.MAXBIN)
-     *		call bug('f','Invalid bin selection: '//binsl(i))
-c  dpr 09-11-00 ->
-	      if (addarr(i,n)+s .eq. 0 ) then
-		addarr(i,n) = 0
+	   do j=1,rindex(binsl(i),')')-1,2
+	      plgth = rindex(binsl(i),')')
+	      pnlgth = index(binsl(i),',')
+	      cnlgth = index(binsl(i)(j+1:plgth),',')
+	      if (pnlgth.gt.3.and.j.lt.pnlgth) then
+		 read(binsl(i)(j+1:j+2),'(i2)')add
+		 j = j+1
+	      elseif (cnlgth.gt.2.and.j.gt.2)then
+		 read(binsl(i)(j+1:j+2),'(i2)')add
+		 j = j+1
+	      elseif(cnlgth.eq.0.and.plgth-j.gt.2)then
+		 read(binsl(i)(j+1:j+2),'(i2)')add
+		 j = j+1
 	      else
-		addarr(i,n) = s
+		 read(binsl(i)(j+1:j+1),'(i2)')add
 	      endif
-c <-
-	      n = 0
-	      s = +1
-	      state = 's'
-	    else if(c.ge.'0'.and.c.le.'9')then
-	      n = 10*n + ichar(binsl(i)(j:j)) - ichar('0')
-	      state = ','
-	    else
-	      call bug('f','Invalid bin selection: '//binsl(i))
-	    endif
-	  enddo
-	  if(state.ne.','.or.n.eq.0.or.n.gt.MAXBIN)
-     *	    call bug('f','Invalid bin selection: '//binsl(i))
-c  dpr 09-11-00 ->
-	      if (addarr(i,n)+s .eq. 0 ) then
-		addarr(i,n) = 0
-	      else
-		addarr(i,n) = s
-	      endif
-c <-
+	      do k=1,nbin
+		 if(addarr(i,k).ne.1.and.addarr(i,k).ne.-1)then
+		    if(k.eq.add)then
+		       addarr(i,k) = 1
+		    elseif(k.eq.-add)then
+		       addarr(i,k) = -1
+		    else
+		       addarr(i,k) = 0
+		    endif
+		 endif
+	      enddo
+	   enddo
 	enddo
+
 c
 c  Various initialisation.
 c
@@ -212,16 +177,17 @@ c
 c  Flush if needed.
 c
 	    if(abs(preamble(4)-Tprev).gt.1d0/86400d0)then
+	      call VarCopy(tIn,tOut)
 	      call BufFlush(tOut,dm,pperiod,dfreq)
 	    endif
 	    call BufAcc(tIn,preamble,data,flags,nchan)
-	    call VarCopy(tIn,tOut)
 	    Tprev = preamble(4)
 	    call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
 	  enddo
 c
 c  Flush out anything remaining.
 c
+	  call VarCopy(tIn,tOut)
 	  call BufFlush(tOut,dm,pperiod,dfreq)
 	  call uvDatCls
 	enddo
@@ -252,9 +218,9 @@ c
 c Set up calibration flags
 c
 	uvflags = 'd3'
-	if(.not.present(1))uvflags(3:3) = 'c'
-	if(.not.present(2))uvflags(4:4) = 'e'
-	if(.not.present(3))uvflags(5:5) = 'f'
+	if(present(1))uvflags(3:3) = 'c'
+	if(present(2))uvflags(4:4) = 'f'
+	if(present(3))uvflags(5:5) = 'e'
 	end
 c************************************************************************
 	subroutine BufIni
@@ -287,9 +253,7 @@ c
 	  time = preamble(4)
 	  nchans = nchan
 	  call uvinfo(tIn,'sfreq',sfreq)
-	  call uvrdvri(tIn,'nbin',nbins,0)
-	  if(nbins.eq.0)call bug('f',
-     *	    'Variable "nbin" is missing from the vis. dataset')
+	  call uvrdvri(tIn,'nbin',nbins,1)
 	  if(nbins.gt.MAXBINS)call bug('f','Too many pulsar bins')
 	endif
 c
@@ -510,7 +474,7 @@ c    obins1	Number of output bins.
 
 c------------------------------------------------------------------------
 	integer MAXBIN
-	parameter(MAXBIN=32)
+	parameter(MAXBIN=8)
 	integer addarr(MAXBIN,MAXBIN),obins
 	common/pcom/addarr,obins
 	real dtcfreq,dt
@@ -518,8 +482,6 @@ c------------------------------------------------------------------------
 c
 c       Initializeing the Output arrays
 c
-	if(obins.gt.nbins)call bug('f','Too many output bins')
-
 	do i=1,nchan
 	   do j=1,nbins
 	      DatOut(i,j) = 0
@@ -530,23 +492,17 @@ c
 	if(dm.gt.0)then
 	   
 c       The delay relative to infinite frequency for the specified frequency (dfreq)
-
-c	1e3 factor for GHz->MHz
 	   
-	   dtcfreq = 4.149383E3 * dm/(dfreq * 1e3)**2
+	   dtcfreq = 4.149383E3 * dm/(dfreq * 1e3)**2 !1e3 factor for GHz->MHz
 	   
 c       Calculate the delay for each of the channels relative to the above freq. 
 	   
 	   do i=1,nchan
-
-c dt in secs
-	      dt = (4.149383E3 * dm/(sfreq(i)*1e3)**2) - dtcfreq
-c move bins by mv                
-	      mv = nint(nbins*dt/pperiod)
+	      dt = (4.149383E3 * dm/(sfreq(i)*1e3)**2) - dtcfreq !dt in secs
+	      mv = nint(nbins*dt/pperiod) !move bins by mv                
 	      mv = mod(mv,nbins)
 	      if(mv.lt.0)mv = mv + nbins
-c move to right
-	      if(mv.gt.0)then
+	      if(mv.gt.0)then	!move to right
 		 do j=1,nbins
 		    if(j.gt.nbins-mv)then
 		       DatOut(i,j) = DatIn(i,(j+mv)-nbins)
@@ -556,8 +512,7 @@ c move to right
 		       FlgOut(i,j) = FlgIn(i,j+mv)
 		    endif
 		 enddo
-c leave where is
-	      elseif(mv.eq.0)then
+	      elseif(mv.eq.0)then               !leave where is
 		 do j=1,nbins
 		    DatOut(i,j) = DatIn(i,j)
 		    FlgOut(i,j) = FlgIn(i,j)
@@ -567,20 +522,6 @@ c leave where is
 	   obins1 = nbins
 	endif
 
-c
-c	Copy back to the input, if needed.
-c
-
-	if(dm.gt.0.and.obins.gt.0)then
-	  do i=1,nchan
-	     do j=1,nbins
-		DatIn(i,j) = DatOut(i,j)
-		FlgIn(i,j) = FlgOut(i,j)
-	        DatOut(i,j) = 0
-	        FlgOut(i,j) = .true.
-	     enddo
-	  enddo
-	endif
 c
 c       The adding of the bins in groups as defined above by binsl.
 c	
