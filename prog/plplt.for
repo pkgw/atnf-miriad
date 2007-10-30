@@ -2,7 +2,7 @@ c************************************************************************
 	program plplt
 	implicit none
 c
-c= plplt - Plot the visibility function for a planet
+c= plplot - Plot the visibility function for a planet
 c& rjs
 c: uv analysis
 c+
@@ -10,7 +10,7 @@ c	PLPLOT plots the visibility function of a planet at a particular
 c	epoch. This models the planet as a spherical black body with
 c	some brightness temperature.
 c@ source
-c	This gives the name of a planet. No default.
+c	This gives the name of a planet. No 
 c@ epoch
 c	This gives the time of the observation, in Miriad's standard
 c	date format. No default.
@@ -28,8 +28,7 @@ c
 c--
 c  History
 c    rjs  15jun99 Original version.
-c    rjs  04feb01 General tidy up to bring it up to standard.
-c    rjs  12feb01 More minor tidying.
+c    rjs  04feb02 General tidy up to bring it up to standard.
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 c
@@ -74,7 +73,6 @@ c
 	if(uvrange(1).ge.uvrange(2).or.uvrange(1).lt.0)
      *				call bug('f','Invalid uvrange')
 	call keyt('epoch',epoch,'atime',0.d0)
-	if(epoch.le.0)call bug('f','An epoch must be given')
 	call keyr('pltb',pltb,0.)
 	if(pltb.lt.0)call bug('f','Invalid value for pltb')
 	call keyfin
