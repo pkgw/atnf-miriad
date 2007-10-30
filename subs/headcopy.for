@@ -19,7 +19,7 @@ c    'history ','bmaj    ','bmin    ','bpa     ','bunit   ',
 c    'obstime ','epoch   ','instrume','ltype   ','lstart  ',
 c    'lwidth  ','lstep   ','niters  ','object  ','observer',
 c    'obsdec  ','obsra   ','pbfwhm  ','restfreq','telescop',
-c    'vobs    ','cellscal','btype'
+c    'vobs    ','cellscal','btype   ','llrot   ','mostable'
 c
 c - The datamin and datamax items are explicitly excluded. One should
 c recalculate the min and max of the output dataset and update these
@@ -73,6 +73,10 @@ c    bpw  16dec92  No special copy for btype, per Neil's remark
 c    bpw   1feb93  Made crpix double precision too
 c    pjt  15mar95  fixed statement order for f2c (linux)
 c    rjs  02jul97  cellscal change.
+c    rjs  23jul97  added pbtype.
+c    rjs  20nov98  added llrot.
+c    bpw  05mar99  real->double for last argument fixed call to rdhdd
+c    rjs  17oct99  added mostable.
 c
 c***********************************************************************
 
@@ -84,17 +88,17 @@ c***********************************************************************
       logical          hdprsnt
 
       integer          NKEYS
-      parameter        ( NKEYS = 28 )
+      parameter        ( NKEYS = 31 )
       character*8      keyw(NKEYS)
       data keyw/
      *    'crpix   ','crval   ','cdelt   ','crota   ','ctype   ',
      *    'history ','cellscal',
      *    'bmaj    ','bmin    ','bpa     ','bunit   ',
-     *    'obstime ','epoch   ','instrume',
+     *    'obstime ','epoch   ','instrume','mostable',
      *	  'ltype   ','lstart  ','lwidth  ','lstep   ',
      *    'niters  ','object  ','observer','obsdec  ','obsra   ',
      *    'pbfwhm  ','restfreq','telescop','vobs    ',
-     *    'btype'/
+     *    'btype   ','pbtype  ','llrot   '/
 
       do k = 1, 5
          do n = 1, naxis
@@ -105,10 +109,10 @@ c***********************************************************************
             if( axnum(n) .ne. 0 ) then
                c = keyw(k)(1:5) // itoaf( abs(axnum(n)) )
                if( hdprsnt( tnoinp, c ) ) then
-                  if( k.eq.1 ) call rdhdd( tnoinp, c, dvalue, 0. )
-                  if( k.eq.2 ) call rdhdd( tnoinp, c, dvalue, 0. )
-                  if( k.eq.3 ) call rdhdd( tnoinp, c, dvalue, 0. )
-                  if( k.eq.4 ) call rdhdd( tnoinp, c, dvalue, 0. )
+                  if( k.eq.1 ) call rdhdd( tnoinp, c, dvalue, 0.d0 )
+                  if( k.eq.2 ) call rdhdd( tnoinp, c, dvalue, 0.d0 )
+                  if( k.eq.3 ) call rdhdd( tnoinp, c, dvalue, 0.d0 )
+                  if( k.eq.4 ) call rdhdd( tnoinp, c, dvalue, 0.d0 )
                   if( k.eq.5 ) call rdhda( tnoinp, c, avalue, ' ' )
                   if( axnum(n).gt.0 ) then
                      if( k.eq.1 ) dvalue = dvalue - blc( axnum(n)) + 1
