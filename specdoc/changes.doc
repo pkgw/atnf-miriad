@@ -1,29 +1,29 @@
-17dec97 rjs	ppmtomir.for -- New task. Convert non-raw PPM format to Miriad
-		format image.
-02jan98	mchw	uvaver.for -- Increase averaging buffer size to 163840.
-06jan98 rjs	qvack.for -- Make changes added on 17 December work!
-06jan98 rjs	uvdat.for -- A change in uvlkcorr to sidestep a compiler
-		bug in IRIX machines.
-07jan98 rjs	qvack.for -- Added options=anticipate, and the interval
-		parameter capable of two inputs.
-07jan98 rjs	atlod.for -- Print source names after the de-mangling process.
-09jan98 rjs	julday.for -- Make it tolerant of dates containing blanks.
-09jan98 rjs	model.for -- Break a statement into two to avoid a compiler bug.
-07feb98 rjs	gpboot.for -- Doc change only.
-15feb98 pjt	imfit.fir -- More precision in outputing results.
-23feb98 rjs	mosmem.for -- Better protection against underflow.
-24feb98 rjs	prthd.for -- Use MAXWIDE rather than MAXWIN for number of wide
-		channels.
-24feb98 rjs	uvgn.for -- Handle applying "bandpass" functions to wide-only
-		files.
-24feb98 rjs	plotone.for -- Some fortran standardisation.
-24feb98	rjs	uvsector.for -- Handle near vertical and horizontal regions
-		more robustly.
-24feb98 rjs	mossen.for -- Write bunit keyword to the output.
-25feb98 rjs	restor.for -- Honour documentation so that a beam is not
-		needed with mode=convolve.
-25feb98 rjs	gaupar.for -- Fix bug in determining outout "bunit" value, Problem
-		introduced in December 98 I think.
-05mar98 rjs	uvfft.for -- some FORTRAN standardisation
+06apr98 rjs	atlod.for -- Increase the max size of an integration.
+21apr98 rjs	fits.for -- Increased max number of antenna configurations.
+20apr98 amh	sfind.for -- Various changes to the log file.
+23apr98 rjs	cgcurs.for -- Increase size of "bunit" variable.
+21apr98 mchw	imfit.for -- more precise Offset position.
+27apr98 rjs	imfit.for -- Merged above two sets of changes.
+01may98 pjt	log.for -- Check that logopen gets called.
+07may98 rjs	atlod.for -- New way of handling jstat.eq.5 returned by rpfitsin.
+07may98 rjs	log.for -- Fix to PJT's change.
+07may98 rjs	cgslice.for -- Increase size of "bunit" variable.
+08may98 rjs	imsad.for -- Do not call logclose unless needed.
+11may98 rjs	fitsio.for -- Change it so that NaNs and Infs in floating
+		point FITS are always recognised as blanked.
+14may98 rjs	atlod.for -- Changes to handle high-time-resolution
+		data.
+14may96 rjs	clfind.for,clstats.for,clplot.for -- New programs from
+		Maryland.
+16may98 nebk    cgrego.for -- COnvert regions to overlays
+18may98 rjs	cgrego.for -- Fortran standardisation.
+18may98 rjs	imspect.for -- Correct velocity axis labelling.
+22may98 rjs	uvgen.for -- Include circular polarization handling.
+22may98	rjs	gpcal.for -- Turn off xyref on early iterations of weakly polarised
+		source.
+
+16jun98 nebk    cgdisp.for -- FIx problem in posdec2 where ocen2 was of 
+                size 2 instead of 3. Was stuffing up in w2wco for ellipses.
+18jun98 nebk    uvplt.for -- Document nofqav option better
  
 See $MIR/changes.txt for a history of earlier changes.
