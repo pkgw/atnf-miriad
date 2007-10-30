@@ -15,13 +15,17 @@ c@ beam
 c	The input dirty beam, also produced by INVERTs mosaic mode. No
 c	default
 c@ model
-c	An initial model of the deconvolved image. This could be the output
-c	from a previous run of MOSMEM or any other deconvolution
-c	task. It must have flux units of Jy/pixel. The default is a flat
-c	estimate, with the correct flux.
+c	An initial estimate of the deconvolved image. For point sources,
+c	giving a good initial model may help convergence. In principle,
+c	this only helps convergence, but should not affect the final
+c	solution. The model could be the output from a previous run of
+c	MOSMEM or any other deconvolution task. It must have flux units of
+c	Jy/pixel. The default is a flat estimate, with the correct flux.
 c@ default
-c	The default image. This could be a smoothed version of a previous
-c	MOSMEM run, or some other smooth estimate of the image.
+c	The default image. This is the image that the final solution will
+c	tend towards. The final result will be influenced by this default
+c	if the constrains that the data put on the solution are weak.
+c	The default is a flat estimate, with the correct flux.
 c@ out
 c	The name of the output map. The units of the output will be Jy/pixel.
 c	It can be input to RESTOR or MOSMEM (as a model, to continue the
@@ -59,7 +63,8 @@ c	will help MOSMEM find a good solution. On the other hand, giving
 c	a poor value may do harm. Normally MOSMEM will NOT constrain the
 c	total flux to be this value, but see the ``doflux'' option below.
 c	The default is image-dependent for measure=gull, and zero for
-c	measure=cornwell.
+c	measure=cornwell. A value can be given for each plane being
+c	deconvolved.
 c@ options
 c	Task enrichment parameters. Several can be given, separated by
 c	commas. Minimum match is used. Possible values are:
@@ -72,19 +77,33 @@ c--
 c  History:
 c    rjs  23nov94  Adapted from MAXEN.
 c    rjs   3dec94  Doc only.
+c    rjs   6feb95  Copy mosaic table to output component file.
+c    rjs  10aug95  New routine to modify alpha and beta.
+c    rjs  12oct95  Support "default" and "model" being different sizes from
+c		   the deconvolved region.
+c    rjs  27oct95  Increased max length of filenames.
+c    rjs  24nov95  Default default image is now proportional to the gain.
+c    rjs  29Feb96  Call xyflush after each plane.
+c    mwp  27May97  Allow flux estimates for each plane.
+c    rjs  21jun97  Tidies up above change.
+c    rjs  24jun97  Correct call to alignini
+c    rjs  02jul97  cellscal change.
+c    rjs  23jul97  Add pbtype.
+c    rjs  01aug97  Fiddle default to make it always reasonably valued.
+c    rjs  28nov97  Increase max number of boxes.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='MosMem: version 1.0 23-Nov-94')
+	parameter(version='MosMem: version 1.0 28-Nov-97')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
 	integer MaxRun,MaxBoxes
-	parameter(MaxRun=3*maxdim,MaxBoxes=1024)
+	parameter(MaxRun=3*maxdim,MaxBoxes=2048)
 c
 	integer gull,cornwell
 	parameter(gull=1,cornwell=2)
 c
-	character MapNam*32,BeamNam*32,ModelNam*32,OutNam*32,DefNam*32
+	character MapNam*64,BeamNam*64,ModelNam*64,OutNam*64,DefNam*64
 	character entropy*8,line*72
 	integer lBeam,lMap,lModel,lOut,lDef
 	integer nMap(3),nModel(3),nOut(MAXNAX),nBeam(3),nDef(3)
@@ -97,9 +116,12 @@ c
 	real Alpha,Beta,De,Df
 	real StLim,StLen1,StLen2,OStLen1,OStLen2,J0,J1
 	real GradEE,GradEF,GradEH,GradEJ,GradFF,GradFH,GradFJ
-	real GradHH,GradJJ,Grad11,Immax,Immin,Flux,Rms,ClipLev
+	real GradHH,GradJJ,Grad11,Immax,Immin,Flux,Rms
+	real fluxlist(maxdim)
+	integer nfret
 	logical converge,positive,verbose,doflux
 	integer Run(3,MaxRun),nRun,Boxes(maxBoxes),nPoint,maxPoint
+	integer xmoff,ymoff,zmoff,xdoff,ydoff,zdoff
 c
 	integer pMap,pEst,pDef,pRes,pNewEst,pNewRes,pWt
 c
@@ -121,7 +143,7 @@ c
 	call keyi('niters',maxniter,30)
 	call keyr('q',Q,0.)
 	call keyr('rmsfac',rmsfac,1.)
-	call keyr('flux',TFlux,0.)
+	call mkeyr('flux',fluxlist,maxdim,nfret)
 	call BoxInput('region',MapNam,Boxes,MaxBoxes)
 	call GetOpt(verbose,doflux,entropy)
 	call keyfin
@@ -182,14 +204,26 @@ c
 	nOut(1) = imax - imin + 1
 	nOut(2) = jmax - jmin + 1
 	nOut(3) = kmax - kmin + 1
+
+	if(nfret.lt.nOut(3)) then
+	  TFlux = 0
+	  if(nfret.ge.1)TFlux = fluxlist(nfret)
+	  do i=nfret+1,nOut(3)
+	    fluxlist(i) = TFlux
+	  enddo
+	else if(nfret.gt.nOut(3)) then
+	  call bug('w','More flux estimates than planes...')
+	  call bug('w','ignoring extras.')
+	endif
+
 c
 c  Open the model if needed, and check that is is the same size as the
 c  output.
 c
 	if(ModelNam.ne.' ')then
 	  call xyopen(lModel,ModelNam,'old',3,nModel)
-	  if(nModel(1).ne.nOut(1).or.nModel(2).ne.nOut(2)
-     *	    .or.nModel(3).ne.nOut(3)) call bug('f','Model size')
+	  call AlignIni(lModel,lMap,nMap(1),nMap(2),nMap(3),
+     *						xmoff,ymoff,zmoff)
 	endif
 c
 c  Initial values for alpha and beta.
@@ -202,8 +236,8 @@ c  output.
 c
 	if(DefNam.ne.' ')then
 	  call xyopen(lDef,DefNam,'old',3,nDef)
-	  if(nDef(1).ne.nOut(1).or.nDef(2).ne.nOut(2)
-     *	    .or.nDef(3).ne.nOut(3)) call bug('f','Default Image size')
+	  call AlignIni(lDef,lMap,nMap(1),nMap(2),nMap(3),
+     *						xdoff,ydoff,zdoff)
 	endif
 c
 c  Open up the output.
@@ -212,6 +246,8 @@ c
 	  nOut(i) = 1
 	enddo
 	call xyopen(lOut,OutNam,'new',naxis,nOut)
+	call Header(lMap,lOut,blc,trc,version)
+	call xyflush(lOut)
 c
 c  Loop.
 c
@@ -254,23 +290,22 @@ c
 	  call GetPlane(lMap,Run,nRun,0,0,nMap(1),nMap(2),
      *				memr(pMap),maxPoint,nPoint)
 c
-c  Get the Default map and Clip level.
+c  Get the Default map.
 c
-	  if(TFlux.eq.0.and.positive)then
+	  TFlux=fluxlist(k-kmin+1)
+	  if(TFlux.le.0.and.positive)then
 	    call GetRms(memr(pWt),nPoint,TFlux)
 	    TFlux = RmsFac*TFlux*nPoint/Q
 	  endif
 c
 	  if(DefNam.eq.' ')then
-	    ClipLev = 0.01 * TFlux/nPoint
-	    call Assign(TFlux/nPoint,memr(pDef),nPoint)
+	    call mcGain(memr(pDef),nPoint)
+	    call DefScal(memr(pDef),npoint,TFlux)
 	  else
-	    call xysetpl(lDef,1,k-kmin+1)
-	    call GetPlane(lDef,Run,nRun,1-imin,1-jmin,
-     *			nDef(1),nDef(2),memr(pDef),maxPoint,nPoint)
-	    Imax = Ismax(npoint,memr(pDef),1)
-	    ClipLev = 0.01 * abs(memr(pDef+Imax-1))
-	    if(positive) call ClipIt(0.1*ClipLev,memr(pDef),nPoint)
+	    call AlignGet(lDef,Run,nRun,k,xdoff,ydoff,zdoff,
+     *		nDef(1),nDef(2),nDef(3),memr(pDef),maxPoint,nPoint)
+	    imax = ismax(npoint,memr(pDef),1)
+	    call clipper(1e-3*abs(memr(pDef+imax-1)),memr(pDef),nPoint)
 	  endif
 c
 c  Get the Estimate and Residual. Also get information about the
@@ -279,10 +314,10 @@ c
 	  if(ModelNam.eq.' ')then
 	    call Copy(nPoint,memr(pDef),memr(pEst))
 	  else
-	    call xysetpl(lModel,1,k-kmin+1)
-	    call GetPlane(lModel,Run,nRun,1-imin,1-jmin,
-     *			nModel(1),nModel(2),memr(pEst),maxPoint,nPoint)
-	    if(positive) call ClipIt(ClipLev,memr(pEst),nPoint)
+	    call AlignGet(lModel,Run,nRun,k,xmoff,ymoff,zmoff,
+     *		nModel(1),nModel(2),nModel(3),memr(pEst),
+     *		maxPoint,nPoint)
+	    if(positive) call ClipIt(memr(pDef),memr(pEst),nPoint)
 	  endif
 c
 	  call Diff(memr(pEst),memr(pMap),memr(pRes),nPoint,Run,nRun)
@@ -324,15 +359,10 @@ c
 	  OStLen1 = StLen1
 	  J0 = J0 * StLen1
 c
-c  Determine the correct Clip Level (to prevent the estimate going
-c  negative, if this is not allowed).
-c
-	  if(positive)ClipLev = min(ClipLev,max(0.1*Immin,1e-6*Immax))
-c
 c  Take the plunge.
 c
 	  call TakeStep(nPoint,memr(pEst),memr(pNewEst),
-     *					StLen1,ClipLev,StLim)
+     *					StLen1,positive,StLim)
 c
 c  Convolve the estimate with the beam and subtract the map.
 c
@@ -429,12 +459,8 @@ c
 	  call xysetpl(lOut,1,k-kmin+1)
 	  call PutPlane(lOut,Run,nRun,1-imin,1-jmin,
      *				nOut(1),nOut(2),memr(pEst),nPoint)
+	  call xyflush(lOut)
 	enddo
-c
-c  Construct a header for the output file, and give some history
-c  information.
-c
-	call Header(lMap,lOut,blc,trc,version,niter)
 c
 c  Close up the files. Ready to go home.
 c
@@ -506,46 +532,68 @@ c------------------------------------------------------------------------
 	  To(i) = From(i)
 	enddo
 	end
-c***********************************************************************
-	subroutine Assign(def,Default,nPoint)
+c************************************************************************
+	subroutine DefScal(Def,npoint,TFlux)
+c
+	implicit none
+	integer npoint
+	real Def(npoint),TFlux
+c
+c  Scale the default so that it has the right total flux.
+c
+c------------------------------------------------------------------------
+	real sum,alpha,minlev
+	integer i
+c
+	sum = 0
+	do i=1,npoint
+	  sum = sum + Def(i)
+	enddo
+c
+	if(Sum.le.0)call bug('f','Cannot scale default image')
+c
+	alpha = TFlux/Sum
+	minlev = 1e-6*TFlux/npoint
+	do i=1,npoint
+	  Def(i) = max(alpha*Def(i),minlev)
+	enddo
+c
+	end
+c************************************************************************
+	subroutine clipper(cliplev,Def,nPoint)
 c
 	implicit none
 	integer nPoint
-	real def,Default(nPoint)
+	real cliplev,Def(nPoint)
 c
-c  Set up the default image.
-c
-c  Input:
-c    def
-c    nPoint
-c  Output:
-c    Default	The default image.
 c------------------------------------------------------------------------
 	integer i
 c
 	do i=1,nPoint
-	  Default(i) = def
+	  def(i) = max(Def(i),cliplev)
 	enddo
+c
 	end
 c***********************************************************************
-	subroutine ClipIt(clip,Default,nPoint)
+	subroutine ClipIt(Def,Est,nPoint)
 c
 	implicit none
 	integer nPoint
-	real clip,Default(nPoint)
+	real Def(nPoint),Est(nPoint)
 c
 c  Set up the minimum of the default image.
 c
 c  Input:
 c    clip
 c    nPoint
+c    Def	The default image.
 c  Input/Output:
-c    Default	The default image.
+c    Est	The estimate image, whixh is being clipped.
 c------------------------------------------------------------------------
 	integer i
 c
 	do i=1,nPoint
-	  Default(i) = max(clip,Default(i))
+	  Est(i) = max(Est(i),0.1*Def(i))
 	enddo
 	end
 c************************************************************************
@@ -691,12 +739,13 @@ c
 c
 	end
 c************************************************************************
-	subroutine TakeStep(nPoint,Est,NewEst,StLen,Clip,StLim)
+	subroutine TakeStep(nPoint,Est,NewEst,StLen,doClip,StLim)
 c
 	implicit none
 	integer nPoint
 	real Est(nPoint),NewEst(nPoint)
-	real StLen,Clip,StLim
+	real StLen,StLim
+	logical doClip
 c
 c  Take the final step!
 c
@@ -704,9 +753,9 @@ c------------------------------------------------------------------------
 	integer i
 	real Stepd
 c
-	if(Clip.gt.0)then
+	if(doClip)then
 	  do i=1,nPoint
-	    Stepd = StLen*max(NewEst(i),(Clip-Est(i))/StLim)
+	    Stepd = StLen*max(NewEst(i),-0.9*Est(i)/StLim)
 	    NewEst(i) = Est(i) + Stepd
 	  enddo
 	else
@@ -916,12 +965,11 @@ c
 c
 	end
 c************************************************************************
-	subroutine Header(lMap,lOut,blc,trc,version,niter)
+	subroutine Header(lMap,lOut,blc,trc,version)
 c
 	integer lMap,lOut
 	integer blc(3),trc(3)
 	character version*(*)
-	integer niter
 c
 c  Write a header for the output file.
 c
@@ -931,7 +979,6 @@ c    lMap	The handle of the input map.
 c    lOut	The handle of the output estimate.
 c    blc	Blc of the bounding region.
 c    trc	Trc of the bounding region.
-c    niter	The maximum number of iterations performed.
 c
 c------------------------------------------------------------------------
 	include 'maxnax.h'
@@ -939,7 +986,7 @@ c------------------------------------------------------------------------
 	real crpix
 	character line*72,txtblc*32,txttrc*32,num*2
 	integer nkeys
-	parameter(nkeys=14)
+	parameter(nkeys=17)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -947,14 +994,14 @@ c
 	character itoaf*8
 c
 	data keyw/   'obstime ','epoch   ','history ','lstart  ',
-     *	  'lstep   ','ltype   ','lwidth  ','object  ','pbfwhm  ',
-     *	  'observer','telescop','restfreq','vobs    ','btype   '/
+     *	  'lstep   ','ltype   ','lwidth  ','object  ',
+     *	  'observer','telescop','restfreq','vobs    ','btype   ',
+     *	  'mostable','cellscal','pbtype  ','pbfwhm  '/
 c
 c  Fill in some parameters that will have changed between the input
 c  and output.
 c
 	call wrhda(lOut,'bunit','JY/PIXEL')
-	call wrhdi(lOut,'niters',Niter)
 c
 	do i=1,MAXNAX
 	  num = itoaf(i)
@@ -991,7 +1038,6 @@ c
      *				       '),Trc=('//txttrc(1:ltrc)//')'
 	call hiswrite(lOut,line)
 c
-	call hiswrite(lOut,'MOSMEM: Total Iterations = '//itoaf(Niter))
 	call hisclose(lOut)
 c
 	end
@@ -1006,12 +1052,16 @@ c
 c
 c  Determine new values for alpha and beta.
 c------------------------------------------------------------------------
+	real tol1,tol2
+	parameter(tol1=0.1,tol2=0.05)
+c
 	real Denom,Dalp,Dbet,l,Alpha1,Alpha2,Beta1,Beta2,b2m4ac
 c
 c  Check if things are doing poorly. If so, just aim at reducing the
 c  gradient.
 c
-	l = 10*abs(GradJJ/Grad11)
+	l = abs(GradJJ/Grad11)
+	if(Alpha.le.0)l = 0
 c
 	if(doflux)then
 	  Denom = 1./(GradEE*GradFF - GradEF*GradEF)
@@ -1032,37 +1082,37 @@ c
 	  Dbet = 0.
 	endif
 c
-	b2m4ac = GradEJ*GradEJ - (GradJJ-0.3*Grad11)*GradEE
-        if(b2m4ac.gt.0.and.Alpha.eq.0)then
+	b2m4ac = GradEJ*GradEJ - (GradJJ-tol1*Grad11)*GradEE
+        if(b2m4ac.gt.0)then
           b2m4ac = sqrt(b2m4ac)
 	  Dalp = max((GradEJ - b2m4ac)/GradEE,
      *		 min((GradEJ + b2m4ac)/GradEE,Dalp))
+	else
+	  Dalp = 0
         endif
 c
-        b2m4ac = GradFJ*GradFJ - (GradJJ-0.3*Grad11)*GradFF
-        if(b2m4ac.gt.0.and.Beta.eq.0)then
+        b2m4ac = GradFJ*GradFJ - (GradJJ-tol1*Grad11)*GradFF
+        if(b2m4ac.gt.0)then
           b2m4ac = sqrt(b2m4ac)
 	  Dbet = max((GradFJ - b2m4ac)/GradFF,
      *		 min((GradFJ + b2m4ac)/GradFF,Dbet))
+	else
+	  Dbet = 0
         endif
 c
 	Alpha2 = Alpha+ Dalp
 	Beta2  = Beta + Dbet
 c
-	if(l.ge.1.or.Alpha2.le.0)then
+	if(l.ge.tol2.or.Alpha2.le.0)then
 	  Alpha = max(Alpha1,0.)
-	else if(l.le.0.or.Alpha1.le.0)then
-	  Alpha = max(Alpha2,0.)
 	else
-	  Alpha = exp(l*log(Alpha1) + (1-l)*log(Alpha2))
+	  Alpha = max(Alpha2,0.)
 	endif
 c
-	if(l.ge.1.or.Beta2.le.0)then
+	if(l.ge.tol2.or.Beta2.le.0)then
 	  Beta = max(Beta1,0.)
-	else if(l.le.0.or.Beta1.le.0)then
-	  Beta = max(Beta2,0.)
 	else
-	  Beta = exp(l*log(Beta1) + (1-l)*log(Beta2))
+	  Beta = max(Beta2,0.)
 	endif
 c
 	end
