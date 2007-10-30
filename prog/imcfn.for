@@ -101,8 +101,7 @@ c
 c--
 c  History:
 c    nebk 13sep95 Original version
-c    rjs   2jul98 Increase ize of pbtype variable.
-c    rjs  08may00 Change incorrect call to keyf to keya.
+c
 c------------------------------------------------------------------------
       implicit none
 c
@@ -110,9 +109,9 @@ c
       include 'maxdim.h'
       include 'maxnax.h'
       include 'mem.h'
-      character version*(*) 
+      character version*32 
       integer maxpc, maxpts
-      parameter (version = 'ImCFN: version 1.0 2-Jul-98', maxpc = 6,
+      parameter (version = 'ImCFN: version 13-Sep-95', maxpc = 6,
      +           maxpts = 10000)
 cc
       real xx(maxpts), yy(maxpts), yy2(maxpts), ymin, ymax, xmin, xmax,
@@ -137,7 +136,7 @@ c Get the inputs
 c
       call keyini
       call keyf ('beam', in, ' ')
-      call keya ('out', out, ' ')
+      call keyf ('out', out, ' ')
       call keyd ('flux', smin, 0.0d0)
       call keyd ('flux', smax, 0.0d0)
       call keyd ('flux', sb, 0.0d0)
@@ -331,7 +330,7 @@ c-----------------------------------------------------------------------
 cc
       real pbget, dj, di
       integer pbobj, i, j, i1, j1, i2, j2, ii, jj, k
-      character pbtype*16, str*80, line*80
+      character pbtype*10, str*80, line*80
       double precision dx, dy, sum, prod, imax
       data imax /0.0/
 c-----------------------------------------------------------------------
