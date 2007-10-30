@@ -3562,3 +3562,20 @@ and in a way to be consistent with all the other changes happening.
 03may00 rjs	offaxis.for -- Support for C and X band.
 04may00 rjs	uvplt.for -- Relax requirements for lat/long variables in the
 		header.
+*********************************** 5may00 Sent changes to BIMA
+08may00 rjs	hanning.for,cgcurs.for,colden.for,gaufit.for,impoly.for,
+		psrplt.for,cgdisp.for,contsub.for,imblr.for,imtab.for,uvedit.for
+		cgslice.for,imcfn.for,pcsub.for,uvwide.for -- Change incorrect
+		call of keyf to a call to keya.
+09may00 rjs	pb.for -- Check in pbExtent that the extent of the primary beam
+		is well-defined.
+09may00	rjs	uvgen.for -- Output primary beam type even when its not
+		simulated. Tidy up documentation of pbfwhm.
+09may00 rjs	hdtab.for -- Make there no default image size for pbtype=SINGLE
+09may00 rjs	hio.c - Eliminate spurious error messages eminating from hrm_c.
+09may00 rjs	regrid.for - Make sure the max output size is no larger than
+		MAXDIM.
+10may00 rjs	fits.for -- Increase size of descr buffer in call to hdprobe.
+17may00 mchw	uvgen.for -- allow for saturated spectral absorption model.
+18may00 rjs	uvgen.for -- Merge mchw and rjs versions of uvgen.for
+19may00 rjs	impos.for -- Make default "type" abspix.
