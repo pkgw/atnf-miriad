@@ -34,40 +34,33 @@ c    pjt   9jul92  Length of filenames to be 80, not 24!!!!
 c    rjs  25jun93  Trivial change to a history message.
 c    rjs   8nov94  Get incr and blanking masks to work correctly.
 c    rjs  17aug95  Copy mostable to output.
-c    rjs  21nov95  Use maxnax.h.
-c    nebk 10jan96  Change crpix and cdelt to double
-c    rjs  02jul97  cellscale change.
-c    rjs  18jul97  Correct handling of flags when incr != 1.
-c    rjs  23jul97  added pbtype.
-c    rjs  25nov98  added llrot.
-c    rjs  23jul99  Correct copying of pbtype keyword.
-c    rjs  12oct99  Correct copying of mostable.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Imsub: version 1.0 12-Oct-99' )
+	parameter(version='Imsub: version 1.0 17-Aug-95' )
 c
 	integer maxboxes
 	parameter(maxboxes=2048)
 	include 'maxdim.h'
-	include 'maxnax.h'
+	integer maxnax
+	parameter(maxnax=5)
 	character in*80,out*80
 	integer Inplane(maxnax),Outplane(maxnax),one(maxnax)
 	integer blc(maxnax),trc(maxnax),Nin(maxnax),Nout(maxnax),i,j
-	integer i0,j0,incr(maxnax),nx,ny,npnt
+	integer i0,j0,incr(maxnax)
 	integer naxis,boxes(maxboxes)
 	integer lIn,lOut
 	logical done,rect
-	double precision crpix,cdelt
+	real crpix,cdelt
 	real Data(maxdim),Data2(maxdim)
 c
 c  Externals.
 c
-	logical BoxRect,hdprsnt
+	logical BoxRect
 c
 c  Header keywords.
 c
 	integer nkeys
-	parameter(nkeys=36)
+	parameter(nkeys=34)
 	character keyw(nkeys)*8
 	data keyw/   'bmaj    ','bmin    ','bpa     ','bunit   ',
      *	  'crval1  ','crval2  ','crval3  ','crval4  ','crval5  ',
@@ -75,8 +68,7 @@ c
      *	  'obstime ','epoch   ','history ','instrume','niters  ',
      *	  'object  ','observer','obsra   ','obsdec  ','pbfwhm  ',
      *	  'restfreq','telescop','vobs    ','btype   ','rms     ',
-     *	  'ltype   ','lstart  ','lwidth  ','lstep   ',
-     *	  'cellscal','pbtype  ','llrot   '/
+     *	  'ltype   ','lstart  ','lwidth  ','lstep   ','mostable'/
 c
 c  Get the input parameters.
 c
@@ -115,12 +107,12 @@ c  Make the output file, and make its header.
 c
 	call xyopen(lOut,Out,'new',naxis,Nout)
 	do i=1,naxis
-	  call rdhdd(lIn, 'cdelt'//char(ichar('0')+i),cdelt,1.0d0)
-	  call rdhdd(lIn, 'crpix'//char(ichar('0')+i),crpix,1.0d0)
+	  call rdhdr(lIn, 'cdelt'//char(ichar('0')+i),cdelt,1.)
+	  call rdhdr(lIn, 'crpix'//char(ichar('0')+i),crpix,1.)
 	  cdelt = cdelt * incr(i)
 	  crpix = (crpix - blc(i))/incr(i) + 1
-	  call wrhdd(lOut,'cdelt'//char(ichar('0')+i),cdelt)
-	  call wrhdd(lOut,'crpix'//char(ichar('0')+i),crpix)
+	  call wrhdr(lOut,'cdelt'//char(ichar('0')+i),cdelt)
+	  call wrhdr(lOut,'crpix'//char(ichar('0')+i),crpix)
 	enddo
 	do i=1,nkeys
 	  call hdcopy(lIn,lOut,keyw(i))
@@ -165,20 +157,6 @@ c
 	  call planeinc(maxnax-2,incr(3),blc(3),trc(3),Inplane,done)
 	  call planeinc(maxnax-2,one,one,Nout(3),Outplane,done)
 	enddo
-c
-c  Copy the mosaic table if neccessary.
-c
-	if(hdprsnt(lIn,'mostable'))then
-	  if(incr(1).ne.1.or.incr(2).ne.1)then
-	    call mosLoad(lIn,npnt)
-	    call mosGetn(nx,ny,npnt)
-	    call mosSetn(nx/incr(1),ny/incr(2))
- 	    call mosSave(lOut)
-	  else
-	    call hdcopy(lIn,lOut,'mostable')
-	  endif
-	endif
-c
 	call xyclose(lIn)
 	call xyclose(lOut)
 	end
@@ -204,7 +182,7 @@ c------------------------------------------------------------------------
 	integer maxRuns
 	parameter(maxRuns=8*maxdim)
 	integer xminv,xmaxv,yminv,ymaxv,nRuns,nRuns2,iRuns
-	integer x1,x2,y,xprev,yprev,t
+	integer x1,x2,y,xprev,yprev
 	integer Runs(3,maxRuns)
 c
 c  Get the information about what in the output is good.
@@ -229,9 +207,8 @@ c
 	      x2 = min(Runs(3,iRuns)-x0,(n1-1)*inc1)
 	      if(x1.le.x2)then
 	        y = y/inc2 + 1
-	        t = x1/inc1 + 1
-		x2 = t + (x2-x1+1)/inc1
-		x1 = t
+	        x1 = x1/inc1 + 1
+		x2 = x1 + (x2-x1+1)/inc1
 	        if(y.eq.yprev.and.x1.eq.xprev)then
 		  Runs(3,nRuns2) = x2
 	        else
