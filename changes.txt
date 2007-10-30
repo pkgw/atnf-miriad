@@ -3588,3 +3588,16 @@ and in a way to be consistent with all the other changes happening.
 16jun00 rjs	select.for -- Check for bad antenna numbers in selection.
 04jul00 rjs	noise.for -- Changes to be more robust to bad computer
 		rounding.
+*********************************** 6jul00 Sent changes to BIMA
+11jul00 rjs	regrid.for - Added "rotate" keyword, and eliminate "norot"
+		option.
+13jul00 rjs	moment.for - Copy across llrot.
+13jul00 rjs	cgdisp.for -- Plot beam correctly when there is a rotation of
+		the pixel grid.
+13jul00 rjs	assert.for -- Use hexists rather than FORTRAN INQUIRE
+		to check for file existence (and to avoid Digital UNIX bug).
+17jul00 rjs	attsys.for -- Apply or unapply ATCA Tsys correction.
+27jul00 nebk    impol.for -- position angle error was factor of 2 too big in a second
+            	             place.  grrr.
+
+
