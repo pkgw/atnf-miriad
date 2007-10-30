@@ -3221,3 +3221,13 @@ and in a way to be consistent with all the other changes happening.
 17dec97 rjs	qvack.for -- Allow the "interval" parameter to be negative.
 17dec97 rjs	ppmtomir.for -- New task. Convert non-raw PPM format to Miriad
 		format image.
+*********************************** 1jan98 Sent changes to Doug Roberts
+02jan98	mchw	uvaver.for -- Increase averaging buffer size to 163840.
+06jan98 rjs	qvack.for -- Make changes added on 17 December work!
+06jan98 rjs	uvdat.for -- A change in uvlkcorr to sidestep a compiler
+		bug in IRIX machines.
+07jan98 rjs	qvack.for -- Added options=anticipate, and the interval
+		parameter capable of two inputs.
+07jan98 rjs	atlod.for -- Print source names after the de-mangling process.
+09jan97 rjs	julday.for -- Make it tolerant of dates containing blanks.
+09jan97 rjs	model.for -- Break a statement into two to avoid a compiler bug.
