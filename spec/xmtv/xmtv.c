@@ -450,19 +450,29 @@ Widget topwidget;
 int screenDepth;
 {
     int nvis;                        /* Number of visuals in the list.  */
+    Display *dpy;
     XVisualInfo template;                 /* type of visual XMTV uses.  */
     XVisualInfo *vislist;    /* list of visuals matching the template.  */
 
-    template.screen = DefaultScreen(XtDisplay(topwidget));
+    dpy = XtDisplay(topwidget);
+    template.screen = DefaultScreen(dpy);
     template.depth = screenDepth;
     template.class = PseudoColor;
 
-    vislist = XGetVisualInfo(XtDisplay(topwidget),
+    vislist = XGetVisualInfo(dpy,
       (VisualScreenMask|VisualDepthMask|VisualClassMask), &template, &nvis);
  
+    /*  If no PseudoColor visuals are found, try the default Visual.   */
     if (nvis == 0) {
-      perror("No suitable visual");
-      return(NULL);
+      template.visualid = XVisualIDFromVisual(DefaultVisual(dpy,
+        DefaultScreen(dpy)));
+      vislist = XGetVisualInfo(dpy,
+        (VisualScreenMask|VisualDepthMask|VisualIDMask), &template, &nvis);
+      /*  The default did not work; send a warning message. */
+      if (nvis == 0) {
+        perror("No suitable visual");
+        return(NULL);
+      }
     }
 
     return(vislist);
@@ -583,3 +593,4 @@ char *argv[];
     /* Because of XDebug; call my own MainLoop routine. */
     privateXtAppMainLoop(context);
 }
+
