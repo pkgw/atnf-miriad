@@ -3400,3 +3400,22 @@ and in a way to be consistent with all the other changes happening.
 06jan99 rjs	cgsubs.for -- Yet again another try at a decent algorithm for
 		razerocg.
 07jan99 rjs	fits.for -- Write dates in new FITS form.
+*********************************** 07jan99 Sent changes to Doug Roberts
+08jan99 rjs	co.for -- Better handling of sky/grid rotation, and corrections
+		to cogaucvt when pixel increments differ and gaussian axis is
+		non-zero.
+08jan99 rjs	imstat.for,imspec.for -- Change coordinate conversion to use
+		the co routines (which also fixes a bug converting RAs).
+12jan99 rjs	uvgen.for,blflag.for -- Doc change only.
+15jan99 rjs	ephem.for -- Added new leap second.
+19jan99 rjs	mosmem.for -- It was failing to access the correct single dish plane!!
+20jan99 rjs	mfcal.for -- The frequency assosicated with a channel was
+		being incorrectly determined when the line "width" and "step"
+		parameters differed.
+25jan99 rjs	fitsio.for -- The uv FITS writer was still writing in the old
+		date format.
+22jan99 rjs	mosmem.for -- Fudge to get the rms noise information to propogate
+		through correctly for single pointing work.
+27jan99 rjs	invert.for -- Change the default "line" parameter to all
+		channels.
+29jan99 rjs	mossdi.for -- Fix up a message.
