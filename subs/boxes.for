@@ -31,6 +31,16 @@ c    rjs 05jan93  Added subroutine BoxBound
 c    rjs 09feb93  Accidently called the select routines!!
 c    rjs 24nov93  Increase string buffer to 512.
 c    rjs 25apr94  Corrected call sequence to hclose.
+c    rjs  2sep94  Changes to use the co.for routines.
+c    rjs 20oct94  Increase max number of separate regions
+c    rjs 23nov94  Added BoxCount to count the pixels in a plane.
+c    rjs  6sep95  Check selected region really does fall within the image.
+c    rjs 13dec95  Increase MAXSHAPES in BoxRuns.
+c    rjs 29jan97  Added BoxDef -- to set the default region of interest,
+c		  and removed this capacity from BoxSet.
+c    rjs 07jul97  Change argument to coVelSet and replace coAxDesc with coAxGet
+c    rjs 09jul97  Correctly handle ANDing with completely flagged plane.
+c    rjs 17may99  Increase size of a buffer.
 c************************************************************************
 c* Boxes -- Summary of region of interest routines.
 c& mjs
@@ -44,6 +54,7 @@ c
 c	subroutine BoxInput(key,file,boxes,maxboxes)
 c	subroutine BoxMask(tno,boxes,maxboxes)
 c	subroutine BoxSet(boxes,naxis,nsize,flags)
+c	subroutine BoxDef(boxes,naxis,blc,trc)
 c	subroutine BoxInfo(boxes,naxis,blc,trc)
 c	subroutine BoxBound(boxes,shape,naxis,type,blx,trc)
 c	logical function BoxRect(boxes)
@@ -124,12 +135,15 @@ c    ztype:  'abspix' or 'kms  '.
 c  The default is 'abspix'.
 c------------------------------------------------------------------------
 	include 'boxes.h'
+	include 'maxnax.h'
 c
 	integer ntypes
 	parameter(ntypes=10)
-	integer nshape,length,k1,k2,n,spare,offset,i,boxtype
+	integer nshape,length,k1,k2,n,spare,offset,i,boxtype,lu(3)
 	character types(ntypes)*9,type*9,spec*512,xytype*6,ztype*6
-	double precision coords(4,3)
+	character line*64
+	integer iax,iax1,iax2,tmp(4),nsize(MAXNAX)
+	double precision t1,t2,t3
 	logical more,coordini,units
 c
 c  Externals.
@@ -182,7 +196,6 @@ c
 	  if(boxtype.eq.ABSPIX)then
 	    xytype = 'abspix'
 	    ztype  = 'abspix'
-	    units = .true.
 	  else if(boxtype.eq.RELPIX)then
 	    xytype = 'relpix'
 	    units = .true.
@@ -204,24 +217,22 @@ c
 	    boxes(offset+YMIN) = 0
 	    boxes(offset+YMAX) = 0
 	    boxes(offset+SIZE) = 0
-	    call BoxZRnge(spec,k1,k2,boxes(offset+ZMIN),ztype,coords)
+	    call BoxZRnge(spec,k1,k2,boxes(offset+ZMIN),ztype,lu)
 	  else if(boxtype.eq.BOX)then
-	    call BoxInt(spec,k1,k2,boxes(offset+DATA),n,4,spare,
-     *							xytype,coords)
-	    if(n.eq.4)then
-	      boxtype = IMAGE
-	      boxes(offset+ITYPE) = IMAGE
-	      boxes(offset+SIZE) = 0
-	    else
-	      boxes(offset+SIZE) = n
-	    endif
-	    call BoxSort(boxes(offset+DATA),n,boxes(offset+XMIN))
-	    call BoxZRnge(spec,k1,k2,boxes(offset+ZMIN),ztype,coords)
+	    boxtype = IMAGE
+	    call BoxInt(spec,k1,k2,tmp,n,4,4,xytype,lu)
+	    if(n.ne.4)call BoxBug(spec,'Invalid BOX subcommand')
+	    boxes(offset+XMIN)	= min(tmp(1),tmp(3))
+	    boxes(offset+XMAX)	= max(tmp(1),tmp(3))
+	    boxes(offset+YMIN)	= min(tmp(2),tmp(4))
+	    boxes(offset+YMAX)	= max(tmp(2),tmp(4))
+	    boxes(offset+SIZE)	= 0
+	    call BoxZRnge(spec,k1,k2,boxes(offset+ZMIN),ztype,lu)
 	  else if(boxtype.eq.POLY)then
 	    call BoxPoly(spec,k1,k2,boxes(offset+DATA),n,spare,
-     *		boxes(offset+XMIN),xytype,coords)
+     *		boxes(offset+XMIN),xytype,lu)
 	    boxes(offset+SIZE) = n
-	    call BoxZRnge(spec,k1,k2,boxes(offset+ZMIN),ztype,coords)
+	    call BoxZRnge(spec,k1,k2,boxes(offset+ZMIN),ztype,lu)
 	  else if(boxtype.eq.MASK)then
 	    if(spare.lt.3)call BoxBug(spec,'Subregion too complex')
 	    call BoxMsk(spec,k1,k2,boxes(offset+DATA),
@@ -233,10 +244,29 @@ c
 c
 c  Finish up with this subcommand.
 c
-	  if(units)then
-	    if(boxtype.ne.ABSPIX.and..not.coordini)then
+	  if(boxtype.eq.ABSPIX)then
+	    continue
+	  else if(units)then
+	    if(.not.coordini)then
 	      coordini = .true.
-	      call BoxCoord(file,coords)
+	      if(file.eq.' ') call bug('f',
+     *	        'Only absolute pixel region specification supported')
+	      call xyopen(lu,file,'old',MAXNAX,nsize)
+	      call rdhdi(lu,'naxis1',lu(2),1)
+	      call rdhdi(lu,'naxis2',lu(3),1)
+	      call xyclose(lu)
+	    endif
+	    if(boxtype.eq.ARCSEC)then
+	      call coFindAx(lu,'longitude',iax1)
+	      call coFindAx(lu,'latitude',iax2)
+	      if(min(iax1,iax2).ne.1.or.max(iax1,iax2).ne.2)
+     *		call BoxBug(spec,'First two axes are not in arcsec')
+	    else if(boxtype.eq.KMS)then
+	      call coFindAx(lu,'spectral',iax)
+	      if(iax.ne.3)call BoxBug(spec,'No spectral axis present')
+	      call coAxGet(lu,iax,line,t1,t2,t3)
+	      if(line(1:4).ne.'FELO'.and.line(1:4).ne.'VELO')
+     *		call coVelSet(lu,'VELO')
 	    endif
 	  else
 	    boxes(offset+ITYPE) = boxtype
@@ -253,6 +283,10 @@ c
 	  more = keyprsnt(key)
 	  if(more) call keya(key,spec,' ')
 	enddo
+c
+c  Release the coordinate system, if one has been allocated.
+c
+	if(coordini)call coFin(lu)
 c
 c  Fill in a default object if none was given.
 c
@@ -274,63 +308,18 @@ c
 	Boxes(NZ) = 0
 	end
 c************************************************************************
-	subroutine BoxCoord(file,coords)
-c
-	implicit none
-	character file*(*)
-	double precision coords(4,3)
-c
-c  This reads in the coordinate information needed to convert between
-c  arcsec, relative pixels, etc, to pixels.
-c  The coord array contains
-c    coord(1,*)		cdelt
-c    coord(2,*)		crpix
-c    coord(3,*)		crval
-c    coord(4,*)		ncenter
-c
-c  Input:
-c    file	Name of the Miriad dataset containing the coordinate
-c		information.
-c  Output:
-c    coords	Needed information for coordinate conversion.
-c------------------------------------------------------------------------
-	integer tno,iostat
-	character line*64
-c
-	if(file.eq.' ') call bug('f',
-     *	  'Only absolute pixel region specification supported')
-	call hopen(tno,file,'old',iostat)
-	if(iostat.ne.0)then
-	  line = 'Error opening coordinate info file: '//file
-	  call bug('w',line)
-	  call bugno('f',iostat)
-	endif
-	call rdhdd(tno,'cdelt1',coords(1,1),1.d0)
-	call rdhdd(tno,'crpix1',coords(2,1),0.d0)
-	call rdhdd(tno,'naxis1',coords(4,1),1.d0)
-	call rdhdd(tno,'cdelt2',coords(1,2),1.d0)
-	call rdhdd(tno,'crpix2',coords(2,2),0.d0)
-	call rdhdd(tno,'naxis2',coords(4,2),1.d0)
-	call rdhdd(tno,'cdelt3',coords(1,3),1.d0)
-	call rdhdd(tno,'crpix3',coords(2,3),0.d0)
-	call rdhdd(tno,'crval3',coords(3,3),0.d0)
-	call rdhdd(tno,'naxis3',coords(4,3),1.d0)
-	call hclose(tno,iostat)
-	end
-c************************************************************************
-	subroutine BoxZRnge(spec,k1,k2,zrange,ztype,coords)
+	subroutine BoxZRnge(spec,k1,k2,zrange,ztype,lu)
 c
 	implicit none
 	character spec*(*),ztype*(*)
-	double precision coords(4,3)
-	integer k1,k2,zrange(2)
+	integer k1,k2,zrange(2),lu(3)
 c
 c  Return the zrange specification.
 c
 c  Input:
 c    spec	The subregion command.
 c    ztype	The units used for the z axis. Either 'abspix' or 'kms'.
-c    coords	Information used to convert from km/s to pixels.
+c    lu		Information used to convert from km/s to pixels.
 c  In/Out:
 c    k1,k2	The substring of spec still needing to be processed.
 c  Output:
@@ -343,7 +332,7 @@ c
 	  zrange(1) = 1
 	  zrange(2) = 0
 	else
-	  call BoxInt(spec,k1,k2,zrange,n,1,2,ztype,coords)
+	  call BoxInt(spec,k1,k2,zrange,n,1,2,ztype,lu)
 	  if(n.eq.1)then
 	    zrange(2) = zrange(1)
 	  else if(zrange(1).gt.zrange(2))then
@@ -355,11 +344,11 @@ c
 c
 	end
 c************************************************************************
-	subroutine BoxInt(spec,k1,k2,boxes,n,modulo,nmax,type,coords)
+	subroutine BoxInt(spec,k1,k2,boxes,n,modulo,nmax,type,lu)
 c
 	implicit none
 	character spec*(*),type*(*)
-	double precision coords(4,3)
+	integer lu(3)
 	integer k1,k2,nmax,n,modulo,boxes(nmax)
 c
 c  Decode some numbers, that are enclosed within brackets.
@@ -373,7 +362,7 @@ c    nmax	The maximum number of integers to be returned.
 c    modulo	The number of integers returned must be some
 c		multiple of "modulo".
 c    type	One of 'abspix','relpix','arcsec','kms','relcen'.
-c    coords	Information used in converting between physical coordinates
+c    lu		Information used in converting between physical coordinates
 c		and grid units.
 c  In/Out:
 c    k1,k2	This indicates the substring of spec left to process.
@@ -382,11 +371,10 @@ c    boxes	Array containing the integers found.
 c    n		The number of integers found.
 c
 c------------------------------------------------------------------------
-	double precision pi
-	parameter(pi=3.141592653589793d0)
+	include 'mirconst.h'
 	integer k0,i
 	logical more,ok
-	double precision temp
+	double precision temp,temp2,x1(2),x2(2)
 c
 	if(spec(k1:k1).ne.'(')
      *	  call BoxBug(spec,'Bad subregion command')
@@ -407,20 +395,23 @@ c
 	      boxes(n) = nint(temp)
 	    else if(type.eq.'relpix')then
 	      i = mod(n-1,2) + 1
-	      boxes(n) = nint(temp+coords(2,i))
+	      call coCvt1(lu,i,'op',temp,'ap',temp2)
+	      boxes(n) = nint(temp2)
 	    else if(type.eq.'relcen')then
 	      i = mod(n-1,2) + 1
-	      boxes(n) = nint(temp) + int(coords(4,i))/2 + 1
+	      boxes(n) = nint(temp) + lu(i+1)/2 + 1
 	    else if(type.eq.'arcsec')then
 	      i = mod(n-1,2) + 1
-	      boxes(n) = nint(pi*temp/(3600*180) / coords(1,i)
-     *						 + coords(2,i))
+	      x1(i) = dpi/180/3600 * temp
+	      if(i.eq.2)then
+		call coCvt(lu,'ow/ow',x1,'ap/ap',x2)
+		boxes(n-1) = nint(x2(1))
+		boxes(n)   = nint(x2(2))
+	      endif
 	    else if(type.eq.'kms')then
-	      boxes(n) = nint((temp-coords(3,3)) / coords(1,3)
-     *						 + coords(2,3))
+	      call coCvt1(lu,3,'aw',temp,'ap',temp2)
+	      boxes(n) = nint(temp2)
 	    endif
-	    if(boxes(n).le.0) call BoxBug(spec,
-     *		'Specified subregion is beyond the map edge')
 	    k0 = k1 + 1
 	  endif
 	  if(more) k1 = k1 + 1
@@ -437,19 +428,18 @@ c
 	end
 c************************************************************************
 	subroutine BoxPoly(spec,k1,k2,verts,n,nmax,xyrange,
-     *						xytype,coords)
+     *						xytype,lu)
 c
 	implicit none
 	character spec*(*),xytype*(*)
-	double precision coords(4,3)
-	integer k1,k2,nmax,verts(2,nmax/2),n,xyrange(4)
+	integer k1,k2,nmax,verts(2,nmax/2),n,xyrange(4),lu(3)
 c
 c  Read in and process a description of a polygon region of interest.
 c
 c  Inputs:
 c    spec	The region specification string.
 c    xytype	Coordinate units.
-c    coords	Information used in converting between physical and
+c    lu		Information used in converting between physical and
 c		grid coordinates.
 c    nmax	The max size of boxes that we can handle.
 c  In/Out:
@@ -462,7 +452,7 @@ c
 c------------------------------------------------------------------------
 	integer k,kd,t
 c
-	call BoxInt(spec,k1,k2,verts,n,2,nmax-2,xytype,coords)
+	call BoxInt(spec,k1,k2,verts,n,2,nmax-2,xytype,lu)
 	n = n /2
 c
 c  Eliminate redundant vertices -- i.e. those vertices that are colinear
@@ -742,6 +732,80 @@ c
 c
 	end
 c************************************************************************
+c* BoxDef -- Set the default region of interest.
+c& mjs
+c: region-of-interest
+c+
+	subroutine BoxDef(boxes,naxis,blc,trc)
+c
+	implicit none
+	integer naxis,blc(naxis),trc(naxis),boxes(*)
+c
+c  Set the default region of interest.
+c
+c  Input:
+c    naxis	The dimension of blc and trc.
+c    blc
+c    trc
+c  Input/Output:
+c    boxes	This contains an intermediate form of the subregion
+c		specified by the user. On output, certain defaults are
+c		filled in.
+c--
+c------------------------------------------------------------------------
+	include 'boxes.h'
+	integer offset,i,xminv,xmaxv,yminv,ymaxv,zminv,zmaxv
+c
+	xminv = blc(1)
+	xmaxv = trc(1)
+	if(naxis.ge.2)then
+	  yminv = blc(2)
+	  ymaxv = trc(2)
+	else
+	  yminv = 0
+	  ymaxv = 0
+	endif
+c
+	if(naxis.ge.3)then
+	  zminv = blc(3)
+	  zmaxv = trc(3)
+	else
+	  zminv = 0
+	  zmaxv = 0
+	endif
+c
+	do i=4,naxis
+	  if(blc(i).ne.1.or.trc(i).ne.1)call bug('f',
+     *	      'Region of interest routines inadequate!')
+	enddo
+c
+	offset = OFFSET0
+	if(boxes(1).eq.0)then
+	  boxes(1) = 1
+	  boxes(offset+ITYPE) = IMAGE
+	  boxes(offset+SIZE) = 0
+	  boxes(offset+XMIN) = xminv
+	  boxes(offset+XMAX) = xmaxv
+	  boxes(offset+YMIN) = yminv
+	  boxes(offset+YMAX) = ymaxv
+	  boxes(offset+ZMIN) = zminv
+	  boxes(offset+ZMAX) = zmaxv
+	else
+	  do i=1,boxes(1)
+	    if(boxes(offset+ITYPE).ne.QUART)then
+	      if(boxes(offset+XMIN).eq.0) boxes(offset+XMIN) = xminv
+	      if(boxes(offset+XMAX).eq.0) boxes(offset+XMAX) = xmaxv
+	      if(boxes(offset+YMIN).eq.0) boxes(offset+YMIN) = yminv
+	      if(boxes(offset+YMAX).eq.0) boxes(offset+YMAX) = ymaxv
+	      if(boxes(offset+ZMIN).eq.0) boxes(offset+ZMIN) = zminv
+	      if(boxes(offset+ZMAX).eq.0) boxes(offset+ZMAX) = zmaxv
+	    endif
+	    offset = offset + HDR + boxes(offset+SIZE)
+	  enddo
+	endif
+c
+	end
+c************************************************************************
 c* BoxSet -- Set default region of interest.
 c& mjs
 c: region-of-interest
@@ -759,8 +823,6 @@ c  Input:
 c    naxis	The dimension of nsize, minv and maxv.
 c    nsize	The dimensions of the data set.
 c    flags	Character string giving some extra options. Flags are:
-c		  'q'	Default region is the inner quarter.
-c		  '1'	Default region is the first image.
 c		  's'	Give warning if region-of-interest is not a regular
 c			shape.
 c  Input/Output:
@@ -770,7 +832,7 @@ c		filled in.
 c--
 c------------------------------------------------------------------------
 	include 'boxes.h'
-	integer xmind,xmaxd,ymind,ymaxd,zmind,zmaxd,blc(3),trc(3)
+	integer blc(3),trc(3)
 	integer i,offset
 c
 	if(naxis.lt.1) call bug('f','Bad dimension')
@@ -791,26 +853,6 @@ c
 	  enddo
 	endif
 c
-c  Set the defaults.
-c
-	if(index(flags,'q').ne.0)then
-	  xmind = boxes(NX)/4 + 1
-	  xmaxd = max(1,boxes(NX)/4 + boxes(NX)/2)
-	  ymind = boxes(NY)/4 + 1
-	  ymaxd = max(1,boxes(NY)/4 + boxes(NY)/2)
-	else
-	  xmind = 1
-	  xmaxd = boxes(NX)
-	  ymind = 1
-	  ymaxd = boxes(NY)
-	endif
-	zmind = 1
-	if(index(flags,'1').ne.0)then
-	  zmaxd = 1
-	else
-	  zmaxd = boxes(NZ)
-	endif
-c
 c  If the user did not give any subregion spec, fill in the default box as
 c  the region.
 c
@@ -819,12 +861,12 @@ c
 	  boxes(1) = 1
 	  boxes(offset+ITYPE) = IMAGE
 	  boxes(offset+SIZE) = 0
-	  boxes(offset+XMIN) = xmind
-	  boxes(offset+XMAX) = xmaxd
-	  boxes(offset+YMIN) = ymind
-	  boxes(offset+YMAX) = ymaxd
-	  boxes(offset+ZMIN) = zmind
-	  boxes(offset+ZMAX) = zmaxd
+	  boxes(offset+XMIN) = 1
+	  boxes(offset+XMAX) = boxes(NX)
+	  boxes(offset+YMIN) = 1
+	  boxes(offset+YMAX) = boxes(NY)
+	  boxes(offset+ZMIN) = 1
+	  boxes(offset+ZMAX) = boxes(NZ)
 	else
 c
 	  do i=1,boxes(1)
@@ -836,19 +878,22 @@ c
 	      boxes(offset+YMAX) = max(1,boxes(NY)/4 + boxes(NY)/2)
 	    endif
 c
-	    if(boxes(offset+XMIN).eq.0) boxes(offset+XMIN) = xmind
-	    if(boxes(offset+XMAX).eq.0) boxes(offset+XMAX) = xmaxd
-	    if(boxes(offset+YMIN).eq.0) boxes(offset+YMIN) = ymind
-	    if(boxes(offset+YMAX).eq.0) boxes(offset+YMAX) = ymaxd
-	    if(boxes(offset+ZMIN).eq.0) boxes(offset+ZMIN) = zmind
-	    if(boxes(offset+ZMAX).eq.0) boxes(offset+ZMAX) = zmaxd
+	    if(boxes(offset+XMIN).eq.0) boxes(offset+XMIN) = 1
+	    if(boxes(offset+XMAX).eq.0) boxes(offset+XMAX) = boxes(NX)
+	    if(boxes(offset+YMIN).eq.0) boxes(offset+YMIN) = 1
+	    if(boxes(offset+YMAX).eq.0) boxes(offset+YMAX) = boxes(NY)
+	    if(boxes(offset+ZMIN).eq.0) boxes(offset+ZMIN) = 1
+	    if(boxes(offset+ZMAX).eq.0) boxes(offset+ZMAX) = boxes(NZ)
 c
-	    if(boxes(offset+XMAX).gt.boxes(NX))
-     *	    call bug('f','Subregion naxis1 is larger than image naxis1')
-	    if(boxes(offset+YMAX).gt.boxes(NY))
-     *	    call bug('f','Subregion naxis2 is larger than image naxis2')
-	    if(boxes(offset+ZMAX).gt.boxes(NZ))
-     *	    call bug('f','Subregion naxis3 is larger than image naxis3')
+	    if( boxes(offset+XMIN).lt.1.or.
+     *		boxes(offset+XMAX).gt.boxes(NX))
+     *	    call bug('f','Subregion extends beyond image on axis 1')
+	    if( boxes(offset+YMIN).lt.1.or.
+     *		boxes(offset+YMAX).gt.boxes(NY))
+     *	    call bug('f','Subregion extends beyond image on axis 2')
+	    if( boxes(offset+ZMIN).lt.1.or.
+     *		boxes(offset+ZMAX).gt.boxes(NZ))
+     *	    call bug('f','Subregion extends beyond image on axis 3')
 	    offset = offset + HDR + boxes(offset+SIZE)
 	  enddo
 	endif
@@ -1083,6 +1128,34 @@ c
 	endif
 	end
 c************************************************************************
+c* BoxCount -- Count the pixels in the region-of-interest in a plane.
+c& mjs
+c: region-of-interest
+c+
+	subroutine BoxCount(Runs,nRuns,nPoint)
+c
+	implicit none
+	integer nRuns,Runs(3,nRuns+1),nPoint
+c
+c  Count the number of pixels in the region-of-interest in a given
+c  plane.
+c
+c  Input:
+c    runs	Runs specifications, as returned by BoxRuns.
+c    nruns	Number of runs.
+c  Output:
+c    nPoint	Number of pixels in the region of interest.
+c--
+c------------------------------------------------------------------------
+	integer i
+c
+	nPoint = 0
+	do i=1,nRuns
+	  nPoint = nPoint + Runs(3,i) - Runs(2,i) + 1
+	enddo
+c
+	end
+c************************************************************************
 c* BoxRuns -- Return region of interest in "runs" form.
 c& mjs
 c: region-of-interest
@@ -1117,8 +1190,9 @@ c    xmaxv,ymaxv)
 c--
 c------------------------------------------------------------------------
 	include 'boxes.h'
+	include 'maxdim.h'
 	integer WORKSIZE,MAXSHAPE
-	parameter(WORKSIZE=512,MAXSHAPE=20)
+	parameter(WORKSIZE=MAXDIM,MAXSHAPE=256)
 	integer n1,n2,n3,pnt1,pnt2,pnt3,i,j,k,boxtype
 	integer offset,jmin,jmax,nshapes,shapes(MAXSHAPE)
 	integer work(WORKSIZE,3)
@@ -1138,8 +1212,9 @@ c
 	nshapes = 0
 	offset = OFFSET0
 	do i=1,boxes(1)
-	  if(boxes(offset+ZMIN).le.plane(1).and.
-     *	     boxes(offset+ZMAX).ge.plane(1).and.
+	  if(((boxes(offset+ZMIN).le.plane(1).and.
+     *	      boxes(offset+ZMAX).ge.plane(1)).or.
+     *	      (boxes(offset+ITYPE).lt.0.and.nshapes.gt.0)).and.
      *	    (boxes(offset+ITYPE).gt.0.or.nshapes.gt.0))then
 	    nshapes = nshapes + 1
 	    if(nshapes.gt.MAXSHAPE)
@@ -1586,3 +1661,4 @@ c
 	l = min(len(line),l + 2 + len(message))
 	call bug('f',line(1:l))
 	end
+
