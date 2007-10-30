@@ -15,7 +15,7 @@ c	should have an appreciable guard band around it to the map edge (of
 c	size comparable to the width of the region being cleaned).
 c
 c	To form a multi-frequency synthesis image and beam, use INVERTs
-c	``mfs'' and ``sdb'' options. This will create
+c	``mfs'' option, and set the value of sbeams to 1. This will create
 c	a map with one plane, and a beam with two planes (the normal dirty
 c	beam, and the spectral dirty beam).
 c
@@ -40,8 +40,8 @@ c@ map
 c	The input dirty map, which should have units of Jy/beam. No
 c	default. 
 c@ beam
-c	The input dirty beam. This should be formed using INVERT with
-c	options=sdb. No default.
+c	The input dirty beam. This should be formed using INVERT using
+c	sbeams=1. No default.
 c@ model
 c	An initial model of the deconvolved image. This could be the
 c	output from a previous run of MFCLEAN. It must have flux units of
@@ -68,8 +68,9 @@ c	maximum residual becomes negative valued, or if the cutoff level
 c	(as described above) is reached. 
 c@ region
 c	This specifies the region to be Cleaned. See the Users Manual for
-c	instructions on how to specify this. The default is generally
-c	inadequate, and a smaller region should be explicitly specified.
+c	instructions on how to specify this. The default is the inner
+c	quarter. This default is generally inadequate, and a smaller
+c	region should be explicitly specified.
 c@ minpatch
 c	The minimum patch size when performing minor iterations. Default
 c	is 51, but make this larger if you are having problems with
@@ -117,12 +118,6 @@ c   rjs  27may92 - Doc changes only.
 c   rjs  12nov92 - Doc changes only.
 c   nebk 25nov92 - COpy btype to output
 c   rjs  30mar93 - Limit the size of the spectral component.
-c   rjs  27nov93 - Another algorithm to try to limit the size of the spectral
-c		   component.
-c   rjs   4may95 - Doc change only.
-c   rjs  29nov95 - Better treatment of model.
-c   rjs  13sep96 - Friday 13th! Improve check for negative components.
-c   rjs  29jan97 - Change default region of interest.
 c
 c  Bugs and Shortcomings:
 c     * The way it does convolutions is rather inefficent, partially
@@ -144,11 +139,11 @@ c		to write.
 c
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='MfClean: version 1.0 29-Jan-97')
+	parameter(version='MfClean: version 1.0 25-Nov-92')
 	include 'maxdim.h'
 	integer maxBeam,maxCmp1,maxCmp2,maxBox,maxRun,maxP
 	parameter(maxCmp1=66000,maxCmp2=32000,maxP=257)
-	parameter(maxBeam=maxP*maxP,maxBox=3*MAXDIM,maxRun=3*maxDim)
+	parameter(maxBeam=maxP*maxP,maxBox=1024,maxRun=3*maxDim)
 c
 	integer Boxes(maxBox),Run(3,maxRun),nPoint,nRun
 	integer Map0,Map1,Res0,Res1,Est0,Est1,Tmp
@@ -164,7 +159,7 @@ c
 	logical NegStop,NegFound,More
 	integer maxNiter,Niter,totNiter,minPatch,maxPatch
 	integer naxis,n1,n2,n1d,n2d,ic,jc,nx,ny,ntmp
-	integer xmin,xmax,ymin,ymax,xoff,yoff,zoff
+	integer xmin,xmax,ymin,ymax
 	character MapNam*64,BeamNam*64,ModelNam*64,OutNam*64,line*72
 	integer lMap,lBeam,lModel,lOut
 	integer nMap(3),nBeam(3),nModel(3),nOut(4)
@@ -215,9 +210,8 @@ c
      *	  call bug('f','Input map is not a multi-freq synthesis map')
 	call rdhdi(lMap,'naxis',naxis,3)
 	naxis = max(min(naxis,4),3)
-	call defregio(boxes,nMap,nBeam,ic,jc)
 	call BoxMask(lMap,boxes,maxBox)
-	call BoxSet(boxes,3,nMap,' ')
+	call BoxSet(boxes,3,nMap,'q')
 	call BoxRuns(1,1,'r',boxes,Run,maxRun,nRun,
      *					xmin,xmax,ymin,ymax)
 	nx = xmax - xmin + 1
@@ -341,13 +335,14 @@ c
 	else
 	  call output('Loading the model and getting residuals ...')
 	  call xyopen(lModel,ModelNam,'old',3,nModel)
-	  call AlignIni(lModel,lMap,nModel(1),nModel(2),nModel(3),
-     *						xoff,yoff,zoff)
-	  zoff = 0
-	  call AlignGet(lModel,Run,nRun,1,xmin+xoff-1,ymin+yoff-1,zoff,
-     *		nModel(1),nModel(2),nModel(3),dat(Est0),nPoint,ntmp)
-	  call AlignGet(lModel,Run,nRun,2,xmin+xoff-1,ymin+yoff-1,zoff,
-     *		nModel(1),nModel(2),nModel(3),dat(Est1),nPoint,ntmp)
+	  if(nx.ne.nModel(1).or.ny.ne.nModel(2).or.nModel(3).ne.2)
+     *	     call bug('f','Model and output size do not agree')
+	  call xysetpl(lModel,1,1)
+	  call GetPlane(lModel,Run,nRun,0,0,
+     *			nModel(1),nModel(2),dat(Est0),nPoint,ntmp)
+	  call xysetpl(lModel,1,2)
+	  call GetPlane(lModel,Run,nRun,0,0,
+     *	    nModel(1),nModel(2),dat(Est1),nPoint,ntmp)
 	  call Diff(dat(Est0),dat(Est1),dat(Map0),dat(Map1),
      *	    dat(Res0),dat(Res1),dat(Tmp),nPoint,nx,ny,Run,nRun,
      *	    FFT00,FFT11,FFT01,FFT10)
@@ -1028,7 +1023,7 @@ c
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer Ymap(maxdim+1)
-	integer nPatch,nCmp
+	integer nPatch,nCmp,i
 c
 c  Find the limiting residual that we can fit into the residual list, then
 c  go and fill the residual list.
@@ -1036,8 +1031,15 @@ c
 	call GetLimit(Res0,nPoint,ResAMax,maxCmp,Histo,maxPatch,
      *				nPatch,Limit)
 	Limit = max(Limit, 0.5 * Cutoff)
-	call GetComp(Res0,Res1,Est0,Est1,nPoint,ny,Ymap,Limit,
-     *		Icmp,Jcmp,Rcmp0,Rcmp1,Ccmp0,Ccmp1,maxCmp,nCmp,Run,nRun)
+	call GetComp(Res0,Res1,nPoint,ny,Ymap,Limit,
+     *		Icmp,Jcmp,Rcmp0,Rcmp1,maxCmp,nCmp,Run,nRun)
+c
+c  Initialise the current components to zero.
+c
+	do i=1,nCmp
+	  CCmp0(i) = 0
+	  CCmp1(i) = 0
+	enddo
 c
 c  Determine the patch size to use, perform the minor iterations, then
 c  add the new components to the new estimate.
@@ -1112,7 +1114,7 @@ c------------------------------------------------------------------------
 	parameter(maxrun=4096)
 	integer c,i,i0,j0,k,ktot,ltot,NIndx
 	integer Pk,p,ipk,jpk,ipkd,jpkd
-	real TermRes,ResMax,Wt0,Wt1,beta,P00,P11,P01
+	real TermRes,ResMax,Wt0,Wt1,beta,delta0,delta1,P00,P11,P01
 	integer Temp(maxrun),Indx(maxrun)
 	logical more
 c
@@ -1122,8 +1124,10 @@ c
 	P00 = Patch00(c,c)
 	P11 = Patch11(c,c)
 	P01 = Patch01(c,c)
-	call GetPk(Ncmp,Rcmp0,Rcmp1,P00,P11,P01,Tmp,Pk,Wt0,Wt1,ResMax)
-	negFound = negFound .or. ResMax.lt.0 .or. Wt0+Ccmp0(Pk).lt.0
+	delta0 = gain0/(P00*P11 - P01*P01)
+	delta1 = gain1/(P00*P11 - P01*P01)
+	call GetPk(Ncmp,Rcmp0,Rcmp1,P00,P11,P01,Tmp,Pk,ResMax)
+	negFound = negFound .or. ResMax.lt.0
 	TermRes = Limit
 	beta = g * Limit**(Speed+1)
 c
@@ -1139,8 +1143,9 @@ c
 c
 c  Determine the breakup between the Patch0 and Patch1 beams.
 c
-	  Wt0 = gain0 * Wt0
-	  Wt1 = gain1 * Wt1
+	  Wt0 = delta0 * (P11*Rcmp0(pk) - P01*Rcmp1(pk))
+	  Wt1 = delta1 * (P00*Rcmp1(pk) - P01*Rcmp0(pk))
+c	  if(abs(Wt1).gt.2*abs(Wt0)) Wt1 = sign(2*Wt0,Wt1)
 c
 c  Find the residuals which have suitable y values.
 c
@@ -1199,20 +1204,18 @@ c
 	  Niter = Niter + 1
 	  TermRes = TermRes + 
      *	   beta * abs(Wt0) / ( EstASum * abs(ResMax)**Speed )
-	  call GetPk(Ncmp,Rcmp0,Rcmp1,P00,P11,P01,Tmp,Pk,Wt0,Wt1,ResMax)
-	  negFound = negFound.or.ResMax.lt.0  .or. Wt0+Ccmp0(Pk).lt.0
+	  call GetPk(Ncmp,Rcmp0,Rcmp1,P00,P11,P01,Tmp,Pk,ResMax)
+	  negFound = negFound.or.ResMax.lt.0
 	  more = abs(ResMax).gt.TermRes .and. Niter.lt.MaxNiter .and.
      *		.not.(negStop.and.negFound)
-
-
 	enddo
 	end
 c************************************************************************
-	subroutine GetPk(n,R0,R1,P00,P11,P01,Tmp,Pk,Wt0,Wt1,ResMax)
+	subroutine GetPk(n,R0,R1,P00,P11,P01,Tmp,Pk,ResMax)
 c
 	implicit none
 	integer n,Pk
-	real P00,P11,P01,R0(n),R1(n),Tmp(n),ResMax,Wt0,Wt1
+	real P00,P11,P01,R0(n),R1(n),Tmp(n),ResMax
 c
 c  Determine the location of the peak residual.
 c  Input:
@@ -1223,50 +1226,24 @@ c  Scratch:
 c    Tmp	Holds the statistic used to determine the location.
 c  Output:
 c    Pk		Location to subtract from.
-c    Wt0,WT1	Values of beams to subtract off.
-c    ResMax	Current residual maximum.
 c------------------------------------------------------------------------
-	integer i,j
-	real delta
+	integer i
+	real rmin,rmax
 c
 c  Externals.
 c
 	integer ismax,ismin
 c
-c  Determine the optimum place to subtract flux from.
-c
 	do i=1,n
 	  Tmp(i) = R0(i)*R0(i)*P11 + R1(i)*R1(i)*P00 - 2*R0(i)*R1(i)*P01
 	enddo
 c
-	pk = ismax(n,Tmp,1)
-c
-c  Determine the maximum residual.
-c
-	j = ismax(n,R0,1)
-	i = ismin(n,R0,1)
-	if(abs(R0(i)).lt.abs(R0(j))) i = j
-	ResMax = abs(R0(i))
-c
-	delta  = 1./(P00*P11 - P01*P01)
-	Wt0 = (P11*R0(pk) - P01*R1(pk))*delta
-	Wt1 = (P00*R1(pk) - P01*R0(pk))*delta
-c
-c  If the spectral component is more than 5 times the flux component,
-c  trim back the spectral component, and see whether it would be
-c  better to subtract from the residual peak instead.
-c
-c	if(abs(Wt1).gt.100*abs(Wt0))then
-c	  Wt1 = sign(5*Wt0,Wt1)
-c	  twt0 = (P11*R0(i) - P01*R1(i))*delta
-c	  twt1 = (P00*R1(i) - P01*R0(i))*delta
-c	  twt1 = sign(5*twt0,twt1)
-c	  if(twt0*R0(i)+twt1*R1(i).gt.Wt0*R0(pk)+Wt1*R1(pk))then
-c	    Wt0 = twt0
-c	    Wt1 = twt1
-c	    pk = i
-c	  endif
-c	endif
+	rmax = R0(ismax(n,R0,1))
+	rmin = R0(ismin(n,R0,1))
+	ResMax = rmax
+	if(abs(rmin).gt.abs(rmax))ResMax = rmin
+
+	Pk = ismax(n,Tmp,1)
 c
 	end
 c************************************************************************
@@ -1342,15 +1319,12 @@ c
 c
 	end
 c************************************************************************
-	subroutine GetComp(Res0,Res1,Est0,Est1,nPoint,ny,Ymap,Limit,
-     *		           Icmp,Jcmp,Rcmp0,Rcmp1,Ccmp0,Ccmp1,
-     *			   maxCmp,nCmp,Run,nRun)
+	subroutine GetComp(Res0,Res1,nPoint,ny,Ymap,Limit,
+     *		           Icmp,Jcmp,Rcmp0,Rcmp1,maxCmp,nCmp,Run,nRun)
 c
 	implicit none
 	integer nPoint,ny,maxCmp,nCmp,nRun,Run(3,nrun)
-	real Limit
-	real Res0(nPoint), Res1(nPoint), Est0(nPoint), Est1(nPoint)
-	real Rcmp0(maxCmp),Rcmp1(maxCmp),Ccmp0(maxCmp),Ccmp1(maxCmp)
+	real Limit,Res0(nPoint),Res1(nPoint),Rcmp0(maxCmp),Rcmp1(maxCmp)
 	integer Ymap(ny+1),Icmp(maxCmp),Jcmp(maxCmp)
 c
 c  Get the residuals that are greater than a certain cutoff.
@@ -1402,8 +1376,6 @@ c
           do i = 1, Ncmpd
             Rcmp0(i+Ncmp) = Res0(l+Indx(i))
             Rcmp1(i+Ncmp) = Res1(l+Indx(i))
-	    Ccmp0(i+Ncmp) = Est0(l+Indx(i))
-	    Ccmp1(i+Ncmp) = Est1(l+Indx(i))
 	    Icmp(i+Ncmp) = x0 + Indx(i)
 	    Jcmp(i+Ncmp) = y0
           enddo
@@ -1467,8 +1439,8 @@ c
 	    k = k + 1
 	  enddo
 	  i = ICmp(l) - Run(2,k) + j
-	  Est0(i) = CCmp0(l)
-	  Est1(i) = CCmp1(l)
+	  Est0(i) = Est0(i) + CCmp0(l)
+	  Est1(i) = Est1(i) + CCmp1(l)
 	enddo
 	end
 c************************************************************************
@@ -1511,30 +1483,5 @@ c
 	do i=1,nPoint
 	  Res1(i) = Map1(i) - Tmp(i) - Res1(i)
 	enddo
-c
-	end
-c************************************************************************
-	subroutine defregio(boxes,nMap,nBeam,icentre,jcentre)
-c
-	implicit none
-	integer boxes(*),nMap(3),nBeam(2),icentre,jcentre
-c
-c  Set the region of interest to the lastest area that can be safely
-c  deconvolved.
-c------------------------------------------------------------------------
-	integer blc(3),trc(3),width
-c
-	width = min(icentre-1,nBeam(1)-icentre) + 1
-	blc(1) = max(1,(nMap(1)-width)/2)
-	trc(1) = min(nMap(1),blc(1)+width-1)
-c
-	width = min(jcentre-1,nBeam(2)-jcentre) + 1
-	blc(2) = max(1,(nMap(2)-width)/2)
-	trc(2) = min(nMap(2),blc(2)+width-1)
-c
-	blc(3) = 1
-	trc(3) = 1
-c
-	call BoxDef(boxes,3,blc,trc)
 c
 	end
