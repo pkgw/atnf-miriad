@@ -3533,3 +3533,6 @@ and in a way to be consistent with all the other changes happening.
 27jan00 rjs	moslst.for -- New task. Reworked/renamed version of lmclst.
 28jan00 rjs	gaufit.for -- Standardise FORTRAN.
 05jan00 rjs	plproc.for,plproc.h -- Planetary subroutines.
+*********************************** 3feb00 Sent changes to Doug Roberts
+07feb00 rjs	gethd.for -- Added "format" keyword.
+
