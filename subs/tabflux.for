@@ -30,43 +30,24 @@ c                     TabParse: variable ``len'' changed to ``tlen''.
 c    jm    09dec93    TabLoad:  Now ignores blank lines too.
 c    jm    11mar94    TabLoad:  Now it really ignores blank lines.
 c    jm    11apr94    TabFind:  Date=0 now really returns latest flux.
-c    jm    03nov94    Modified default file search method and cleaned
-c                     up all of this quite a bit.  Also added the code
-c                     which searches source name aliases.  It is
-c                     assumed that aliases are demarked by '!!' and
-c                     the first name is the anchor.  A source does not
-c                     have to have an alias list.
-c    rjs   26jan95    Eliminate non-standard string concatentation.
-c    jm    27feb95    Fixed a problem with date=0 and source=*.
-c    jm    05jul95    Tried to reduce the number of entries in the
-c                     common arrays by testing for source name changes
-c                     in the routine TabFlux.  Also eliminated redundant
-c                     file name changes in the same routine.
-c    jm    04oct95    Fixed long standing date>0 problem in tabflux.
-c    jm    21dec95    Fixed calget because fix above broke it.
-c    jm    25aug97    Changed call from mgetenv() to fullname() for 
-c                     the environment variable $MIRFLUXTAB in tabflux.
 c
 c***********************************************************************
-c* calget -- Routine to retrieve an interpolated calibrator flux.
+c* CalGet -- Routine to retrieve an interpolated calibrator flux.
 c& jm
 c: calibration, flux
 c+
-      subroutine calget(filename, source, freq, delfreq, day, deldate,
+      subroutine calget(FileName, source, freq, delfreq, day, deldate,
      *  flux, iostat)
 c
       implicit none
-      character filename*(*), source*(*)
+      character FileName*(*), source*(*)
       integer iostat
       real freq, delfreq, deldate, flux
       double precision day
 c
 c Input:
-c   filename The name of the flux calibrator file.  If this is a
-c            blank string, then it defaults first to the file
-c            pointed to by the environment variable $MIRFLUXTAB;
-c            second to the file ./cals.fluxes; and, finally, to
-c            $MIRCAT/cals.fluxes.
+c   FileName The name of the calibration file.  Default is
+c            MIRCAT/cals.fluxes.
 c   source   The name of the calibrator source to match.  No default.
 c   freq     The observation frequency (GHz) (default of 0.0 means
 c            that a match occurs at any frequency).
@@ -103,15 +84,14 @@ c            interpolation between two values.
 c   flux     The flux of the matched observation.
 c   iostat   An error integer.  Iostat = 0 means no error;
 c            -1 if there are no data found in the file FileName;
-c            -2 if an EOF is reached before a match; -3 if no source
-c            name matchs; -4 if no match at desired characteristics;
-c            and -5 if the date of the latest flux measurement is
-c            offset by more than 4 years.
+c            -2 if an EOF; -3 if no source name match; -4 if no flux at
+c            desired frequency; and -5 if the date of the latest flux
+c            measurement is longer than 4 years.
 c
 c--
 c-----------------------------------------------------------------------
 c
-c  Internal variables.
+c Internal variables.
 c
       character*80 tmpsrc
       integer Line, nlen
@@ -119,42 +99,37 @@ c
       real oldfreq, ratio, diffday, diffreq
       real fluxes(2), freqlast(2)
       double precision date, dates(2), olddate
-      logical more, init, prior
+      logical more, init
 c
-      save tmpsrc
-      save outflux, oldfreq
-      save olddate
-c
-c  External functions and data statements.
+c External functions.
 c
       integer Len1
-c
       data tmpsrc / ' '/
       data outflux, oldfreq, olddate / 0.0, 0.0, 0.0/
 c
-c  End declarations.
+c End declarations.
 c-----------------------------------------------------------------------
-c  Check for bad inputs and convert the date string to Julian.
+c Check for bad inputs and convert the date string to Julian.
 c
       call Ucase(source)
-      nlen = Len1(source)
+      nlen = len1(source)
       if (nlen .le. 0) call bug('f',
-     *  'CALGET: A source name must be provided.')
+     *  'GETFLUX: A source name must be provided.')
       if (freq .lt. 0.0) call bug('f',
-     *  'CALGET: Calibration frequency cannot be negative.')
+     *  'GETFLUX: Calibration frequency cannot be negative.')
       if (delfreq .lt. 0.0) call bug('f',
-     *  'CALGET: Frequency width cannot be negative.')
+     *  'GETFLUX: Frequency width cannot be negative.')
       if (day .lt. 0.0) call bug('f',
-     *  'CALGET: Date cannot be negative.')
+     *  'GETFLUX: Date cannot be negative.')
       if (deldate .lt. 0.0) call bug('f',
-     *  'CALGET: Date width cannot be negative.')
+     *  'GETFLUX: Date width cannot be negative.')
 c
       iostat = 0
       date = day
       if (date .le. 0.0) call TodayJul(date)
 c
-c  If the source, frequency, and date have not changed significantly
-c  since the last call, simply return the saved values.
+c If the source, frequency, and date have not changed significantly
+c since the last call, simply return the saved values.
 c
       diffday = 2.0 * abs(date - olddate)
       diffreq = 2.0 * abs(freq - oldfreq)
@@ -171,24 +146,21 @@ c
       sfreq = freq
       sflux = flux
       Line = 1
-      more = .TRUE.
-      init = .TRUE.
-      prior = .TRUE.
+      more = .true.
+      init = .true.
       olddate = date
 c
-c  Search for all matches of wildcards or the particular source.
+c Search for all matches of wildcards or the particular source.
 c
       do while (more)
         tmpsrc = source
         freq = sfreq
         day = date
-        if (prior) day = -day
         flux = sflux
-        call tabflux(filename, tmpsrc, freq, delfreq, day, deldate,
+        call TabFlux(FileName, tmpsrc, freq, delfreq, day, deldate,
      *    flux, rms, Line, iostat)
         if (iostat .lt. 0) then
-          more = prior
-          prior = .NOT. prior
+          more = .false.
         else
           if (init) then
             dates(1) = day
@@ -198,12 +170,12 @@ c
             source = tmpsrc
             freqlast(1) = freq
             freqlast(2) = 0.0
-            init = .FALSE.
-          else if (dates(2) .eq. 0.0) then
+            init = .false.
+          elseif (dates(2) .eq. 0.0) then
             dates(2) = day
             fluxes(2) = flux
             freqlast(2) = freq
-          else if (day .gt. dates(2)) then
+          elseif (day .gt. dates(2)) then
             dates(1) = dates(2)
             dates(2) = day
             fluxes(1) = fluxes(2)
@@ -217,23 +189,23 @@ c  from the routine TabFlux.  We have either bracketed the desired
 c  date or have no further matches to make.
 c
           if (day .gt. date) then
-            more = .FALSE.
+            more = .false.
           endif
         endif
       enddo
 c
       if (init) then
-        call bug('w', 'CALGET: No match for this source.')
+        call bug('w', 'GETFLUX: No match for this source.')
         return
-      else if (dates(2) .eq. 0.0) then
+      elseif (dates(2) .eq. 0.0) then
         outflux = fluxes(1)
         day = dates(1)
         freq = freqlast(1)
-      else if (date .ge. dates(2)) then
+      elseif (date .ge. dates(2)) then
         outflux = fluxes(2)
         day = dates(2)
         freq = freqlast(2)
-      else if (date .le. dates(1)) then
+      elseif (date .le. dates(1)) then
         outflux = fluxes(1)
         day = dates(1)
         freq = freqlast(1)
@@ -250,7 +222,7 @@ c
       olddate = day
       flux = outflux
 c
-c  Special iostat for EOF.  Change returned flag to no error.
+c Special iostat for EOF.  Flag to no error.
 c
       if (iostat .eq. -2) iostat = 0
 c
@@ -258,25 +230,22 @@ c
       end
 c
 c***********************************************************************
-c* tabflux -- Return the flux of a calibrator source at an input freq.
+c* TabFlux -- Return the flux of a calibrator source at an input freq.
 c& jm
 c: calibration, flux, frequency
 c+
-      subroutine tabflux(filename, source, freq, delfreq, day, delday,
+      subroutine tabflux(FileName, source, freq, delfreq, day, delday,
      *  flux, rms, Line, iostat)
 c
       implicit none
-      character filename*(*), source*(*)
-      integer Line, iostat
+      character FileName*(*), source*(*)
       real freq, delfreq, delday, flux, rms
       double precision day
+      integer Line, iostat
 c
 c Input:
-c   filename The name of the flux calibrator file.  If this is a
-c            blank string, then it defaults first to the file
-c            pointed to by the environment variable $MIRFLUXTAB;
-c            second to the file ./cals.fluxes; and, finally, to
-c            $MIRCAT/cals.fluxes.
+c   FileName The name of the flux calibrator file.  This defaults to
+c            MIRCAT/cals.fluxes.
 c   delfreq  The frequency width (real: GHz) around the parameter
 c            ``freq'' in which to include a frequency match.
 c   delday   The date width (real: Julian days) around the parameter
@@ -312,199 +281,196 @@ c            data read; -2, EOF.  Other errors from routine TABFIND.
 c
 c--
 c-----------------------------------------------------------------------
-c  Internal variables.
 c
-      character DEFFILE*(*)
-      parameter (DEFFILE='MIRCAT:cals.fluxes')
+c Internal variables.
 c
       character oldname*132, tmpname*132, newname*132
-      character oldsrc*80
-      integer icolon, newlen, nlen
+      character errmsg*80, DEFFILE*30
+c--   character lastsrc*80
+c--   real oldfreq, oldflux, oldrms
+c--   double precision oldday
+      integer newlen
       real deltnu, deltime
-      logical reset
 c
-      save oldname, newname
-      save oldsrc
-c
-c  External functions and data statements.
-c
+      integer len1
       character fullname*132
-      integer Len1
-      logical hexists
 c
-      data oldname /'@no#such!file%'/
-      data oldsrc /'@no#such!source%'/
+      parameter (DEFFILE='MIRCAT:cals.fluxes')
+      data oldname /' '/
+c--   data lastsrc /' '/
+c--   data oldfreq, oldflux, oldrms, oldday / 0.0, 0.0, 0.0, 0.0/
 c
-c  End declarations.
-c-----------------------------------------------------------------------
-c  Initialize output variables.
+c End declarations.
+c Initialize output variables.
 c
       rms = 0.0
       iostat = 0
       deltnu = delfreq / 2.0
       deltime = delday / 2.0
 c
-c  If the input name is empty, then first search to see if the
-c  environment variable $MIRFLUXTAB is set; if not, then set the
-c  file name to default value and search the current directory
-c  followed by $MIRCAT.
+c If the input source name matches the last found source,
+c return the previously found parameters.
+c-- I removed this because it caused calflux to loop indefinitely. jm
 c
-      reset = .FALSE.
-      newlen = Len1(filename)
-      if (newlen .lt. 1) newlen = 1
-      if (filename(1:newlen) .ne. oldname(1:newlen)) then
-        if (Len1(filename) .gt. 0) then
-          newname = fullname(filename)
-        else
-          newname = fullname('$MIRFLUXTAB')
-          if ((Len1(newname) .lt. 1) .or.
-     *        (.not. hexists(0, newname))) then
-            tmpname = DEFFILE
-            icolon = index(tmpname, ':') + 1
-            newname = tmpname(icolon:)
-            if (.not. hexists(0, newname)) then
-              newname = fullname(DEFFILE)
-              if (.not. hexists(0, newname)) then
-                call bug('f',
-     *            'TABFLUX: Error finding calibrator flux table file.')
-              endif
-            endif
+c--   tmpname = source
+c--   newlen = len1(tmpname)
+c--   if (newlen .le. 0) tmpname = ' '
+c--   call Ucase(tmpname)
+c--   if (tmpname(1:newlen) .eq. lastsrc(1:newlen)) then
+c--     source = lastsrc
+c--     freq = oldfreq
+c--     day = oldday
+c--     flux = oldflux
+c--     rms = oldrms
+c--     return
+c--   endif
+c
+c If input name is empty, set the file name to default value.
+c
+      newlen = len1(FileName)
+      if (newlen .gt. 0) then
+          tmpname = FileName
+      else
+          tmpname = DEFFILE
+      endif
+      newname = fullname(tmpname)
+      newlen = len1(newname)
+      if (newlen .le. 0) then
+          call bug('f', 'TABFLUX: Error finding calibrator table name ')
+          return
+      endif
+c
+c If input calibrator file name has changed since the last time this
+c routine was called, then open the new file and load the source data
+c into memory.
+c
+      if (newname(1:newlen) .ne. oldname(1:newlen)) then
+          call TabLoad(newname, iostat)
+          if (iostat .ne. 0) then
+            errmsg = ' TABFLUX: Error loading file ' // newname
+            newlen = len1(errmsg)
+            call bug('f', errmsg(1:newlen))
           endif
-        endif
-        oldname = filename
-        reset = .TRUE.
+          oldname = newname(1:newlen)
+          Line = 1
       endif
 c
-      newlen = Len1(newname)
-      if (newlen .le. 0) call bug('f',
-     *  'TABFLUX: Calibrator flux table file name is blank.')
-c
-c  Check to see if the source name has changed.  If so, then reload
-c  based on this source name.
-c
-      nlen = Len1(source)
-      if (nlen .lt. 1) nlen = 1
-      call Ucase(source(1:nlen))
-      if (source(1:nlen) .ne. oldsrc(1:nlen)) then
-        oldsrc = source
-        reset = .TRUE.
-      endif
-c
-c  If input calibrator file name has changed since the last time this
-c  routine was called, then open the new file and load the source data
-c  into memory (and initialize the line number counter).
-c
-      if (reset) then
-        call TabLoad(newname, source, iostat)
-        if (iostat .ne. 0) return
-        Line = 0
-      endif
-c
-c  Search the table for the flux value at the frequency desired.
-c  The search method will return the next entry at the input frequency
-c  for the named source that fits within the date and flux constraints.
-c  The indexed (by source) file can be searched for source and then
-c  incremented to find last entry at proper frequency.  Iostat = -2
-c  when EOF is encountered (there are no more matching entries).
+c Search the table for the flux value at the frequency desired.
+c The search method will return the next entry at the input frequency
+c for the named source that fits within the date and flux constraints.
+c The indexed (by source) file can be searched for source and then
+c incremented to find last entry at proper frequency.  Iostat = -2
+c when EOF is encountered (that is no more matching entries).
 c
       call TabFind(source, freq, deltnu, day, deltime, flux, rms, Line,
      *  iostat)
+c--   if (iostat .eq. 0) then
+c--     lastsrc = source
+c--     oldfreq = freq
+c--     oldday = day
+c--     oldflux = flux
+c--     oldrms = rms
+c--   endif
       return
       end
+c
 c***********************************************************************
-      subroutine tabload(name, source, iostat)
+cc* TabLoad -- Read the calibration file.
+cc& jm
+cc: calibration
+cc+
+      subroutine tabload(name, iostat)
+c
+c This routine will read a calibration file loading sources, observation
+c dates, frequencies, fluxes, and rms values into the table arrays.
+c THIS ROUTINE IS VERY FORMAT SPECIFIC IN THAT THE FIRST CHARACTER MUST
+c BE THE CHARACTER "!" IF THE LINE IS TO BE IGNORED.  ALL other lines
+c MUST have the following form:
+c     'Source'  DATE.UT  FREQ(GHz)  FLUX(Jy)  rms(Jy)
+c with each field separated by at least one space or TAB character.
+c
       implicit none
       character name*(*)
-      character source*(*)
       integer iostat
-c
-c  This routine reads a calibration file loading sources, observation
-c  dates, frequencies, fluxes, and rms values into the table arrays.
-c  THIS ROUTINE IS VERY FORMAT SPECIFIC IN THAT THE FIRST CHARACTER MUST
-c  BE THE CHARACTER "!" IF THE LINE IS TO BE IGNORED.  ALL other lines
-c  MUST have the following form:
-c     'Source'  DATE.UT  FREQ(GHz)  FLUX(Jy)  rms(Jy)
-c  with each field separated by at least one space or TAB character.
 c
 c Input:
 c   name     The name of the flux calibrator file.
-c   source   The name of the source to match.  An alias can be used.
 c
 c Output:
 c   iostat   The returned error code.  0 means no error.
 c
+c--
 c-----------------------------------------------------------------------
-c  Internal variables.
+c
+c Internal variables.
 c
       integer lu, length, nentry
       character*132 string
 c
-      integer Len1
+      integer len1
 c
 c End declarations.
-c-----------------------------------------------------------------------
 c
       call TxtOpen(lu, name, 'old', iostat)
       if (iostat .ne. 0) then
-        string = 'TABLOAD: Error opening file '// name
-        call bug('w', string)
-        call bugno('f', iostat)
+          string = ' TABLOAD: Error opening file '// name
+          length = len1(string)
+          call bug('w', string(1:length))
+          call bugno('f', iostat)
+          return
       endif
 c
-c  Initialize the counter value and reset the alias list.
-c  Read the file until either an EOF or error is identified (iostat=-1).
-c  Skip the string if it is filled entirely with blanks.  If the first
-c  two characters in the string are "!!", the rest of the string is
-c  treated as an alias list which contains source names separated by
-c  spaces and the first name is used as the anchor.  Otherwise, the
-c  string is parsed as a source entry and the entry counter is
-c  incremented.
+c Read file until either an EOF or error is identified (iostat=-1).
+c Skip the string if it is preceeded by the character "!" or is
+c filled entirely with blanks.
+c Otherwise, increment the counter and parse the array values.
 c
       nentry = 0
-      call addalias('resetall', ' ')
-c
       call TxtRead(lu, string, length, iostat)
       do while (iostat .eq. 0)
-        length = Len1(string)
-        if (length .gt. 0) then
-          if (string(1:1) .ne. '!') then
-            call TabParse(string, length, source, nentry)
-          else if (string(1:2) .eq. '!!') then
-            call NamParse(string(3:), length-2)
+          length = len1(string)
+          if ((string(1:1) .ne. '!') .and. (length .gt. 0)) then
+            nentry = nentry + 1
+            call TabParse(string, length, nentry)
           endif
-        endif
-        call TxtRead(lu, string, length, iostat)
+          call TxtRead(lu, string, length, iostat)
       enddo
 c
-c  If the last return code was not an EOF, then it was an error.
-c  Otherwise, simply close the file and return.
+c If the last return code was not an EOF, it was an error.  If an EOF
+c was returned, close the file and then sort the table of data by
+c source name.
 c
       if (iostat .ne. -1) call bugno('f', iostat)
+      call TxtClose(lu)
+      if (nentry .eq. 0) then
+          call bug('f', 'TABLOAD: No entries in this calibration file')
+          return
+      endif
+      call TabIndex
 c
       iostat = 0
-      call TxtClose(lu)
-c
-      if (nentry .eq. 0) then
-        string = 'TABFLUX: No match of source name: ' // source
-        call bug('w', string)
-        iostat = -3
-      endif
       return
       end
+c
 c***********************************************************************
-      subroutine tabfind(source, freq, deltnu, day, deltime, flux,
-     *  rms, Line, iostat)
+cc* TabFind -- Return the flux for a given source and frequency.
+cc& jm
+cc: calibration, flux, frequency
+cc+
+      subroutine tabfind(source, freq, deltnu, day, deltime, flux, rms,
+     *  Line, iostat)
+c
+c This routine will find the entry 'source' in the flux calibration
+c table and match frequencies to the variable 'freq' and returns the
+c the flux and rms (if it exists) that matches the qualifier 'day'.
+c Recursive calls to TabFind will find the next match or return an
+c EOF flag in iostat.
+c
       implicit none
       character source*(*)
-      integer Line, iostat
       real freq, deltnu, deltime, flux, rms
       double precision day
-c
-c  This routine will find the entry 'source' in the flux calibration
-c  table and match frequencies to the variable 'freq' and returns the
-c  the flux and rms (if it exists) that matches the qualifier 'day'.
-c  Recursive calls to TabFind will find the next match or return an
-c  EOF flag in iostat.
+      integer Line, iostat
 c
 c Input:
 c   deltnu   The half width (real: GHz) of the frequency in which
@@ -524,396 +490,234 @@ c            The internal format for day is the same as for DATE entries
 c            in the flux calibration file (Julian day).
 c   Line     On input, this integer indicates the next item to consider
 c            as a match from the sorted array.  On output, this points
-c            to the next entry to start with on the next call.  If Line
-c            is zero, it is initialized to 1 and the data is sorted.
+c            to the next entry to start with on the next call.
 c
 c Output:
 c   flux     The flux (Jy) of the source at freq GHz.
 c   rms      The rms error on the flux measurement (Jy).
 c   iostat   The returned error code.  0 means a correct match;
-c            -1 if there are no values loaded into the arrays yet; -2
-c            if an EOF before a match; -3 if no source name match; -4
-c            if no match with characteristics desired; and -5 if the
-c            date of the latest flux measurement is offset by more
-c            than TOOBIG days (4 years).
+c            -1 if there are no values loaded into the arrays yet; -2 if
+c            an EOF; -3 if no source name match; -4 if no flux at
+c            desired frequency; and -5 if the date of the latest flux
+c            measurement is longer than TOOBIG days (4 years).
 c
+c--
 c-----------------------------------------------------------------------
-c  Internal variables.
 c
-      real TOOBIG
-cc    parameter (TOOBIG=4*365.25)
-      parameter (TOOBIG=1461.0)
+c Internal variables.
 c
-      character srcalias*40
-      character errmsg*80
       integer nlen, i, j, match, nday
-      real testday, testfreq
+      real testday, testfreq, TOOBIG
       double precision date
+c---  double precision TODAY
       logical swild, fwild, dwild, vwild, more
-      logical doonce
-      save doonce
+      character STRBIG*45, errmsg*80
+      character PROG*9
 c
-      integer Len1
+      integer len1
       include 'tabflux.h'
 c
-      data doonce / .TRUE. /
+      parameter (TOOBIG=4*365.25, PROG='TABFIND: ')
+      parameter (STRBIG='Next calibration item is older than 4 years.')
 c
-c  End declarations.
-c-----------------------------------------------------------------------
-c  Find source match.  This assumes the data has had the source names
-c  sorted alphanumerically prior to entering this routine.  If the
-c  entry last (which holds the last correct item) is larger than NTAB,
-c  then return an EOF.  If the entry number is less than 1, then
-c  restart by resorting the data and initializing the counter to 1.
+c End declarations.
 c
+c Find source match.  This assumes the data has had the source names
+c sorted alphanumerically prior to entering this routine.  If the
+c entry last (which holds the last correct item) is larger than NTAB,
+c then return an EOF.
+c
+      if (Line .lt. 1) Line = 1
       if (NTAB .lt. 1) then
-        call bug('w', 'TABFLUX: No calibration sources loaded yet.')
-        iostat = -1
-        return
-      endif
-      if (Line .lt. 1) then
-        call HSortAD(NTAB, TSOURCE, TDATE, TINDEX)
-        Line = 1
+          errmsg = PROG // 'No calibration sources loaded yet'
+          nlen = len1(errmsg)
+          call bug('w', errmsg(1:nlen))
+          iostat = -1
+          return
       endif
       if (Line .gt. NTAB) then
-        iostat = -2
-        return
+          iostat = -2
+          return
       endif
-c
-      nlen = Len1(source)
-      if ((source .eq. '*') .or. (nlen .le. 0)) then
-        swild = .TRUE.
-      else
-        swild = .FALSE.
-        call Ucase(source(1:nlen))
-        call aliases(source, srcalias)
-        if (Len1(srcalias) .gt. 0) then
-          if (doonce .and. (source(1:nlen) .ne. srcalias(1:nlen))) then
-            errmsg = 'TABFLUX: Alias used for source ' // source(1:nlen)
-            call bug('i', errmsg)
-            doonce = .FALSE.
-          endif
-          source = srcalias
-          nlen = Len1(source)
-        endif
-      endif
+      nlen = len1(source)
+      swild = .false.
+      if ((source .eq. '*') .or. (nlen .le. 0)) swild = .true.
       if (nlen .gt. 0) call Ucase(source(1:nlen))
-c
       do i = Line, NTAB
-        j = TINDEX(i)
-        if (swild) goto 10
-        if (source(1:nlen) .eq. TSOURCE(j)(1:nlen)) goto 10
+            j = TINDEX(i)
+            if (swild) goto 10
+            if (source(1:nlen) .eq. TSOURCE(j)(1:nlen)) goto 10
       enddo
       j = 0
    10 continue
-c
       if ((Line .gt. 1) .and. (j .eq. 0)) then
-        iostat = -2
-        return
-      else if (j .eq. 0) then
-        errmsg = 'TABFLUX: No match of source name: ' // source
-        call bug('w', errmsg)
-        iostat = -3
-        return
+          iostat = -2
+          return
+      elseif (j .eq. 0) then
+          iostat = -3
+          errmsg = PROG // 'No match of source name: ' // source
+          nlen = len1(errmsg)
+          call bug('i', errmsg(1:nlen))
+          return
       endif
 c
-c  Source found.  Loop to find the frequency match that agrees with
-c  the day and flux flags.
+c Source found.  Loop to find the frequency match that agrees with the
+c day and flux flags.
 c
-      fwild = (freq .eq. 0.0)
-      vwild = (flux .le. 0.0)
-      dwild = (day .eq. 0.0)
+      fwild = .false.
+      vwild = .false.
+      dwild = .false.
+      if (freq .eq. 0.0) fwild = .true.
+      if (flux .le. 0.0) vwild = .true.
+      if (day .eq. 0.0) dwild = .true.
       nday = 1
       if (day .lt. 0.0) nday = -1
-      more = .TRUE.
+      date = abs(day)
+      if ((dwild) .or. (date .eq. 1.0)) call TodayJul(date)
+      more = .true.
       match = 0
    20 continue
-      testday = (nday * TDATE(j)) - day
-      if (testday .lt. 0) testday = deltime + 1.0
+      testday = abs((nday * TDATE(j)) - day)
       if (dwild .or. (testday .le. deltime) .or. (day .eq. 1.0)) then
-        testfreq = abs(TFREQ(j) - freq)
-        if (fwild .or. (testfreq .le. deltnu)) then
-          if (vwild .or. (flux .le. TFLUX(j))) then
-            match = j
-            if (swild) then
-              source = TSOURCE(j)
-              nlen = Len1(TSOURCE(j))
-              swild = .FALSE.
+          testfreq = abs(TFREQ(j) - freq)
+          if (fwild .or. (testfreq .le. deltnu)) then
+            if (vwild .or. (flux .le. TFLUX(j))) then
+              match = j
+              if (swild) then
+                source = TSOURCE(j)
+                nlen = len1(TSOURCE(j))
+              endif
+              if (fwild) freq = TFREQ(j)
+c---          date = TDATE(j)
+              flux = TFLUX(j)
+              rms = TRMS(j)
+              more = dwild
             endif
-            if (fwild) freq = TFREQ(j)
-            flux = TFLUX(j)
-            rms = TRMS(j)
-            more = dwild
           endif
-        endif
       endif
       i = i + 1
       if (more .and. (i .le. NTAB)) then
-        j = TINDEX(i)
-        if (swild .or. (source(1:nlen) .eq. TSOURCE(j)(1:nlen)))
-     *    goto 20
+          j = TINDEX(i)
+          if (swild .or. (source(1:nlen) .eq. TSOURCE(j)(1:nlen)))
+     *      goto 20
       endif
 c
-c  No frequency match found.
+c No frequency match found.
 c
       if ((Line .gt. 1) .and. (match .eq. 0)) then
-        iostat = -2
-        return
-      else if (match .eq. 0) then
-        call bug('w', 'TABFLUX: No match for characteristics desired.')
-        iostat = -4
-        return
+          iostat = -2
+          return
+      elseif (match .eq. 0) then
+          iostat = -4
+          errmsg = PROG // 'No match at freq desired'
+          nlen = len1(errmsg)
+          call bug('i', errmsg(1:nlen))
+          return
       endif
 c
-c  A match has been found.  Check how recent.  If the change in time
-c  is too large, return a warning.  Otherwise, return no error.
-c
-      date = abs(day)
-      if ((dwild) .or. (date .eq. 1.0)) call TodayJul(date)
-      testday = abs(TDATE(match) - date)
+c Frequency match found.  Check how recent.  If the change in time
+c is too large, return a warning.  Otherwise, return no error.
 c
       Line = i
       source = TSOURCE(match)
-      nlen = Len1(source)
+      nlen = len1(source)
       day = TDATE(match)
       freq = TFREQ(match)
       flux = TFLUX(match)
       rms = TRMS(match)
 c
-      if ((testday .gt. TOOBIG) .and. (TOOBIG .gt. deltime)) then
-        call bug('w',
-     *    'TABFLUX: Next calibration item is older than 4 years.')
-        iostat = -5
-        return
+c---  call TodayJul(TODAY)
+c---  testday = TODAY - date
+      testday = abs(day - date)
+      if (testday .gt. TOOBIG) then
+          iostat = -5
+          errmsg = PROG // STRBIG
+          nlen = len1(errmsg)
+          call bug('i', errmsg(1:nlen))
+          return
       endif
 c
       iostat = 0
       return
       end
+c
 c***********************************************************************
-      subroutine tabparse(string, length, source, nentry)
+cc* TabParse -- Internal routine to parse the calibrator string.
+cc& jm
+cc: calibration
+cc+
+      subroutine tabparse(string, length, nentry)
+c
       implicit none
       character string*(*)
-      character source*(*)
       integer length, nentry
 c
 c Input:
 c   string   The input string to parse.
 c   length   The length of the input string.
-c   source   The name of the source to match.  An alias can be used.
-c Input/Output:
-c   nentry   A counter to the index of table entries.
+c   nentry   A counter to index to table entries.
 c
+c--
 c-----------------------------------------------------------------------
-c  Internal variables.
 c
-      character token*40, tokalias*40, srcalias*40, errmsg*80
+c Internal variables.
+c tabflux.h: Common block and declarations of table entries.
+c
+      character token*40
       integer k1, k2, tlen, j1, j2
-      logical okay
-c
-      integer Len1
-c
-c  tabflux.h: Common block and declarations of table entries.
-c
       include 'tabflux.h'
 c
-c  End declarations.
-c-----------------------------------------------------------------------
+c End declarations.
 c
-      if (nentry .ge. NTABLE) then
+      if (nentry .gt. NTABLE) then
         call bug('w',
-     *    'TABFLUX: Include file tabflux.h must be adjusted.')
+     *    'TABPARSE: Include file tabflux.h must be adjusted.')
         call bug('f',
-     *    'TABFLUX: Too many entries in the calibrator flux table.')
+     *    'TABPARSE: Too many entries in the calibrator flux table.')
       endif
-c
-      k1 = 1
-      k2 = length
-      call getfield(string, k1, k2, token, tlen)
-      call Ucase(token(1:tlen))
-      j1 = 1
-      j2 = tlen
-      if (token(j1:j1) .eq. '''') j1 = j1 + 1
-      if (token(j2:j2) .eq. '''') j2 = j2 - 1
-c
-      call aliases(token(j1:j2), srcalias)
-      if (srcalias .eq. ' ') then
-        call addalias(token(j1:j2), token(j1:j2))
-        call aliases(token(j1:j2), srcalias)
-      endif
-c
-      j2 = Len1(source)
-      call aliases(source(1:j2), tokalias)
-      if (tokalias .eq. ' ') tokalias = source(1:j2)
-      if ((tokalias .ne. '*') .and. (tokalias .ne. srcalias)) return
-c
-      nentry = nentry + 1
       NTAB = nentry
       TINDEX(NTAB) = NTAB
-      TSOURCE(NTAB) = srcalias
-c
-      call getfield(string, k1, k2, token, tlen)
-      call DayJul(token(1:tlen), TDATE(NTAB))
-c
-      call getfield(string, k1, k2, token, tlen)
-      call atorf(token(1:tlen), TFREQ(NTAB), okay)
-      if (.not. okay) then
-        call bug('w', 'TABFLUX: Trouble decoding the frequency term.')
-        errmsg = 'TABFLUX: ' // string
-        call bug('w', errmsg)
-        TFREQ(NTAB) = 0.0
-      endif
-c
-      call getfield(string, k1, k2, token, tlen)
-      call atorf(token(1:tlen), TFLUX(NTAB), okay)
-      if (.not. okay) then
-        call bug('w', 'TABFLUX: Trouble decoding the flux term.')
-        errmsg = 'TABFLUX: ' // string
-        call bug('w', errmsg)
-        TFLUX(NTAB) = 0.0
-      endif
-c
-      call getfield(string, k1, k2, token, tlen)
-      TRMS(NTAB) = 0.0
-      if (tlen .gt. 0) then
-        call atorf(token(1:tlen), TRMS(NTAB), okay)
-        if (.not. okay) then
-          call bug('w', 'TABFLUX: Trouble decoding the rms term.')
-          errmsg = 'TABFLUX; ' // string
-          call bug('w', errmsg)
-          TFLUX(NTAB) = 0.0
-        endif
-      endif
-      return
-      end
-c***********************************************************************
-      subroutine aliases(source, srcalias)
-      implicit none
-      character source*(*), srcalias*(*)
-c
-c  This routine searches the list of aliases from the flux file
-c  for a match.  If a match exists, the "anchor" name is returned;
-c  otherwise, an empty string is returned.
-c
-c Input:
-c   source   The input name to search for.  This routine searches
-c            the list of aliases from the flux file for a match.
-c            If a match exists, the "proper" name is returned;
-c            otherwise, the input name is returned.
-c
-c Output:
-c   srcalias The root name associated with this source.  If no match
-c            is found, an empty string is returned.
-c
-c-----------------------------------------------------------------------
-c  Internal variables.
-c
-      integer j
-      integer srclen
-c
-      integer Len1
-c
-c  tabflux.h: Common block and declarations of table entries.
-c
-      include 'tabflux.h'
-c
-c  End declarations.
-c-----------------------------------------------------------------------
-c
-      srcalias = ' '
-      if (NALIASES .lt. 1) return
-c
-      srclen = Len1(source)
-      if (srclen .lt. 1) return
-c
-      do j = 1, NALIASES
-        if (source(1:srclen) .eq. ALIAS(j)(1:srclen)) then
-          srcalias = ROOT(j)
-          return
-        endif
-      enddo
-      return
-      end
-c***********************************************************************
-      subroutine addalias(anchor, srcalias)
-      implicit none
-      character anchor*(*), srcalias*(*)
-c
-c Input:
-c   anchor   The name to anchor the alias to (ie. the proper name).
-c   srcalias The alias to associate with root.
-c
-c Output:
-c   (none)
-c
-c-----------------------------------------------------------------------
-c  Internal variables.
-c  tabflux.h: Common block and declarations of table entries.
-c
-      include 'tabflux.h'
-c
-c  End declarations.
-c-----------------------------------------------------------------------
-c
-      if (anchor .eq. 'resetall') then
-        NALIASES = 0
-        return
-      endif
-c
-      if (NALIASES .ge. NTABLE) then
-        call bug('w',
-     *    'TABFLUX: Include file tabflux.h must be adjusted.')
-        call bug('f',
-     *    'TABFLUX: Too many entries in the alias name table.')
-      endif
-c
-      NALIASES = NALIASES + 1
-      ROOT(NALIASES) = anchor
-      ALIAS(NALIASES) =  srcalias
-      return
-      end
-c***********************************************************************
-      subroutine namparse(string, length)
-      implicit none
-      character string*(*)
-      integer length
-c
-c  This routine takes a string of space separated names and builds
-c  an alias list with the first name acting as the anchor or root.
-c
-c Input:
-c   string   The string of aliases to parse.
-c   length   The length of the input string.
-c
-c Output:
-c   (none)
-c
-c-----------------------------------------------------------------------
-c  Internal variables.
-c
-      character token*40, root*40
-      integer k1, k2, j1, j2, rlen, tlen
-c
-c  End declarations.
-c-----------------------------------------------------------------------
-c
-      rlen = 0
       k1 = 1
       k2 = length
-      do while (k1 .lt. k2)
-        call getfield(string, k1, k2, token, tlen)
-        if (tlen .gt. 0) then
-          call Ucase(token(1:tlen))
-          j1 = 1
-          j2 = tlen
-          if (token(j1:j1) .eq. '''') j1 = j1 + 1
-          if (token(j2:j2) .eq. '''') j2 = j2 - 1
-          if (rlen .le. 0) then
-            root = token(j1:j2)
-            rlen = j2 - j1 + 1
-          endif
-          call addalias(root(1:rlen), token(j1:j2))
-        endif
-      enddo
+      call getfield(string, k1, k2, token, tlen)
+        call Ucase(token)
+        j1 = 1
+        j2 = tlen
+        if (token(j1:j1) .eq. '''') j1 = j1 + 1
+        if (token(j2:j2) .eq. '''') j2 = j2 - 1
+      TSOURCE(NTAB) = token(j1:j2)
+      call getfield(string, k1, k2, token, tlen)
+      call DayJul(token(1:tlen), TDATE(NTAB))
+      call getfield(string, k1, k2, token, tlen)
+      read(token(1:tlen), 10) TFREQ(NTAB)
+      call getfield(string, k1, k2, token, tlen)
+      read(token(1:tlen), 10) TFLUX(NTAB)
+      call getfield(string, k1, k2, token, tlen)
+      TRMS(NTAB) = 0.0
+      if (tlen .gt. 0) read(token(1:tlen), 10) TRMS(NTAB)
+   10 format(G30.0)
+      return
+      end
+c
+c***********************************************************************
+cc* TabIndex -- Internal routine to sort the calibrator table.
+cc& jm
+cc: calibration
+cc+
+      subroutine tabindex
+c
+      implicit none
+c
+c--
+c-----------------------------------------------------------------------
+c
+c Internal variables.
+c tabflux.h: Common block and declarations of table entries.
+c
+      include 'tabflux.h'
+c
+c End declarations.
+c
+      call HSortAD(NTAB, TSOURCE, TDATE, TINDEX)
       return
       end
