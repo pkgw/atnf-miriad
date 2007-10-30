@@ -33,8 +33,8 @@ c@ niters
 c	The maximum number of iterations. The default is 20.
 c@ region
 c	This specifies the region to be deconvolved. See the Users Manual
-c	for instructions on how to specify this. The default is the inner
-c	quarter of all planes.
+c	for instructions on how to specify this. The default is the largest
+c	centered region that it is safe to deconvolve.
 c@ measure
 c	The entropy measure to be used, either "gull" (-p*log(p/e)) or
 c	"cornwell" (-log(cosh(p)) -- also called the maximum emptyness
@@ -109,9 +109,15 @@ c		   region.
 c   rjs  18Oct05 - Handle higher axes somewhat better.
 c   rjs  27oct95 - Increased max length of filenames.
 c   rjs  18mar96 - Increase MAXBOXES.
+c   rjs  29jan97 - Change default region of interest.
+c   rjs  10mar97 - Default region is all channels.
+c   rjs  25mar97 - Check whether data are selected for a given plane.
+c   rjs  24jun97 - Correct check for alignment mismatch.
+c   rjs  02jul97 - cellscal change.
+c   rjs  23jul97 - Added pbtype.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Maxen: version 1.0 27-Oct-95')
+	parameter(version='Maxen: version 1.0 24-Jun-97')
 	include 'maxnax.h'
 	include 'maxdim.h'
 	integer MaxRun,MaxBoxes
@@ -223,8 +229,9 @@ c
 	if(max(nMap(1),nMap(2)).gt.maxdim) call bug('f','Map too big')
 	call rdhdi(lMap,'naxis',naxis,3)
 	naxis = min(naxis,MAXNAX)
+	call defregio(boxes,nMap,nBeam,icentre,jcentre)
 	call BoxMask(lMap,boxes,maxboxes)
-	call BoxSet(Boxes,3,nMap,'q')
+	call BoxSet(Boxes,3,nMap,' ')
 	call BoxInfo(Boxes,3,blc,trc)
 	imin = blc(1)
 	imax = trc(1)
@@ -258,7 +265,7 @@ c  output.
 c
 	if(ModelNam.ne.' ')then
 	  call xyopen(lModel,ModelNam,'old',3,nModel)
-	  call AlignIni(lModel,lMap,nModel(1),nModel(2),nModel(3),
+	  call AlignIni(lModel,lMap,nMap(1),nMap(2),nMap(3),
      *						xmoff,ymoff,zmoff)
 	endif
 c
@@ -272,7 +279,7 @@ c  output.
 c
 	if(DefNam.ne.' ')then
 	  call xyopen(lDef,DefNam,'old',3,nDef)
-	  call AlignIni(lDef,lMap,nDef(1),nDef(2),nDef(3),
+	  call AlignIni(lDef,lMap,nMap(1),nMap(2),nMap(3),
      *						xdoff,ydoff,zdoff)
 	endif
 c
@@ -295,6 +302,7 @@ c
 	  call xysetpl(lMap,1,k)
 	  call GetPlane(lMap,Run,nRun,xmin-1,ymin-1,nMap(1),nMap(2),
      *				Data(pMap),MaxMap,nPoint)
+	  if(nPoint.gt.0)then
 c
 c  Get the Default map and Clip level.
 c
@@ -474,11 +482,14 @@ c
      *		    (abs(Flux-TFlux).lt.0.05*TFlux.or..not.doflux).and.
      *		     GradJJ/Grad11  .lt.Tol			  )
 	enddo
+	endif
 c------------------------------------------------------------------------
 c
 c  We have finished processing this plane. More info to the user!
 c
-	  if(converge)then
+	  if(nPoint.eq.0)then
+	    call output('No data selected for this plane')
+	  else if(converge)then
 	    call output('MAXEN has converged ... finishing up now')
 	  else
 	    call output('Failed to converge in NITERS iterations')
@@ -1072,7 +1083,7 @@ c------------------------------------------------------------------------
 	real crpix
 	character line*72,txtblc*32,txttrc*32,num*2
 	integer nkeys
-	parameter(nkeys=14)
+	parameter(nkeys=16)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -1081,7 +1092,8 @@ c
 c
 	data keyw/   'obstime ','epoch   ','history ','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ','pbfwhm  ',
-     *	  'observer','telescop','restfreq','vobs    ','btype   '/
+     *	  'observer','telescop','restfreq','vobs    ','btype   ',
+     *	  'cellscal','pbtype  '/
 c
 c  Fill in some parameters that will have changed between the input
 c  and output.
@@ -1126,5 +1138,30 @@ c
 c
 	call hiswrite(lOut,'MAXEN: Total Iterations = '//itoaf(Niter))
 	call hisclose(lOut)
+c
+	end
+c************************************************************************
+	subroutine defregio(boxes,nMap,nBeam,icentre,jcentre)
+c
+	implicit none
+	integer boxes(*),nMap(3),nBeam(2),icentre,jcentre
+c
+c  Set the region of interest to the lastest area that can be safely
+c  deconvolved.
+c------------------------------------------------------------------------
+	integer blc(3),trc(3),width
+c
+	width = min(icentre-1,nBeam(1)-icentre) + 1
+	blc(1) = max(1,(nMap(1)-width)/2)
+	trc(1) = min(nMap(1),blc(1)+width-1)
+c
+	width = min(jcentre-1,nBeam(2)-jcentre) + 1
+	blc(2) = max(1,(nMap(2)-width)/2)
+	trc(2) = min(nMap(2),blc(2)+width-1)
+c
+	blc(3) = 1
+	trc(3) = nMap(3)
+c
+	call BoxDef(boxes,3,blc,trc)
 c
 	end
