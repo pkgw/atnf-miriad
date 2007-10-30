@@ -40,7 +40,7 @@ c     *xmin,xmax,ymin,ymax' )
 
 c common variables for IMSTAT and IMSPEC
 
-      character	   styles*(*)
+      character*20 styles
       parameter    ( styles = 'connect,step,histo' )
 
       integer      NPLOTV, NPLOTR, NPLOTP
@@ -73,7 +73,8 @@ c plotpar(1-5)
       integer      XLABP, YLABP, INFOP, BOXP, TITLE
       parameter    ( XLABP=1, YLABP=2, INFOP=3, BOXP=4, TITLE=5 )
 
-      double precision crval(MAXNAX), cdelt(MAXNAX), crpix(MAXNAX)
+      integer      crpix(MAXNAX)
+      double precision crval(MAXNAX), cdelt(MAXNAX)
       character*9  ctype(MAXNAX)
 
       integer      NSTATS
