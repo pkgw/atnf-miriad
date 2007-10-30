@@ -41,6 +41,10 @@ c	  linetype,nchan,start,width,step
 c
 c	"Linetype" is either "channel", "wide" or "velocity". "Nchan" is
 c	the number of channels in the output.
+c@region
+c	The region of interest. The default is the entire input image.
+c	See the Users Manual for instructions on how to specify this.
+c       Used when op=xyout
 c@ select
 c	Normal uv selection, used when op=uvout.
 c@ stokes
@@ -66,9 +70,18 @@ c	           to the data.
 c	  nopass   Do not apply the bandpass table correctsions
 c	           to the data.
 c
-c	This option applies for op=xyin only.
-c	  dss      Use the conventions of Digital Sky Survey FITS
-c	           files, and convert (partially!) its header.
+c	These options apply for op=xyin only.
+c	  rawdss   Use the conventions for raw Digital Sky Survey FITS
+c	           files, and convert (partially!) the header. A raw
+c                  DSS FITS file has header items such as PLTSCALE,
+c                  XPIXELSZ, YPIXELSZ etc. If you are unsure if your DSS
+c                  image is raw or conventional FITS, run:
+c                    Task FITS:
+c                      in=mydss.fits
+c                      op=print
+c                  and look for those header items. Note that DSS images
+c                  retrieved using SkyView have a conventional fits header,
+c                  and do not require options=rawdss.
 c	  nod2     Use the conventions of NOD2 FITS files.
 c@ velocity
 c	Velocity information. This is only used for op=uvin,
@@ -315,11 +328,17 @@ c    rjs  10-may-00  In xyout, increase size of descr buffer.
 c    rjs  04-Oct-00  Make xyout work for arbitrarily large images.
 c    rjs  10-oct-00  Really do the above this time!
 c    dpr  01-nov-00  Change CROTAn to AIPS convention for xyout
+c    dpr  27-nov-00  fix stokes convention for xyin
+c    dpr  05-apr-01  Add region key for op=xyout
+c    dpr  10-may-01  Change dss to rawdss
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Fits: version 1.1 01-nov-00')
+	parameter(version='Fits: version 1.1 10-may-01')
+	integer maxboxes
+	parameter(maxboxes=2048)
 	character in*128,out*128,op*8,uvdatop*12
 	integer velsys
+	integer boxes(maxboxes)
 	real altrpix,altrval
 	logical altr,docal,dopol,dopass,dss,dochi,nod2,compress
 	logical lefty,varwt
@@ -335,6 +354,7 @@ c
 	if(op.ne.'print') call keya('out',out,' ')
 c
         if(op.eq.'uvin')call GetVel(velsys,altr,altrval,altrpix)
+	if(op.eq.'xyout') call BoxInput('region',in,boxes,maxboxes)
 c
 c  Get options.
 c
@@ -364,7 +384,7 @@ c
 	else if(op.eq.'xyin')then
 	  call xyin(in,out,version,dss,nod2)
 	else if(op.eq.'xyout')then
-	  call xyout(in,out,version)
+	  call xyout(in,out,version,boxes)
 	else if(op.eq.'print')then
 	  call prthd(in)
 	endif
@@ -463,12 +483,12 @@ c    varwt   Interpret the visibility weight as the reciprocal of the
 c	     noise variance.
 c------------------------------------------------------------------------
       integer nopt
-      parameter (nopt = 9)
+      parameter (nopt = 10)
       character opts(nopt)*8
-      logical present(nopt)
-      data opts /'nocal   ','nopol   ','nopass  ','dss     ',
+      logical present(nopt),olddss
+      data opts /'nocal   ','nopol   ','nopass  ','rawdss  ',
      *		 'nod2    ','nochi   ','compress','lefty   ',
-     *		 'varwt   '/
+     *		 'varwt   ','dss     '/
 c
       call options ('options', opts, present, nopt)
       docal    = .not.present(1)
@@ -480,6 +500,12 @@ c
       compress =      present(7)
       lefty    =      present(8)
       varwt    =      present(9)
+      olddss   =      present(10)
+c
+      if (olddss) then
+	call bug('w','Option DSS is deprecated. Please use RAWDSS')
+        dss=.true.
+      endif
 c
       end
 c************************************************************************
@@ -3449,7 +3475,9 @@ c
 	    cdelt(i) = 1d-9 * cdelt(i)
 	  else if(ctype(i).eq.'STOKES')then
 	    polcode = nint(crval(i)+(1-crpix(i))*cdelt(i))
-	    if(polcode.lt.-8.or.polcode.gt.4.or.polcode.ne.0)then
+c  dpr 27-nov-00 ->
+	    if(polcode.lt.-8.or.polcode.gt.4.or.polcode.eq.0)then
+c  <- dpr 27-nov-00 
 	      ctype(i) = 'ASTOKES'
 	      if(polcode.ge.5.and.polcode.le.9)btype=types(polcode-4)
 	    endif
@@ -3851,10 +3879,11 @@ c
 	if(neg)value = -value
 	end
 c************************************************************************
-	subroutine xyout(in,out,version)
+	subroutine xyout(in,out,version,boxes)
 c
 	implicit none
 	character in*(*),out*(*),version*(*)
+	integer boxes(*)
 c
 c  Write out a image FITS file.
 c
@@ -3862,36 +3891,49 @@ c  Inputs:
 c    in		Name of the input Miriad image file.
 c    out	Name of the output FITS file.
 c    version	Version of this program.
+c    boxes      Region of interest specification
 c
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
 	integer pArray,pFlags
-	integer naxis,tno,lu,j,nsize(MAXNAX),axes(MAXNAX)
+	integer naxis,tno,lu,i,j,j0,nsize(MAXNAX)
+	integer blc(maxnax),trc(maxnax),Nout(MAXNAX)
+	integer Inplane(maxnax),Outplane(maxnax),one(maxnax)
 	character string*64
-	logical doflag
+	logical doflag,done
 c
 c  Externals.
 c
-	logical Inc3More,FitBlank,hdprsnt
+	logical FitBlank,hdprsnt
 c
 c  Open the input MIRIAD file and determine a few things about it.
 c
 	call xyopen(tno,in,'old',MAXNAX,nsize)
+	if(nsize(1).gt.maxdim)
+     *	  call bug('f','Image too big for me to handle')
 	call coInit(tno)
 	doflag = hdprsnt(tno,'mask')
 	call rdhdi(tno,'naxis',naxis,0)
+	call BoxSet(boxes,MAXNAX,nsize,' ')
 	naxis = min(naxis,MAXNAX)
+c
+c  Determine portion of image to copy.
+c
+	call BoxInfo(boxes,MAXNAX,blc,trc)
+	do i=1,maxnax
+	  Nout(i) = (trc(i) - blc(i) + 1)
+	enddo
 c
 c  Open the output FITS file.
 c
-	call fxyopen(lu,out,'new',naxis,nsize)
+	call fxyopen(lu,out,'new',naxis,Nout)
 	doflag = FitBlank(lu,doflag)
 c
 c  Handle the output header.
 c
-	call axisout(lu,tno,naxis)
+	call axisout(lu,tno,naxis,blc)
 	call hdout(tno,lu,version)
 	string = 'Miriad '//version
 	call fitwrhda(lu,'ORIGIN',string)
@@ -3900,20 +3942,39 @@ c  Copy the data.
 c
 	call memAlloc(pArray,nsize(1),'r')
 	if(doflag)call memAlloc(pFlags,nsize(1),'l')
-	call IncIni(naxis,nsize,axes)
-	dowhile(Inc3More(naxis,nsize,axes))
-	  if(naxis.gt.2)then
-	    call xysetpl(tno,naxis-2,axes(3))
-	    call fxysetpl(lu,naxis-2,axes(3))
-	  endif
-	  do j=1,nsize(2)
-	    call xyread(tno,j,memr(pArray))
-	    call fxywrite(lu,j,memr(pArray))
+c
+c  Initialise the plane indices.
+c
+	do i=3,MAXNAX
+	  one(i-2) = 1
+	  Inplane(i-2) = blc(i)
+	  Outplane(i-2) = 1
+	enddo
+
+c	call IncIni(naxis,nsize,axes)
+c	dowhile(Inc3More(naxis,nsize,axes))
+	done = .false.
+	do while(.not.done)
+	  call xysetpl(tno,maxnax-2,Inplane)
+	  call fxysetpl(lu,maxnax-2,Outplane)
+c
+c	  if(naxis.gt.2)then
+c	    call xysetpl(tno,naxis-2,axes(3))
+c	    call fxysetpl(lu,naxis-2,axes(3))
+c	  endif
+	  j0 = blc(2)
+	  do j=1,Nout(2)
+	    call xyread(tno,j0,memr(pArray))
+	    call fxywrite(lu,j,memr(pArray + blc(1) - 1))
+
 	    if(doflag)then
-	      call xyflgrd(tno,j,meml(pFlags))
-	      call fxyflgwr(lu,j,meml(pFlags))
+	      call xyflgrd(tno,j0,meml(pFlags))
+	      call fxyflgwr(lu,j,meml(pFlags + blc(1) - 1))
 	    endif
+	    j0 = j0 + 1
 	  enddo
+	  call planeinc(maxnax-2,1,blc(3),trc(3),Inplane,done)
+	  call planeinc(maxnax-2,one,one,Nout(3),Outplane,done)
 	enddo
 	call memFree(pArray,nsize(1),'r')
 	if(doflag)call memFree(pFlags,nsize(1),'l')
@@ -3925,11 +3986,37 @@ c
 	call fxyclose(lu)
 c
 	end
+
 c************************************************************************
-	subroutine axisout(lu,tno,naxis)
+	subroutine planeinc(n,incr,blc,trc,plane,done)
 c
 	implicit none
-	integer lu,tno,naxis
+	integer n,blc(n),trc(n),plane(n),incr(n)
+	logical done
+c
+c  Move to the next plane.
+c
+c------------------------------------------------------------------------
+	integer k
+c
+	k = 1
+	done = .true.
+c
+	do while(done.and.k.le.n)
+	  done = plane(k).ge.trc(k)
+	  if(done)then
+	    plane(k) = blc(k)
+	  else
+	    plane(k) = plane(k) + incr(k)
+	  endif
+	  k = k + 1
+	enddo
+	end
+c************************************************************************
+	subroutine axisout(lu,tno,naxis,blc)
+c
+	implicit none
+	integer lu,tno,naxis,blc(naxis)
 c
 c  This copies (performing any necessary scaling) the BMAJ, BMIN, 
 c  CDELT, CROTA, CRVAL, CRPIX and CTYPE keywords
@@ -3940,6 +4027,9 @@ c  Inputs:
 c    lu		Handle of the input FITS image.
 c    tno	Handle of the output MIRIAD image.
 c    naxis	Number of dimensions of the image.
+c    blc        Bottom-left hand corner pixel value for axis
+c               used to determine crpix if a subregion was
+c               selected
 c
 c------------------------------------------------------------------------
 	include 'mirconst.h'
@@ -4023,7 +4113,7 @@ c
 	    scale = 1.
 	  endif
 	  call fitwrhdd(lu,'CDELT'//num,scale*cdelt)
-	  call fitwrhdd(lu,'CRPIX'//num,crpix)
+	  call fitwrhdd(lu,'CRPIX'//num,crpix - blc(i) + 1)
 	  call fitwrhdd(lu,'CRVAL'//num,scale*crval)
 	  if(ctype.ne.' ')call fitwrhda(lu,'CTYPE'//num,ctype)
 	enddo
