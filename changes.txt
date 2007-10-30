@@ -3681,3 +3681,4 @@ and in a way to be consistent with all the other changes happening.
 03mar01 rjs	planet.for -- Improved brightness temperature functions for the
 		planets.
 15mar01 dpr     psrbl.for - New task for pulsar off-bin subtraction.
+10apr01 dpr     atlod.for - handle correlator UT day rollover bug
