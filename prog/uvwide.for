@@ -1,5 +1,5 @@
 c***********************************************************************
-c  Recompute wide band data and/or flags from narrow band data
+c  Recompute wide band data from narrow band data
 c
 c   pjt    16apr93   Cloned off uvedit's intermediate version where
 c		     we did more or less the same with options=wide
@@ -11,8 +11,6 @@ c                     3) what about the sign convention
 c   )
 c   pjt    20apr93    Added reset= and submitted
 c   pjt    26apr93    allow the reverse: set flags based on wide band flags
-c   pjt    22dec94    reflag wide if narrows are flagged and no out= given
-c   rjs    08may00    Change incorrect call of keyf to keya.
 c***********************************************************************
 c= uvwide - recompute wide band from narrow band
 c& pjt
@@ -27,16 +25,14 @@ c     assumed the first two wide band channels are the digital wide
 c     band derived from the narrow band data (LSB and USB).
 c
 c     It is also possible to reset the narrow band flags, based
-c     on the wide band flags, and vice versa.
+c     on the wide band flags. 
 c
 c@ vis
-c     The name of the input visibility dataset.  
-c     No default.
+c     The name of the input visibility dataset.  No default.
+c
 c@ out
-c     The name of the recomputed output visibility dataset. If no dataset
-c     given, program will flag the wideband flags based on all the  narrow
-c     flags.
-c     Default: none.
+c     The name of the recomputed output visibility dataset. No default.
+c
 c@ reset
 c     A logical that describes whether or not all wideband data is
 c     recomputed. By default (reset=true), all wideband data is recomputed
@@ -58,7 +54,7 @@ c     **NOTE** Not implemented yet.
 c
 c NOTE: 
 c     Detailed knowledge of the HatCreek relationship between narrow 
-c     and wide band data is assumed by this program.
+c     and wide band data is assumed by the program.
 c
 c     Could allow reset=t and narrow=t and handle it symmetric from
 c     the wide-computation case.
@@ -71,7 +67,7 @@ c
       CHARACTER PROG*(*)
       PARAMETER (PROG = 'UVWIDE')
       CHARACTER VERSION*(*)
-      PARAMETER (VERSION = '22-dec-94')
+      PARAMETER (VERSION = '26-Apr-93')
       INTEGER ENDCHN
       PARAMETER (ENDCHN = 2)
       REAL BANDWID
@@ -88,7 +84,7 @@ c
       REAL wfreq(MAXCHAN), wt, wtup, wtdn
       DOUBLE PRECISION sdf(MAXCHAN), sfreq(MAXCHAN), preamble(4), lo1
       COMPLEX data(MAXCHAN), wdata(MAXCHAN)
-      LOGICAL dowide, docorr, updated, reset, donarrow, doflag
+      LOGICAL dowide, docorr, updated, reset, donarrow
       LOGICAL flags(MAXCHAN), wflags(MAXCHAN)
 c
 c  End declarations.
@@ -103,22 +99,20 @@ c
       CALL keyini
 c
       CALL keyf('vis', infile, ' ')
-      CALL keya('out', outfile, ' ')
+      CALL keyf('out', outfile, ' ')
       CALL keyl('reset',reset,.TRUE.)
       CALL keyl('narrow',donarrow,.FALSE.)
       CALL keyfin
 
       CALL assertl(infile.NE.' ',
      *     'An input visibility file must be given. vis=')
-
-      doflag = outfile.EQ.' '
+      CALL assertl(outfile.NE.' ',
+     *     'An output visibility file must be given. out=')
       IF (reset .AND. donarrow) reset = .FALSE.
 c
 c report which mode program runs in....
 c
-      IF (doflag) THEN
-         CALL output('Computing new wide band flags from narrow band')
-      ELSE IF (donarrow) THEN
+      IF (donarrow) THEN
          CALL output('Flagging narrow band based on wide band flags')
       ELSE
          IF (reset) THEN
@@ -172,22 +166,16 @@ c
 c
 c  Open the output visibility file.
 c
-      IF (.NOT.doflag) THEN
-         CALL uvopen(lout, outfile, 'new')
-         CALL output(PROG // 'Writing visibilities to: '// Outfile)
+      CALL uvopen(lout, outfile, 'new')
+      CALL output(PROG // 'Writing visibilities to: '// Outfile)
 c
 c  Copy the old history entries to the new file and then add a few
 c  additional history entries to the new file.
 c
-         CALL hdcopy(lin, lout, 'history')
-         CALL hisopen(lout, 'append')
-         CALL hiswrite(lout, PROG // ': ' // VERSION)
-         CALL hisinput(lout, PROG)
-      ELSE
-         CALL hisopen(lin,'append')
-         CALL hiswrite(lin, PROG // ': ' // VERSION)
-         CALL hisinput(lin, PROG)
-      ENDIF
+      CALL hdcopy(lin, lout, 'history')
+      CALL hisopen(lout, 'append')
+      CALL hiswrite(lout, PROG // ': ' // VERSION)
+      CALL hisinput(lout, PROG)
 c
 c  Begin editing the input file. 
 c  First rewind input since we probed corr and wcorr before
@@ -198,7 +186,7 @@ c
 c
 c  Copy unchanged variables to the output data set.
 c
-         IF (.NOT.doflag) CALL uvcopyvr(lin, lout)
+         CALL uvcopyvr(lin, lout)
 
 c
 c  Get particular headers necessary to do editing (these items have
@@ -211,6 +199,7 @@ c  Get lo1 to figure out which spectral windows are USB and LSB
 c
          CALL uvprobvr(lin, 'lo1', type, k, updated)
          IF (updated) CALL uvgetvrd(Lin, 'lo1', lo1, 1)
+
 c
 c
 c
@@ -278,12 +267,8 @@ c
                wflags(2) = .FALSE.
             ENDIF
          ENDIF
-         IF (doflag) THEN
-            CALL uvwflgwr(lin,wflags)
-         ELSE
-            CALL uvwwrite(lout, wdata, wflags, nwread)
-            CALL uvwrite(lout, preamble, data, flags, nread)
-         ENDIF
+         CALL uvwwrite(lout, wdata, wflags, nwread)
+         CALL uvwrite(lout, preamble, data, flags, nread)
 c
 c  End of reading loop. Read the next scan, 
 c  nread.GT.0 will continue this loop.
@@ -294,12 +279,8 @@ c
 c
 c  Close the new history file and UV data set.
 c
-      IF (doflag) THEN
-          CALL hisclose(lin)
-      ELSE
-          CALL hisclose(lout)
-          CALL uvclose(lout)
-      ENDIF
+      CALL hisclose(lout)
+      CALL uvclose(lout)
 c
 c  Close the old UV data set.
 c
