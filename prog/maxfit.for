@@ -1,3 +1,4 @@
+c************************************************************************
       program maxfit
       implicit none
 c
@@ -17,6 +18,10 @@ c	The input image.
 c@ region
 c	Region of interest in which to search for the maximum pixel.
 c	The default is the whole image.
+c@ options
+c	"abs"  means that MAXFIT search for the maximum absolute 
+c	       pixel value rather than the default, which is just
+c	       the maximum pixel value.
 c@ log
 c	Write results to this log file as well as screen.
 c--
@@ -35,28 +40,31 @@ c    nebk 16sep93  Add keyword log
 c    nebk 09jan94  Convert CRPIX to double precision
 c    rjs  24jan94  Small typo in doc (appease pjt and bpw's "doc").
 c    nebk 22mar94  Twiddle about with output format
-c
+c    nebk 18aug94  Revise to use COCVT coord. transformation routines
+c    nebk 16nov95  New calls to some "co" routines
+c    nebk 29nov95  New call for CTYPECO
+c    rjs  03jul96  In "abs" mode, print out the value of the pixel (not
+c		   absolute value).
+c    rjs  23jul99  Break out "solve" routine to new subroutine pkfit.for
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
       include 'mirconst.h'
 c
-      double precision rtod
       integer maxboxes, maxruns
 c
-      parameter (rtod = 180.0d0/dpi, maxboxes = 2048, maxruns =3*maxdim)
+      parameter (maxboxes = 2048, maxruns =3*maxdim)
 c
-      double precision cdelt(maxnax), crval(maxnax), crpix(maxnax),
-     +  pixmax(maxnax)
-      real data(maxdim), dmax, fit(9), coeffs(6), epoch, fmax
+      double precision pixmax(maxnax)
+      real data(maxdim), dmax, fit(9), coeffs(6), fmax, dd
       integer nsize(maxnax), blc(maxnax), trc(maxnax), boxes(maxboxes),
-     +  runs(3,maxruns), ploc(maxnax), nruns, lun, naxis, i, j, k, l,
-     +  ira, idec, ilat, ilon, ilen, ip, il, len1
-      character file*40, text*132, ctype(maxnax)*9, str*60, type*9,
-     +  logf*132
-      logical mask
+     +  runs(3,maxruns), ploc(maxnax), strlen(maxnax), nruns, lun, 
+     +  naxis, i, j, k, l, ip, il, len1
+      character ctype*9, typesi(maxnax)*9, typeso(maxnax)*9, 
+     +  strout(maxnax)*50, file*40, text*132, logf*132
+      logical doabs
 c-----------------------------------------------------------------------
-      call output ('MAXFIT: version 22-Mar-94')
+      call output ('MAXFIT: version 29-Nov-95')
 c
 c  Get inputs
 c
@@ -65,6 +73,7 @@ c
       if (file.eq.' ') call bug ('f', 'Input file must be given')
       call boxinput ('region', file, boxes, maxboxes)
       call keya ('log', logf, ' ')
+      call getopt (doabs)
       call keyfin
 c
 c  Open file
@@ -72,10 +81,8 @@ c
       call xyopen (lun, file, 'old', maxnax, nsize)
       call rdhdi (lun, 'naxis', naxis, 0)
       if (naxis.eq.0) call bug ('f', 'Zero dimensions in image')
-      naxis = min(naxis, maxnax)
+      naxis = min(3,naxis)
       if (nsize(1).gt.maxdim) call bug ('f','Input file too big for me')
-      call hedinfcg (lun, naxis, nsize, epoch, crpix, cdelt,
-     +               crval, ctype, mask)
 c
 c  Set up the region of interest.
 c
@@ -113,8 +120,11 @@ c
 c  Loop over all good pixels in row
 c
             do i = runs(2,l), runs(3,l)
-              if (data(i).gt.dmax) then
+              dd = data(i)
+              if (doabs) dd = abs(data(i))
+              if (dd.gt.dmax) then
                 dmax = data(i)
+                if (doabs) dmax = abs(data(i))
                 ploc(1) = i
                 ploc(2) = j
                 ploc(3) = k
@@ -148,11 +158,11 @@ c
           fit(k) = data(i)
         end do
       end do
-      call xyclose (lun)
+      dmax = fit(5)
 c
 c  Do the fit
 c
-      call solve (fit, 3, fmax, pixmax, coeffs)
+      call pkfit(fit, 3, fmax, pixmax, coeffs)
 c
 c  Change the x and y to image pixel coordinates and add the z location
 c
@@ -169,7 +179,7 @@ c Peak pixel location and value
 c
       text = 'Peak pixel   : ('
       ip = len1(text) + 1
-      do i = 1, min(3,naxis)
+      do i = 1, naxis
         call strfi (ploc(i), '(i4)', text(ip:), il)
         ip = ip + il
         text(ip:ip) = ','
@@ -188,7 +198,7 @@ c
       if (logf.ne.' ') call logwrit (' ')
       text = 'Fitted pixel : ('
       ip = len1(text) + 1
-      do i = 1, min(3,naxis)
+      do i = 1, naxis
         if (i.le.2) then
           call strfd (pixmax(i), '(f7.2)', text(ip:), il)
         else
@@ -205,39 +215,37 @@ c
       call  output(text)
       if (logf.ne.' ') call logwrit (text)
 c
-c Find offsets from reference pixel
+c Find offsets of fitted pixel from reference pixel
 c
-      call axfndcg ('RA',  naxis, ctype, ira)
-      call axfndcg ('DEC', naxis, ctype, idec)
-      call axfndcg ('LONG', naxis, ctype, ilon)
-      call axfndcg ('LATI', naxis, ctype, ilat)
+      call initco (lun)
 c
       call output (' ')
       if (logf.ne.' ') call logwrit (' ')
       call output ('Offsets from reference pixel :')
       if (logf.ne.' ') call logwrit ('Offsets from reference pixel :')
-      do i = 1, min(3,naxis)
-        if (i.eq.ira .or. i.eq.idec) then
-          type = 'arcsec'
-        else if (i.eq.ilon .or. i.eq.ilat) then
-          type = 'reldeg'
-        else 
-          type = 'rellin'
-        end if
-        call pix2wfcg (type, i, pixmax(i), naxis, crval, crpix, 
-     +                 cdelt, ctype, .false., str, ilen)
 c
+c Convert coordinates
+c
+      do i = 1, naxis
+        typesi(i) = 'abspix'
+      end do
+      call setoaco (lun, 'off', naxis, 0, typeso)
+      call w2wfco (lun, naxis, typesi, ' ', pixmax, typeso, ' ', 
+     +             .false., strout, strlen)
+c
+c Tell user
+c
+       do i = 1, naxis
         if (i.lt.3) then
-          write (text,70) i, str(1:ilen)
+          write (text,70) i, strout(i)(1:strlen(i))
 70        format ('  Axis ', i1, ': Fitted pixel offset = ', a)
         else
-          write (text, 75) i, str(1:ilen)
+          write (text, 75) i, strout(i)(1:strlen(i))
 75        format ('  Axis ', i1, ':        pixel offset = ', a)
         end if
         call output (text)
         if (logf.ne.' ') call logwrit (text)
       end do
-
 c                
 c Compute world coordinate
 c
@@ -245,110 +253,72 @@ c
       if (logf.ne.' ') call logwrit (' ')
       call output ('Coordinate:')
       if (logf.ne.' ') call logwrit ('Coordinate:')
-      do i = 1, min(3,naxis)
-        if (i.eq.ira) then
-          type = 'hms'
-        else if (i.eq.idec) then
-          type = 'dms'
-        else if (i.eq.ilat .or. i.eq.ilon) then
-          type = 'absdeg'
-        else
-          type = 'abslin'
-        end if
 c
-        call pix2wfcg (type, i, pixmax(i), naxis, crval, crpix, 
-     +                 cdelt, ctype, .false., str, ilen)
-        if (ira.eq.i .or. idec.eq.i) call pader (str, ilen)
+c Convert coordinates
 c
+      call setoaco (lun, 'abs', naxis, 0, typeso)
+      call w2wfco (lun, naxis, typesi, ' ', pixmax, typeso, ' ', 
+     +             .false., strout, strlen)
+c
+c Tell user
+c
+      do i = 1, naxis
+        call pader (typeso(i), strout(i), strlen(i))
+c
+        call ctypeco (lun, i, ctype, il)
         if (i.lt.3) then
-          write (text,80) i, ctype(i), str(1:ilen)
+          write (text,80) i, ctype, strout(i)(1:strlen(i))
 80        format ('  Axis ', i1, ': Fitted ', a, ' = ', a)
         else
-          write (text, 85) i, ctype(i), str(1:ilen)
+          write (text, 85) i, ctype, strout(i)(1:strlen(i))
 85        format ('  Axis ', i1, ':        ', a, ' = ', a)
         end if
         call output (text)
         if (logf.ne.' ') call logwrit (text)
       end do
 c
+      call xyclose (lun)
       if (logf.ne.' ') call logclose
+      call finco (lun)
 c
       end
-
-c
-c
-      subroutine solve (z, width, zmax, pix, c)
-c---------------------------------------------------------------------
-c  Fit a parabola to the function in Z.
-c
-c  Input:
-c    Width      Width of the support of Z.
-c    Z          Function values.
-c
-c  Output:
-c    C          Coefficients of the fit.
-c    zmax       Estimated max value of the function.
-c    pix        Location, relative to the central pixel, of the maximum
-c
-c-----------------------------------------------------------------------
+c************************************************************************
+      subroutine pader (type, str, ilen)
       implicit none
-c
-      integer width
-      real z(width,width), c(6), zmax
-      double precision pix(2)
-cc
-      integer maxwidth
-      parameter(maxwidth = 5)
-c
-      real array(6,maxwidth*maxwidth), hw, rtemp(36), denom, x, y
-      integer i, j, k, itemp(6), ifail
-c-----------------------------------------------------------------------
-c
-c  Fill in the coefficients of the array.
-c
-      k = 0
-      hw = 0.5 * (width + 1)
-      do j = 1, width
-        y = j - hw
-c
-        do i=1,width
-          k = k + 1
-          x = i - hw
-          array(1,k) = 1
-          array(2,k) = x
-          array(3,k) = y
-          array(4,k) = x*y
-          array(5,k) = x*x
-          array(6,k) = y*y
-        end do
-      end do
-c
-c  This is a linear problem. Call a routine to solve it.
-c
-      call llsqu (z, array, 6, width*width, c, ifail, rtemp, itemp)
-      if (ifail.ne.0) call bug ('f','Least squares solution failed')
-c
-c  Work out the location of the maxima, and the value of the function there.
-c
-      denom  = c(4)*c(4) - 4*c(5)*c(6)
-      pix(1) = (2*c(2)*c(6)-c(3)*c(4)) / denom
-      pix(2) = (2*c(3)*c(5)-c(2)*c(4)) / denom
-      zmax = c(1) + c(2)*pix(1) + c(3)*pix(2) + 
-     +       c(4)*pix(1)*pix(2) + c(5)*pix(1)*pix(1) +
-     +       c(6)*pix(2)*pix(2)
-c
-      end
-c
-c
-      subroutine pader (str, ilen)
-      implicit none
-      character str*(*), str2*132
+      character str*(*), str2*132, type*(*)
       integer len1, ilen, it
 c
-      str2 = str
-      it = index(str2,':')
-      str = ' '
-      str(3-it+2:) = str2(1:len1(str2))
-      ilen = len1(str)
+      if (type.eq.'hms' .or. type.eq.'dms') then
+        str2 = str
+        it = index(str2,':')
+        str = ' '
+        str(3-it+2:) = str2(1:len1(str2))
+        ilen = len1(str)
+      end if
+c
+      end
+c************************************************************************
+      subroutine getopt (doabs)
+c
+c     Decode options array into named variables.
+c       
+c   Output:
+c     doabs     Search for absolute maximum pixel
+c       
+c-----------------------------------------------------------------------
+      implicit none
+c       
+      logical doabs
+cc
+      integer maxopt
+      parameter (maxopt = 1)
+c       
+      character opshuns(maxopt)*3
+      logical present(maxopt)
+      data opshuns /'abs'/
+c-----------------------------------------------------------------------
+      call options ('options', opshuns, present, maxopt)
+c       
+      doabs = present(1)
 c
       end
