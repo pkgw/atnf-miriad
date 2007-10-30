@@ -13,7 +13,6 @@ c    rjs  03feb97  General improvements.
 c    pjt  26apr98  check if logopen was ever called
 c    pjt   1may98  more standard FORTRAN, using LogNOpen (courtesy RJS)
 c    rjs   7may98  Correction to change in logclose.
-c    pjt  25jun98  standard decl order error (g77)
 c************************************************************************
 c* LogOpen -- Initialise the log file routines.
 c& rjs
@@ -172,8 +171,8 @@ c: text-i/o,log-file
 c+
         integer function lognopen(val)
 c
-	implicit none
         integer val
+	implicit none
 c
 c   This functions aids the logging usage of LogOpen/LogWrite/LogClose,
 c   since variables cannot appear in both a DATA and COMMON.
