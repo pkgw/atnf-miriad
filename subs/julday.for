@@ -45,6 +45,8 @@ c                    Also added VMS date style dd-mmm-ccyy.
 c                    Major modification of dayjul to handle new formats.
 c                    Removed julfdate() and datefjul() routines (these
 c                    are now handled by dayjul().
+c    rjs    25sep97  Added subroutine julcal.
+c    rjs    09jan97  Make datepars tolerant of spaces in names.
 c***********************************************************************
 c* JulDay -- Format a Julian day into a conventional calendar day.
 c& jm
@@ -94,7 +96,7 @@ c     parameter(fudge=0.5/(24.0*60.0*60.0*10.0))
       parameter(FUDGE=1.0/1728000.0)
 c
       double precision f
-      integer z,a,b,c,d,e,alpha,month,year,day,hr,minute,sec
+      integer month,year,day,hr,minute,sec
       integer dsec, decday, nchar, century
       character months(12)*3
       character outform*80, outstr*25
@@ -104,36 +106,15 @@ c
       data months/'JAN','FEB','MAR','APR','MAY',
      *      'JUN','JUL','AUG','SEP','OCT','NOV','DEC'/
 c
-      z = julian + 0.5 + FUDGE
-      f = julian + 0.5 + FUDGE - z
-      if(z .lt. 2299161)then
-        a = z
-      else
-        alpha = int((dble(z) - 1867216.25) / 36524.25)
-        a = z + 1 + alpha - int(0.25 * alpha)
-      endif
-      b = a + 1524
-      c = (dble(b) - 122.1) / 365.25
-      d = 365.25 * c
-      e = dble(b - d) / 30.6001
-      f = f + dble(b - d - int(30.6001 * e))
+      call julcal(julian+FUDGE,year,month,f)
       day = f
+c
       decday = 100 * (f - day)
       hr = 24 * (f - day)
       minute = 60 * (24 * (f - day) - hr)
       sec = int(600 * (60 * (24 * (f - day) - hr) - minute))
       dsec = mod(sec, 10)
       sec = sec / 10
-      if(e .le. 13)then
-        month = e - 1
-      else
-        month = e - 13
-      endif
-      if(month .gt. 2)then
-        year = c - 4716
-      else
-        year = c - 4715
-      endif
       century = year / 100
       year = mod(year, 100)
 c
@@ -181,7 +162,58 @@ c
       calday = outstr(1:nchar)
       return
       end
+c************************************************************************
+c* JulCal -- Convert a Julian day into a calendar day.
+c& jm
+c: Julian-day, date, utilities
+c+
+      subroutine julcal(julian,year,month,day)
 c
+      implicit none
+      double precision julian,day
+      integer year,month
+c
+c  Convert from Julian date to calendar date.  This is not to high
+c  accuracy, but it achieves the accuracy required.  See "Astronomical
+c  Formulae for Calculators", Jean Meeus (Wiillmann-Bell Inc).
+c  The day is assumed to begin at 0 hours UT.
+c
+c  Input:
+c    julian	Julian day.
+c  Output:
+c    year	Year (e.g. 1990)
+c    month	Month [1,12].
+c    day	Day [1-32).
+c------------------------------------------------------------------------
+      double precision f
+      integer z,a,b,c,d,e,alpha
+c
+      z = julian + 0.5
+      f = julian + 0.5 - z
+      if(z .lt. 2299161)then
+        a = z
+      else
+        alpha = int((dble(z) - 1867216.25) / 36524.25)
+        a = z + 1 + alpha - int(0.25 * alpha)
+      endif
+      b = a + 1524
+      c = (dble(b) - 122.1) / 365.25
+      d = 365.25 * c
+      e = dble(b - d) / 30.6001
+      f = f + dble(b - d - int(30.6001 * e))
+      day = f
+c
+      if(e .le. 13)then
+        month = e - 1
+      else
+        month = e - 13
+      endif
+      if(month .gt. 2)then
+        year = c - 4716
+      else
+        year = c - 4715
+      endif
+      end
 c***********************************************************************
 c* DayJul -- Format a conventional calendar day into a Julian day.
 c& jm
@@ -567,7 +599,9 @@ c
       if (alpha) then
         do while ((ok) .and. (a .lt. z))
           j = ichar(calday(a:a)) - zero
-          if (Isalphaf(calday(a:a))) then
+	  if (calday(a:a).eq.' ')then
+	    continue
+          else if (Isalphaf(calday(a:a))) then
             if (mon .ne. ' ') then
               ok = .FALSE.
             else
@@ -616,7 +650,9 @@ c
       else
         do while ((ok) .and. (a .lt. z))
           j = ichar(calday(a:a)) - zero
-          if ((j .ge. 0) .and. (j .le. 9)) then
+	  if(calday(a:a).eq.' ')then
+	    continue
+          else if ((j .ge. 0) .and. (j .le. 9)) then
             iarray(k) = (iarray(k) * 10) + j
           else if (calday(a:a) .eq. delim) then
             k = k + 1
@@ -733,6 +769,12 @@ c
         write (*,*) ' '
       enddo
 c
+      string = '18/ 1/95'
+      write (*,*) 'string => ', string
+      call dayjul(string, jul2)
+      write (*,*) 'DayJul => ', jul2
+      write (*,*) ' '
+c      
       string = '98feb01'
       write (*,*) 'string => ', string
       call dayjul(string, jul2)
