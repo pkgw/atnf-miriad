@@ -1,7 +1,6 @@
 c************************************************************************
-c* Nextpow2 -- Find the next power of two.
-c& mchw
-c: numbers,mathematics
+c*Nextpow2 -- Find the next power of two.
+c:numbers
 c+
       integer function nextpow2 (k)
 c

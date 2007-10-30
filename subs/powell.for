@@ -1,7 +1,6 @@
 c**********************************************************************
-c* Powell -- Minimization of a function, without derivative information.
-c& bpw
-c: optimization,mathematics
+c*Powell -- Minimization of a function, without derivative information.
+c:optimization
 c+
       subroutine powell(x,e,n,f,escale,icon,mxiter,calcfx,w,maxfun,
      *								ifail)
