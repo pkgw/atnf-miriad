@@ -8,20 +8,13 @@ c    rjs  xxjan93  Original version.
 c    mjs  24feb93  Added some doc lines; no code mods.
 c    rjs   7jul93  Include "ran" function here.
 c    mjs  09mar94  Mods for sgi-only (mips).
-c    rjs  25jan95  Mods for linux.
-c    rjs  18aug95  Get it to work on SGI.
-c    rjs  18sep95  Did I screw up in the above??I don't understand whats
-c		   happened to the code.
+c
 c************************************************************************
 c
 c  Choose which random number style we are to use. We have three choices:
 c  vms, cft or unix style. You also have the choice of including the
 c  "ran" function.
 c
-#ifdef sgi
-#  define sgi_style
-#  define defined
-#endif
 #ifdef vms
 #  define vms_style
 #  define defined
@@ -31,12 +24,12 @@ c
 #  define inc_ran
 #  define defined
 #endif
-#ifdef linux
+#ifdef mips
 #  define vms_style
 #  define inc_ran
 #  define defined
 #endif
-#ifdef unicos
+#ifdef cft
 #  define cft_style
 #  define defined
 #endif
@@ -60,10 +53,7 @@ c  Input:
 c    seed	Some "random" integer value, which is the seed to be
 c		used.
 c--
-c------------------------------------------------------------------------`
-#ifdef sgi_style
-	call srand(seed)
-#endif
+c------------------------------------------------------------------------
 #ifdef cft_style
 	call ranset(seed)
 #endif
@@ -106,12 +96,6 @@ c		in [0,1].
 c
 c------------------------------------------------------------------------
 	integer i
-#ifdef sgi_style
-	double precision rand
-	do i=1,n
-	  data(i) = rand()
-	enddo
-#endif
 #ifdef cft_style
 	real ranf
 	do i=1,n
