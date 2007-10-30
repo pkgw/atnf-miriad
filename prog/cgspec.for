@@ -392,9 +392,6 @@ c    nebk 12nov95  Change to deal internally in absolute pixels
 c                  '*lin' -> '*nat'
 c    nebk 29nov95  New call for CONTURCG
 c    nebk 18dec95  New call for VPSIZCG (arg. DOABUT)
-c    nebk 18jan95  Fix silly problem in SPECBLNK causing overlays
-c                  to be ignored if there were blanks in spatial image
-c    nebk 30jan96  New call for CHNSELCG
 c
 c Ideas:
 c  * Be cleverer for sub-cubes which have spectra partly all zero
@@ -404,8 +401,7 @@ c    Bob to play ball with BOXES code.
 c  * Try to swap line colour index to get white lines on black
 c    and vice versa.  Have this vary over the image as appropriate.
 c
-c---
-c--------------------------------------------------------------------
+c-----------------------------------------------------------------------
       implicit none
 c
       include 'maxdim.h'
@@ -468,7 +464,7 @@ c
       data txtfill, tflen /'spectrum', 'derivative spectrum', 
      +                     'derivative spectrum', 8, 19, 19/
 c-----------------------------------------------------------------------
-      call output ('CgSpec: version 30-Jan-96')
+      call output ('CgSpec: version 18-Dec-95')
       call output (' ')
 c
 c Get user inputs
@@ -478,7 +474,7 @@ c
      +   trfun, coltab, pdev, labtyp, dofull, eqscale, solneg, clines, 
      +   break, cs, ofile, nofile, relax, slines, vrange, vfrac, irange, 
      +   tick, doaxes, doframe, mark, iscale, spnorm, naked, blines, 
-     +   number, mirror, colour, blconly, doerase, doepoch, igblank,
+     +   number, mirror, colour, blconly, doerase, doepoch, igblank, 
      +   dofid, dowedge, dogrid, ibin, jbin)
 c
 c First verify the existence of wanted files and get some extrema
@@ -546,7 +542,7 @@ c
 c Finish key inputs for region of interest
 c
       call region (maxnax, cin, lc, csize, cnaxis, gin, lg, gsize, 
-     +  gnaxis, ibin, jbin, blc, trc, win, ngrps, grpbeg, ngrp)
+     +  gnaxis, ibin, jbin, blc, trc, win, maxchan, grpbeg, ngrp, ngrps)
 c
 c Allocate memory for pixel map/contour and mask images
 c
@@ -967,7 +963,7 @@ c
               if ((nofile.eq.1 .and. j.eq.1) .or. nofile.gt.1) then
                 write (aline, 140) j, ofile2(1:len1(ofile2))
 140             format ('Overlay # ', i4, ' from file ', a, 
-     +                  ' is not on the pixel map/contour image(s)')
+     +                  ' is not on the pxiel map/contour image(s)')
                 call bug ('w', aline)
               end if
             else
@@ -2770,7 +2766,7 @@ c
 c
 c
       subroutine region (maxnax, cin, lc, csize, cnaxis, gin, lg, gsize,
-     +  gnaxis, ibin, jbin, blc, trc, win, ngrps, grpbeg, ngrp)
+     +  gnaxis, ibin, jbin, blc, trc, win, maxgrp, grpbeg, ngrp, ngrps)
 c----------------------------------------------------------------------
 c     Finish key routine inputs for region of interest now.    Also
 c     return the header items for all further use when computing
@@ -2788,7 +2784,6 @@ c  Output:
 c    blc,trc       3-D Hyper-rectangle surrounding region of interest
 c    win           Size of region of interest for each of up to
 c                  3 dimensions.
-c    ngrps         Number of groups of channels.
 c    grpbeg        List of start planes for each group of planes
 c                  that are all  to be avearged together. A new
 c                  group is begun at every interruption to the
@@ -2796,12 +2791,13 @@ c                  continuity of the selected channels, or if the
 c                  channel increment is reached.
 c    ngrp          Number of channels in each group of channel to
 c                  be averaged together for each sub-plot.
+c    ngrps         Number of groups of channels.
 c
 c----------------------------------------------------------------------
       implicit none
 c     
       integer maxnax, cnaxis, gnaxis, csize(maxnax), gsize(maxnax), 
-     +  blc(*), trc(*), win(2), ngrp(*), grpbeg(*), 
+     +  blc(*), trc(*), win(2), maxgrp, ngrp(maxgrp), grpbeg(maxgrp), 
      +  ngrps, ibin(2), jbin(2), lc, lg
       character*(*) cin, gin
 cc
@@ -2819,12 +2815,12 @@ c must be a pixel map or contour image.
 c
       if (cin.ne.' ') then
         call boxinput ('region', cin, boxes, maxbox)
-        call boxset (boxes, cnaxis, csize, ' ')
+        call boxset (boxes, cnaxis, csize, 's')
         naxis = cnaxis
         lh = lc
       else if (gin.ne.' ') then
         call boxinput ('region', gin, boxes, maxbox)
-        call boxset (boxes, gnaxis, gsize, ' ')
+        call boxset (boxes, gnaxis, gsize, 's')
         naxis = gnaxis
         lh = lg
       end if
@@ -2845,16 +2841,16 @@ c find size of binned window
 c
       call winfidcg (size(1), 1, ibin, blc(1), trc(1), win(1))
       call winfidcg (size(2), 2, jbin, blc(2), trc(2), win(2))
+      if (win(1).le.1 .or. win(2).le.1) call bug ('f',
+     +   'Cannot display just one spatial pixel')
 c
-c Find list of start planes and number of planes for all selected
-c image planes which are to be averaged together.  Signal to
-c CHNSELCG that we want, for each group of channels, the averaging
-c number to be equal to the number of contiguous channels available
-c in that group
+c Find list of start planes and number of planes for all
+c selected image planes which are to be averaged together
 c   
-      kbin(1) = 0
-      kbin(2) = 0
-      call chnselcg (blc, trc, kbin, maxbox, boxes, ngrps, grpbeg, ngrp)
+      kbin(1) = trc(3) - blc(3) + 1
+      kbin(2) = kbin(1)
+      call chnselcg (blc, trc, kbin, maxbox, boxes, maxgrp,
+     +               grpbeg, ngrp, ngrps)
 c     
 c Tell user
 c
@@ -2906,7 +2902,7 @@ c Positions that are centred off the edge of the pixel map/contour
 c image are not displayed.  
 c
       if (pos(1).lt.blc(1) .or. pos(1).gt.trc(1) .or. 
-     +    pos(2).lt.blc(2) .or. pos(2).gt.trc(2)) then
+     +    pos(2).lt.trc(1) .or. pos(2).gt.trc(2)) then
         miss = .true.
         return
       end if
