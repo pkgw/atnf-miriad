@@ -13,23 +13,17 @@ c	assumed to be symmetrical about its reference pixel, but see the
 c	"asymmetric" option if this is not so. If this is not given, then
 c	a gaussian beam must be specified by the fwhm and pa parameters.
 c@ fwhm
-c	This is used to specify the gaussian beam used when convolving.
-c	Normally it gives the size of the beam to convolve with, but
-c	using options=final causes CONVOL to interpret the parameters
-c	as the required resolution of the output image.
-c	The size, in arcsec, will normally be two numbers, giving the
+c	The size, in arcsec, of the gaussian beam to be used in place
+c	of the beam parameter. Either beam or fwhm MUST be set.
+c	This parameter will normally be two numbers, giving the
 c	full-width at half-maximum of the major and minor axes of the
 c	gaussian. If only one number is given, the gaussian will have
 c	equal major and minor axes.
-c	This parameter is ignored if the "beam" keyword is given.
 c@ pa
-c	The position angle, in degrees, of the gaussian beam.
-c	Normally this is the position angle of the beam that is used
-c	when convolving. However options=final causes this parameter to
-c	be interpreted as the required position angle in the effective
-c	beam of the output image.
-c	It is measured north through towards east, in degrees.
-c	This parameter is ignored if the "beam" keyword is given.
+c	The position angle, in degrees, of the gaussian beam,
+c	measured east from north. The default is determined from the dirty
+c	beam fit (The value for PA is ignored, if no value is given for
+c	FWHM).
 c@ region
 c	The region of the input map to convolve. See the Users Manual for
 c	instructions on how to specify this. The default is the entire
@@ -39,9 +33,6 @@ c	The output image. No default.
 c@ options
 c	Some extra processing options. Several can be given, separated
 c	by commas. Minimum match is used.
-c	  "final"    When parameters are given by the FWHM and PA keywords,
-c	             the "final" option causes CONVOL to interpret these
-c	             as the resoultion required for the final output image.
 c	  "divide"   Divide, rather than mulitple, the transform of the map
 c	             by the transform of the beam. That is, perform
 c	             deconvolution, rather than convolution.
@@ -84,31 +75,25 @@ c    nebk     25nov92 Copy btype to output
 c    rjs      22nov93 Handle gaussian beam. Get rid of "scale" option.
 c    rjs      11jan93 Honour explicit scale factors.
 c    mchw  06sep94 Set default bmin to be bmaj, and fix log line in doc.
-c    rjs   15mar95 Add options=final.
-c    rjs   06jan97 Improve output headers.
-c    rjs   02jul97 cellscal change.
-c    rjs   05dec97 Change order of boxmask and boxinfo calls.
-c    bpw   12mar99 Increase size of map/beam/out to 512 to allow directories
+c
 c  Bugs:
 c------------------------------------------------------------------------
 	include 'maxdim.h'
-	include 'maxnax.h'
 	include 'mirconst.h'
 	integer maxbox,maxruns
 	character version*(*)
-	parameter(version='Convol: version 1.0 12-mar-99' )
+	parameter(version='Convol: version 1.0 06-Sep-94' )
 	parameter(maxruns=3*maxdim)
 	parameter(maxbox=1024)
-	character map*512,beam*512,out*512
-	integer nsize(MAXNAX),naxis,ifail
+	character map*32,beam*32,out*32
+	integer nsize(3),naxis
 	integer lMap,lBeam,lOut,iref,jref,blc(3),trc(3)
 	integer xmin,xmax,ymin,ymax,nx,ny,n1,n2,xoff,yoff
 	integer nPoint,nRuns,k,l,Box(maxbox),Runs(3,maxRuns)
 	double precision cdelt1,cdelt2
 	real crpix1,crpix2,bmaj,bmin,bpa,bmaj1,bmin1,bpa1,factor,sigma
-	real temp
 	character bunit*32,flags*4
-	logical divide,selfscal,rect,asym,corr,doscale,dogaus,final
+	logical divide,selfscal,rect,asym,corr,doscale,dogaus
 c
 	integer handle,pDat
 	include 'mem.h'
@@ -132,7 +117,7 @@ c
 	endif
 	call keya('out',Out,' ')
 	call BoxInput('region',map,box,maxbox)
-	call GetOpt(final,divide,asym,corr)
+	call GetOpt(divide,asym,corr)
 	selfscal = .not.(divide.or.keyprsnt('scale'))
 	call keyr('scale',factor,1.)
 	call keyr('sigma',sigma,0.)
@@ -145,30 +130,20 @@ c
 	if(.not.divide) sigma = 0
 	if(divide.and.sigma.eq.0)
      *	  call bug('f','Sigma must be set, when using options=divide')
-	if(final.and..not.doGaus)call bug('f',
-     *	  'You cannot set options=final and a beam parameter')
-	if(asym.and.doGaus)then
-	  call bug('w','Gaussians are always symmetric')
-	  asym = .false.
-	endif
-	if(.not.asym.and.corr) call bug('w',
-     *  'Correlation and convolution do not differ for symmetric beams')
-	if(final.and.divide) call bug('f',
-     *	'Cannot use options=final and divide together')
-c
+
 c  Open the map and handle the boxes to be processed.
 c
 	call xyopen(lMap,map,'old',3,nsize)
 	nx = nsize(1)
 	ny = nsize(2)
-	call rdhdi(lMap,'naxis',naxis,MAXNAX)
+	call rdhdi(lMap,'naxis',naxis,3)
 	call rdhdd(lMap,'cdelt1',cdelt1,1.d0)
 	call rdhdd(lMap,'cdelt2',cdelt2,1.d0)
-	naxis = min(naxis,MAXNAX)
+	naxis = min(naxis,3)
 c
+	call BoxMask(lMap,box,maxbox)
 	call BoxSet(box,3,nsize,' ')
 	call BoxInfo(box,3,blc,trc)
-	call BoxMask(lMap,box,maxbox)
 	rect = BoxRect(box)
 c
 c  Fiddle the gaussian parameters.
@@ -200,21 +175,6 @@ c  Check that the map and beam sizes and deltas are the same.
 c
 	if(nx.gt.n1.or.ny.gt.n2)
      *	  call bug('f','Map must be smaller than the beam')
-c
-c  If we are operating in "final" mode, determine the convolving
-c  beam.
-c
-	if(final)then
-	  call GauDPar1(lMap,bmaj1,bmin1,bpa1,
-     *    				   bmaj,bmin,bpa,temp,ifail)
-	  if(ifail.eq.1)call bug('f',
-     *	    'The input has the required final resolution')
-	  if(ifail.ne.0)call bug('f',
-     *	    'The convolving beam is undefined for the final resolution')
-	  bmaj1 = bmaj
-	  bmin1 = bmin
-	  bpa1 = bpa
-	endif
 c
 c  Determine the units,etc, of the output, along with any scale
 c  factors.
@@ -267,11 +227,8 @@ c
 	nsize(1) = trc(1) - blc(1) + 1
 	nsize(2) = trc(2) - blc(2) + 1
 	nsize(3) = trc(3) - blc(3) + 1
-	do k=4,naxis
-	  nsize(k) = 1
-	enddo
 	call xyopen(lOut,Out,'new',naxis,nsize)
-	call header(lMap,lOut,min(naxis,3),blc,
+	call header(lMap,lOut,naxis,blc,
      *	  bunit,bmaj,bmin,bpa,version)
 	call MemAlloc(pDat,nsize(1)*nsize(2),'r')
 c
@@ -359,30 +316,29 @@ c
 c
 	end
 c************************************************************************
-	subroutine GetOpt(final,divide,asym,corr)
+	subroutine GetOpt(divide,asym,corr)
 c
 	implicit none
-	logical divide,asym,corr,final
+	logical divide,asym,corr
 c
 c  Get extra processing options.
 c
 c  Output:
-c    final	Set the final output beam according to the fwhm/pa
-c		parameters.
 c    divide	True if we are really deconvolving.
 c    asym	Is the beam asymmetric?
 c------------------------------------------------------------------------
 	integer nopts
-	parameter(nopts=4)
+	parameter(nopts=3)
 	logical present(nopts)
 	character opts(nopts)*10
-	data opts/'divide    ','asymmetric','correlate ','final     '/
+	data opts/'divide    ','asymmetric','correlate '/
 c
 	call options('options',opts,present,nopts)
 	divide = present(1)
 	asym    = present(2)
 	corr = present(3)
-	final = present(4)
+	if(.not.asym.and.corr) call bug('w',
+     *  'Correlation and convolution do not differ for symmetric beams')
 	end
 c************************************************************************
 	subroutine Scale(Data,n,factor)
@@ -429,22 +385,19 @@ c------------------------------------------------------------------------
 	character line*72,num*1
 	real crpix
 	integer nkeys
-	parameter(nkeys=37)
+	parameter(nkeys=25)
 	character keyw(nkeys)*8
 c
 c  Externals.
 c
 	character itoaf*2
 c
-	data keyw/
-     *	  'cdelt1  ','cdelt2  ','cdelt3  ','cdelt4  ','cdelt5  ',
-     *	  'crval1  ','crval2  ','crval3  ','crval4  ','crval5  ',
-     *	  'ctype1  ','ctype2  ','ctype3  ','ctype4  ','ctype5  ',
-     *				           'crpix4  ','crpix5  ',
-     *	  'epoch   ','niters  ','object  ','obstime ','cellscal',
-     *	  'telescop','history ','restfreq','mostable','pbtype  ',
+	data keyw/   'cdelt1  ','cdelt2  ','cdelt3  ','crval1  ',
+     *	  'crval2  ','crval3  ','ctype1  ','ctype2  ','ctype3  ',
+     *	  'date-obs','epoch   ','instrume','niters  ','object  ',
+     *	  'telescop','xshift  ','yshift  ','history ','restfreq',
      *	  'vobs    ','observer','obsra   ','obsdec  ','pbfwhm  ',
-     *    'btype   ','ltype   ','lstart  ','lstep   ','lwidth  '/
+     *    'btype   '/
 c
 c  Copy keywords across, which have not changed.
 c
