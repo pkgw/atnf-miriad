@@ -119,11 +119,13 @@ c    04sep97 mchw  Upgrading. Report absolute positions with cursor.
 c    10sep97 mchw  Fix new bug at exactly 45.0 position angle.
 c    08jul98 mchw  Improve code in spectra and Gaussian fits.
 c    16jul98 mchw  More robust interactive input; Elliminate ifdef's.
+c    05mar99 mchw  added logarithmic contour levels.
+c    05apr00 mchw  specify RA and DEC cuts with a range and increment.
 c----------------------------------------------------------------------c
 	include 'velplot.h'
 	include 'mem.h'
 	character*(*) version
-	parameter(version='(version 3.0 16-Jul-98)')
+	parameter(version='(version 3.0 05-Apr-00)')
 	integer maxnax,maxboxes
 	parameter(maxnax=3,maxboxes=128)
 	integer boxes(maxboxes),nsize(maxnax),blc(maxnax),trc(maxnax)
@@ -756,7 +758,7 @@ c	Return number of plotting windows in x and y directions (windx,windy)
 c	imaps is the number of maps to be plotted
 c----------------------------------------------------------------------c
 	character msg*80, line*80
-	integer uwindx, uwindy, length
+	integer length
 	double precision dval(2)
 	logical ok
 c
@@ -786,8 +788,8 @@ c
         if(length.ne.0)then
           call matodf(line,dval,2,ok)
           if(ok)then
-	    if(uwindx.ne.0) windx=dval(1)
-	    if(uwindy.ne.0) windy=dval(2)
+	    if(dval(1).ne.0.d0) windx=dval(1)
+	    if(dval(2).ne.0.d0) windy=dval(2)
           endif
         endif
 	end
@@ -1163,36 +1165,45 @@ c----------------------------------------------------------------------c
 c
 	call output(' ')
 	call prompt(percent,l,
-     *    '>Enter contours as % (Y), Absolute, [use previous levels] :')
+     *   '>Enter contours as % (Y), Absolute, Log, [previous levels] :')
 	if(l.eq.0)return
 	call ucase(percent)
-	call prompt(ans,l,'Enter contour List or Range (L/[R]) :')
-	call ucase(ans)
-	if(ans.eq.'L') then
-	  write(line, '(a)') '>Enter levels (max 10, end=-9999.):'
-	  call output(line)
-          do i=1,10
-            levels(i)=0.0
-          enddo
-          do i=1,10
-	   write(line,'(a,i2,a)') '>Enter: level(',i,')='
-           call output(line)
-           read(5,*) levels(i)
-           if(levels(i).eq.-9999. .or. i.eq.10)then
-             nlevels=i-1
-             goto 129
-           endif
-          enddo
+	if(percent.eq.'L')then
+	  percent='Y'
+	  nlevels=10
+	  levels(1)=1.584893
+	  do i=2,nlevels
+	    levels(i)=1.584893*levels(i-1)
+	  enddo
 	else
-	  write(line, '(a)') '>Enter min,max,interval :'
-	  call output(line)
-	  read(5,*) cmin,cmax,cint
-	  nlevels =1
-	  levels(1)=cmin
-	  do while(levels(nlevels).lt.cmax.and.nlevels.lt.10)
-	    nlevels = nlevels + 1
-	    levels(nlevels) = levels(nlevels-1) + cint
- 	  enddo
+	  call prompt(ans,l,'Enter contour List or Range (L/[R]) :')
+	  call ucase(ans)
+	  if(ans.eq.'L') then
+	    write(line, '(a)') '>Enter levels (max 10, end=-9999.):'
+	    call output(line)
+            do i=1,10
+              levels(i)=0.0
+            enddo
+            do i=1,10
+	     write(line,'(a,i2,a)') '>Enter: level(',i,')='
+             call output(line)
+             read(5,*) levels(i)
+             if(levels(i).eq.-9999. .or. i.eq.10)then
+               nlevels=i-1
+               goto 129
+             endif
+            enddo
+	  else
+	    write(line, '(a)') '>Enter min,max,interval :'
+	    call output(line)
+	    read(5,*) cmin,cmax,cint
+	    nlevels =1
+	    levels(1)=cmin
+	    do while(levels(nlevels).lt.cmax.and.nlevels.lt.10)
+	      nlevels = nlevels + 1
+	      levels(nlevels) = levels(nlevels-1) + cint
+ 	    enddo
+	  endif
 	endif
 129     end
 c********1*********2*********3*********4*********5*********6*********7**
@@ -3766,7 +3777,7 @@ c-----------------------------------------------------------------------
 	include 'velplot.h'
 	integer np,k,l,ncon
 	real xin,yin,pain,cmaj,cmin,cpa,cf
-	real xstart,xend,vstart,vend,xmin,xmax
+	real xstart,xend,vstart,vend,xmin,xmax,pstart,pend,pinc,pos
 c  convolution array maximum size
 	real con(99,99,4,4)
         real tr(6),ymax,ymin,xval(MAXDIM),xcoord(MAXDIM),xdelta
@@ -3846,7 +3857,7 @@ c
             i    = dval(1)
             xin  = dval(2)
             yin  = dval(3)
-            pain = dval(3)
+            pain = dval(4)
           else
             goto 20
           endif
@@ -3883,22 +3894,48 @@ c
 c  RA-velocity maps.
 c
 	else if(ans.eq.'X') then
-	  ncut=ny
-	  do i=1,ncut
-	    xcut(i) = 0.0
-	    ycut(i) = (i-midx) * xy
-	    pa(i) = 90.0
-	  enddo
+          call prompt(line,length,
+     *      '>Enter starting DEC offset, ending DEC offset, interval:')
+          if(length.eq.0) goto 50
+          call matodf(line,dval,3,ok)
+          if(ok)then
+	    pstart = dval(1)
+	    pend   = dval(2)
+	    pinc   = dval(3)
+	    i = 1
+	    pos = pstart
+	    do while(i.le.128.and.pos.le.pend)
+	      ycut(i) = pos
+	      xcut(i) = 0.
+	      pa(i) = 90.
+	      pos = pos + pinc
+	      i = i + 1	
+	    enddo
+	    ncut = i - 1
+	  endif
 c
 c  DEC-velocity maps.
 c
 	else if (ans.eq.'Y') then
-	  ncut=nx
-	  do i=1,ncut
-	    xcut(i)=(i-midx) * xy
-	    ycut(i)=0.0
-	    pa(i)=0.0
-	  enddo
+          call prompt(line,length,
+     *      '>Enter starting X offset, ending X offset, interval:')
+          if(length.eq.0) goto 50
+          call matodf(line,dval,3,ok)
+          if(ok)then
+	    pstart = dval(1)
+	    pend   = dval(2)
+	    pinc   = dval(3)
+	    i = 1
+	    pos = pstart
+	    do while(i.le.128.and.pos.le.pend)
+	      xcut(i) = pos
+	      ycut(i) = 0.
+	      pa(i) = 0.001
+	      pos = pos + pinc
+	      i = i + 1	
+	    enddo
+	    ncut = i - 1
+	  endif
 	else 
 	  goto 9
 	endif	    
