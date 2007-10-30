@@ -67,13 +67,7 @@ c    nebk  09mar94    Declare APRI long enough to avoid string truncation
 c                     warning on convex (does not affect run time performance)
 c    rjs   27jul94    Get rid of some debugging write statements.
 c    rjs   11nov94    Eliminate bounds violation for large numbers of times.
-c    mhw&ip 22nov94   Add clip option
-c    mhw   13aug95    Make clip iterative and compile stats
-c    mhw    2sep95    Add 'batch-mode': commands, notv option
-c    smw   15mar98    Converted TVCLIP to TVWCLIP by using wides not channels
-c    pjt   19aug99    Consolidated TVWCLIP into TVCLIP
-c    smw   30aug99    Submitted!
-
+c    mhw&ip 22nov94    Add clip option
 c***********************************************************************
 c= Tvclip - Interactive editing of a UV data set on a TV device.
 c& jm
@@ -161,14 +155,6 @@ c     editing.  Selecting the ``abort'' command (button) at any
 c     time will perform the same operation as ``quit'', but
 c     will also terminate the program.
 c
-c     You can use the 'batch-mode' of tvclip if you have a lot of
-c     similar flagging to do. Use tvclip in interactive mode to 
-c     determine a good clip level and a sequence of DIFF and CLIP 
-c     commands that is appropriate for your data. Then set the 
-c     clip level and enter the commands in the 'commands' keyword. 
-c     You can then either watch the automatic flagging on the tv, 
-c     or switch off the display (options=notv) to speed things up. 
-c
 c@ vis
 c     The name of the input UV data set.  A visibility file name
 c     must be supplied.  Only one file may be edited at a time.
@@ -192,8 +178,8 @@ c     value is input, the y coordinate value is set to the x value.
 c
 c< line
 c
-c     NOTE: Here ``type'' must be `channel' or ``wide'' and the maximum 
-c     of  both ``width'' and ``step'' must be 1.  The default is
+c     NOTE: Here ``type'' must be `channel' and the maximum of
+c     both ``width'' and ``step'' must be 1.  The default is
 c     to display all channels.
 c
 c@ mode
@@ -214,33 +200,8 @@ c     average is started.  The default for TTOT is 5 minutes, whereas
 c     the default TGAP is the value of TTOT.
 c
 c@ clip
-c     The clip level (in average absolute deviations, a parameter 
-c     similar to rms, but less sensitive to outliers)
-c     This is used with the "CLIP" command. All data more than clip 
-c     times the av. abs. dev. from the median will be clipped. 
-c     This clip operation is repeated until no more points are clipped.
-c     Common values are 4,5,6. Flagging on stokes V data with clip=4
-c     usually gets rid of most interference. The default is 5.
-c
-c@ options
-c     - 'nochannel', 'notime' and 'nopixel' are clip options. 
-c     By default the "CLIP" command will flag channels, times and 
-c     individual pixels with an rms that is too far from the median. 
-c     These options allow you to exclude some forms of clipping.
-c     - 'notv' : display option, do not show anything on the tv.
-c     Speeds up non-interactive clipping. This can only be used if you 
-c     also fill in the commands keyword. Because with 'notv' the data 
-c     does not have to fit on the screen, less time averaging is needed. 
-c     Usually the data will be flagged at full time resolution.
-c
-c@ commands
-c     This allows non-interactive flagging using the "CLIP" command.
-c     Use this to specify a sequence of flagging commands to be applied
-c     for each baseline, e.g., commands=diff,clip. 
-c     The "EXIT" command is implicitly added at the end of the list.
-c     You will not be able to interact with tvclip using mouse or
-c     keyboard if "commands" is set.
-c
+c     The clip level in sigma's of the current display for use with
+c     the CLIP command
 c
 c< select
 c
@@ -255,28 +216,26 @@ c
       character PROG*(*)
       parameter (PROG = 'TVCLIP: ')
       character VERSION*(*)
-      parameter (VERSION = PROG // 'Version 30-aug-99')
-      integer NMODE,MAXSELS,MAXEDIT,MAXCMD
-      parameter (NMODE=4,MAXCMD=10,MAXSELS=256,MAXEDIT=100000)
+      parameter (VERSION = PROG // 'version 2.3 9-Mar-94')
+      integer NOPT,MAXSELS,MAXEDIT
+      parameter (NOPT=4,MAXSELS=256,MAXEDIT=10000)
 c
 c  Internal variables.
 c
       character Vis*132, Server*132
       character Line*30, errmsg*80
       character apri*9
-      character Modes(NMODE)*10
-      character Lines(2)*8
-      character Commands(MAXCMD)*10
+      character Opts(NOPT)*10
       integer Lin, nchan, MostChan, channel
       integer maxxpix, maxypix, levels, msglen
-      integer jx0, jy0, nout, ncmd
+      integer jx0, jy0, nout
       real start, width, step
       real pmin, pmax
       real amp
       real taver(2)
       real clip
       real Sels(MAXSELS)
-      logical center, Ctrl, nochan, notime, nopixel, notv, batch
+      logical center, Ctrl
       integer nedit,edits(2,MAXBASE)
       real times(2,MAXEDIT)
       integer chans(2,MAXEDIT)
@@ -288,8 +247,7 @@ c
       integer Len1
       logical KeyPrsnt
 c
-      data Modes / 'amplitude', 'phase','real', 'imaginary'/
-      data Lines / 'channel', 'wide'/
+      data Opts / 'amplitude', 'phase','real', 'imaginary'/
 c
 c  End declarations.
 c-----------------------------------------------------------------------
@@ -308,43 +266,30 @@ c
       center = .not. KeyPrsnt('tvcorn')
       call Keyi('tvcorn', jx0, 0)
       call Keyi('tvcorn', jy0, jx0)
-
-c - figure out 'channel' or 'wide' data
-
-      call keymatch('line',2,Lines,1,Line,nout)
+c
+      call keymatch('line',1,'channel',1,Line,nout)
       if(nout.eq.0) Line = 'channel'
       call Keyi('line', nchan, 0)
       call Keyr('line', start, 1.0)
       call Keyr('line', width, 1.0)
       call Keyr('line', step, 1.0)
       call SelInput('select', Sels, MAXSELS)
-      call keymatch('mode', NMODE, Modes, 1, apri, nout)
+      call keymatch('mode', NOPT, Opts, 1, apri, nout)
       if(nout.eq.0) apri = 'amplitude'
       call Keyr('taver', taver(1), 5.0)
       call Keyr('taver', taver(2), taver(1) )
       call Keyr('clip', clip, 5.0)
-      call GetOpt(nochan,notime,nopixel,notv)
-      call mkeya('commands',Commands, MAXCMD, ncmd)
-      batch=(ncmd.gt.0)
-      if (batch) then
-        ncmd=min(MAXCMD,ncmd+1)
-        Commands(ncmd)='EXIT'
-      endif
 c
       call KeyFin
 c
 c  Check the input parameters.
 c
-
-      if (MAXWIDE .GT. MAXCHAN) then
-        call Bug('f','MAXWIDE not large enough - recompile')
-      endif
       if (Vis .eq. ' ') then
         errmsg = PROG // 'A Visibility file must be given.'
         msglen = Len1(errmsg)
         call Bug('f', errmsg(1:msglen))
       endif
-      if (.not.notv .and. Server .eq. ' ') then
+      if (Server .eq. ' ') then
         errmsg = PROG // 'A TV device/server must be given.'
         msglen = Len1(errmsg)
         call Bug('f', errmsg(1:msglen))
@@ -356,12 +301,11 @@ c
         call Bug('f', errmsg(1:msglen))
       endif
 c
-c      if (Line .ne. 'channel') then
-c        errmsg = PROG // 'Line type must be channel.'
-c        msglen = Len1(errmsg)
-c        call Bug('f', errmsg(1:msglen))
-c      endif
-c
+      if (Line .ne. 'channel') then
+        errmsg = PROG // 'Line type must be channel.'
+        msglen = Len1(errmsg)
+        call Bug('f', errmsg(1:msglen))
+      endif
       if (width .le. 0.0) then
         errmsg = PROG // 'Negative width is useless.'
         msglen = Len1(errmsg)
@@ -384,16 +328,8 @@ c
       taver(1) = taver(1) / (24.0 * 60.0)
       taver(2) = taver(2) / (24.0 * 60.0)
 c
-      if(clip.le. 0.0)
+      if(clip.le.0)
      *	  call bug('f','Invalid clip parameter')
-c
-      if(nochan.and.notime.and.nopixel) 
-     *    call bug('f','Choose upto 2 from: nochan, notime, nopixel')
-c
-      if(notv.and..not.batch)
-     *    call bug('f',
-     *    'Cannot use options=notv without value for command')
-c
 c
 c  End of user inputs.
 c-----------------------------------------------------------------------
@@ -402,19 +338,13 @@ c  Open the connection to the display server, get default device
 c  characteristics, and determine the active channel and if device
 c  can support a menu window.
 c
-      if (.not.notv) then
-         call Output('Opening server and panel...')
-         call TvOpen(Server)
-         call TvChar(maxxpix, maxypix, MostChan, levels)
-         channel = min(max(channel, 1), MostChan)
-         call TvChan(channel)
-         call TvView(0, 0, (maxxpix-1), (maxypix-1))
-         call CtrlOpen(Server, Ctrl)
-      else
-         maxxpix = MAXDIM
-         maxypix = MAXDIM
-         Ctrl = .false.
-      endif
+      call Output('Opening server and panel...')
+      call TvOpen(Server)
+      call TvChar(maxxpix, maxypix, MostChan, levels)
+      channel = min(max(channel, 1), MostChan)
+      call TvChan(channel)
+      call TvView(0, 0, (maxxpix-1), (maxypix-1))
+      call CtrlOpen(Server, Ctrl)
 c
 c  Open the visibility file and determine how many antennae are present.
 c
@@ -429,8 +359,7 @@ c  Determine the flagging to be done.
 c
       call doEdit(Lin,apri,taver,center,jx0,jy0,channel,
      *	  Ctrl,pmin,pmax,
-     *    edits,MAXBASE,day0,times,chans,flagval,MAXEDIT,nedit, clip,
-     *    notime, nochan, nopixel, notv, batch, Commands, ncmd)
+     *    edits,MAXBASE,day0,times,chans,flagval,MAXEDIT,nedit, clip)
 c
 c  Do the flagging.
 c
@@ -450,51 +379,18 @@ c
         call CtrlClr
         call CtrlFin
       endif
-      if (.not.notv) call TvClose
+      call TvClose
       call UvClose(Lin)
       end
 c************************************************************************
-c************************************************************************
-        subroutine GetOpt(nochan,notime,nopixel,notv)
-c
-        implicit none
-        logical nochan,notime,nopixel,notv
-c
-c  Get extra processing options.
-c
-c  Output:
-c    nochan     True for no channel flagging by CLIP command
-c    notime     True for no time flagging by CLIP command
-c    nopixel    True for no single pixel flagging by CLIP command
-c    notv       True for no display on tv, only useful in 'batch' mode
-c------------------------------------------------------------------------
-        integer NOPTS
-        parameter(NOPTS=4)
-        logical present(NOPTS)
-        character opts(NOPTS)*9
-        data opts/'nochannel','notime   ','nopixel  ','notv     '/
-c
-        call options('options',opts,present,NOPTS)
-c
-        nochan  = present(1)
-        notime  = present(2)
-        nopixel = present(3)
-        notv    = present(4)
-c
-        end
-
-c************************************************************************
 	subroutine doEdit(Lin,apri,taver,center,jx0,jy0,channel,
      *	  Ctrl,pmin,pmax,
-     *    edits,nbase,day0,times,chans,flagval,MAXEDIT,nedit, clip,
-     *    notime, nochan, nopixel, notv, batch, Commands, ncmd)
+     *    edits,nbase,day0,times,chans,flagval,MAXEDIT,nedit, clip)
 c
 	implicit none
-        integer MAXCMD
-        parameter (MAXCMD=10)
-	integer Lin,channel,jx0,jy0,nbase,maxedit,nedit, ncmd
-	character apri*1, Commands(MAXCMD)*10
-	logical center,Ctrl, notime, nochan, nopixel, notv, batch
+	integer Lin,channel,jx0,jy0,nbase,maxedit,nedit
+	character apri*1
+	logical center,Ctrl
 	real taver(2),pmin,pmax
 	double precision day0
 	real times(2,maxedit), clip
@@ -512,8 +408,6 @@ c    jx0,jy0	BLC of the region to display.
 c    channel	Channel to use for the display.
 c    Ctrl	Whether to use the panel server or not.
 c    pmin,pmax	Scaling parameters.
-c    clip,notime,nochan,nopixel - used by clip option
-c    notv, batch, iCmds - used in batch mode
 c  Output:
 c    nedit	Number of editting instructions.
 c    flagval
@@ -524,12 +418,11 @@ c    day0	Base time.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mem.h'
-        include 'tvclip.h'
 	integer MAXTIME,MAXTIME2,MAXSAVE,MAXTREV
 	real ttol
 	logical doScr
 	parameter(MAXTIME=10000,MAXTIME2=MAXDIM,MAXTREV=128,
-     *			MAXSAVE=100000,ttol=1./86400.,doScr=.true.)
+     *			MAXSAVE=1024,ttol=1./86400.,doScr=.true.)
 	integer i,j,k,i1,i2,iblok
 	integer lScr
 	real t1(MAXTIME),t2(MAXTIME)
@@ -540,11 +433,11 @@ c------------------------------------------------------------------------
 	integer bl2idx(MAXBASE),idx2bl(MAXBASE),trevidx(2,MAXTREV)
 	integer idx1(MAXTIME2),idx2(MAXTIME2)
 	integer isave(5,MAXSAVE)
-	integer maxxpix,maxypix,mostchan,levels,chanoff,iCmds(MAXCMD)
+	integer maxxpix,maxypix,mostchan,levels,chanoff
 c
 c  Externals.
 c
-	integer membuf, CmdIndx
+	integer membuf
 	character itoaf*8
 c
 c  Initialise the index of the flagging instructions.
@@ -554,22 +447,6 @@ c
 	  edits(1,i) = 0
 	  edits(2,i) = -1
 	enddo
-c
-c  Load the menu.
-c
-        call LdMenu(Ctrl)
-
-c  check command inputs and convert them to indices
-
-        if (batch) then
-           do i=1,ncmd
-              iCmds(i)=cmdindx(Commands(i))
-              if (iCmds(i).eq.iEDIT(iNULL)) 
-     *             call bug('f', 
-     *             'Unrecognized value for command: '//Commands(i))
-           enddo
-        endif
-c
 c  
 c  Write all the data out to the scratch file, and make a list of
 c  all the times that we have encountered. Also remember any baselines
@@ -587,13 +464,8 @@ c
 c
 c  Determine the time ranges to average together.
 c
-	if (notv) then ! supply defaults
-           maxxpix=MAXDIM
-           maxypix=MAXTIME2
-        else
-           call TvChar(maxxpix,maxypix,mostchan,levels)
-           if(maxypix.gt.300)maxypix = maxypix - 100
-        endif
+	call TvChar(maxxpix,maxypix,mostchan,levels)
+	if(maxypix.gt.300)maxypix = maxypix - 100
 	maxypix = min(maxypix,MAXTIME2)
 	call TimeMap(t1,t2,ntime,ttol,nout,maxypix)
 	ntime = nout
@@ -624,7 +496,10 @@ c  Allocate memory.
 c
 	call memalloc(iFlg,nstep*nchan*ntime,'i')
 	call memalloc(iDat,nstep*nchan*ntime,'r')
-
+c
+c  Load the menu.
+c
+        call LdMenu(Ctrl)
 c
 c  Enter the gridding loop.
 c  Determine the baselines to process on this pass.
@@ -658,8 +533,7 @@ c
 	    call EdDisp(memI(iFlgo),memR(iDato),nchan,ntime,
      *	      t1,t2,taver,chanoff,
      *	      center,jx0,jy0,channel,pmin,pmax,Ctrl,bl,
-     *	      isave,iret, clip,
-     *        notime, nochan, nopixel, notv, batch, iCmds)
+     *	      isave,iret, clip)
 c
 c  Jump out if the user has hit the ABORT button.
 c
@@ -868,13 +742,12 @@ c
 	end
 c************************************************************************
 	subroutine EdDisp(iflag,array,Nx,Ny,t1,t2,taver,chanoff,
-     *	      center,jx,jy,chan,pmin,pmax,Ctrl,bl,isave,iret, clip,
-     *    notime, nochan, nopixel, notv, batch, iCmds)
+     *	      center,jx,jy,chan,pmin,pmax,Ctrl,bl,isave,iret, clip)
 c
 	implicit none
 	integer Nx,Ny,jx,jy,chan,bl,iret,chanoff
-	logical center,Ctrl, notime, nochan, nopixel, notv, batch
-	integer iflag(Nx,Ny),isave(5,*), iCmds(*)
+	logical center,Ctrl
+	integer iflag(Nx,Ny),isave(5,*)
 	real array(Nx,Ny),pmin,pmax,t1(Ny),t2(Ny),taver(2),clip
 c
 c  Do all the operations involved in editting a baseline.
@@ -895,8 +768,6 @@ c    t1,t2	  Start and end time of a time slot.
 c    chanoff	  Offset to add to channel number to convert to a true
 c		  channel number.
 c    clip         Clip level in sigmas
-c    notime, nochan, nopixel - used by clip
-c    notv, batch, iCmds - used in batch mode
 c
 c  Output:
 c    pmin, pmax   The real minimum/maximum (pmin/pmax) of the array.
@@ -918,7 +789,7 @@ c------------------------------------------------------------------------
 	real bmin,bmax
 	real SumoverY(MAXDIM),SumoverX(MAXDIM)
 	integer NoverY(MAXDIM),NoverX(MAXDIM)
-	integer istate, comm, icommand
+	integer istate, comm
 	integer param(5)
 	logical First
 	save First
@@ -949,12 +820,8 @@ c
 c
 c  Determine the center.
 c
-        if (notv) then
-           maxxpix = MAXDIM
-           maxypix = MAXDIM
-        endif
 	if(center)then
-	  if (.not.notv) call TvChar(maxxpix,maxypix,mostchan,levels)
+	  call TvChar(maxxpix,maxypix,mostchan,levels)
 	  x0 = (maxxpix - Nx) / 2
 	  y0 = (maxypix - Ny) / 2
 	else
@@ -978,11 +845,7 @@ c
 	antmsg(l+1:) = '-'//itoaf(ant2)
 	l = len1(antmsg)
 c
-	if (notv) then
-           call output('Processing data for '//antmsg(1:l))
-        else
-           call output('Displaying data for '//antmsg(1:l))
-        endif
+	call output('Displaying data for '//antmsg(1:l))
 c
 c  Present option menu and initialize some variables.
 c  This includes a dummy call to EdFlag to initialize some
@@ -993,14 +856,14 @@ c
 	if (First) call edflag(iflag, array, sumoverx, sumovery,
      *	  NoverX, NoverY, Nx, Nx, Ny, t1, t2, taver,chanoff,antmsg(1:l),
      *    iINITALL,param, x0, y0, chan, bmin, bmax, isave, Ctrl, istate, 
-     *    clip, notime, nochan, nopixel, notv, batch)
+     *    clip)
 c
 	First = .false.
 c
 	call edflag(iflag, array, sumoverx, sumovery,
      *	  NoverX, NoverY, Nx, Nx, Ny, t1, t2, taver,chanoff,antmsg(1:l),
      *    iINITBL, param, x0, y0, chan, bmin, bmax, isave, Ctrl, istate,
-     *    clip, notime, nochan, nopixel, notv, batch)
+     *    clip)
 c
 	if (Ctrl) call CtrlClr
 c
@@ -1008,21 +871,16 @@ c  Loop until done editing (EdFlag will return istate = 0 until
 c  either a QUIT (-1), EXIT (>0), or ABORT (-99) command is found).
 c
 	istate = 0
-        icommand = 0
-	do while (istate .eq. 0)
-           if(batch) then
-              icommand = icommand + 1 ! last command is always EXIT 
-              comm = iCmds(icommand)  ! so this can't fail... (flw)
-              param(1) = 0
-           else if (Ctrl) then
-              call GetBtn(comm, param)
-           else
-              call GetCmd(comm, param)
-           endif
-           call edflag(iflag, array, sumoverx, sumovery,
+	dowhile (istate .eq. 0)
+	  if (Ctrl) then
+	    call GetBtn(comm, param)
+	  else
+	    call GetCmd(comm, param)
+	  endif
+	  call edflag(iflag, array, sumoverx, sumovery,
      *	    NoverX, NoverY, Nx, Nx, Ny, t1,t2,taver,chanoff,antmsg(1:l),
      *      comm, param, x0, y0, chan, bmin, bmax, isave, Ctrl, istate, 
-     *      clip, notime, nochan, nopixel, notv, batch)
+     *      clip)
 	enddo
 c
 c  Done editing.  Set iret to save the flag file if editing ended with
@@ -1763,70 +1621,10 @@ c
       param(5) = 0
       end
 c***********************************************************************
-      integer function cmdindx(command)
-c
-      implicit none
-      character*(*) command
-c
-c
-c  Return the index in the iEDIT array corresponding to this command
-c
-c  Input:
-c    command        character variable containing the command
-c
-c  Output:
-c    NONE
-c
-c-----------------------------------------------------------------------
-c
-      include 'tvclip.h'
-      integer j, k, length, cmd
-      character key*1, string*10
-      logical single
-
-c  Externals.
-c
-        integer len1
-c
-c
-c     default (error) return is the NULL command
-
-      cmd = iEDIT(iNULL)
-      j = iNULL
-      k = 1
-      string = command
-      length = len1(string)
-      
-      do while ((string(k:k) .le. ' ') .and. (k .le. length))
-         k = k + 1
-      enddo
-      if (k .le. length) then
-         string = string(k:length)
-         length = length - k + 1
-         key = string(1:1)
-         single = .TRUE.
-         if (length .gt. 1) single = .FALSE.
-         call Lcase(key)
-         call Ucase(string(1:length))
-         do j = 0, NCOMS
-            if ((single) .and. (key .eq. cEDIT(iEDIT(j)))) goto 20
-            if ((.not. single) .and. (string(1:length) .eq.
-     *           sEDIT(iEDIT(j))(1:length))) goto 20
-         enddo
-         if ((key .eq. '?') .or. (string(1:1) .eq. '?')) j = iHELP
- 20      continue
-      endif
-      if (j .gt. NCOMS) j = iNULL
-      if (length .gt. 0) cmd = iEDIT(j)
-      cmdindx = cmd
-      return
-      end
-c***********************************************************************
       subroutine edflag(iflag, array, sumoverx, sumovery,
      *	NoverX, NoverY, Mx, Nx, Ny, t1, t2, taver, chanoff, bltext,
      *  opt, param, x0, y0, chan, pmin, pmax, isave, Ctrl, status, 
-     *  cliplev, notime, nochan, nopixel, notv, batch)
-
+     *  cliplev)
 c
       implicit none
       integer Mx, Nx, Ny, opt
@@ -1835,7 +1633,7 @@ c
       integer NoverX(Ny), NoverY(Nx)
       real pmin, pmax, taver(2),cliplev
       real array(Mx, Ny), sumoverx(Ny), sumovery(Nx), t1(Ny), t2(Ny)
-      logical Ctrl, notime, nochan, nopixel, notv, batch
+      logical Ctrl
       character bltext*(*)
 c
 c EdFlag -- Change the flag array based on edit selection.
@@ -1883,9 +1681,6 @@ c    Ctrl         Set to True if panel exists; false otherwise.
 c    array(Nx,Ny) Real array of data values.
 c    taver(2)     Parameters for the running mean.
 c    bltext	  Descriptive text for this baseline.
-c    cliplev      Clip level for clip command
-c    notime, nochan, nopixel - clip options
-c    notv         Do not use the tv display
 c
 c  Input/Output:
 c    iflag(Nx,Ny) Integer array of flag values with good flagged
@@ -1924,7 +1719,7 @@ c
       real bmin, bmax
       character line*80
       character table(3)*8
-      logical doselpt, tv
+      logical doselpt
 c
       save Lside, Rside, Tside, Bside, changes, Nquit
       save maxxpix, maxypix, Lut
@@ -1934,11 +1729,10 @@ c
       save doselpt
 c
       data table /'B&W', 'colour', 'rainbow'/
-      tv = .not.notv
 c
 c  Initialize everything not already set.
 c
-      if (opt.eq.iINITALL .and. tv) then
+      if (opt.eq.iINITALL) then
         call TvChar(maxxpix, maxypix, mxchan, levels)
         call TvSelect(j)
         doselpt = (j .eq. 1)
@@ -1969,12 +1763,9 @@ c
         Rside = 0
         Tside = 0
         Bside = 0
-	if (tv) then
-           call TvEras(chan)
-           call LdDisp('wit', array, iflag, sumoverx, sumovery, Mx, 
-     *          Nx, Ny,
-     *          NoverX, NoverY, chan, x0, y0, bmin, bmax, bltext)
-        endif
+	call TvEras(chan)
+        call LdDisp('wit', array, iflag, sumoverx, sumovery, Mx, Nx, Ny,
+     *	  NoverX, NoverY, chan, x0, y0, bmin, bmax, bltext)
 	write(line,'(a,1pe10.3,a,1pe10.3)')'Setting min and max to ',
      *		bmin,',',bmax
 	call output(line)
@@ -1989,7 +1780,7 @@ c
 c
 c  If we were stretching, but have now finished, redisplay the wedges.
 c
-      if ((NStretch .eq. 1) .and. (opt .ne. iCURSOR) .and. tv) then
+      if ((NStretch .eq. 1) .and. (opt .ne. iCURSOR)) then
         call LdDisp('w',array, iflag, sumoverx, sumovery, Mx, Nx, Ny,
      *	  NoverX, NoverY, chan, x0, y0, bmin, bmax, bltext)
         NStretch = 0
@@ -2016,8 +1807,7 @@ c
 c  EXIT without any changes.
 c
       else if (opt .eq. iQUIT) then
-        if ((Nquit .eq. 0) .and. 
-     *        (changes .gt. 0).and. .not. batch) then
+        if ((Nquit .eq. 0) .and. (changes .gt. 0)) then
           call Report(Ctrl, 'Are you sure you want to Quit?  Changes')
           call Report(Ctrl, 'made to this baseline will NOT be saved!')
           call Report(Ctrl, 'Select Quit again NOW to confirm QUIT...')
@@ -2046,7 +1836,7 @@ c
 c
 c  Zoom up.
 c
-      else if (opt .eq. iZOOMIN .and. tv) then
+      else if (opt .eq. iZOOMIN) then
         call TvRZScr(j, zoom, xc0, yc0)
         if ((j .gt. 0) .and. (j .ne. chan)) then
           call TvChan(chan)
@@ -2060,7 +1850,7 @@ c
 c
 c  Zoom down.
 c
-      else if (opt .eq. iZOOMOUT .and. tv) then
+      else if (opt .eq. iZOOMOUT) then
         call TvRZScr(j, zoom, xc0, yc0)
         if ((j .gt. 0) .and. (j .ne. chan)) then
           call TvChan(chan)
@@ -2074,7 +1864,7 @@ c
 c
 c  Select the region to flag.
 c
-      else if (opt .eq. iSELECT .and. tv) then
+      else if (opt .eq. iSELECT) then
         call Report(Ctrl, 'To select a region with the mouse:')
         call Report(Ctrl, 'point it at the lower left position, push')
         call Report(Ctrl, 'the left button, drag it to the upper right')
@@ -2108,7 +1898,7 @@ c
 c
 c  Select a block of channels to flag.
 c
-      else if (opt .eq. iCHANNEL .and. tv) then
+      else if (opt .eq. iCHANNEL) then
         call Report(Ctrl, 'To select a block of channels with the')
         call Report(Ctrl, 'mouse: point it at the left channel, push')
         call Report(Ctrl, 'the left button, drag it to the right most')
@@ -2137,7 +1927,7 @@ c
 c
 c  Select a block of times to flag.
 c
-      else if (opt .eq. iTIME .and. tv) then
+      else if (opt .eq. iTIME) then
         call Report(Ctrl, 'To select a block of time with the mouse:')
         call Report(Ctrl, 'point it at the lowest time value, push')
         call Report(Ctrl, 'the left button, drag it to the highest')
@@ -2190,7 +1980,7 @@ c  Do the editting and redisplay.
 c
 	  call Edit(array,iflag,Mx,Nx,Ny,SumoverX,SumoverY,
      *		NoverX,NoverY,isave(1,changes),x0,y0,bmin,bmax,chan,
-     *		t1,t2,chanoff,notv)
+     *		t1,t2,chanoff)
           Undone = .false.
         endif
 c
@@ -2205,12 +1995,12 @@ c
 	    Undone = .false.
 	    call Edit(array,iflag,Mx,Nx,Ny,SumoverX,SumoverY,
      *		NoverX,NoverY,isave(1,changes),x0,y0,bmin,bmax,chan,
-     *		t1,t2,chanoff,notv)
+     *		t1,t2,chanoff)
 	  else
 	    isave(5,changes) = 1 - isave(5,changes)
 	    call Edit(array,iflag,Mx,Nx,Ny,SumoverX,SumoverY,
      *		NoverX,NoverY,isave(1,changes),x0,y0,bmin,bmax,chan,
-     *		t1,t2,chanoff,notv)
+     *		t1,t2,chanoff)
 	    isave(5,changes) = 1 - isave(5,changes)
 	    Undone = .true.
 	    changes = changes - 1
@@ -2229,9 +2019,8 @@ c
 	write(line,'(a,1pe10.3,a,1pe10.3)')'Setting min and max to ',
      *		bmin,',',bmax
 	call output(line)
-	if (tv) call LdDisp('wi',array, iflag, sumoverx, sumovery, 
-     *       Mx, Nx, Ny,
-     *       NoverX, NoverY, chan, x0, y0, bmin, bmax, bltext)
+	call LdDisp('wi',array, iflag, sumoverx, sumovery, Mx, Nx, Ny,
+     *	    NoverX, NoverY, chan, x0, y0, bmin, bmax, bltext)
 c
 c  Calculate the rms for the current data and clip all points above
 c  clip*rms
@@ -2240,7 +2029,7 @@ c
         call Clip(array,iflag,Mx,Nx,Ny,SumoverX,SumoverY,
      *		NoverX,NoverY,isave,changes,x0,y0,
      *          bmin,bmax,chan,
-     *		t1,t2,chanoff,cliplev, notime, nochan, nopixel, notv)
+     *		t1,t2,chanoff,cliplev)
 c
 c  List all changes made to this baseline.
 c
@@ -2258,7 +2047,7 @@ c
 c
 c  Display the position and value of the identified pixel.
 c
-      else if (opt .eq. iPIXVAL .and. tv) then
+      else if (opt .eq. iPIXVAL) then
 c  Flush out any previous button pushes first...
         call TvCursor(xpos1, ypos1, button)
 c  Print a message to the users about how to select pts and end...
@@ -2287,7 +2076,7 @@ c  Loop until some button is pressed...
 c
 c  Reset LUT and ZOOM and PAN, and redisplay everything.
 c
-      else if (opt .eq. iRESET .and. tv) then
+      else if (opt .eq. iRESET) then
         call Report(Ctrl, 'Resetting parameters...')
         xc0 = 0
         yc0 = 0
@@ -2319,7 +2108,7 @@ c
 c
 c  Change the image LUT.
 c
-      else if (opt .eq. iLUT .and. tv) then
+      else if (opt .eq. iLUT) then
         if (Ctrl) then
           Lut = mod(Val1, 3) + 1
         else
@@ -2331,7 +2120,7 @@ c
 c
 c  Select whether cursor moves mean LUT changes or Panning.
 c
-      else if (opt .eq. iFIDPAN .and. tv) then
+      else if (opt .eq. iFIDPAN) then
         if (Ctrl) then
           panfid = mod(val1, 2) + 1
         else
@@ -2346,7 +2135,7 @@ c
 c
 c  Set the low and high value of the LUT or Pan around the screen.
 c
-      else if (opt .eq. iCURSOR .and. tv) then
+      else if (opt .eq. iCURSOR) then
         if (panfid .eq. STRETCH) then
           bmin = (pmax * (val1 - val2)) + (pmin * (val1 + val2))
           bmin = 0.02 * bmin
@@ -2383,7 +2172,7 @@ c
 c
 c  Flush any buffered TV commands.
 c
-      if (tv) call TvFlush
+      call TvFlush
 c
       end
 c************************************************************************
@@ -2538,7 +2327,7 @@ c
 c************************************************************************
 	subroutine Edit(array,iflag,Mx,Nx,Ny,SumoverX,SumoverY,
      *		NoverX,NoverY,isave,x0,y0,bmin,bmax,chan,
-     *		t1,t2,chanoff,notv)
+     *		t1,t2,chanoff)
 c
 	implicit none
 	integer Mx, Nx, Ny
@@ -2546,7 +2335,6 @@ c
 	real bmin,bmax,t1(Ny), t2(Ny)
 	integer iflag(Mx,Ny),NoverX(Ny),NoverY(Nx),isave(5)
 	integer x0,y0,chan,chanoff
-        logical notv
 c
 c  Apply an editting operation to the data, recompute the wedges,
 c  and redisplay the necessary parts that need redisplaying.
@@ -2594,161 +2382,167 @@ c
 c
 c  Redisplay the image.
 c
-        if (.not.notv) then
-           call DispIm(array(Left,Bott),iflag(Left,Bott),
-     *          Mx, Rite-Left+1, Topp-Bott+1, chan, x0+Left-1, 
-     *          y0+Bott-1, bmin, bmax)
+	call DispIm(array(Left,Bott),iflag(Left,Bott),
+     *	  Mx, Rite-Left+1, Topp-Bott+1, chan, x0+Left-1, y0+Bott-1,
+     *	  bmin, bmax)
 c
 c  Redisplay the wedges.
 c
-           call DispWg(sumoverx(Bott), NoverX(Bott), Topp-Bott+1, 1, 
+	call DispWg(sumoverx(Bott), NoverX(Bott), Topp-Bott+1, 1, 
      *		chan, x0, y0+Bott-1, Nx, bmin, bmax, WIDTH)
-           call DispWg(sumovery(Left), NoverY(Left), Rite-Left+1, 0,
+	call DispWg(sumovery(Left), NoverY(Left), Rite-Left+1, 0,
      *		chan, x0+Left-1, y0, Ny, bmin, bmax, WIDTH)
-        endif
 c
 	end
 c************************************************************************
 	subroutine Clip(array,iflag,Mx,Nx,Ny,SumoverX,SumoverY,
      *		NoverX,NoverY,isave,changes,x0,y0,bmin,bmax,chan,
-     *		t1,t2,chanoff,cliplev, notime, nochan, nopixel, notv)
+     *		t1,t2,chanoff,cliplev)
 c
 	implicit none
 	integer Mx, Nx, Ny
 	real array(Mx,Ny),SumoverX(Ny),SumoverY(Nx)
-	real bmin,bmax,t1(Ny), t2(Ny), avdev, cliplev
+	real bmin,bmax,t1(Ny), t2(Ny), sigma, cliplev
 	integer iflag(Mx,Ny),NoverX(Ny),NoverY(Nx),isave(5,*)
 	integer x0,y0,chan,chanoff, count, changes
-        logical  notime, nochan, nopixel, notv
 c
 c  Apply a clip operation to the data, recompute the wedges,
 c  and redisplay the necessary parts that need redisplaying.
 c
 c------------------------------------------------------------------------
-	integer WIDTH, MAXSAVE, MAXX, MAXY
-	parameter(WIDTH=20, MAXSAVE=100000, MAXX=8192, MAXY=8640)
+	integer WIDTH, MAXEDIT, MAXX, MAXY
+	parameter(WIDTH=20, MAXEDIT=10000, MAXX=8192, MAXY=8640)
         real omedian, chnmed(MAXX), timemed(MAXY), medchn,
-     -   medtime, chndev, timedev, buf(MAXY)
+     -   medtime, chnsigma, timerms, buf(MAXY)
         integer chncount(MAXX), timecnt(MAXY)
 c
-	integer i,j,FLAGVAL,Left,Bott,Rite,Topp, ochanges
+	integer i,j,FLAGVAL,Left,Bott,Rite,Topp
 	character string*80
 c
-c compile clipping stats
-        integer nclipchn, ncliptim, nclippix
-        integer cliptim(MAXY), clipchn(MAXX)
-
-        nclipchn = 0
-        ncliptim = 0
-        nclippix = 0
+c  Give the user a message about what is going on.
+c
+c	call FmtCmd(string,isave,t1,t2,Ny,chanoff)
         FLAGVAL = isave(5,changes)
 
-        ochanges = changes - 1 
-        do while (ochanges.lt.changes)
-           ochanges = changes
 c
 c  Calculate the channel medians
 c
-           do i=1, Nx
-              chncount(i) = 0
-              chnmed(i) = 0
-              do j=1, Ny
-                 if (iflag(i,j).ne.FLAGVAL)then
-                    chncount(i) = chncount(i) +1
-                    buf(chncount(i)) = array(i,j)
-                 endif
-              enddo
-              if (chncount(i).gt.0) 
-     -             call median(buf, chncount(i), chnmed(i))
-           enddo
-             
-c     
+        do i=1, Nx
+          chncount(i) = 0
+          chnmed(i) = 0
+          do j=1, Ny
+            if (iflag(i,j).ne.FLAGVAL)then
+              chncount(i) = chncount(i) +1
+              buf(chncount(i)) = array(i,j)
+            endif
+          enddo
+          if (chncount(i).gt.0) 
+     -      call median(buf, chncount(i), chnmed(i))
+        enddo
+
+c
 c  Calculate the time medians
 c
-           do j=1, Ny
-              timecnt(j) = 0
-              timemed(j) = 0
-              do i=1, Nx
-                 if (iflag(i,j).ne.FLAGVAL)then
-                    timecnt(j) = timecnt(j) +1
-                    buf(timecnt(j)) = array(i,j)
-                 endif
-              enddo
-              if (timecnt(j).gt.0) 
-     -             call median(buf, timecnt(j), timemed(j))
-           enddo
-             
+        do j=1, Ny
+          timecnt(j) = 0
+          timemed(j) = 0
+          do i=1, Nx
+            if (iflag(i,j).ne.FLAGVAL)then
+              timecnt(j) = timecnt(j) +1
+              buf(timecnt(j)) = array(i,j)
+            endif
+          enddo
+          if (timecnt(j).gt.0) 
+     -      call median(buf, timecnt(j), timemed(j))
+        enddo
+
 c
 c  Calculate the overall channel median
 c
-           count = 0
-           do i = 1, Nx
-              if (chncount(i).gt.0) then
-                 count = count +1
-                 buf(count)=chnmed(i)
-              endif
-           enddo
-           call median(buf,count,medchn)
-             
+        count = 0
+        do i = 1, Nx
+          if (chncount(i).gt.0) then
+            count = count +1
+            buf(count)=chnmed(i)
+          endif
+        enddo
+        call median(buf,count,medchn)
+
 c
 c  Calculate the overall time median
 c
-           count = 0
-           do j = 1, Ny
-              if (timecnt(j).gt.0) then
-                 count = count +1
-                 buf(count)=timemed(j)
-              endif
-           enddo
-           call median(buf,count,medtime)
-c     
+        count = 0
+        do j = 1, Ny
+          if (timecnt(j).gt.0) then
+            count = count +1
+            buf(count)=timemed(j)
+          endif
+        enddo
+        call median(buf,count,medtime)
+c
 c  Guess the overall median
 c
-           omedian = min (medchn,medtime)
-             
+        omedian = min (medchn,medtime)
+
 c
 c  Calculate the channel average deviation
 c
-           chndev = 0
-           count = 0
-           do i=1, Nx
-              if (chncount(i).gt.0)then
-                 chndev = chndev + abs(chnmed(i)-medchn)
-                 count = count + 1
-              endif
-           enddo
-           if (count.gt.0) chndev=chndev/count
-c            write(*,*) ' Nx=',Nx,' chncount=',count
+        chnsigma = 0
+        count = 0
+        do i=1, Nx
+          if (chncount(i).gt.0)then
+            chnsigma = chnsigma + abs(chnmed(i)-medchn)
+            count = count + 1
+          endif
+        enddo
+        if (count.gt.0) chnsigma=chnsigma/count
+        write(*,*) ' Nx=',Nx,' chncount=',count
 c
 c  Calculate the timeseries average deviation
 c
-           timedev = 0
-           count = 0
-           do j=1, Ny
-              if (timecnt(j).gt.0)then
-                 timedev = timedev + abs(timemed(j)-medtime)
-                 count = count + 1
-              endif
-           enddo
-           if (count.gt.0) timedev=timedev/count
-c               write(*,*) ' Ny=',Ny,' timecount=',count
+        timerms = 0
+        count = 0
+        do j=1, Ny
+          if (timecnt(j).gt.0)then
+            timerms = timerms + abs(timemed(j)-medtime)
+            count = count + 1
+          endif
+        enddo
+        if (count.gt.0) timerms=timerms/count
+        write(*,*) ' Ny=',Ny,' timecount=',count
 
 c
 c  Calculate the overall average deviation
 c
-           avdev = 0.
-           count = 0 
-           do i=1, Nx
-              do j=1, Ny
-                 if (iflag(i,j).ne.FLAGVAL)then
-                    count = count + 1
-                    avdev = avdev + abs(array(i,j)-omedian)
-                 endif
-              enddo
-           enddo
-           if (count.gt.0) avdev=avdev/count
-           
-           
+        sigma = 0.
+        count = 0 
+        do i=1, Nx
+          do j=1, Ny
+            if (iflag(i,j).ne.FLAGVAL)then
+              count = count + 1
+              sigma = sigma + abs(array(i,j)-omedian)
+            endif
+          enddo
+        enddo
+        if (count.gt.0) sigma=sigma/count
+       
+        write(string,'(A,F9.5,A,F5.1,A,F9.5)')
+     *   'Flagging channels with '//
+     *   'abs(median - ',medchn,')>',
+     *   cliplev,' * ',chnsigma
+	call output(string)
+
+        write(string,'(A,F9.5,A,F5.1,A,F9.5)') 
+     *   'Flagging times    with '//
+     *   'abs(median - ',medtime,')>',
+     *   cliplev,' * ',timerms
+	call output(string)
+
+        write(string,'(A,F9.5,A,F5.1,A,F9.5)')
+     *   'Clipping data     with abs(value-',omedian,')>',
+     *   cliplev,' * ',sigma
+        call output(string)
+        
 c
 c  Apply the flagging operation to the iflag array, and recompute the
 c  wedge values. 
@@ -2757,152 +2551,96 @@ c
 
 c  First flag the bad channels
 
-           if (nochan) goto 10
-           do i= 1, Nx
-              if (chncount(i).gt.0) then
-                 if (abs(chnmed(i)-medchn).gt.cliplev*chndev) then
-                    if (changes.lt.MAXSAVE)then
-                       nclipchn = nclipchn + 1
-                       clipchn(nclipchn) = i
-                       changes=changes+1
-                       isave(1,changes)=1
-                       isave(2,changes)=i
-                       isave(3,changes)=Ny
-                       isave(4,changes)=i
-                       isave(5,changes)=FLAGVAL
-                       do j= 1, Ny
-                          if(iflag(i,j).ne.FLAGVAL)then
-                             iflag(i,j)=FLAGVAL
-                             SumoverX(j) = SumoverX(j) - array(i,j)
-                             NoverX(j) = NoverX(j) - 1
-                             SumoverY(i) = SumoverY(i) - array(i,j)
-                             NoverY(i) = NoverY(i) - 1
-                          endif
-                       enddo
-                    endif
-                 endif
+        do i= 1, Nx
+          if (chncount(i).gt.0) then
+            if (abs(chnmed(i)-medchn).gt.cliplev*chnsigma) then
+              write(*,*) 'Flagging channel: ',i
+              do j= 1, Ny
+                iflag(i,j)=FLAGVAL
+	        SumoverX(j) = SumoverX(j) - array(i,j)
+	        NoverX(j) = NoverX(j) - 1
+	        SumoverY(i) = SumoverY(i) - array(i,j)
+	        NoverY(i) = NoverY(i) - 1
+              enddo
+              changes=changes+1
+              if (changes.le.MAXEDIT)then
+                isave(1,changes)=1
+                isave(2,changes)=i
+                isave(3,changes)=Ny
+                isave(4,changes)=i
+                isave(5,changes)=FLAGVAL
               endif
-           enddo
-           
-C  Now flag the bad times
+            endif
+          endif
+        enddo
 
- 10        if (notime) goto 20
-           do j= 1, Ny
-              if (timecnt(j).gt.0) then
-                 if (abs(timemed(j)-medtime).gt.cliplev*timedev) then
-                    if (changes.lt.MAXSAVE)then
-                       ncliptim = ncliptim + 1
-                       cliptim(ncliptim) = j
-                       changes=changes+1
-                       isave(1,changes)=j
-                       isave(2,changes)=1
-                       isave(3,changes)=j
-                       isave(4,changes)=Nx
-                       isave(5,changes)=FLAGVAL
-                       do i= 1, Nx
-                          if(iflag(i,j).ne.FLAGVAL)then
-                             iflag(i,j)=FLAGVAL
-                             SumoverX(j) = SumoverX(j) - array(i,j)
-                             NoverX(j) = NoverX(j) - 1
-                             SumoverY(i) = SumoverY(i) - array(i,j)
-                             NoverY(i) = NoverY(i) - 1
-                          endif
-                       enddo
-                    endif
-                 endif
+C Now flag the bad times
+
+        do j= 1, Ny
+          if (timecnt(j).gt.0) then
+            if (abs(timemed(j)-medtime).gt.cliplev*timerms) then
+              write(*,*) 'Flagging time: ',j
+              do i= 1, Nx
+                iflag(i,j)=FLAGVAL
+	        SumoverX(j) = SumoverX(j) - array(i,j)
+	        NoverX(j) = NoverX(j) - 1
+	        SumoverY(i) = SumoverY(i) - array(i,j)
+	        NoverY(i) = NoverY(i) - 1
+              enddo
+              changes=changes+1
+              if (changes.le.MAXEDIT)then
+                isave(1,changes)=j
+                isave(2,changes)=1
+                isave(3,changes)=j
+                isave(4,changes)=Nx
+                isave(5,changes)=FLAGVAL
               endif
-           enddo
+            endif
+          endif
+        enddo
 
 C Finally clip the bad points
 
- 20        if (nopixel) goto 30
-           Bott = 1
-           Left = 1
-           Topp = Ny
-           Rite = Nx
-           do j= 1, Ny
-              if(t1(j).gt.-1)then
-                 do i=1, Nx
-                    if(iflag(i,j).ne.FLAGVAL)then
-                       if (abs(array(i,j)-omedian).gt.
-     -                      cliplev*avdev) then
-                          if (changes.lt.MAXSAVE)then
-                             nclippix = nclippix + 1
-                             changes=changes+1
-                             isave(1,changes)=j
-                             isave(2,changes)=i
-                             isave(3,changes)=j
-                             isave(4,changes)=i
-                             isave(5,changes)=FLAGVAL
-                             SumoverX(j) = SumoverX(j) - array(i,j)
-                             NoverX(j) = NoverX(j) - 1
-                             SumoverY(i) = SumoverY(i) - array(i,j)
-                             NoverY(i) = NoverY(i) - 1
-                             iflag(i,j) = FLAGVAL
-                          endif
-                       endif
-                    endif
-                 enddo
-              endif
-           enddo
-
- 30        continue 
-
-        enddo 
-
-
+	Bott = 1
+	Left = 1
+	Topp = Ny
+	Rite = Nx
+	do j= 1, Ny
+	  if(t1(j).gt.-1)then
+	    do i=1, Nx
+	      if(iflag(i,j).eq.FLAGVAL)then
+	        continue
+	      else if (abs(array(i,j)-omedian).gt.cliplev*sigma) then
+	        SumoverX(j) = SumoverX(j) - array(i,j)
+	        NoverX(j) = NoverX(j) - 1
+	        SumoverY(i) = SumoverY(i) - array(i,j)
+	        NoverY(i) = NoverY(i) - 1
+  	        iflag(i,j) = FLAGVAL
+                changes=changes+1
+                if (changes.le.MAXEDIT)then
+                   isave(1,changes)=j
+                   isave(2,changes)=i
+                   isave(3,changes)=j
+                   isave(4,changes)=i
+                   isave(5,changes)=FLAGVAL
+                endif
+	      endif
+	    enddo
+	  endif
+	enddo
 c
-c  Show the clip statistics, only show individual chns/times if <=10
-c
-        if (.not.nochan) then
-           write(string,'(A,I6,A,F9.5,A,F5.1,A,F9.5)')
-     *          'Flagged ',nclipchn,' channels with '//
-     *          'abs(median - ',medchn,')>',
-     *          cliplev,' * ',chndev
-           call output(string)
-           if (nclipchn.gt.0.and.nclipchn.le.10) then
-              call sorti(clipchn,nclipchn)
-              write(string,'(A,10I6)') 'Flagged channels: ',
-     *             (clipchn(i),i=1,min(10,nclipchn))
-              call output(string)
-           endif
-        endif
-        if (.not.notime) then
-           write(string,'(A,I6,A,F9.5,A,F5.1,A,F9.5)') 
-     *          'Flagged ',ncliptim,' times    with '//
-     *          'abs(median - ',medtime,')>',
-     *          cliplev,' * ',timedev
-           call output(string)
-           if (ncliptim.gt.0.and.ncliptim.le.10) then
-              call sorti(cliptim,ncliptim)
-              write(string,'(A,10I6)') 'Flagged times   : ',
-     *             (cliptim(i),i=1,min(10,ncliptim))
-              call output(string)
-           endif
-        endif
-        if (.not.nopixel) then
-           write(string,'(A,I6,A,F9.5,A,F5.1,A,F9.5)')
-     *          'Flagged ',nclippix,' points   with '//
-     *          'abs(value  - ',omedian,')>',
-     *          cliplev,' * ',avdev
-           call output(string)
-        endif
-
-        if (.not.notv) then
-c     
 c  Redisplay the image.
 c
-           call DispIm(array(Left,Bott),iflag(Left,Bott),
-     *          Mx, Rite-Left+1, Topp-Bott+1, chan, x0+Left-1, 
-     *          y0+Bott-1, bmin, bmax)
+	call DispIm(array(Left,Bott),iflag(Left,Bott),
+     *	  Mx, Rite-Left+1, Topp-Bott+1, chan, x0+Left-1, y0+Bott-1,
+     *	  bmin, bmax)
 c
 c  Redisplay the wedges.
 c
-           call DispWg(sumoverx(Bott), NoverX(Bott), Topp-Bott+1, 1, 
+	call DispWg(sumoverx(Bott), NoverX(Bott), Topp-Bott+1, 1, 
      *		chan, x0, y0+Bott-1, Nx, bmin, bmax, WIDTH)
-           call DispWg(sumovery(Left), NoverY(Left), Rite-Left+1, 0,
+	call DispWg(sumovery(Left), NoverY(Left), Rite-Left+1, 0,
      *		chan, x0+Left-1, y0, Ny, bmin, bmax, WIDTH)
-        endif
 c
 	end
 c***********************************************************************
