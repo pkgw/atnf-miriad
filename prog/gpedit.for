@@ -6,212 +6,151 @@ c= Gpedit -- Edit the gain table.
 c& mchw
 c: calibration
 c+
-c	Gpedit is a MIRIAD task which modifies calibration tables.
+c	Gpedit is a MIRIAD task which modifies a gain table.
 c@ vis
 c	The input visibility file, containing the gain file to modify.
 c	No default.
-c@ select
-c	Normal uv data selection commands. See the help on "select" for
-c       more information. Currently only antenna, time, and amplitude
-c       selection is supported. The amplitude selection applies to the 
-c       gains, not the uv-data, and can be used to flag or replace bad 
-c       gain amplitudes. The default is to select everything.
+c@ gain
+c	Antenna gain to be used for the antennas affected. Given
+c	as amplitude (sqrt(Jy/K), and phase (degrees). Default=1,0.
+c@ ants
+c	The antennas affected. The default is all antennas.
 c@ feeds
 c	The polarisation feeds affected (e.g. R, L, X or Y). Default is
 c	all feeds.
-c@ gain
-c	This gives the complex-valued gain used in the `multiply' and
-c	`replace' options (see below). It is given as an amplitude
-c	and phase (in degrees). For example gain=2,90 produces a gain
-c	with a amplitude of 2 and phase of 90 degrees. The default is 1,0.
 c@ options
-c	This gives extra processing options. Several values can be given,
-c	separated by commas. Option values can be abbreviated to uniqueness.
-c
-c	The following options operate on the gains:
-c	  replace   The existing gains are replaced by the value
-c	            given by the `gain' keyword. NOTE: If no other
-c	            options are given, the replace option is performed.
-c	  multiply  The existing gains are multiplied by the gain
-c	            given by the `gain' keyword.
-c	  flag      The existing gains are flagged as bad.
-c	  amplitude The phases of the existing gains are set to 0.
-c	  phase     The amplitudes of the existing gains are set to 1.
-c	  scale     The phase of the gains is multiplied by the factor 
-c	            given by the `gain' keyword. 
-c	  dup       Convert a single-polarization gain table into a dual
-c	            polarization table.
-c
-c	The following option operates on the polarization leakages:
-c	  reflect   The existing leakages are made to possess a
-c	            symmetry: For each antenna, we make
-c	            DX = -conjg(DY).
-c	  zmean     Subtract an offset, so that the mean leakage is 0.
+c       This gives extra processing options. Several values can be given
+c       (though many values are mutually exclusive), separated by commas.
+c       Option values can be abbreviated to uniqueness.
+c       Possible options are:
+c         multiply  The existing gains are multiplied by the complex gain.
+c	            i.e. the amplitude is multiplied and the phase added.
+c         replace   The existing gains are replaced by the complex gain
+c		    This is the default option.
+c         flag	    The existing gains are flagged as bad.
 c
 c	Example:
-c	  gpedit vis=cyga gain=14.4,90 select=ant(1,2) feeds=X
+c	  gpedit vis=cyga gain=14.4,90 ants=1,2 feeds=X
 c--
 c  History:
 c    rjs    4sep91 gpbreak. gpedit code copied from gpbreak.
 c    mchw  23apr96 keyword driven task for the squeamish. Instead of BEE.
-c    rjs   25feb97 Tidy up and extend the possibilities.
-c    rjs   26feb97 Fix feeds reading.
-c    rjs   24jun97 Add the reflect option.
-c    rjs   01aug97 Added options=zmean.
-c    mchw  18nov98 Added options=scale.
-c    rjs   01dec98 Added options=dup.
-c    tw    16aug03 Allow gain amplitude selection
 c-----------------------------------------------------------------------
 	include 'maxdim.h'
-	include 'mem.h'
         include 'mirconst.h'
-	integer MAXFEED,MAXSELS
+	integer MAXFEED,MAXTIME,MAXSOLN
 	character version*(*)
-	parameter(version='Gpedit: version 1.0 16-Aug-03')
-	parameter(MAXFEED=2,MAXSELS=300)
+	parameter(version='Gpedit: version 1.0 23-APR-96')
+	parameter(MAXFEED=2,MAXTIME=64,MAXSOLN=1024)
 c
-	character vis*64
-	logical domult,dorep,doflag,doamp,dophas,dorefl,dozm,doscal
-	logical dogain,doleak,dup
-	integer iostat,tVis,itGain,itLeak,nants,nfeeds,nsols,ntau,i
-	integer numfeed,feeds(MAXFEED),nleaks
-	complex gain,Leaks(2,MAXANT)
-	real amp,phi,sels(MAXSELS)
+	character vis*64,oper*8
+	integer iostat,tVis,itGain,nants,nfeeds,nsols,i
+	integer numtime,numant,numfeed
+	double precision btimes(MAXTIME),times(MAXSOLN)
+	integer ants(MAXANT),feeds(MAXFEED)
+	complex gains(2*MAXANT*MAXSOLN),gain
+	real amp,phi
 	logical mask(2*MAXANT)
-	integer pGains,pTimes
 c
 c  Externals.
 c
-	integer hsize
-	logical hdprsnt
-	external MultOp,RepOp,FlagOp,AmpOp,PhasOp,ScalOp
+	character itoaf*8
 c
 c  Get the input parameters.
 c
 	call output(version)
 	call keyini
 	call keya('vis',vis,' ')
-	if(vis.eq.' ')call bug('f','No input vis data-set given')
-	call SelInput('select',sels,MAXSELS)
+	call mkeyi('ants',ants,MAXANT,numant)
 	call keyr('gain',amp,1.)
 	call keyr('gain',phi,0.)
 	call mkeyfd('feeds',feeds,MAXFEED,numfeed)
-        call GetOpt(dorep,domult,doflag,doamp,dophas,dorefl,dozm,
-     *	  doscal,dup)
-	dogain = dorep.or.domult.or.doflag.or.doamp.or.
-     *				    dophas.or.doscal.or.dup
-	doleak = dorefl.or.dozm
+        call GetOpt(oper)
 	call keyfin
+	if(vis.eq.' ')call bug('f','No input vis data-set given')
 c
 c  Open the input file. Use the hio routines, as all we want to get
 c  at is items for which the uvio routines have no access anyway.
 c
 	call hopen(tVis,vis,'old',iostat)
 	if(iostat.ne.0)call EditBug(iostat,'Error opening '//vis)
-	if(dogain.and..not.hdprsnt(tVis,'gains'))
-     *	  call bug('f','The dataset has no gain table')
-	if(doleak.and..not.hdprsnt(tVis,'leakage'))
-     *	  call bug('f','The dataset has no leakage table')
 c
 c  Determine the number of things in the gain table.
 c
-	if(dogain)then
-	  call rdhdi(tVis,'ntau',ntau,0)
-	  if(ntau.ne.0)call bug('f',
-     *	  'GPEDIT cannot cope with a gain table with delays')
-	  call rdhdi(tVis,'ngains',nants,0)
-	  call rdhdi(tVis,'nfeeds',nfeeds,1)
-	  if(nfeeds.le.0.or.nfeeds.gt.2.or.nants.lt.nfeeds.or.
+	call rdhdi(tVis,'ngains',nants,0)
+	call rdhdi(tVis,'nfeeds',nfeeds,1)
+	if(nfeeds.le.0.or.nfeeds.gt.2.or.nants.lt.nfeeds.or.
      *	    mod(nants,nfeeds).ne.0)
-     *	    call bug('f','Bad number of gains or feeds in '//vis)
-	  nants = nants / nfeeds
-	  if(nfeeds.eq.2.and.dup)call bug('w',
-     *	    'Gain table is already a dual polarization table')
-	  dup = dup.and.nfeeds.eq.1
-	  call rdhdi(tVis,'nsols',nsols,0)
+     *	  call bug('f','Bad number of gains or feeds in '//vis)
+	nants = nants / nfeeds
+	call rdhdi(tVis,'nsols',nsols,0)
+	if(nsols.le.0)
+     *	  call bug('f','Bad number of solutions')
 c
 c  See if we have enough space.
 c
-	  if(nants.gt.MAXANT)
-     *	    call bug('f','Too many antennae for me to cope with')
-	  if(nsols.le.0)
-     *	    call bug('f','Bad number of solutions')
-	  call memAlloc(pGains,nsols*nants*nfeeds,'c')
-	  call memAlloc(pTimes,nsols,'d')
+	if(nants.gt.MAXANT)
+     *	  call bug('f','Too many antennae for me to cope with')
+	if(nsols+numtime.gt.MAXSOLN)
+     *	  call bug('f','Too many solution intervals for my small brain')
+c
+c  Check the given antenna numbers, and set the default antenna numbers
+c  if needed.
+c
+	if(numant.gt.0)then
+	  do i=1,numant
+	    if(ants(i).lt.1.or.ants(i).gt.nants)
+     *	      call bug('f','Invalid antenna number: '//itoaf(ants(i)))
+	  enddo
+	else
+	  do i=1,nants
+	    ants(i) = i
+	  enddo
+	  numant = nants
+	endif
 c
 c  Check the given feed numbers, and set the default feed numbers if needed.
 c
-	  if(numfeed.gt.0)then
-	    do i=1,numfeed
-	      if(feeds(i).gt.nfeeds)then
-	        call bug('f','Invalid feeds specified.')
-	        call bug('f','Gain table has only one feed')
-	      endif
-	    enddo
-	  else
-	    do i=1,nfeeds
-	      feeds(i) = i
-	    enddo
-	    numfeed = nfeeds
-	  endif
+	if(numfeed.gt.0)then
+	  do i=1,numfeed
+	    if(feeds(i).gt.nfeeds)then
+	      call bug('f','Invalid feeds specified.')
+	      call bug('f','Gain table has only one feed')
+	    endif
+	  enddo
+	else
+	  do i=1,nfeeds
+	    feeds(i) = i
+	  enddo
+	  numfeed = nfeeds
+	endif
 c
 c  Set up the breakpoint mask.
 c
-	  call SetMask(nfeeds,nants,mask,feeds,numfeed,sels)
+	call SetMask(nfeeds,nants,mask,feeds,numfeed,ants,numant)
 c
 c  Open the gains file. Mode=='append' so that we can overwrite it.
 c
-	  call haccess(tVis,itGain,'gains','append',iostat)
-	  if(iostat.ne.0)call EditBug(iostat,'Error accessing gains')
+	call haccess(tVis,itGain,'gains','append',iostat)
+	if(iostat.ne.0)call EditBug(iostat,'Error accessing gains')
 c
 c  Read the gains.
 c
-	  call GainRd(itGain,nsols,nants,nfeeds,
-     *				memd(pTimes),memc(pGains))
+	call GainRd(itGain,nsols,nants,nfeeds,times,Gains)
+c
+c  Sort the times, and delete unnecessary ones.
+c
+	call tsort(times,nsols,btimes,numtime)
 c
 c  Edit the gains.
 c
-	  gain = amp * cmplx(cos(phi*pi/180.),sin(phi*pi/180.))
-	  if(dorep) call GainEdt(nsols,nants*nfeeds,
-     *	    memd(pTimes),memc(pGains),mask,sels,gain,RepOp)
-	  if(domult)call GainEdt(nsols,nants*nfeeds,
-     *	    memd(pTimes),memc(pGains),mask,sels,gain,MultOp)
-	  if(doflag)call GainEdt(nsols,nants*nfeeds,
-     *	    memd(pTimes),memc(pGains),mask,sels,gain,FlagOp)
-	  if(doamp )call GainEdt(nsols,nants*nfeeds,
-     *	    memd(pTimes),memc(pGains),mask,sels,gain,AmpOp)
-	  if(dophas)call GainEdt(nsols,nants*nfeeds,
-     *	    memd(pTimes),memc(pGains),mask,sels,gain,PhasOp)
-	  if(doscal)call GainEdt(nsols,nants*nfeeds,
-     *	    memd(pTimes),memc(pGains),mask,sels,gain,ScalOp)
+	gain = amp * cmplx(cos(phi*pi/180.),sin(phi*pi/180.))
+	call GainEdt(nsols,nants*nfeeds,Gains,mask,gain,oper)
 c
 c  Write out the gains.
 c
-	  call GainWr(itGain,dup,nsols,nants,nfeeds,
-     *				memd(pTimes),memc(pGains))
-	  call memFree(pTimes,nsols,'d')
-	  call memFree(pGains,nfeeds*nants*nsols,'c')
-	  call hdaccess(itGain,iostat)
-	  if(dup)then
-	    call wrhdi(tVis,'nfeeds',2)
-	    call wrhdi(tVis,'ngains',2*nants)
-	  endif
-	endif
-c
-c  Process the leakages if needed.
-c
-	if(doleak)then
-	  call haccess(tVis,itLeak,'leakage','append',iostat)
-	  if(iostat.ne.0)call EditBug(iostat,'Error accessing leakages')
-	  nLeaks = (hsize(itLeak)-8)/16
-	  if(nLeaks.lt.1)call bug('f','Leakage table appears bad')
-	  call hreadr(itLeak,Leaks,8,16*nLeaks,iostat)
-	  if(iostat.ne.0)call EditBug(iostat,
-     *				'Error reading leakage table')
-	  if(dorefl.or.dozm)call LeakIt(Leaks,nLeaks,sels,dorefl,dozm)
-	  call hwriter(itLeak,Leaks,8,16*nLeaks,iostat)
-	  call hdaccess(itLeak,iostat)
-	endif
+	call wrhdi(tVis,'nsols',nsols)
+	call GainWr(itGain,nsols,nants,nfeeds,times,Gains)
 c
 c  Write out some history now.
 c
@@ -222,62 +161,15 @@ c
 c
 c  Close up everything.
 c
+	call hdaccess(itGain,iostat)
 	call hclose(tVis)	
 	end
-c************************************************************************
-	subroutine Leakit(Leaks,nants,sels,dorefl,dozm)
-c
-	implicit none
-	integer nants
-	real sels(*)
-	complex Leaks(2,nants)
-	logical dorefl,dozm
-c
-c  Make the leakages have that funny symmetry.
-c------------------------------------------------------------------------
-	integer i,n
-	complex D
-c
-c  Externals.
-c
-	logical SelProbe
-c
-	if(dorefl)then
-	  do i=1,nants
-	    if(SelProbe(sels,'antennae',dble(257*i)))then
-	      D = 0.5*(Leaks(1,i) - conjg(Leaks(2,i)))
-	      Leaks(1,i) = D
-	      Leaks(2,i) = -conjg(D)
-	    endif
-	  enddo
-	endif
-c
-	if(dozm)then
-	  D = 0
-	  n = 0
-	  do i=1,nants
-	    if(SelProbe(sels,'antennae',dble(257*i)))then
-	      D = D + Leaks(1,i) - conjg(Leaks(2,i))
-	      n = n + 2
-	    endif
-	  enddo
-	  D = D / n
-	  do i=1,nants
-	    if(SelProbe(sels,'antennae',dble(257*i)))then
-	      Leaks(1,i) = Leaks(1,i) - D
-	      Leaks(2,i) = Leaks(2,i) + conjg(D)
-	    endif
-	  enddo
-	endif
-c
-	end
 c********1*********2*********3*********4*********5*********6*********7*c
-	subroutine SetMask(nfeeds,nants,mask,feeds,numfeed,sels)
+	subroutine SetMask(nfeeds,nants,mask,feeds,numfeed,ants,numant)
 c
 	implicit none
-	integer nfeeds,nants,numfeed
-	integer feeds(numfeed)
-	real sels(*)
+	integer nfeeds,nants,numfeed,numant
+	integer feeds(numfeed),ants(numant)
 	logical mask(nfeeds,nants)
 c
 c  Set up the breakpoint mask.
@@ -287,26 +179,25 @@ c    nfeeds
 c    nants
 c    feeds
 c    numfeed
-c    sels
+c    ants
+c    numant
 c  Output:
 c    mask
 c-----------------------------------------------------------------------
-	integer i,i0,j
+	integer i,j,i0,j0
 c
-c  Externals.
-c
-	logical SelProbe
-c
-	do j=1,nants
-	  do i=1,nfeeds
-	    mask(i,j) = .false.
+	do j=1,nfeeds
+	  do i=1,nants
+	    mask(j,i) = .true.
 	  enddo
-	  if(SelProbe(sels,'antennae',dble(257*j)))then
-	    do i0=1,numfeed
-	      i = feeds(i0)
-	      mask(i,j) = .true.
-	    enddo
-	  endif
+	enddo
+c
+	do j=1,numfeed
+	  j0 = feeds(j)
+	  do i=1,numant
+	    i0 = ants(i)
+	    mask(j0,i0) = .false.
+	  enddo
 	enddo
 c
 	end
@@ -342,107 +233,71 @@ c
 	enddo
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
-	subroutine GainEdt(nsols,nants,times,Gains,mask,sels,
-     *							gain,oper)
+	subroutine GainEdt(nsols,nants,Gains,mask,gain,oper)
 c
 	implicit none
 	integer nsols,nants
-	double precision times(nsols)
 	complex Gains(nants,nsols),gain
-	real sels(*)
 	logical mask(nants)
-	external oper
+	character*(*) oper
 c
 c  Edit the gains.
 c
 c  Input:
 c    nsols	number of solutions.
 c    nants	Number of antennae times the number of feeds.
-c    mask	Antenna/feed mask.
-c    sels	UV selection array.
-c    gain	A complex gain to be used.
-c    oper	The routine to perform the operation.
+c    mask	antenna/feed mask.
+c    gain	a complex gain to be used.
+c    oper	the operation to be performed.
 c  Input/Output:
 c    gains	The gains.
 c-----------------------------------------------------------------------
-	integer i,j
+	integer i,k
 c
-c  Externals.
+c  Do a replace operation.
 c
-	logical SelProbe
+        if(oper.eq.'replace')then
+	  do i=1,nants
+	    if(.not.mask(i))then
+	      do k=1,nsols
+	        gains(i,k) = gain
+  	      enddo
+	    endif
+	  enddo
 c
-	do j=1,nsols
-	  if(SelProbe(sels,'time',times(j)))then
-	    do i=1,nants
-	      if (mask(i)) then
-		 if (SelProbe(sels,'amplitude',abs(Gains(i,j)))) then
-		    call oper(Gains(i,j),gain)
-		 endif
-	      endif
-	    enddo
-	  endif
-	enddo
+c  Multiply operation.
 c
-	end
-c************************************************************************
+        else if(oper.eq.'multiply')then
+	  do i=1,nants
+	    if(.not.mask(i))then
+	      do k=1,nsols
+	        gains(i,k) = gains(i,k)*gain
+  	      enddo
+	    endif
+	  enddo
 c
-c  These are the service routines to perform the desired operation.
+c  Flag operation.
 c
-	subroutine MultOp(Gain,fac)
+        else if(oper.eq.'flag')then
+	  do i=1,nants
+	    if(.not.mask(i))then
+	      do k=1,nsols
+	        gains(i,k) = (0.,0.)
+  	      enddo
+	    endif
+	  enddo
+	else
+          call bug('f','Unrecognised operation, in GainEdt')
+	endif
 c
-	implicit none
-	complex Gain,fac
-c
-	Gain = Gain * fac
-	end
-	subroutine RepOp(Gain,fac)
-c
-	implicit none
-	complex Gain,fac
-c
-	Gain = fac
-	end
-	subroutine FlagOp(Gain,fac)
-c
-	implicit none
-	complex Gain,fac
-c
-	Gain = 0
-	end
-	subroutine AmpOp(Gain,fac)
-c
-	implicit none
-	complex Gain,fac
-c
-	Gain = abs(Gain)
-	end
-	subroutine PhasOp(Gain,fac)
-c
-	implicit none
-	complex Gain,fac
-c
-	real t
-	t = abs(Gain)
-	if(t.gt.0)Gain = Gain / t
-	end
-c
-	subroutine ScalOp(Gain,fac)
-c
-	implicit none
-	complex Gain,fac
-c
-	complex expi
-	real phase
-	Gain = abs(Gain)*expi(real(fac)*phase(Gain))
-	end
+	end	  
 c********1*********2*********3*********4*********5*********6*********7*c
-	subroutine GainWr(itGain,dup,nsols,nants,nfeeds,times,Gains)
+	subroutine GainWr(itGain,nsols,nants,nfeeds,times,Gains)
 c
 	implicit none
 	integer itGain,nsols,nants,nfeeds
 	complex Gains(nfeeds*nants,nsols)
 	double precision times(nsols)
-	logical dup
 c
 c  Write the gains from the gains table.
 c
@@ -453,34 +308,17 @@ c    nants	Number of antennae
 c    nfeeds	Number of feeds.
 c    times	The read times.
 c    gains	The gains.
-c    dup	If true, convert a single into a dual polarization table.
 c-----------------------------------------------------------------------
-	include 'maxdim.h'
+	integer offset,iostat,k
 c
-	complex G(MAXANT)
-	integer offset,iostat,i,j,k
-c
-	if(nants.gt.MAXANT)call bug('f','Too many gains in GainWr')
 	offset = 8
 	do k=1,nsols
 	  call hwrited(itGain,times(k),offset,8,iostat)
 	  if(iostat.ne.0)call EditBug(iostat,'Error writing gain time')
 	  offset = offset + 8
-	  if(dup)then
-	    j = 1
-	    do i=1,nants
-	      G(j) = Gains(i,k)
-	      G(j+1) = G(j)
-	      j = j + 2
-	    enddo
-	    call hwriter(itGain,G,offset,8*2*nants,iostat)
-	    offset = offset + 8*2*nants
-	  else
-	    call hwriter(itGain,Gains(1,k),offset,8*nfeeds*nants,
-     *							    iostat)
-	    offset = offset + 8*nfeeds*nants
-	  endif
+	  call hwriter(itGain,Gains(1,k),offset,8*nfeeds*nants,iostat)
 	  if(iostat.ne.0)call EditBug(iostat,'Error writing gains')
+	  offset = offset + 8*nfeeds*nants
 	enddo
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
@@ -521,17 +359,63 @@ c
 c
 	nfeeds = 0
 	more = keyprsnt(keyw)
-	call keya(keyw,string,' ')
 	dowhile(nfeeds.lt.maxfeeds.and.more)
 	  i = binsrcha(string,allfds,nallfds)
 	  if(i.eq.0)call bug('f','Unrecognised feed mnemonic: '//string)
 	  nfeeds = nfeeds + 1
 	  feeds(nfeeds) = codes(i)
-	  call keya(keyw,string,' ')
 	  more = keyprsnt(keyw)
 	enddo
 c
 	if(more)call bug('f','Too many feeds given')
+	end
+c********1*********2*********3*********4*********5*********6*********7*c
+	subroutine tsort(times,ntimes,btimes,numtime)
+c
+	implicit none
+	integer ntimes,numtime
+	double precision times(ntimes),btimes(numtime)
+c
+c  Convert the times to absolute times (rather than possibly daytimes),
+c  and sort them into ascending order.
+c
+c  Input:
+c    ntimes		The number of solution times.
+c    times		The solution times.
+c  Input/Output:
+c    btimes		The times to be converted and sorted.
+c    numtime		The number of btimes.
+c-----------------------------------------------------------------------
+	integer i,j,k
+	double precision t,toff,tbase
+c
+c  Convert to absolute time.
+c
+	tbase = nint(times(1)) - 0.5
+	toff  = times(1) - tbase
+	do i=1,numtime
+	  if(btimes(i).ge.0.and.btimes(i).le.1)then
+	    if(btimes(i).lt.toff)then
+	      btimes(i) = btimes(i) + tbase + 1
+	    else
+	      btimes(i) = btimes(i) + tbase
+	    endif
+	  endif
+	enddo
+c
+c  Now sort the times. Do an insert sort, because I am too lazy to do
+c  anything else.
+c
+	do j=2,numtime
+	  t = btimes(j)
+	  k = j
+	  dowhile(k.gt.1.and.btimes(k-1).gt.t)
+	    btimes(k) = btimes(k-1)
+	    k = k - 1
+	  enddo
+	  btimes(k) = t
+	enddo
+c
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
 	subroutine EditBug(iostat,message)
@@ -546,36 +430,39 @@ c-----------------------------------------------------------------------
 	call bugno('f',iostat)
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
-        subroutine GetOpt(dorep,domult,doflag,doamp,dophas,dorefl,dozm,
-     *		doscal,dup)
+        subroutine GetOpt(oper)
 c       
         implicit none
-	logical dorep,domult,doflag,doamp,dophas,dorefl,dozm,doscal
-	logical dup
+        character oper*(*)
 c
 c  Get the various processing options.
 c
+c  Output:
+c    oper       One of 'replace',multiply','flag'.
+c               The default is 'replace'.
 c-----------------------------------------------------------------------
-        integer NOPTS
-        parameter(NOPTS=9)
-        character opts(NOPTS)*9
-        logical present(NOPTS)
-        data opts/'replace  ','multiply ','flag     ',
-     *		  'amplitude','phase    ','reflect  ',
-     *		  'zmean    ','scale    ','dup      '/
+        integer i,j
+        integer nopt
+        parameter(nopt=3)
+        character opts(nopt)*9
+        logical present(nopt)
+        data opts/    'replace  ','multiply ','flag     '/
+        call options('options',opts,present,nopt)
 c
-        call options('options',opts,present,NOPTS)
-c
-	domult = present(2)
-	dorep  = present(1)
-	doflag = present(3)
-	doamp  = present(4)
-	dophas = present(5)
-	dorefl = present(6)
-	dozm   = present(7)
-	doscal = present(8)
-	dup    = present(9)
-	if(.not.(domult.or.dorep.or.doflag.or.doamp.or.dophas.or.
-     *	  dorefl.or.dozm.or.doscal.or.dup)) dorep = .true.
+        j = 0
+        do i=1,3
+          if(present(i))then
+            if(j.ne.0)call bug('f',
+     *          'Options '//opts(j)//' and '//opts(i)//
+     *          ' are mutually exclusive')
+            j = i
+            oper = opts(j)
+          endif
+        enddo
+        if(j.eq.0) then
+	  call output ('Default options=replace')
+          oper = 'replace'
+	endif
 c
 	end
+c********1*********2*********3*********4*********5*********6*********7*c
