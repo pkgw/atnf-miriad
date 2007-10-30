@@ -3472,3 +3472,16 @@ and in a way to be consistent with all the other changes happening.
 19jul99 rjs	doc2html.csh -- Minor improvements.
 22jul99 rjs	mirhelp.csh -- Minor improvements -- direct output to netscape.
 28jul99 rjs	hdtab.for -- Always initialise pbtype parameter.
+20jul99 rjs	fits.for -- uvout writes AIPS SU tables.
+30aug99 rjs	fits.for -- Changed some "PI" to "DPI"
+23jul99 rjs	immerge.for -- Taper down the low resolution image to make it
+		compatible with the high resolution one. Added shift option.
+23jul99 rjs	maxfit.for -- Break out "solve" routine to new subroutine pkfit.for
+23jul99 rjs	pkfit.for -- Broke this out of maxfit.for
+21jul99 rjs	doc.c -- Improved indenting algorithm somewhat. Added X command.
+26jul99 lss	mbspect.for -- New task. Copied "imspect" to "mbspect" for
+		HIPASS-specific chores
+30aug99 rjs	uvio.c,key.for,keyc.c,selcalf.for,uvflag.for -- Increased
+		various buffer sizes.
+14aug99 rjs	cgrego.for -- Correct some non-standard fortran
+31aug99 rjs	uvio.c -- Correct an error message.
