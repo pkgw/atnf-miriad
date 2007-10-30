@@ -137,6 +137,9 @@
 /*		 scaling.						*/
 /*  rjs  18mar97 Plug minor memory leak.				*/
 /*  rjs  15sep97 Fix error in pointing selection.			*/
+/*  rjs  09oct97 Check for restfreq==0 when converting to velocity.	*/
+/*  rjs  15oct97 Minor correction definition of felocity.		*/
+/*  rjs  22oct97 Change in the format of "on" selection.		*/
 /*----------------------------------------------------------------------*/
 /*									*/
 /*		Handle UV files.					*/
@@ -2284,7 +2287,7 @@ double p1,p2;
 /* Selection by "on" parameter. */
 
   } else if(!strcmp(object,"on")){
-    uv_addopers(sel,SEL_ON,discard,0.0,0.0,(char *)NULL);
+    uv_addopers(sel,SEL_ON,discard,p1,p1,(char *)NULL);
     uv->need_on = TRUE;
 
 /* Selection by polarisation. */
@@ -3067,7 +3070,7 @@ UV *uv;
 private int uvread_select(uv)
 UV *uv;
 {
-  int i1,i2,bl,pol,n,nants,inc,selectit,selprev,discard,binlo,binhi;
+  int i1,i2,bl,pol,n,nants,inc,selectit,selprev,discard,binlo,binhi,on;
   float *point,pointerr,dra,ddec;
   double time,t0,uu,vv,uv2,uv2f,ra,dec,skyfreq,diameter;
   SELECT *sel;
@@ -3259,9 +3262,9 @@ UV *uv;
 
     if(op->type == SEL_ON){
       discard = !op->discard;
+      on = *(int *)(uv->on->buf);
       while(n < sel->noper && op->type == SEL_ON){
-        if(*(int *)(uv->on->buf) == 1)
-	  discard = op->discard;
+        if(op->loval == on ) discard = op->discard;
         op++; n++;
       }
       if(discard || n >= sel->noper) goto endloop;
@@ -4152,10 +4155,10 @@ LINE_INFO *line;
 
   if(line->linetype == LINE_FELOCITY){
     line->linetype = LINE_VELOCITY;
-    fac = CKMS / (CKMS + line->fstart + vobs );
+    fac = CKMS / (CKMS + line->fstart);
     line->fstep  *= fac * fac;
     line->fwidth *= fac * fac;
-    line->fstart = fac * (line->fstart + vobs) - vobs;
+    line->fstart = fac * line->fstart;
   }
 }
 /************************************************************************/
@@ -4597,7 +4600,7 @@ int mode;
 {
   LINE_INFO *line;
   int n,i,j,offset,step;
-  double temp;
+  double temp,fdash;
   float *wfreq,*wwide,vobs;
   int *nschan;
   double *sdf,*sfreq,*restfreq;
@@ -4625,16 +4628,20 @@ int mode;
       for(i=0; i < line->width; i++){
 	if(offset == *nschan){
 	  offset = 0;
-	  sfreq++; sdf++; nschan++;
+	  sfreq++; sdf++; nschan++; restfreq++;
 	}
-	if(mode == VELO)
-	  temp += CKMS * ( 1 - ( *sfreq + offset * *sdf ) / *restfreq ) - vobs;
-        else if(mode == FELO)
-	  temp += CKMS * ( *restfreq / ( *sfreq + offset * *sdf ) - 1 ) - vobs;
-	else if(mode == RFREQ) temp += *restfreq;
+	if(mode == VELO){
+	  if(*restfreq <= 0)BUG('f',"Cannot determine velocity as rest frequency is 0");
+	  fdash = *sfreq + offset * *sdf + *restfreq * vobs/CKMS;
+	  temp += CKMS * ( 1 - fdash / *restfreq );
+        }else if(mode == FELO){
+	  if(*restfreq <= 0)BUG('f',"Cannot determine velocity as rest frequency is 0");
+	  fdash = *sfreq + offset * *sdf + *restfreq * vobs/CKMS;
+	  temp += CKMS * ( *restfreq / fdash - 1 );
+	}else if(mode == RFREQ) temp += *restfreq;
 	else if(mode == BW)    temp += (*sdf > 0 ? *sdf : - *sdf);
 	else if(mode == FREQ)
-	  temp += *sfreq + offset * *sdf + vobs/CKMS * *restfreq;
+	  temp  += *sfreq + offset * *sdf + *restfreq * vobs/CKMS;
 	else if(mode == SFREQ)
 	  temp += *sfreq + offset * *sdf;
 	offset++;
