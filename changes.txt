@@ -3360,3 +3360,32 @@ and in a way to be consistent with all the other changes happening.
 27oct98 rjs	imfit.for -- Better format statements.
 27oct98 rjs	mostab.for -- Added subroutine mosval.
 27oct98 rjs	fits.for -- Look in CD keyword for pixel increment.
+*********************************** 06nov98 Sent changes to Doug Roberts
+09nov98 amh	sfind.for -- added option 'pbcorr' to correct for primary beam
+                attenuation in images, including mosaics. Uses the mosLoad
+                and mosVal routines written by rjs.
+09nov98 rjs	blflag.for -- Added axis type hangle.
+09nov98 rjs	selfcal.for -- Made the rTime variable double precision to
+		stop loss of precision in time tags.
+11nov98 rjs	gpscal.for -- Made the "Time" variable double precision to
+		stop loss of precision in time tags.
+19nov98 rjs     uvplt.for -- Minor correction to computation of LST, and
+		recompute from scratch the parallactic angle.
+19nov98 rjs	doc.c -- Complete rewrite.
+20nov98 heb/rjs uvflux.for -- Added options=uvpol to print out linear polarization
+		parameters.
+20nov98 rjs	fits.for -- Better handling of some projections and also
+		handle sky rotation.
+20nov98 rjs	co.for,co.h,regrid.for,headcopy.for -- Handling of sky rotation.
+25nov98 rjs	regrid.for -- Better handling of sky rotation.
+25nov98 rjs	prthd.for,imsub.for -- Handling of sky rotation.
+18nov98 mchw	gpedit.for -- Added options=scale.
+25nov98 rjs	cgcurs.for -- Fix compaction algorithm again!
+25nov98 rjs	fits.for -- Lots of fiddles regarding reading/writing image
+		coordinate systems.
+30nov98 rjs	maths.for -- Added options=grow, which "grows" of dummy axes
+		to the size of other non-dummy axes.
+30nov98 nebk    cgsubs.for -- Finally invent a decent algorithm for razerocg
+01dec98 rjs	selfcal.for,gpscal.for,uvmodel.for -- More warning messages.
+01dec98 rjs	gpedit.for -- Added options=dup.
+02dec98 rjs	maths.for,ari.for -- Quadrupled the size of a stack buffer.
