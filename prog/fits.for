@@ -10,11 +10,6 @@ c	FITS to Miriad format, and from Miriad to FITS format. Note that
 c	because there is not a perfect correspondence between all information
 c	in a FITS and Miriad file, some information may be lost in the
 c	conversion step. This is particularly true for uv files.
-c
-c	WARNING: When writing uv FITS files, fits can only handle single
-c	source, single frequency band, single array configuration. Minimal
-c	checks are made to see that these restrictions are observed!
-c
 c@ in
 c	Name of the input file (either a FITS or MIRIAD file name, depending
 c	on OP). No default.
@@ -42,76 +37,26 @@ c	Normal uv selection, used when op=uvout.
 c@ stokes
 c	Normal Stokes selection, used when op=uvout
 c@ options
-c	This option applies for op=uvin only.
-c	  nochi   Assume that the parallactic angle of the telescope is
-c	          a constant 0 (or that the data are from circularly polarised
-c	          feeds and have already been corrected for parallactic angle).
-c
 c	These options for op=uvout only.
 c	  nocal   Do not apply the gains table to the data.
-c	  nopol   Do not apply the polarization leakage table to the data.
-c	  nopass  Do not apply the bandpass table correctsions to the data.
-c
-c	This option applies for op=xyin only.
-c	  dss     Expect an image produced by the Digital Sky Survey,
-c	          and convert (partially!) its header.
-c@ velocity
-c	Velocity information. This is only used for op=uvin,
-c	and is only relevant for line observations. The default is
-c	to use the information present in the FITS header. The
-c	"velocity" parameter allows this information to be overriden or
-c	the velocity system to be changed.
-c
-c	Within each line visibility data-set, Miriad stores the velocity
-c	of the observatory wrt a rest frame. This allows account to be taken
-c	of this when determining channel velocities.
-c
-c	The fits task will determine the observatory velocity either by being
-c	given a velocity at a given channel (wrt a rest frame) or by using
-c	a model of Earth and solar system motion (accurate to 0.005km/s).
-c
-c	The "velocity" parameter can be used to specify the velocity of
-c	a particular channel. The parameter consists of three values:
-c	the velocity system of the reference value, the reference value
-c	and the reference channel, viz:
-c	   velocity=velsys,refval,refchan
-c	Possible values for the velocity system are:
-c	  lsr     Velocity is the radio definition wrt the LSR frame.
-c	  bary    Velocity is the radio definition wrt the barycenter.
-c	  optlsr  Velocity is the optical definition wrt the LSR frame.
-c	  optbary Velocity is the optical definition wrt the barycenter.
-c	  obs	  Velocity wrt the observatory.
-c	  
-c	The reference value gives the velocity, at the reference channel,
-c	in km/s. If the reference value and reference channel are
-c	omitted, a model of Earth and solar system motion is used to
-c	determine the appropriate information.
-c
-c	For example:
-c	  velocity=lsr,30,1
-c	indicates that the first channel has radio LSR velocity of 30 km/s.
-c	The observatory velocity, relative to LSR, can then be computed.
-c
-c	Alternately:
-c	  velocity=lsr
-c	indicates that fits is to determine the observatory velocity
-c	wrt the LSR frame using an appropriate model.
+c	  nopol   Do not apply the polarization leakage table to the data
+c	  nopass  Do not apply the bandpass table correctsions to the data
+c@ altr
+c	Velocity information, used when op=uvin. If this is given, it
+c	overrides any information that may be present in the FITS header.
+c	It can be two values, namely the reference channel, and the
+c	velocity at the reference channel (in km/sec).
 c--
 c
 c  Bugs:
+c    * Blanked pixels are not handled, in both xyin and xyout. Magic
+c      value blanking of visibilities is not supported.
 c    * uvin should check that the phase and pointing center are the same.
 c      xyin should generate the Miriad obsra and obsdec parameters.
 c    * xyin should eliminate dummy Stokes axes in some cases.
 c      Percent polarisation not correctly handled.
 c    * SHould have a "ccin" option to read AIPS clean component tables and convert
 c      to Miriad images.
-c    * uvout could be infintely smarter (handle multiple windows, write
-c      FQ, SU and AN tables, etc.
-c    * In uvin, reading 'RESTFREQ' from AIPS SU table causes an alignment
-c      violation (which fitsio.for forgives). We are unable to read
-c      POLAA and POLAB because of alignment violations.
-c    * A general mechanism to override wrong stuff from the FITS header
-c      is needed. Probably need the user to give an auxillary text file.
 c  Other problems:
 c    In Miriad obsra/obsdec are used to store the apparent phase center (coordinates
 c    in the current epoch) of the observation. The FITS standard uses OBSRA/OBSDEC
@@ -219,70 +164,17 @@ c    rjs  18-mar-93  Better handling of extension tables in op=print.
 c    rjs  29-mar-93  Increase jyperk.
 c    rjs  30-mar-93  Fixed bug in handling of altrpix,altrval, in uvhdin,
 c		     apparently introduced on 02-mar-93.
-c    rjs  28-jun-93  Use expanded obspar routines proper-like.
-c    rjs  06-jul-93  Depend more on the stuff in the AIPS AN table. Handle
-c		     pixel blanking. Another bug in calculation of veldop.
-c    rjs  08-jul-93  Better velocity computation for uvin.
-c    rjs  21-jul-93  Better velocity/freq handling for uvout.
-c    rjs  27-jul-93  Handle AIPS FG tables, and more multi-source/freq
-c		     tables.
-c    rjs  12-aug-93  Long time bug in hdin, which unnecessarily discarded
-c		     extra FITS info. Would not have caused anyone a problem
-c		     because the stuff was not the important header info.
-c    rjs  19-aug-93  Recognise galactic and ecliptic coordinates in xyin.
-c		     Fiddle times when reading in uv data. Include
-c		     nutation and aberration when determining apparent
-c		     coordinates.
-c    rjs  16-sep-93  Rename bsrch to binsrch.
-c    rjs  22-oct-93  Did not write out the write freqid to the FG table.
-c    rjs  25-oct-93  Stokes axis in xyin was not being handled correctly.
-c    rjs  28-nov-93  Correct calculation of parallactic angle for
-c		     multi-source files.
-c    rjs  30-nov-93  Use ftabskip when listing files.
-c    rjs   9-dec-93  Really make sure the default velocity system is
-c		     VELO-OBS.
-c    rjs  13-dec-93  Sign convention of U(circular), V(linear) change.
-c    rjs  21-jan-94  Ignore keywords in input FITS files which contain
-c		     special characters.
-c    rjs  14-mar094  Correct misunderstanding about antenna coordinates
-c		     in AIPS AN file (affects VLA FITS files only).
-c    rjs   6-apr-94  Check antenna table ref freq for validity, and use
-c		     header ref freq if it looks bad (as suggested by
-c		     Ray Plante).
-c    rjs   5-jun-94  Get BPA from fits header.
-c    rjs  19-jul-94  Fiddle WSRT sign convention to the "normal"
-c		     convention.
-c    rjs  29-jul-94  Better default integration time.
-c    rjs  17-aug-94  Label RA--- and DEC-- image axes from EW telescopes
-c		     as NCP.
-c    rjs  19-aug-94  Don't make character strings upper case, in hdout.
-c    rjs  29-aug-94  Handle w axis in uvin.
-c    rjs  13-sep-94  Recognise 'VELOCITY' and 'FELOCITY' axes.
-c    rjs  23-sep-94  Handle w axis in uvout.
-c    rjs  26-sep-95  Somewhat better handling of odd input axes.
-c    rjs   7-nov-95  options=dss.
-c    rjs  05-dec-95  Negate the cdelt1 increment when options=dss.
-c    nebk 12-jan-96  Replace "percent_polarization" by "polarized_intensity"
-c		     in subroutine AXISIN (AIPS manuals say percent_pol
-c		     but my empirical evidence is contrary.  Recognize 
-c		     LL,MM as RA---SIN and DEC--SIN.
-c    rjs  07-aug-96  Correct scaling of axis type.
-c    rjs  16-aug-96  Added options=nochi.
-c    rjs  17-oct-96  Make the visibility weight equal to 1/sigma**2.
-c		     Discard OBSRA and BLANK in reading in images.
-c    rjs  07-feb-97  Increase max string length.
-c    rjs  21-feb-97  Better treatment of missing evector. More messages.
-c    rjs  21-mar-97  Write antenna tables for options=uvout.
-c    rjs  06-may-97  Support apparent coordinates in SU table.
-c    rjs  08-may-97  Write all FITS keywords in standard format.
-c    rjs  02-jul-97  Handle cellscal keyword.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Fits: version 1.1 02-Jul-97')
-	character in*128,out*128,op*8,uvdatop*12
-	integer velsys
+	parameter(version='Fits: version 1.1 30-Mar-93')
+	character in*64,out*64,op*8,uvdatop*12
+	integer iops
 	real altrpix,altrval
-	logical altr,docal,dopol,dopass,dss,dochi
+	logical altr,docal,dopol,dopass
+c
+c  Externals.
+c
+	logical keyprsnt
 c
 c  Get the input parameters.
 c
@@ -294,17 +186,32 @@ c
         if(op.ne.'uvout') call keya('in',in,' ')
 	if(op.ne.'print') call keya('out',out,' ')
 c
-        if(op.eq.'uvin')call GetVel(velsys,altr,altrval,altrpix)
+        if(op.eq.'uvin') then
+          altr = keyprsnt('altr')
+  	  call keyr('altr',altrpix,1.)
+	  call keyr('altr',altrval,0.)
+        endif
 c
-c  Get options.
+c Set UVDAT flags
 c
-        call getopt(docal,dopol,dopass,dss,dochi)
         if(op.eq.'uvout') then
-          uvdatop = 'sdlb3'
-	  if(docal)uvdatop(7:7) = 'c'
-	  if(dopol)uvdatop(8:8) = 'e'
-	  if(dopass)uvdatop(9:9) = 'f'
-          call uvdatinp('in',uvdatop)
+          call getopt (docal, dopol, dopass)
+c
+          uvdatop = 'sdlb'
+          iops = 5
+          if(docal) then
+            iops = iops + 1
+            uvdatop(iops:iops) = 'c'
+          endif
+          if(dopol) then
+            iops = iops + 1
+            uvdatop(iops:iops) = 'e'
+          endif
+	  if(dopass) then
+	    iops = iops + 1
+	    uvdatop(iops:iops) = 'f'
+	  endif
+          call uvdatinp('in',uvdatop(1:iops))
         endif
 c
 	call keyfin
@@ -313,14 +220,14 @@ c
 	if(op.ne.'print'.and.out.eq.' ')
      *	  call bug('f','Output file name is missing')
 c
-c  Handle the five cases.
+c  Handle the four cases.
 c
 	if(op.eq.'uvin')then
-	  call uvin(in,out,velsys,altr,altrpix,altrval,dochi,version)
+	  call uvin(in,out,altr,altrpix,altrval,version)
 	else if(op.eq.'uvout')then
 	  call uvout(out,version)
 	else if(op.eq.'xyin')then
-	  call xyin(in,out,version,dss)
+	  call xyin(in,out,version)
 	else if(op.eq.'xyout')then
 	  call xyout(in,out,version)
 	else if(op.eq.'print')then
@@ -349,61 +256,10 @@ c
 	if(nout.eq.0)call bug('f','An op must be given')
 	end
 c************************************************************************
-	subroutine GetVel(velsys,altr,altrval,altrpix)
-c
-	implicit none
-	integer velsys
-	logical altr
-	real altrval,altrpix
-c
-c  Determine the velocity system.
-c
-c  Output:
-c    velsys	Velocity system desired.
-c    altr	True if altrval is set.
-c    altrval	Reference velocity.
-c    altrpix	Reference channel.
-c------------------------------------------------------------------------
-	integer OBSRADIO,OBSOPTIC,LSRRADIO,LSROPTIC,HELRADIO,HELOPTIC
-	parameter(OBSRADIO=259,OBSOPTIC=3,LSRRADIO=257,LSROPTIC=1)
-	parameter(HELRADIO=258,HELOPTIC=2)
-c
-	integer nout
-	character string*8
-c
-	integer nopts
-	parameter(nopts=5)
-	integer vals(nopts)
-	character opts(nopts)*8
-c
-c  Externals.
-c
-	integer binsrcha
-	logical keyprsnt
-c
-c  Data.
-c
-	data opts/'bary    ','lsr     ','obs     ',
-     *			     'optbary ','optlsr  '/
-	data vals/ HELRADIO,  LSRRADIO,  OBSRADIO,
-     *			      HELOPTIC,  LSROPTIC/
-c
-	call keymatch('velocity',nopts,opts,1,string,nout)
-	if(nout.eq.0)then
-	  velsys = 0
-	  altr = .false.
-	else
-	  velsys = vals(binsrcha(string,opts,nopts))
-	  altr = keyprsnt('velocity')
-	  call keyr('velocity',altrval,0.)
-	  call keyr('velocity',altrpix,1.)
-	endif
-	end
-c************************************************************************
-      subroutine getopt(docal, dopol, dopass, dss, dochi)
+      subroutine getopt (docal, dopol, dopass)
 c
       implicit none
-      logical docal, dopol, dopass, dss, dochi
+      logical docal, dopol, dopass
 c
 c     Get a couple of the users options from the command line
 c
@@ -411,22 +267,18 @@ c  Output:
 c    docal   Apply gain calibration
 c    dopol   Apply polarization calibration
 c    dopass  Apply bandpass calibration
-c    dss     Handle DSS image.
-c    dochi   Attempt to calculate the parallactic angle.
 c
 c------------------------------------------------------------------------
       integer nopt
-      parameter (nopt = 5)
+      parameter (nopt = 3)
       character opts(nopt)*6
       logical present(nopt)
-      data opts /'nocal ', 'nopol ','nopass','dss   ','nochi '/
+      data opts /'nocal ', 'nopol ','nopass'/
 c
       call options ('options', opts, present, nopt)
       docal = .not.present(1)
       dopol = .not.present(2)
       dopass= .not.present(3)
-      dss   =      present(4)
-      dochi = .not.present(5)
 c
       end
 c************************************************************************
@@ -457,19 +309,17 @@ c
 	  enddo
 	  call output('***********************************************')
 	  call output('***********************************************')
-	  call ftabSkip(lu,' ',more)
+	  call ftabNxt(lu,' ',more)
 	  if(more)call fitsrch(lu,'XTENSION',more)
 	enddo
 	call fitclose(lu)
 	end
 c************************************************************************
-	subroutine uvin(in,out,velsys,altr,altrpix,altrval,dochi,
-     *							version)
+	subroutine uvin(in,out,altr,altrpix,altrval,version)
 c
 	implicit none
 	character in*(*),out*(*)
-	integer velsys
-	logical altr,dochi
+	logical altr
 	real altrpix,altrval
 	character version*(*)
 c
@@ -481,36 +331,37 @@ c
 c  Inputs:
 c    in		Name of the input uv FITS file.
 c    out	Name of the output MIRIAD file.
-c    velsys	Velocity system.
 c    altr	True if the user specified altrpix and altrval.
 c    altrpix	The user given value for altrpix.
 c    altrval	The user given value for altrval.
-c    dochi	Attempt to calculate the parallactic angle.
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	integer PolXX,PolYY,PolXY,PolYX
-	parameter(PolXX=-5,PolYY=-6,PolXY=-7,PolYX=-8)
 c
-	integer MAXTIME
-	parameter(MAXTIME=10240)
+c------------------------------------------------------------------------
+	include 'fits.h'
+	integer ALTAZ,EQUATOR,MAXTIME
+	parameter(ALTAZ=0,EQUATOR=1,MAXTIME=10240)
 	integer lu,tno,nvis,npol,nfreq,i,j,bitpix
-	integer ant1,ant2,nants,bl,nconfig,config,srcid,freqid
-	integer itemp,offset,P,Pol0,PolInc
-	logical flags(maxchan),zerowt,found,anfound
-	logical conj,sfudge
+	integer ant1,ant2,nants,bl,nconfig,config,srcid,freqid,t1,t2,t3
+	integer itemp,offset,P,Pol0,PolInc,Data,mount
+	integer nspect,ischan(MAXIF),nschan(MAXIF)
+	logical flags(maxchan),dochi,zerowt,dolst,multi,found,anfound
+	logical conj
 	complex corr(maxchan)
 	real visibs(7+12*maxchan)
-	double precision preamble(5),T0,uu,vv,ww,time
-	real times(MAXTIME),inttime
+	double precision preamble(7),T0,Tprev
+	double precision latitude,longitud,obsra,obsdec,lst
+	real chi,chioff,times(MAXTIME),inttime
 	integer ntimes,refbase,litime
-	integer uvU,uvV,uvW,uvBl,uvT,uvSrcId,uvFreqId,uvData
 	character telescop*32,itime*8
+	character random(7)*8
 c
 c  Externals.
 c
+	double precision fuvGetT0
 	integer len1,PolCvt
 	character itoaf*8
-	double precision fuvGetT0
+c
+	data random/'UU    ','VV      ','WW      ','BASELINE',
+     *		    'DATE  ','SOURCE  ','FREQSEL '/
 c
 c  Open the input FITS and output MIRIAD files.
 c
@@ -525,36 +376,10 @@ c
 	call uvopen(tno,out,'new')
 	call hisopen(tno,'append')
 	call hdin(lu,tno,version,.true.)
+c
 	if(abs(bitpix).gt.16) call uvset(tno,'corr','r',0,0.,0.,0.)
-c
-c  Determine if its a multisource file, and set the random parameters to
-c  handle accordingly.
-c
-	call Indices(lu,uvU,uvV,uvW,UvT,uvBl,uvSrcId,uvFreqid,uvData)
-	if(uvW.eq.0)then
-	  call uvset(tno,'preamble','uv/time/baseline',0,0.,0.,0.)
-	else
-	  call uvset(tno,'preamble','uvw/time/baseline',0,0.,0.,0.)
-	endif
-c
-c  Load antenna, source and frequency information. Set frequency information.
-c
-	call TabLoad(lu,uvSrcId.ne.0,uvFreqId.ne.0,
-     *				telescop,anfound,Pol0,PolInc,dochi)
-	call TabVeloc(velsys,altr,altrval,altrpix)
-c
-c  Load any FG tables.
-c
-	call FgLoad(lu,tno)
-c
-c  Rewind the header.
-c
-	call ftabLoc(lu,' ',found)
-	if(.not.found)call bug('f','Error rewinding to main header')
-c
-c  Messages about the polarisations present. Note that much ATCA
-c  data comes in being labelled as circulars. Tell the user there is
-c  a problem, and relabel it as linears.
+	call uvhdin(lu,tno,altr,altrpix,altrval,Pol0,PolInc)
+	call Info(lu,multi,nspect)
 c
 	if(npol.gt.1)then
 	  if(Pol0.ge.1.and.Pol0.le.4)then
@@ -568,30 +393,63 @@ c
 	  endif
 	endif
 c
-c  Do some telescope-specific operations.
+	if(multi)then
+	  Data = uvFreqID + 1
+	  call fuvSetPa(lu,7,random)
+	else
+	  Data = uvT + 1
+	  call fuvSetPa(lu,5,random)
+	endif
 c
-	sfudge = .false.
+c  Get various telescope characteristics.
+c
+	call telpar(lu,dolst,telescop,latitude,longitud,chioff,mount)
+	if(dolst)then
+	  call uvputvrd(tno,'latitud',latitude,1)
+	  call uvputvrd(tno,'longitu',longitud,1)
+	  call uvputvrr(tno,'evector',chioff,1)
+	  call uvputvri(tno,'mount',mount,1)
+	endif
+c
+	dochi = dolst.and.npol.eq.4
+	if(dochi.and.mount.eq.EQUATOR)call uvputvrr(tno,'chi',chioff,1)
+	dochi = dochi.and.mount.eq.ALTAZ
+c
+c  Do some processing peculiar to a few telescopes.
+c
 	if(telescop.eq.'ATCA')then
 	  if(Pol0.le.-1.and.Pol0.ge.-4) then
             Pol0 = -5
             call bug('w',
-     *	    'Relabelling ATCA circularly polarised data as linear')
+     *	    'Relabelling AT circularly polarised data as linear')
           endif
-	else if(telescop.eq.'WSRT')then
-	  call bug('w','Changing sign convention of XY correlations')
-	  call bug('w','for WSRT data')
-	  sfudge = .true.
+	  call output('Assuming systemp=50,jyperk=13')
+	  call uvputvrr(tno,'systemp',50.0,1)
+	  call uvputvrr(tno,'jyperk',13.0,1)
+	else if(telescop.eq.'HATCREEK')then
+	  call output('Assuming systemp=200,jyperk=200')
+	  call uvputvrr(tno,'systemp',200.0,1)
+	  call uvputvrr(tno,'jyperk',200.,1)
 	endif
 c
-c  Write out the telescope.
+c  Load antenna, source and frequency information.
 c
-	if(telescop.ne.' ')call uvputvra(tno,'telescop',telescop)
+	call TabLoad(lu,multi,nspect,anfound)
+	call ftabLoc(lu,' ',found)
+	if(.not.found)call bug('f','Error rewinding to main header')
 c
 c  Do the descriptions of polarisations and the "IF" axis.
 c
 	call uvputvri(tno,'nants',0,1)
 	call uvputvri(tno,'npol',npol,1)
 	call wrhdi(tno,'npol',npol)
+	call uvputvri(tno,'nspect',nspect,1)
+	do i=1,nspect
+	  ischan(i) = (nfreq/nspect)*(i-1) + 1
+	  nschan(i) =  nfreq/nspect
+	enddo 
+	call uvputvri(tno,'ischan',ischan,nspect)
+	call uvputvri(tno,'nschan',nschan,nspect)
 c
 c  Initialise things to work out the integration time.
 c
@@ -602,36 +460,35 @@ c  Copy the data itself. The conversion of units is as follows:
 c   Variable		FUVREAD		  UVWRITE
 c     U			  sec		  nanosec
 c     V		 	  sec		  nanosec
-c     W			  sec		  nanosec
 c     Time	  Offset Julian days	Julian days
 c
+	Tprev = 0
 	nconfig = 0
 	nants = 0
 	zerowt = .false.
-	srcid = 1
-	freqid = 1
+	srcid = -1
+	freqid = -1
+	config = -1
 	T0 = fuvGetT0(lu)
 c
 	call output('Reading the correlation data')
 	do i=1,nvis
 	  call fuvread(lu,visibs,i,1)
+	  preamble(1) = 1.0e9 * visibs(uvU)
+	  preamble(2) = 1.0e9 * visibs(uvV)
+	  preamble(3) = visibs(uvT) + T0
 c
-c  Unpack the preamble.
+c  If the weight of the visibility is 0, then zero the data (as it may
+c  be a NaN!).
 c
-	  uu = 1.0e9 * visibs(uvU)
-	  vv = 1.0e9 * visibs(uvV)
-	  if(uvW.gt.0)then
-	    ww = 1.0e9 * visibs(uvW)
-	  else
-	    ww = 0
-	  endif
-	  time = visibs(uvT) + T0
-	  bl = int(visibs(uvBl) + 0.01)
-	  ant1 = bl/256
-	  ant2 = mod(bl,256)
-	  config = nint(100*(visibs(uvBl)-bl))+1
-	  if(uvSrcid.gt.0) srcid  = nint(visibs(uvSrcId))
-	  if(uvFreqid.gt.0)freqid = nint(visibs(uvFreqId))
+	  offset = Data
+	  do j=1,npol*nfreq
+	    if(visibs(offset+2).eq.0)then
+	      visibs(offset) = 0
+	      visibs(offset+1) = 0
+	    endif
+	    offset = offset + 3
+	  enddo
 c
 c  Convert baseline number to normal Miriad. Note the different conventions!
 c
@@ -639,68 +496,70 @@ c  Miriad convention is that bl = 256*ant1 + ant2, where the baseline is ant2 - 
 c  AIPS                      bl = 256*ant1 + ant2                        ant1 - ant2 !!
 c
 c  In both cases, ant1 < ant2.
-c  the variables ant1,ant2 are Miriad antenna numbers.
 c
-	  conj = ant2.gt.ant1
+	  bl = int(visibs(uvBl) + 0.01)
+	  ant2 = bl/256
+	  ant1 = mod(bl,256)
+	  conj = ant1.gt.ant2
 	  if(conj)then
-	    uu = -uu
-	    vv = -vv
-	    ww = -ww
-	    offset = uvData
+	    itemp = ant1
+	    ant1 = ant2
+	    ant2 = itemp
+	    preamble(1) = -preamble(1)
+	    preamble(2) = -preamble(2)
+	    offset = Data
 	    do j=1,npol*nfreq
 	      visibs(offset+1) = -visibs(offset+1)
 	      offset = offset + 3
 	    enddo
-	  else
-	    itemp = ant1
-	    ant1 = ant2
-	    ant2 = itemp
 	  endif
 	  bl = 256*ant1 + ant2
-	  nants = max(nants,ant1,ant2)
-	  nconfig = max(config,nconfig)
-c
-c  Determine some times at whcih data are observed. Use these later to
-c  guestimate the integration time.
-c
 	  if(i.eq.1) refbase = bl
 	  if(refbase.eq.bl.and.ntimes.lt.MAXTIME)then
 	    ntimes = ntimes + 1
 	    times(ntimes) = visibs(uvT)
 	  endif
+	  preamble(4) = bl
+	  nants = max(nants,ant1,ant2)
 c
-c  Write out the necessary table information.
+c  Determine the current srcid, freqid and configuration. Write out any
+c  needed table info.
 c
-	  call TabWrite(tno,srcid,freqid,config,time)
+	  if(multi)then
+	    t1 = nint(visibs(uvSrcId))
+	    t2 = nint(visibs(uvFreqId))
+	  else
+	    t1 = 1
+	    t2 = 1
+	  endif
+	  t3 = nint(100*(visibs(uvBl)-bl)) + 1
+	  if(srcid.ne.t1.or.freqid.ne.t2.or.config.ne.t3)then
+	    srcid = t1
+	    freqid = t2
+	    config = t3
+	    call TabWrite(tno,srcid,freqid,config,obsra,obsdec)
+	    nconfig = max(config,nconfig)
+	  endif
+c
+c  Calculate and store the parallactic angle, if needed.
+c
+	  if(dolst.and.(visibs(uvT).ne.Tprev.or.i.eq.1))then
+	    call jullst(preamble(3),longitud,lst)
+	    call uvputvrd(tno,'lst',lst,1)
+	    if(dochi)then
+	      call parang(obsra,obsdec,lst,latitude,chi)
+	      call uvputvrr(tno,'chi',chi+chioff,1)
+	    endif
+	    Tprev = visibs(uvT)
+	  endif
 c
 c  Store the correlation data.
 c
-	  preamble(1) = uu
-	  preamble(2) = vv
-	  if(uvW.gt.0)then
-	    preamble(3) = ww
-	    preamble(4) = time
-	    preamble(5) = bl
-	  else
-	    preamble(3) = time
-	    preamble(4) = bl
-	  endif
-c
 	  do j=1,npol
 	    P = Pol0 + (j-1)*PolInc
-	    if(.not.conj)P = PolCvt(P)
-c
-c  The following code was once required to work around a labelling
-c  bug in NEWSTAR -- I think this bug has now been corrected there.
-c
-c	if(P.eq.PolYY.or.P.eq.PolXY)then
-c	  P = P -1
-c	else if(P.eq.PolYX)then
-c	  P = PolYY
-c	endif
+	    if(conj)P = PolCvt(P)
 	    call uvputvri(tno,'pol',P,1)
-	    call Extract(nfreq,npol,j,visibs(uvData),corr,flags,zerowt)
-	    if(sfudge.and.P.eq.PolYX)call Negate(nfreq,corr)
+	    call Extract(nfreq,npol,j,visibs(Data),corr,flags,zerowt)
 	    call uvwrite(tno,preamble,corr,flags,nfreq)
 	  enddo
 	enddo
@@ -709,21 +568,16 @@ c  Work out the integration time now, and use override mechanism to set
 c  it in the data-set.
 c
 	call GetInt(times,ntimes,inttime)
-	if(inttime.gt.0)then
-	  call wrhdr(tno,'inttime',inttime)
-	else
-	  call bug('w','Unable to estimate integration time')
-	  call bug('w','  ... assuming 10 seconds')
-	endif
+	call wrhdr(tno,'inttime',inttime)
 	itime = itoaf(nint(inttime))
 	litime = len1(itime)
 	call output('The estimated integration time of a sample is '//
      *	  itime(1:litime)//' seconds')
 c
-c  Write out the number of antennas.
+c  Write out the number of antennae.
 c
 	if(.not.anfound)call wrhdi(tno,'nants',nants)
-	call output('Number of antennas: '//itoaf(nants))
+	call output('Number of antennae: '//itoaf(nants))
 	call output('Number of antenna configurations: '//
      *		itoaf(nconfig))
 c
@@ -736,106 +590,29 @@ c
 	call uvclose(tno)
 	end
 c************************************************************************
-	subroutine Negate(nfreq,corr)
-c
-	implicit none
-	integer nfreq
-	complex corr(nfreq)
-c------------------------------------------------------------------------
-	integer i
-c
-	do i=1,nfreq
-	  corr(i) = -corr(i)
-	enddo
-c
-	end
-c************************************************************************
-	subroutine Indices(lu,uvU,uvV,uvW,uvT,uvBl,uvSrcId,
-     *							uvFreqid,uvData)
-c
-	implicit none
-	integer lu
-	integer uvU,uvV,uvW,uvT,uvBl,uvSrcid,uvFreqid,uvData
-c
-c  Determine indices for the random parameters and data.
-c
-c  Input:
-c    lu 	Handle of the FITS file.
-c  Output:
-c    uvU,uvV,uvW,uvT,uvBl,uvSrcid,uvFreqid,uvData
-c------------------------------------------------------------------------
-	integer i,naxis,nrandom
-	character num*2,type*16
-	character random(7)*8
-c
-c  Externals.
-c
-	character itoaf*2
-c
-	uvU = 1
-	random(1) = 'UU'
-	uvV = 2
-	random(2) = 'VV'
-	uvBl = 3
-	random(3) = 'BASELINE'
-	uvT = 4
-	random(4) = 'DATE'
-	nrandom = 4
-c
-	uvW = 0
-	uvSrcid = 0
-	uvFreqid = 0
-c
-c  Determine whether there is a source-id and freq-id random parameter.
-c
-	call fitrdhdi(lu,'PCOUNT',naxis,0)
-	do i=1,naxis
-	  num = itoaf(i)
-	  call fitrdhda(lu,'PTYPE'//num,type,' ')
-	  if((type(1:3).eq.'WW'.or.type(1:3).eq.'WW-').and.uvW.eq.0)then
-	    nrandom = nrandom + 1
-	    uvW = nrandom
-	    random(nrandom) = 'WW'
-	  endif
-	  if(type.eq.'SOURCE'.and.uvSrcid.eq.0)then
-	    nrandom = nrandom + 1
-	    uvSrcid = nrandom
-	    random(nrandom) = type
-	  endif
-	  if(type.eq.'FREQSEL'.and.uvFreqid.eq.0)then
-	    nrandom = nrandom + 1
-	    uvFreqid = nrandom
-	    random(nrandom) = type
-	  endif
-	enddo
-c
-	uvData = nrandom + 1
-	call fuvSetPa(lu,nrandom,random)
-c
-	end
-c************************************************************************
 	integer function PolCvt(P)
 c
 	implicit none
 	integer P
 c
-c  Fiddle the polarisation labelling around, because of the different
-c  labelling conventions of Miriad and FITS.
+c  Fiddle the polarisation labelling around. This is because the baseline
+c  order convention is different in Miriad and FITS -- which results in
+c  polarisation RL in FITS being LR in Miriad, etc. In principle the
+c  same fiddling should be done for linear feeds, but they come in
+c  pre-fiddled from AIPS (because AIPS ATLOD has screwed up).
 c
 c  Input:
 c    P		Polarisation code.
 c------------------------------------------------------------------------
-	integer PolYX,PolXY,PolYY,PolXX,PolLR,PolRL
-	integer PolMin,PolMax
-	parameter(PolYX=-8,PolXY=-7,PolYY=-6,PolXX=-5,PolLR=-4,PolRL=-3)
-	parameter(PolMin=-8,PolMax=-3)
-c
-	integer pols(PolMin:PolMax)
-	data pols/PolXY,PolYX,PolYY,PolXX,PolRL,PolLR/
-c
-	PolCvt = p
-	if(p.ge.PolMin.and.p.le.PolMax)PolCvt = pols(p)
-c
+	integer PolRL,PolLR
+	parameter(PolRL=-3,PolLR=-4)
+	if(P.eq.PolRL)then
+	  PolCvt = PolLR
+	else if(P.eq.PolLR)then
+	  PolCvt = PolRL
+	else
+	  PolCvt = P
+	endif
 	end
 c************************************************************************
 	subroutine GetInt(times,ntimes,inttime)
@@ -856,7 +633,7 @@ c  Output:
 c    inttime	Some estimate of the integration time (in seconds).
 c------------------------------------------------------------------------
 	integer i
-	real delta
+	logical more
 c
 c  If there is only one value, assume the integration time is 10 seconds.
 c
@@ -867,495 +644,164 @@ c  Sort the times.
 c
 	call sortr(times,ntimes)
 c
-c  Find the first delta time greater than 1 sec as the integration time.
+c  Work out the delta times, in seconds.
 c
-	inttime = times(ntimes) - times(1)
 	do i=1,ntimes-1
-	  delta = times(i+1) - times(i)
-	  if(delta.gt.1./(24.*3600.).and.delta.lt.inttime)
-     *	    inttime = delta
+	  times(i) = 24*3600*(times(i+1) - times(i))
 	enddo
-	inttime = 24*3600*inttime
 c
-	end
-c************************************************************************
-	subroutine FgLoad(lu,tno)
+c  Sort the delta times.
 c
-	implicit none
-	integer lu,tno
+	call sortr(times,ntimes-1)
 c
-c  Load any AIPS FG tables.
-c------------------------------------------------------------------------
-	double precision Time0
-	integer ntab,lTab,iostat
-	logical more
+c  Choose the first time which is greater than 1 sec as the integration
+c  time.
 c
-c  Externals.
-c
-	character itoaf*3
-c
-c  Get the reference time, and convert it to a Julian date.
-c
-	call TabRefT0(Time0)
-c
-c  Look for FG tables.
-c
-	ntab = 0
-	call ftabLoc(lu,'AIPS FG',more)
+	i = 1
+	more = .true.
 	dowhile(more)
-	  call output('Reading AIPS FG table -- '//
-     *				'apply this with task fgflag')
-	  ntab = ntab + 1
-	  call haccess(tno,lTab,'aipsfg'//itoaf(ntab),'write',iostat)
-	  if(iostat.ne.0)then
-	    call bug('w','Error accessing output table')
-	    call bugno('f',iostat)
-	  endif
-c
-c  Process the AIPS FG table.
-c
-	  call aips2mir(lu,lTab,Time0)
-c
-c  Close up this item.
-c
-	  call hdaccess(lTab,iostat)
-	  if(iostat.ne.0)then
-	    call bug('w','Error accessing output table')
-	    call bugno('f',iostat)
-	  endif
-	  call ftabNxt(lu,'AIPS FG',more)
+	  inttime = times(i)
+	  i = i + 1
+	  more = inttime.lt.1.and.i.lt.ntimes
 	enddo
 c
+c  If we did not find any valid times, set it at 10 sec.
+c
+	if(inttime.lt.1) inttime = 10
 	end
 c************************************************************************
-	subroutine aips2mir(lIn,lTab,Time0)
+c************************************************************************
+	subroutine  TabLoad(lu,multi,nspect,anfound)
 c
 	implicit none
-	integer lIn,lTab
-	double precision Time0
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	include 'mem.h'
+	integer lu,nspect
+	logical multi,anfound
 c
-	character type*1,units*16
-	integer nrows,nval
-	integer pSrc,pSub,pAnts,pTime,pIfs,pChans,pFreq
-c
-	call ftabInfo(lIn,'SOURCE',type,units,nrows,nval)
-	if(nrows.le.0.or.nval.ne.1.or.type.ne.'I')then
-	  call bug('w','Unrecognised AIPS FG table format')
-c
-c  Allocate space for the various tables.
-c
-	else
-	  call FgGeti(lIn,pSrc,'SOURCE',1,nrows)
-	  call FgGeti(lIn,pSub,'SUBARRAY',1,nrows)
-	  call FgGeti(lIn,pFreq,'FREQ ID',1,nrows)
-	  call FgGeti(lIn,pAnts,'ANTS',2,nrows)
-	  call FgGetr(lIn,pTime,'TIME RANGE',2,nrows)
-	  call FgGeti(lIn,pIfs,'IFS',2,nrows)
-	  call FgGeti(lIn,pChans,'CHANS',2,nrows)
-c
-	  call FgWrite(lTab,Time0,
-     *	    nrows,MemI(pSrc),MemI(pSub),MemI(pFreq),MemI(pAnts),
-     *		  MemR(pTime),MemI(pIfs),MemI(pChans))
-c
-	  call MemFree(pSrc,nrows,'i')
-	  call MemFree(pSub,nrows,'i')
-	  call MemFree(pFreq,nrows,'i')
-	  call MemFree(pAnts,2*nrows,'i')
-	  call MemFree(pTime,2*nrows,'r')
-	  call MemFree(pIfs,2*nrows,'i')
-	  call MemFree(pChans,2*nrows,'i')
-	endif
-	end
-c************************************************************************
-	subroutine FgWrite(lTab,Time0,nrows,
-     *	  SrcId,SubArray,FreqId,Ants,Time,Ifs,Chans)
-c
-	implicit none
-	integer lTab,nrows
-	double precision Time0
-	integer SrcId(nrows),SubArray(nrows),Ants(2,nrows)
-	integer Ifs(2,nrows),Chans(2,nrows),FreqId(nrows)
-	real Time(2,nrows)
-c----------------------------------------------------------------------
-	integer i,length,iostat
-	character line*132
-c
-	do i=1,nrows
-	  length = 0
-	  if(time(1,i).ne.0.or.time(2,i).ne.0)
-     *	    call FgTimOut(time(1,i)+time0,time(2,i)+time0,
-     *	      line,length)
-	  if(srcid(i).gt.0)
-     *	    call FgValOut('srcid',SrcId(i),1,line,length)
-	  if(freqid(i).gt.0)
-     *	    call FgValOut('freqid',FreqId(i),1,line,length)
-	  if(subarray(i).gt.0)
-     *	    call FgValOut('array',SubArray(i),1,line,length)
-	  if(ants(1,i).gt.0.or.ants(2,i).gt.0)
-     *	    call FgValOut('ant',ants(1,i),2,line,length)
-	  if(chans(1,i).gt.0.or.chans(2,i).gt.0)
-     *	    call FgValOut('chan',chans(1,i),2,line,length)
-	  if(ifs(1,i).gt.0.or.ifs(2,i).gt.0)
-     *	    call FgValOut('ifs',ifs(1,i),2,line,length)
-c
-	  call hwritea(lTab,line(1:length),iostat)
-	  if(iostat.ne.0)then
-	    call bug('w','Error writing to the aipsfg table')
-	    call bugno('f',iostat)
-	  endif
-	enddo
-	end
-c************************************************************************
-	subroutine FgValOut(type,vals,nvals,line,length)
-c
-	implicit none
-	character type*(*),line*(*)
-	integer nvals,vals(nvals),length
-c------------------------------------------------------------------------
-	integer k
-c
-	k = len(type)
-	if(length+k+3.gt.len(line))
-     *	  call bug('f','Buffer overflow, in FgValOut')
-	if(length.gt.0)then
-	  line(length+1:length+k+2) = ','//type//'('
-	  length = length + k + 2
-	else
-	  line(length+1:length+k+1) = type//'('
-	  length = length + k + 1
-	endif
-	call mitoaf(vals,nvals,line(length+1:),k)
-	length = length + k + 1
-	if(length.gt.len(line))
-     *	  call bug('f','Buffer overflow, in FgValOut')
-	line(length:length) = ')'
-	end
-c************************************************************************
-	subroutine FgTimOut(t1,t2,line,length)
-c
-	implicit none
-	double precision t1,t2
-	character line*(*)
-	integer length
-c------------------------------------------------------------------------
-	integer k1,k2
-	character time1*32,time2*32
-c
-c  Externals.
-c
-	integer len1
-c
-	call julday(t1,'H',time1)
-	k1 = len1(time1)
-	call julday(t2,'H',time2)
-	k2 = len1(time2)
-c
-	if(length.ne.0)then
-	  if(length.ge.len(line))
-     *	    call bug('f','Buffer overflow, in FgTimOut')
-	  length = length + 1
-	  line(length:length) = ','
-	endif
-c
-	if(length+k1+k2+len('time(,)').gt.len(line))
-     *	  call bug('f','Buffer overflow, in FgTimOut')
-	line(length+1:length+k1+k2+7) =
-     *	  'time('//time1(1:k1)//','//time2(1:k2)//')'
-	length = length + k1 + k2 + 7
-c
-	end
-c************************************************************************
-	subroutine FgGeti(lIn,pnt,name,nx,ny)
-c
-	integer pnt,nx,ny,lIn
-	character name*(*)
-c
-c  Check whether something is in the flagging table. If so get if. If not
-c  set default values to 0.
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	include 'mem.h'
-c
-	integer nrow,nval,i
-	character type*1,units*24
-c
-	call MemAlloc(pnt,nx*ny,'i')
-	call ftabInfo(lIn,name,type,units,nrow,nval)
-	if(type.eq.' '.or.nrow*nval.eq.0)then
-	  do i=pnt,pnt+nx*ny-1
-	    MemI(i) = 0
-	  enddo
-	else
-	  if(nx.ne.nval.or.ny.ne.nrow.or.type.ne.'I')
-     *	    call bug('f','FG table has an odd shape')
-	  call ftabGeti(lIn,name,0,MemI(pnt))
-	endif
-	end
-c************************************************************************
-	subroutine FgGetr(lIn,pnt,name,nx,ny)
-c
-	integer pnt,nx,ny,lIn
-	character name*(*)
-c
-c  Check whether something is in the flagging table. If so get if. If not
-c  set default values to 0.
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	include 'mem.h'
-	integer nrow,nval,i
-	character type*1,units*24
-c
-	call MemAlloc(pnt,nx*ny,'r')
-	call ftabInfo(lIn,name,type,units,nrow,nval)
-	if(type.eq.' '.or.nrow*nval.eq.0)then
-	  do i=pnt,pnt+nx*ny-1
-	    MemR(i) = 0
-	  enddo
-	else
-	  if(nx.ne.nval.or.ny.ne.nrow.or.type.ne.'R')
-     *	    call bug('f','FG table has an odd shape')
-	  call ftabGetr(lIn,name,0,MemR(pnt))
-	endif
-	end
-c************************************************************************
-c************************************************************************
-	subroutine TabLoad(lu,dosu,dofq,tel,anfound,Pol0,PolInc,dochi)
-c
-	implicit none
-	integer lu,Pol0,PolInc
-	logical dosu,dofq,anfound,dochi
-	character tel*(*)
-c
-c  Determine some relevant parameters about the FITS file. Attempt to
-c  ferrit this information from all nooks and crannies. In general use
-c  the procedure of looking at known telescope parameters, the main
-c  FITS header, and then any extension tables. As particular information
-c  could be found at any level, use the higher level stuff as defaults
-c  for the lower level values.
-c
-c  AIPS tables read include AN, FQ, CH and SU tables. NOTE that CL tables
-c  are not read!
+c  This loads table information from the FITS files. AIPS tables are
+c  assumed.
+c  This reads AN, FQ, CH and SU tables.
 c
 c  Input:
 c    lu		Handle of the input FITS file.
-c    dosu,dofq	Expect a multisource/multi-freq file.
-c    dochi	Attempt to compute the parallactic angle.
+c    multi	Expect a multisource/multi-freq file.
+c    nspect	Number of IFs.
 c  Output:
-c    tel	Telescope name.
 c    anfound	True if antenna tables were found.
-c    Pol0	Code for first polarisation.
-c    PolInc	Increment between polarisations.
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	include 'fits.h'
 c
-	logical badapp,badepo,more,found,badmnt
-	double precision Coord(3,4),rfreq
-	double precision height,veldef
-	character defsrc*16,num*2
+	double precision Jul2000
+	parameter(Jul2000=2451544.5d0)
+c
+	logical badapp,badepo,more,found
+	double precision Coord(3,4),T0,rfreq,jday
+	character defsrc*16
 	real defepoch,diff
-	integer nval,i,j,t,nxyz,n,naxis,itemp
-	double precision xyz(3,MAXANT),xc,yc,zc,r0,d0
-	double precision r,sint,cost,temp,eporef
-	character type*1,units*16,ctype*8,rdate*16
-	integer sta(MAXANT)
+	integer nval,i,j,t,nxyz,n
+	double precision xyz(3,MAXANT),xc,yc,zc
+	double precision r,sint,cost,temp
+	character type*1,units*16
+c
+	double precision raepo(MAXSRC),decepo(MAXSRC)
+	double precision raapp(MAXSRC),decapp(MAXSRC)
+	double precision dra(MAXSRC),ddec(MAXSRC)
+	double precision sfreq(MAXIF*MAXFREQ)
+	double precision freqoff(MAXSRC*MAXIF),epoch(MAXSRC)
+	double precision freqref(MAXCONFG)
+	double precision restfreq(MAXSRC*MAXIF)
+	double precision antpos(3*MAXANT,MAXCONFG)
+	integer nants(MAXCONFG)
+	
+	real sdf(MAXIF*MAXFREQ)
+	integer nsrc,nif,nfreq,nconfg
+	integer srcid(MAXSRC),freqid(MAXFREQ)
+	integer sindx(MAXSRC),findx(MAXFREQ)
+	logical mosaic
+	character source(MAXSRC)*20
+	common/Tables/raepo,decepo,raapp,decapp,dra,ddec,sfreq,freqoff,
+     *	  restfreq,antpos,freqref,epoch,sdf,
+     *	  nsrc,nif,nfreq,nconfg,nants,srcid,freqid,sindx,findx,mosaic
+	common/TablesC/source
 c
 c  Externals.
 c
-	character itoaf*2
-	double precision fuvGetT0,Epo2jul,Jul2epo
+	double precision fuvGetT0
 c
-c  Set default source and freq ids.
+c  Get the default values for everything we are interested in.
 c
-	inited = .false.
-c
-c  Get some preliminary info from the main header.
-c
-	call fuvrdhd(lu,Coord)
-	call fitrdhda(lu,'TELESCOP',telescop,' ')
-	if(telescop.eq.' ')
-     *	  call fitrdhda(lu,'INSTRUME',telescop,' ')
-	tel = telescop
-	call fitrdhda(lu,'OBSERVER',observer,' ')
 	call fitrdhda(lu,'OBJECT',defsrc,' ')
+	call fuvrdhd(lu,Coord)
 	call fitrdhdr(lu,'EPOCH',defepoch,2000.0)
-c
-c  Determine reference time.
-c
-	call fitrdhda(lu,'DATE-OBS',rdate,' ')
-	if(rdate.eq.' ')then
-	  timeref = fuvGetT0(lu)
-	else
-	  call fdatejul(rdate,timeref)
-	endif
-c
-c  Get velocity definition information, just in case this is a spectral
-c  line observation.
-c
+	T0 = fuvGetT0(lu)
 	call fitrdhdd(lu,'RESTFREQ',rfreq,0.d0)
-	call fitrdhdd(lu,'ALTRVAL',veldef,0.d0)
-	call fitrdhdr(lu,'ALTRPIX',velref,real(Coord(uvCrpix,uvFreq)))
-	call fitrdhdi(lu,'VELREF',velsys,3)
-c
-c  See what the dimension of the IF axis according to the header.
-c
-	call fitrdhdi(lu,'NAXIS',naxis,0)
-	nif = 1
-	nchan = 1
-	do i=2,naxis
-	  num = itoaf(i)
-	  call fitrdhda(lu,'CTYPE'//num,ctype,' ')
-	  if(ctype.eq.'IF') call fitrdhdi(lu,'NAXIS'//num,nif,1)
-	  if(ctype.eq.'FREQ')call fitrdhdi(lu,'NAXIS'//num,nchan,1)
-	enddo
-	if(nif.gt.MAXIF)call bug('f','Too many IFs')
-c
-c  Polarisation information.
-c
-	Pol0 = nint( Coord(uvCrval,uvStokes) + 
-     *		(1-Coord(uvCrpix,uvStokes))*Coord(uvCdelt,uvStokes) )
-	PolInc = nint(Coord(uvCdelt,uvStokes))
-c
-c  Set default values for reference freq, lat, long, mount, evector.
-c  Also determine the only values for systemp and jyperk.
-c
-	call telpar(telescop,systemp,systok,jyperk,jok,
-     *	  llok,lat,long,emok,evec,mount)
-	if(.not.emok.and.dochi)call bug('w',
-     *	  'Insufficient information to determine parallactic angle')
-	emok = emok.and.dochi
-	freqref(1) = 1e-9 * Coord(uvCrval,uvFreq)	  
 c
 c  Load the antenna table.
 c
-	nconfig = 0
+	nconfg = 0
 	call ftabLoc(lu,'AIPS AN',found)
 	anfound = found
 	dowhile(found)
 	  call output('Reading AIPS AN table')
-	  nconfig = nconfig + 1
+	  nconfg = nconfg + 1
 	  call ftabInfo(lu,'STABXYZ',type,units,n,nxyz)
 c
-	  if(nconfig.gt.MAXCONFG)
+	  if(nconfg.gt.MAXCONFG)
      *	    call bug('f','Too many array configurations')
 	  if(nxyz.ne.3.or.n.le.0.or.type.ne.'D')
      *	    call bug('f','Something is screwy with the antenna table')
-	  if(n.gt.MAXANT)call bug('f','Too many antennas for me')
+	  if(n.gt.MAXANT)call bug('f','Too many antennae for me')
 c
-c  Check that the station number corresponds to the row in the table.
-c  Run through the list until we find a bad antenna number.
+c  Get the coordinates of the antennae.
 c
-	  call ftabGeti(lu,'NOSTA',0,sta)
-	  i = 0
-	  more = .true.
-	  dowhile(more)
-	    i = i + 1
-	    more = i.le.n
-	    if(more) more = sta(i).eq.i
-	  enddo
-c
-	  if(i.le.n)then
-	    n = i-1
-	    call bug('w',
-     *	      'Suspect antenna table. Discarding location info for ')
-	    call bug('w',
-     *	      'antenna numbers greater than '//itoaf(n))
-	  endif
-	  nants(nconfig) = n
-c
-c  Get the reference freqeuncy. Note that multiple bugs in AIPS
-c  make the reference frequency (either in AN table or header)
-c  suspect when subsetting multi-IF data.
-c
-	  call fitrdhdd(lu,'FREQ',freqref(nconfig),
-     *					Coord(uvCrval,uvFreq))
-	  if(freqref(nconfig).le.1)then
-	    freqref(nconfig) = Coord(uvCrval,uvFreq)
-	    call bug('w','Antenna table reference frequency looks bad')
-	    call bug('w','Using header reference frequency')
-	  elseif(abs(freqref(nconfig)-Coord(uvCrval,uvFreq)).gt.
-     *	     0.01*abs(freqref(nconfig)).and.nconfig.eq.1)then
+	  nants(nconfg) = n
+	  call fitrdhdd(lu,'FREQ',freqref(nconfg),Coord(uvCrval,uvFreq))
+	  if(abs(freqref(nconfg)-Coord(uvCrval,uvFreq)).gt.
+     *	     0.01*abs(freqref(nconfg)).and.nconfg.eq.1)then
 	    call bug('w',
      *	      'Header and antenna table reference frequency differ')
 	    call bug('w','Using antenna table reference frequency')
 	  endif
-	  freqref(nconfig) = 1e-9 * freqref(nconfig)
-c
-c  Determine times and offset times.
-c
-	  call TabTime(lu,nconfig,timeref,timeoff(nconfig))
-c
-c  Determine mount type. Miriad insists all the mounts are the same.
-c
-	  call ftabGeti(lu,'MNTSTA',0,sta)
-	  mount(nconfig) = sta(1)
-	  badmnt = .false.
-	  do i=1,n
-	    badmnt = badmnt.or.sta(i).ne.mount(nconfig)
-	  enddo
-	  if(badmnt)call bug('w',
-     *	    'Mount types differed between antennas')
-	  emok = emok.and..not.badmnt
-c
-c  Get the antenna coordinates.
-c  Convert to earth-centered coordinates. The AIPS coordinates have X being in the
-c  direction from the earth center to the Grennwich meridian, and Z being towards the pole.
-c
+	  freqref(nconfg) = 1e-9 * freqref(nconfg)
 	  call fitrdhdd(lu,'ARRAYX',xc,0.d0)
 	  call fitrdhdd(lu,'ARRAYY',yc,0.d0)
 	  call fitrdhdd(lu,'ARRAYZ',zc,0.d0)
-	  call ftabGetd(lu,'STABXYZ',0,xyz)
+	  call ftabGetd(lu,'STABXYZ',xyz)
 c
-c  Determine the latitude, longitude and height of the first antenna
-c  (which is taken to be the observatory lat,long,height). Handle
-c  geocentric and local coordinates.
+c  Convert to earth-centered coordinates. The AIPS coordinates have X being in the
+c  direction from the earth center to the Grennwich meridian, and Z being towards the pole.
 c
-	  if(abs(xc)+abs(yc)+abs(zc).eq.0)then
-	    call xyz2llh(xyz(1,1),xyz(2,1),xyz(3,1),
-     *		       lat(nconfig),long(nconfig),height)
-	  else
-	    call xyz2llh(xc,yc,zc,
-     *		       lat(nconfig),long(nconfig),height)
-	  endif
-	  llok = .true.
+	  do i=1,n
+	    xyz(1,i) = xyz(1,i) + xc
+	    xyz(2,i) = xyz(2,i) + yc
+	    xyz(3,i) = xyz(3,i) + zc
+	  enddo
 c
 c  Convert them to the Miriad system: y is local East, z is parallel to pole
 c  Units are nanosecs.
 c
-	  if(abs(xc)+abs(yc)+abs(yc).eq.0)then
-	    r = sqrt(xyz(1,1)*xyz(1,1) + xyz(2,1)*xyz(2,1))
-	    cost = xyz(1,1) / r
-	    sint = xyz(2,1) / r
-	    do i=1,n
-	      temp = xyz(1,i)*cost + xyz(2,i)*sint - r
-	      antpos(i,nconfig)     = (1d9/DCMKS) * temp
-	      temp = -xyz(1,i)*sint + xyz(2,i)*cost
-	      antpos(i+n,nconfig)   = (1d9/DCMKS) * temp
-	      antpos(i+2*n,nconfig) = (1d9/DCMKS) * (xyz(3,i)-xyz(3,1))
-	    enddo
-	  else
-	    do i=1,n
-	      antpos(i,nconfig)     = (1d9/DCMKS) * xyz(1,i)
- 	      antpos(i+n,nconfig)   = (1d9/DCMKS) * xyz(2,i)
-	      antpos(i+2*n,nconfig) = (1d9/DCMKS) * xyz(3,i)
-	    enddo
-	  endif
+	  r = sqrt(xyz(1,1)*xyz(1,1) + xyz(2,1)*xyz(2,1))
+	  cost = xyz(1,1) / r
+	  sint = xyz(2,1) / r
+	  do i=1,n
+	    temp = xyz(1,i)*cost + xyz(2,i)*sint - r
+	    antpos(i,nconfg)     = (1d9/DCMKS) * temp
+	    temp = -xyz(1,i)*sint + xyz(2,i)*cost
+	    antpos(i+n,nconfg)   = (1d9/DCMKS) * temp
+	    antpos(i+2*n,nconfg) = (1d9/DCMKS) * (xyz(3,i)-xyz(3,1))
+	  enddo
+c
 c
 c  Get the next AN table.
 c
 	  call ftabNxt(lu,'AIPS AN',found)
 	enddo
 c
-c  Summarise info about the antenna characteristics.
-c
-	if(nconfig.eq.0)then
-	  call bug('w','No antenna table was found')
+	if(nconfg.eq.0)then
+	  call bug('w','No antenna table found')
+	  freqref(1) = 1e-9 * Coord(uvCrval,uvFreq)
 	endif
-	if(.not.llok)call bug('w',
-     *	    'Telescope latitude/longitude could not be determined')
+	  
 c
 c  Load the FQ table if its present.
 c
@@ -1363,19 +809,18 @@ c
 	call ftabLoc(lu,'AIPS FQ',found)
 	if(found)then
 	  call ftabInfo(lu,'FRQSEL',type,units,nfreq,nval)
-	  if(nfreq.gt.1.and..not.dofq)
-     *	    call bug('f','FQ table present for non-multi-freq file')
+	  if(nfreq.gt.1.and..not.multi)
+     *	    call bug('f','FQ table present for non-multi-source file')
 	  if(nfreq.gt.MAXFREQ)call bug('f','Too many freqs')
 	  if(nval.ne.1.or.type.ne.'I')
      *	    call bug('f','Something screwy with FQ table')
-	  call fitrdhdi(lu,'NO_IF',itemp,nif)
-	  if(itemp.ne.nif)
-     *	    call bug('f','Inconsistent number of IFs')
+	  call fitrdhdi(lu,'NO_IF',nif,nspect)
+	  if(nif.gt.MAXIF)call bug('f','Too many IFs')
 	  call output('Reading AIPS FQ table')
-	  call ftabGeti(lu,'FRQSEL',0,freqids)
-	  if(.not.dofq)freqids(1) = 1
-	  call ftabGetd(lu,'IF FREQ',0,sfreq)
-	  call ftabGetr(lu,'CH WIDTH',0,sdf)
+	  call ftabGeti(lu,'FRQSEL',freqid)
+	  if(.not.multi)freqid(1) = 1
+	  call ftabGetd(lu,'IF FREQ',sfreq)
+	  call ftabGetr(lu,'CH WIDTH',sdf)
 	else
 c
 c  Load a CH table, if its present.
@@ -1386,19 +831,19 @@ c
 	    if(nif.gt.MAXIF)call bug('f','Too many IFs')
 	    if(nval.ne.1.or.type.ne.'I')
      *	      call bug('f','Something screwy with CH table')
-	    call ftabGeti(lu,'IF NO.',0,freqids)
+	    call ftabGeti(lu,'IF NO.',freqid)
 c
 c  Check that the if table is in the standard order.
 c
 	    do i=1,nif
-	      if(freqids(i).ne.i)
+	      if(freqid(i).ne.i)
      *		call bug('f','Software bug IFNO.ne.IFNO')
 	    enddo
 c
 	    call output('Reading AIPS CH table')
 	    nfreq = 1
-	    freqids(1) = 1
-	    call ftabGetd(lu,'FREQUENCY OFFSET',0,sfreq)
+	    freqid(1) = 1
+	    call ftabGetd(lu,'FREQUENCY OFFSET',sfreq)
 	    do i=1,nif
 	      sdf(i) = Coord(uvCdelt,uvFreq)
 	    enddo
@@ -1406,16 +851,22 @@ c
 c  If neither a CH or FQ table were found, just use the info in the header.
 c
 	  else
-	    if(dofq)call bug('w',
+	    if(multi)call bug('w',
      *			'Neither an FQ nor CH table were found')
+	    nif = nspect
 	    nfreq = 1
-	    freqids(1) = 1
+	    freqid(1) = 1
 	    do i=1,nif
 	      sfreq(i) = 0
 	      sdf(i)   = Coord(uvCdelt,uvFreq)
 	    enddo
 	  endif
 	endif
+c
+c  Check things are consistent.
+c
+	if(nif.ne.nspect)
+     *	  call bug('f','Inconsistent number of IFs')
 c
 c  Convert the frequencies to the form that Miriad wants -- in GHz and
 c  relative to channel 1.
@@ -1428,30 +879,28 @@ c
 c
 c  Sort the freqid table, to make it easier to find things in it.
 c
-	call Sortie(findx,freqids,nfreq)
+	call Sortie(findx,freqid,nfreq)
 c
 c  Find and load the SU table. If it was not found, set everything
 c  to a default.
 c
 	found = .false.
-	if(dosu)call ftabLoc(lu,'AIPS SU',found)
+	if(multi)call ftabLoc(lu,'AIPS SU',found)
 	if(.not.found)then
-	  if(dosu)call bug('w','AIPS SU table not found')
+	  if(multi)call bug('w','AIPS SU table not found')
 	  nsrc = 1
-	  srcids(1) = 1
+	  srcid(1) = 1
 	  source(1) = defsrc
 	  raepo(1) = Coord(uvCrval,uvRa)
 	  raapp(1) = Coord(uvCrval,uvRa)
 	  decepo(1) = Coord(uvCrval,uvDec)
 	  decapp(1) = Coord(uvCrval,uvDec)
 	  epoch(1) = defepoch
-	  veldop(1) = veldef
 	  do i=1,nif
 	    freqoff(i) = 0
 	    restfreq(i) = rfreq
 	  enddo
 	else
-	  call VelGetty(lu,velsys)
 	  call fitrdhdi(lu,'NO_IF',t,nif)
 	  if(t.ne.nif)call bug('f','Number of IFs is inconsistent')
 	  call ftabInfo(lu,'ID. NO.',type,units,nsrc,nval)
@@ -1459,19 +908,15 @@ c
 	  if(nval.ne.1.or.type.ne.'I')
      *	    call bug('f','Something screwy with SU table')
 	  call output('Reading AIPS SU table')
-	  call ftabGeti(lu,'ID. NO.',0,srcids)
-	  call ftabGeta(lu,'SOURCE',0,source)
-	  call ftabGetd(lu,'RAEPO',0,raepo)
-	  call ftabGetd(lu,'DECEPO',0,decepo)
-	  call ftabGetd(lu,'RAAPP',0,raapp)
-	  call ftabGetd(lu,'DECAPP',0,decapp)
-	  call ftabGetd(lu,'EPOCH',0,epoch)
-	  call ftabGetd(lu,'FREQOFF',0,freqoff)
-	  call ftabGetd(lu,'LSRVEL',0,restfreq)
-	  do i=1,nsrc
-	    veldop(i) = restfreq((i-1)*nif+1)
-	  enddo
-	  call ftabGetd(lu,'RESTFREQ',0,restfreq)
+	  call ftabGeti(lu,'ID. NO.',srcid)
+	  call ftabGeta(lu,'SOURCE',source)
+	  call ftabGetd(lu,'RAEPO',raepo)
+	  call ftabGetd(lu,'DECEPO',decepo)
+	  call ftabGetd(lu,'RAAPP',raapp)
+	  call ftabGetd(lu,'DECAPP',decapp)
+	  call ftabGetd(lu,'EPOCH',epoch)
+	  call ftabGetd(lu,'FREQOFF',freqoff)
+	  call ftabGetd(lu,'RESTFREQ',restfreq)
 	endif
 c
 c  Check that everything looks OK.
@@ -1480,9 +925,7 @@ c
 	badepo = .false.
 	do i=1,nsrc
 	  call lcase(source(i))
-	  if(nint(epoch(i)+1).eq.0)then
-	    epoch(i) = Jul2Epo(timeref,' ')
-	  else if(epoch(i).lt.1850.0.or.epoch(i).gt.2150.0)then
+	  if(epoch(i).lt.1850.0.or.epoch(i).gt.2150.0)then
 	    badepo = .true.
 	    epoch(i) = defepoch
 	  endif
@@ -1491,33 +934,23 @@ c
 	  decepo(i) = dpi/180 * decepo(i)
 	  raapp(i)  = dpi/180 * raapp(i)
 	  decapp(i) = dpi/180 * decapp(i)
-c
-c  If the apparent RA and DEC look bad, recompute them.
-c
-	  eporef = epo2jul(epoch(i),' ')
-	  if((diff.gt.1.and.abs(eporef-timeref).gt.1)
-     *		.or.3600*diff.lt.1)then
+	  if(diff.gt.1.or.3600*diff.lt.1)then
 	    badapp = .true.
-	    call Precess(eporef, raepo(i),decepo(i),
-     *			 timeref,raapp(i),decapp(i))
-	    call Nutate(timeref,raapp(i),decapp(i),r0,d0)
-	    call Aberrate(timeref,r0,d0,raapp(i),decapp(i))
+	    jday = 365.25d0*(epoch(i)-2000) + Jul2000
+	    call precess(jday,raepo(i),decepo(i),T0,raapp(i),decapp(i))
 	  endif
 	enddo
 c
 	if(badepo)call bug('w',
      *	  'Some epochs looked bad -- they were modified')
-	if(badapp.and.dosu)call bug('w',
+	if(badapp.and.multi)call bug('w',
      *	  'Some apparent RA/DECs looked bad -- they were recomputed')
 c
-c  Scale the source-specific frequencies, rest frequencies and velocities.
+c  Scale the source-specific frequencies and the rest frequencies.
 c
 	do i=1,nif*nsrc
 	  freqoff(i) = 1e-9*freqoff(i)
 	  restfreq(i) = 1e-9*restfreq(i)
-	enddo
-	do i=1,nsrc
-	  veldop(i) = 1e-3*veldop(i)
 	enddo
 c
 c  If there are multiple sources with the same name, assume they are
@@ -1544,304 +977,53 @@ c
 	  enddo
 	enddo
 c
-	call Sortie(sindx,srcids,nsrc)
+	call Sortie(sindx,srcid,nsrc)
 c
 	end
 c************************************************************************
-	subroutine TabRefT0(t)
+	subroutine Info(tno,multi,nif)
 c
 	implicit none
-	double precision t
+	logical multi
+	integer nif,tno
 c
-c  Return the reference time.
+c  Determine whether there are srcid/freqid and whether there is an IF axis.
+c
+c  Input:
+c    tno	Handle of the FITS file.
+c  Output:
+c    multi	True if there is a src-id or freq-id random parameter.
+c    nif	Number of IFs along the IF axis.
 c------------------------------------------------------------------------
-	include 'fits.h'
-	t = timeref
-	if(nconfig.ge.1)t = t + timeoff(1)
-	end
-c************************************************************************
-	subroutine TabTime(lu,nconfig,jdateobs,timeoff)
-c
-	implicit none
-	integer lu,nconfig
-	double precision jdateobs,timeoff
-c
-c  Determine the time correction to add to the FITS time to convert
-c  it to a true UT1 time (as best as we can). This involves both
-c  an offset between the time system and UT1, and offsets to remove
-c  fudges performed by AIPS DBCON.
-c------------------------------------------------------------------------
-	character rdate*32,timsys*16,line*80
-	double precision jrdate,datutc,ut1utc
-	integer ltsys
+	integer i,naxis,count
+	character num*2,type*16
 c
 c  Externals.
 c
-	integer len1
-	double precision deltime
+	character itoaf*2
 c
-c  Determine the offset times and the time system.
+c  See what the dimension of the IF axis is.
 c
-	call fitrdhdd(lu,'DATUTC',datutc,0.d0)
-	call fitrdhdd(lu,'UT1UTC',ut1utc,0.d0)
-	call fitrdhda(lu,'TIMSYS',timsys,'UTC')
-	if(timsys.eq.' ')timsys = 'UTC'
-	ltsys = len1(timsys)
+	call fitrdhdi(tno,'NAXIS',naxis,0)
+	nif = 1
+	do i=2,naxis
+	  num = itoaf(i)
+	  call fitrdhda(tno,'CTYPE'//num,type,' ')
+	  if(type.eq.'IF') call fitrdhdi(tno,'NAXIS'//num,nif,1)
+	enddo
 c
-c  Determine the reference time.
+c  Determine whether there is a source-id and freq-id random parameter.
 c
-	call fitrdhda(lu,'RDATE',rdate,' ')
-	if(rdate.ne.' ')then
-	  call fdatejul(rdate,jrdate)
-	else
-	  jrdate = jdateobs
-	endif
-c
-c  If there is not DATA to UTC time correction present, check if the
-c  time is IAT time. If so, work our the time difference.
-c
-	if((timsys(1:3).eq.'IAT'.or.timsys(1:3).eq.'TAI').and.
-     *	  datutc.eq.0) datutc = 24*3600*deltime(jrdate,'tai')
-c
-c  Give messages about what we are going.
-c
-	if(timsys(1:2).ne.'UT'.and.datutc.eq.0)then
-	  call bug('w','The time offset '//timsys(1:ltsys)//
-     *		'-UTC is claimed to be 0.')
-	else if(datutc.ne.0)then
-	  write(line,'(a,i3,a,f5.1,a)')
-     *	    'Decrementing times for configuration',nconfig,' by',datutc,
-     *	    ' seconds ('//timsys(1:ltsys)//'-UTC).'
-	  call output(line)
-	endif
-c
-	if(ut1utc.ne.0)then
-	  write(line,'(a,i3,a,f6.2,a)')
-     *	    'Decrementing times for configration',nconfig,' by',-ut1utc,
-     *	    ' seconds (UTC-UT1).'
-	  call output(line)
-	endif
-c
-	if(nconfig.gt.1)then
-	  write(line,'(a,i3,a,i3,a)')
-     *	    'Fiddling times for configuration',nconfig,
-     *	    ' to remove AIPS DBCON fudges.'
-	  call output(line)
-	endif
-c
-	timeoff = (ut1utc - datutc) / (24*3600) 
-     *			- jdateobs + jrdate - 5*(nconfig-1)
-c
-	end
-c************************************************************************
-	subroutine TabVeloc(altsys,altr,altrval,altrpix)
-c
-	implicit none
-	integer altsys
-	logical altr
-	real altrpix,altrval
-c------------------------------------------------------------------------
-	include 'fits.h'
-	integer i,i0
-	integer OBSRADIO,OBSOPTIC
-	parameter(OBSRADIO=3,OBSOPTIC=259)
-c
-c  Determine the mode that we are using to compute velocities.
-c
-	if(altsys.eq.OBSRADIO.or.altsys.eq.OBSOPTIC)then
-	  velcomp = .false.
-	  velsys = altsys
-	else if(altr.and.altsys.ne.0)then
-	  velcomp = .false.
-	  velsys = altsys
-	  velref = altrpix
-	  do i=1,nsrc
-	    veldop(i) = altrval
-	  enddo
-	else if(altsys.ne.0)then
-	  velcomp = .true.
-	  velsys = altsys
-	else
-	  velcomp = .false.
-	endif
-c
-c  Compute the velocity if it is fixed (e.g. the data have been Doppler
-c  tracked or the like).
-c
-	if(.not.velcomp)then
-	  do i=1,nsrc
-	    i0 = (i-1)*nif + 1
-	    call VelCvt(velsys,velref,restfreq(i),
-     *		sfreq(1)+freqoff(i0)+freqref(1),sdf(1),veldop(i))
-	  enddo
-	endif
-c
-c  Convert the velocity system to a radio one -- as thats the only thing
-c  that Miriad supports.
-c
-	if(velsys.ge.1.and.velsys.le.256)velsys = velsys + 256
-c
-	end
-c************************************************************************
-	subroutine VelGetty(lu,velsys)
-c
-	implicit none
-	integer lu,velsys
-c
-c  Determine the velocity system.
-c
-c  Input:
-c    lu
-c  Output:
-c    velsys
-c------------------------------------------------------------------------
-	character string*16
-	call fitrdhda(lu,'VELTYP',string,'OBS')
-	if(string.eq.' ')string = 'OBS'
-	velsys = 0
-	if(string(1:3).eq.'OBS')then
-	  velsys = 3
-	else if(string(1:3).eq.'HEL')then
-	  velsys = 2
-	else if(string(1:3).eq.'LSR')then
-	  velsys = 1
-	endif
-	call fitrdhda(lu,'VELDEF',string,'RADIO')
-	if(string.eq.' ')string = 'RAD'
-	if(string(1:3).eq.'RAD')velsys = velsys + 256
-	end
-c************************************************************************
-	subroutine VelCvt(velsys,velref,restfreq,f,df,veldop)
-c
-	implicit none
-	integer velsys
-	real velref,df
-	double precision restfreq,f,veldop
-c
-c  Convert a velocity from being the velocity of a channel to the
-c  radial velocity of the observatory.
-c
-c  Input:
-c    velsys	Velocity system (1=LSR, 2=HEL, 3=OBS, plus 256 for radio definition)
-c    velref	Velocity (km/s) at reference pixel.
-c    restfreq	Rest frequency (GHz).
-c    f		Frequency (GHz) at channel 1.
-c    df		Channel frequency (GHz) increment.
-c  Input/Output:
-c    veldop	On input, the velocity (km/s) at the reference pixel.
-c		On output, the radial velocity of the rest frame (km/s).
-c------------------------------------------------------------------------
-	include 'mirconst.h'
-	integer OBSRADIO,OBSOPTIC,LSRRADIO,LSROPTIC,HELRADIO,HELOPTIC
-	parameter(OBSRADIO=259,OBSOPTIC=3,LSRRADIO=257,LSROPTIC=1)
-	parameter(HELRADIO=258,HELOPTIC=2)
-	double precision fref
-c
-c  Determine the frequency at the reference channel.
-c
-	fref = f + (velref-1)*df
-c
-c  Given this frequency, determine the velocity that the frequency
-c  difference corresponds to.
-c
-	if(velsys.eq.OBSRADIO.or.velsys.eq.OBSOPTIC.or.
-     *					restfreq.eq.0)then
-	  veldop = 0
-	else if(velsys.eq.HELRADIO.or.velsys.eq.LSRRADIO)then
-	  veldop = 1e-3*cmks*(1-fref/restfreq) - veldop
-	else if(velsys.eq.HELOPTIC.or.velsys.eq.LSROPTIC)then
-	  veldop = 1e-3*cmks*(restfreq/fref-1) - veldop
-	else
-	  call bug('f','Unrecognised velocity system, in VelCvt')
-	endif
-	
-	end
-c************************************************************************
-	subroutine telpar(telescop,systemp,systok,jyperk,jok,
-     *		latlong,latitude,longitud,polinfo,chioff,mount)
-c
-	implicit none
-	character telescop*(*)
-	integer mount
-	double precision latitude,longitud
-	real chioff,systemp,jyperk
-	logical latlong,polinfo,systok,jok
-c
-c  Determine default characteristics of the observatory (in case
-c  no AIPS AN file exists).
-c
-c  Input:
-c    telescop	Telescope name.
-c  Output:
-c    systok	True if systemp has been initialised.
-c    systemp	Typical system temperature.
-c    jok	True if jyperk has been initialised.
-c    jyperk	System gain.
-c    latlong	True if the latitude and longitude are known.
-c    latitude)	Observatory latitude and longitude, in radians.
-c    longitud)
-c    polinfo	True if mount and chioff have been initialised.
-c    chioff	The position angle of the X feed with respect to the
-c		local vertical.
-c    mount	Antenna mount type.
-c------------------------------------------------------------------------
-	double precision dtemp
-	logical ok
-c
-c  Externals.
-c
-	character itoaf*8
-c
-c  Get the info we need from the obspar routine.
-c
-	if(telescop.eq.' ')then
-	  call bug('w','Telescope name was not present in the'//
-     *							' FITS file')
-	  call bug('w','Unable to guess typical systemp and jyperk')
-	  latlong = .false.
-	  polinfo = .false.
-	  jok = .false.
-	  systok = .false.
-	else
-c
-c  System temperature.
-c
-	  call obspar(telescop,'systemp',dtemp,systok)
-	  if(systok)then
-	    call output('Assuming systemp='//itoaf(int(dtemp)))
-	    systemp = dtemp
-	  else
-	    call bug('w','Unable to guess typical system temperature')
-	  endif
-c
-c  System gain.
-c
-	  call obspar(telescop,'jyperk',dtemp,jok)
-	  if(jok)then
-	    call output('Assuming jyperk='//itoaf(int(dtemp)))
-	    jyperk = dtemp
-	  else
-	    call bug('w','Unable to guess typical system gain')
-	  endif
-c
-c  Latitude, longitude, evector and mount type.
-c
-	  call obspar(telescop,'latitude',latitude,latlong)
-	  call obspar(telescop,'longitude',longitud,ok)
-	  latlong = latlong.and.ok
-c
-c  Mount and evector.
-c
-	  call obspar(telescop,'evector',dtemp,ok)
-	  if(ok)then
-	    chioff = dtemp
-	  else
-	    chioff = 0
-	    call output('Assuming feed angle is 0 degrees')
-	  endif
-	  call obspar(telescop,'mount',dtemp,polinfo)
-	  if(polinfo)mount = nint(dtemp)
-	endif
+	call fitrdhdi(tno,'PCOUNT',naxis,0)
+	count = 0
+	do i=1,naxis
+	  num = itoaf(i)
+	  call fitrdhda(tno,'PTYPE'//num,type,' ')
+	  if(type.eq.'SOURCE'.or.type.eq.'FREQSEL')count = count + 1
+	enddo
+	multi = count.eq.2
+	if(count.ne.2.and.count.ne.0)
+     *	  call bug('f','Not a true multi-source file')
 c
 	end
 c************************************************************************
@@ -1888,155 +1070,91 @@ c
 c
 	end
 c************************************************************************
-	subroutine TabInit(tno)
+	subroutine TabWrite(tno,sid,fid,config,obsra,obsdec)
 c
 	implicit none
-	integer tno
-c------------------------------------------------------------------------
-	include 'fits.h'
-	integer i,nschan(MAXIF),ischan(MAXIF)
-	character veltype(3)*8
-	data veltype/'VELO-LSR','VELO-HEL','VELO-OBS'/
+	integer tno,sid,fid,config
+	double precision obsra,obsdec
 c
-	call uvputvri(tno,'nspect',nif,1)
-	do i=1,nif
-	  ischan(i) = nchan*(i-1) + 1
-	  nschan(i) = nchan
-	enddo 
-	call uvputvri(tno,'ischan',ischan,nif)
-	call uvputvri(tno,'nschan',nschan,nif)
-c
-	if(systok)call uvputvrr(tno,'systemp',systemp,1)
-	if(jok)   call uvputvrr(tno,'jyperk',jyperk,1)
-c
-c  Velocity information.
-c
-	call uvputvrr(tno,'vsource',0.0,1)
-	i = velsys - 256
-	if(i.ge.1.and.i.le.3)call uvputvra(tno,'veltype',veltype(i))
-c
-c  Telescope and observer.
-c
-	if(telescop.ne.' ')call uvputvra(tno,'telescop',telescop)
-	if(observer.ne.' ')call uvputvra(tno,'observer',observer)
-c
-c  Initialise common variables.
-c
-	srcid = -1
-	freqid = -1
-	config = -1
-	Tprev = -1
-	inited = .true.
-c
-	end
-c************************************************************************
-	subroutine TabWrite(tno,sid,fid,confg,time)
-c
-	implicit none
-	integer tno,sid,fid,confg
-	double precision time
-c
-c  Write information about the current source and frequency
-c  setup and observatory characteristics.
+c  This writes out information about the current source and frequency
+c  setup.
 c
 c  Input:
 c    tno	Handle of the output Miriad uv file.
 c    sid	FITS source id number.
 c    fid	FITS frequency id number.
-c    confg	FITS configuration number.
-c  Input/Output:
-c    time	Observing time. Input is the nominal value. Output is the
-c		value corrected for clock differences.
+c    config	FITS configuration number.
+c  Output:
+c    obsra,obsdec Observation RA and DEC.
 c------------------------------------------------------------------------
-	integer LSRRADIO
-	parameter(LSRRADIO=257)
 	include 'fits.h'
-	integer i,j,k
-	logical newsrc,newfreq,newconfg,newlst,newchi,newvel,neweq
-	real chi,dT
-	double precision lst,vel
+c
+	double precision raepo(MAXSRC),decepo(MAXSRC)
+	double precision raapp(MAXSRC),decapp(MAXSRC)
+	double precision dra(MAXSRC),ddec(MAXSRC)
+	double precision sfreq(MAXIF*MAXFREQ)
+	double precision freqoff(MAXSRC*MAXIF),epoch(MAXSRC)
+	double precision freqref(MAXCONFG)
+	double precision restfreq(MAXSRC*MAXIF)
+	double precision antpos(3*MAXANT,MAXCONFG)
+	integer nants(MAXCONFG)
+	
+	real sdf(MAXIF*MAXFREQ)
+	integer nsrc,nif,nfreq,nconfg
+	integer srcid(MAXSRC),freqid(MAXFREQ)
+	integer sindx(MAXSRC),findx(MAXFREQ)
+	logical mosaic
+	character source(MAXSRC)*20
+	common/Tables/raepo,decepo,raapp,decapp,dra,ddec,sfreq,freqoff,
+     *	  restfreq,antpos,freqref,epoch,sdf,
+     *	  nsrc,nif,nfreq,nconfg,nants,srcid,freqid,sindx,findx,mosaic
+	common/TablesC/source
+c
+	integer i,j,k,l
 	double precision sfreq0(MAXIF),sdf0(MAXIF),rfreq0(MAXIF)
 c
 c  Externals.
 c
-	integer binsrchi
-	double precision eqeq
+	integer bsrchi
 c
-	if(.not.inited)call TabInit(tno)
+c  Write out the antenna table.
 c
-	newsrc = srcid.ne.sid
-	if(newsrc)then
-	  srcid = sid
-	  srcidx = binsrchi(srcid,srcids,nsrc)
-	  if(srcidx.eq.0)srcidx = 1
-	  srcidx = sindx(srcidx)
-	  call uvputvri(tno,'fgsrcid',srcid,1)
+	if(config.le.nconfg)then
+	  call uvputvri(tno,'nants',nants(config),1)
+	  call uvputvrd(tno,'antpos',antpos(1,config),3*nants(config))
 	endif
 c
-	newfreq = freqid.ne.fid
-	if(newfreq)then
-	  freqid = fid
-	  freqidx = binsrchi(freqid,freqids,nfreq)
-	  if(freqidx.eq.0)freqidx = 1
-	  freqidx = findx(freqidx)
-	  call uvputvri(tno,'fgfreqid',freqid,1)
-	endif
+c  Locate this source and frequency in the appropriate tables.
 c
-	newconfg = config.ne.confg
-	config = confg
-	if(config.gt.nconfig)config = 1
+	i = bsrchi(sid,srcid,nsrc)
+	j = bsrchi(fid,freqid,nfreq)
 c
-c  Correct the time
+c  Write the info relevant to this.
 c
-	if(config.le.nconfig)time = time + timeoff(config)
-c
-	dT = time - tprev
-	tprev = time
-c
-c  Write out the antenna table and array latitude/longitude, evector, mount.
-c
-	if(newconfg)then
-	  if(config.le.nconfig)then
-	    call uvputvri(tno,'fgarray',config,1)
-	    call uvputvri(tno,'nants',nants(config),1)
-	    call uvputvrd(tno,'antpos',antpos(1,config),3*nants(config))
-	  endif
-	  if(llok)then
-	    call uvputvrd(tno,'latitud',lat(config),1)
-	    call uvputvrd(tno,'longitu',long(config),1)
-	  endif
-	  if(emok)then
-	    call uvputvrr(tno,'evector',evec,1)
-	    call uvputvri(tno,'mount',mount(config),1)
-	    if(mount(config).eq.EQUATOR)call uvputvrr(tno,'chi',evec,1)
-	  endif
-	endif
-c
-c  Write out source information.
-c
-	if(newsrc)then
-	  if(.not.velcomp)
-     *	    call uvputvrr(tno,'veldop',real(veldop(srcidx)),1)
-	  call uvputvrd(tno,'obsra',raapp(srcidx),1)
-	  call uvputvrd(tno,'obsdec',decapp(srcidx),1)
-	  call uvputvrd(tno,'ra',raepo(srcidx),1)
-	  call uvputvrd(tno,'dec',decepo(srcidx),1)
+	if(i.eq.0.or.j.eq.0)then
+	  call bug('f','Invalid source or freq id')
+	else
+	  i = sindx(i)
+	  j = findx(j)
+	  call uvputvrd(tno,'obsra',raapp(i),1)
+	  call uvputvrd(tno,'obsdec',decapp(i),1)
+	  obsra = raapp(i)
+	  obsdec = decapp(i)
+	  call uvputvrd(tno,'ra',raepo(i),1)
+	  call uvputvrd(tno,'dec',decepo(i),1)
 	  if(mosaic)then
-	    call uvputvrr(tno,'dra',real(dra(srcidx)),1)
-	    call uvputvrr(tno,'ddec',real(ddec(srcidx)),1)
+	    call uvputvrr(tno,'dra',real(dra(i)),1)
+	    call uvputvrr(tno,'ddec',real(ddec(i)),1)
 	  endif
-	  call uvputvrr(tno,'epoch',real(epoch(srcidx)),1)
-	  call uvputvra(tno,'source',source(srcidx))
-	endif
-c
-c  Write out source/frequency information.
-c
-	if(newsrc.or.newfreq)then
-	  i = (srcidx-1)*nif + 1
-	  j = (freqidx-1)*nif + 1
+	  call uvputvrr(tno,'epoch',real(epoch(i)),1)
+	  call uvputvra(tno,'source',source(i))
+	  i = (i-1)*nif + 1
+	  j = (j-1)*nif + 1
+	  l = config
+	  if(l.gt.nconfg) l = 1
 	  do k=1,nif
 	    rfreq0(k) = restfreq(i)
-	    sfreq0(k) = sfreq(j) + freqoff(i) + freqref(config)
+	    sfreq0(k) = sfreq(j) + freqoff(i) + freqref(l)
 	    sdf0(k) =   sdf(j)
 	    i = i + 1
 	    j = j + 1
@@ -2045,102 +1163,6 @@ c
 	  call uvputvrd(tno,'freq',sfreq0,1)
 	  call uvputvrd(tno,'sdf',sdf0,nif)
 	  call uvputvrd(tno,'restfreq',rfreq0,nif)
-	endif
-c
-c  Recompute the equation of the equinox every day.
-c
-	neweq = (abs(dT).gt.1)
-	if(neweq) eq = eqeq(time)
-c
-c  Compute and save the local sideral time. Recompute the LST every sec.
-c
-	newlst = (abs(dT).gt.1./(24.*3600.).or.newconfg).and.llok
-	if(newlst)then
-	  call jullst(time,long(config),lst)
-	  lst = lst + eq
-	  call uvputvrd(tno,'lst',lst,1)
-	endif
-c
-c  Compute and save the parallactic angle. Recompute whenever LST changes.
-c
-	newchi = (newlst.or.newsrc.or.newconfg).and.llok.and.
-     *		 emok.and.(mount(config).eq.ALTAZ)
-	if(newchi)then
-	  call parang(raapp(srcidx),decapp(srcidx),lst,lat(config),chi)
-	  call uvputvrr(tno,'chi',chi+evec,1)
-	endif
-c
-c  Compute and save the radial velocity. Compute a new velocity every
-c  minute.
-c
-	newvel = velcomp .and. ( abs(dT).gt.60./(24.*3600.) .or. newsrc
-     *		.or. newconfg ) .and. llok
-	if(newvel)then
-	  call VelRad(velsys.eq.LSRRADIO,
-     *	    time,raapp(srcidx),decapp(srcidx),
-     *	    epoch(srcidx),raepo(srcidx),decepo(srcidx),lst,
-     *	    lat(config),vel)
-	  call uvputvrr(tno,'veldop',real(vel),1)
-	endif
-c
-	end
-c************************************************************************
-	subroutine VelRad(dolsr,time,raapp,decapp,epoch,raepo,decepo,
-     *	  lst,lat,vel)
-c
-	implicit none
-	logical dolsr
-	double precision time,raapp,decapp,epoch,raepo,decepo
-	double precision lst,lat,vel
-c
-c  Compute the radial velocity of the observatory, in the direction of
-c  a source, with respect to either LSR or the barycentre.
-c
-c  Input:
-c    dolsr	If true, compute LSR velocity. Otherwise barycentric.
-c    time	Time of interest (Julian date).
-c    raapp,decapp Apparent RA and DEC (radians).
-c    raepo,decepo RA and DEC at the standard epoch (radians).
-c    epoch	The standard epoch (years).
-c    lat	Observatory geodetic latitude (radians).
-c    lst	Local sideral time (radians).
-c  Output:
-c    vel	Radial velocity.
-c------------------------------------------------------------------------
-	double precision lmn2000(3),lmnapp(3),ra2000,dec2000
-	double precision velsite(3),posearth(3),velearth(3),velsun(3)
-	integer i
-c
-c  Externals.
-c
-	double precision Epo2jul
-c
-c  Compute barycentric velocity.
-c
-	call sph2lmn(raapp,decapp,lmnapp)
-	call vsite(lat,lst,velsite)
-	call vearth(time,posearth,velearth)
-	vel = 0
-	do i=1,3
-	  vel = vel - (velsite(i) + velearth(i))*lmnapp(i)
-	enddo
-c
-c  To compute LSR velocity, we need the source position in J2000 coordinates.
-c  Precess, if necessary, to the J2000 frame. Vsun returns the Suns velocity
-c  in the J2000 frame. Add this contribution to the velocity we already have.
-c
-	if(dolsr)then
-	  if(abs(epoch-2000).gt.0.001)then
-	    call precess(Epo2jul(epoch,' '),raepo,decepo,
-     *		       Epo2jul(2000.d0,'J'),ra2000,dec2000)
-	    call sph2lmn(ra2000,dec2000,lmn2000)
-	  else
-	    call sph2lmn(raepo,decepo,lmn2000)
-	  endif
-	  call vsun(velsun)
-	  do i=1,3
-	    vel = vel + lmn2000(i)*velsun(i)
-	  enddo
 	endif
 c
 	end
@@ -2178,6 +1200,118 @@ c
 	enddo
 	end
 c************************************************************************
+	subroutine uvhdin(lu,tno,altr,altrpix,altrval,Pol0,PolInc)
+c
+	implicit none
+	integer lu,tno
+	logical altr
+	real altrpix,altrval
+	integer Pol0,PolInc
+c
+c  Get the header parameters from a UVFITS file, and write them out to
+c  the MIRIAD file.
+c
+c  Input:
+c    lu		Handle of the input FITS file.
+c    tno	Handle of the output MIRIAD file.
+c    altr	True if the user specified altrpix and altrval.
+c    altrpix	The user given value for altrpix.
+c    altrval	The user given value for altrval.
+c  Output:
+c    Pol0	Base polarisation code.
+c    PolInc	Increment between polarisations.
+c------------------------------------------------------------------------
+	include 'mirconst.h'
+	include 'fits.h'
+	integer veltype
+	double precision f0,f,altval,altdelt,Coord(3,4)
+	real veldop,altpix
+	character string*32,vtype(6)*8
+c
+	data vtype/'FELO-LSR','FELO-HEL','FELO-OBS',
+     *		   'VELO-LSR','VELO-HEL','VELO-OBS'/
+c
+c  Determine various of the important parameters.
+c
+	call fuvRdHd(lu,Coord)
+c
+	Pol0 = nint( Coord(uvCrval,uvStokes) + 
+     *		(1-Coord(uvCrpix,uvStokes))*Coord(uvCdelt,uvStokes) )
+	PolInc = nint(Coord(uvCdelt,uvStokes))
+c
+	call fitrdhdd(lu,'RESTFREQ',f,Coord(uvCrval,uvFreq))
+	f0 = Coord(uvCrval,uvFreq) +
+     *		(1-Coord(uvCrpix,uvFreq))*Coord(uvCdelt,uvFreq)
+
+	if(altr)then
+	  altval = 1e3 * altrval
+	  altpix = altrpix
+	else
+	  call fitrdhdd(lu,'ALTRVAL',altval,cmks*(1-f0)/f)
+	  call fitrdhdr(lu,'ALTRPIX',altpix,1.0)
+	endif
+	altdelt = -cmks*Coord(uvCdelt,uvFreq)/f
+	veldop = cmks*(1-f0/f) - (altval + altdelt*(1-altpix))
+	veldop = 1.0e-3 * veldop
+	call uvputvrr(tno,'veldop',veldop,1)
+	call uvputvrr(tno,'vsource',0.,1)
+c
+	call fitrdhdi(lu,'VELREF',veltype,4)
+	if(veltype.gt.256) veltype = veltype - 256 + 3
+	if(veltype.lt.1.and.veltype.gt.6) veltype = 4
+	call uvputvra(tno,'veltype',vtype(veltype))
+c
+	call fitrdhda(lu,'TELESCOP',string,' ')
+	if(string.ne.' ')call uvputvra(tno,'telescop',string)
+	call fitrdhda(lu,'OBSERVER',string,' ')
+	if(string.ne.' ')call uvputvra(tno,'observer',string)
+c
+	end
+c************************************************************************
+	subroutine telpar(lu,ok,telescop,latitude,longitud,chioff,mount)
+c
+	implicit none
+	integer lu,mount
+	character telescop*(*)
+	double precision latitude,longitud
+	real chioff
+	logical ok
+c
+c  Determine the latitude and longitude of the observatory.  First we
+c  look for FITS keywords which might give this. If these are missing,
+c  get the observatory name, and see if we know the lat,long of this
+c  observatory.
+c
+c  Input:
+c    lu		Handle of the FITS file.
+c  Output:
+c    ok		Set to true if lat/long successfully found.
+c    telescop	Telescope name.
+c    latitude)	Observatory latitude and longitude, in radians.
+c    longitud)
+c    chioff	The position angle of the X feed with respect to the
+c		local vertical.
+c    mount	Antenna mount type.
+c------------------------------------------------------------------------
+	double precision dtemp
+c
+	call fitrdhda(lu,'TELESCOP',telescop,' ')
+	if(telescop.eq.' ')
+     *	  call fitrdhda(lu,'INSTRUME',telescop,' ')
+c
+c  Get the info we need from the obspar routine.
+c
+	ok = telescop.ne.' '
+	if(ok)call obspar(telescop,'latitude',latitude,ok)
+	if(ok)call obspar(telescop,'longitude',longitud,ok)
+	if(ok)call obspar(telescop,'evector',dtemp,ok)
+	if(ok)chioff = dtemp
+	if(ok)call obspar(telescop,'mount',dtemp,ok)
+	if(ok)mount = dtemp
+	if(.not.ok)
+     *	  call bug('w','Unable to determine telescope lat/long')
+	end
+c************************************************************************
 	subroutine uvout(out,version)
 c
 	implicit none
@@ -2189,20 +1323,8 @@ c  Inputs:
 c    out	Name of the output uv FITS file.
 c    version	Version of this program.
 c------------------------------------------------------------------------
-	include 'maxdim.h'
+	include 'fits.h'
 	include 'mirconst.h'
-	integer uvCrval,uvCdelt,uvCrpix
-	integer uvStokes,uvFreq,uvRa,uvDec
-	parameter(uvCrval=1,uvCdelt=2,uvCrpix=3)
-	parameter(uvStokes=1,uvFreq=2,uvRa=3,uvDec=4)
-c
-	integer uvU,uvV,uvW,uvBl,uvT,uvRandom,uvData
-	parameter(uvU=1,uvV=2,uvW=3,uvBl=4,uvT=5,uvRandom=5)
-	parameter(uvData=uvRandom+1)
-c
-	integer Polmin,Polmax,maxPol,PolRR,PolXX
-	parameter(PolMin=-8,PolMax=4,maxPol=4,PolXX=-5,PolRR=-1)
-c
 	complex Data(maxchan)
 	logical Flags(maxchan)
 	real OutData(uvRandom+1+3*maxchan)
@@ -2210,17 +1332,14 @@ c
 	integer i,i0
 	integer tIn,tScr,tOut
 	integer nread,nvis,nVisRef,offset,length,velref,nchan
-	integer ant1,ant2
-	real wt,epoch,dra,ddec,dra0,ddec0
-	double precision ra,dec,restfreq,preamble(5),Coord(3,4)
-	double precision f0,df,v0,dv,repsi,fepsi,vepsi,T0
+	integer bl,ant1,ant2,itemp
+	real inttime,epoch,dra,ddec,dra0,ddec0
+	double precision ra,dec,restfreq,f0,df,preamble(4),Coord(3,4)
+	double precision repsi,fepsi,T0
 	character string*64,ltype*32,veltype*32,vtype(6)*8
 	character source*32,observer*32,telescop*32
 	integer pols(PolMin:PolMax),P,badpol,npol,Pol0,PolInc
-	integer nants,mount
-	character polty*2,type*1
-	logical updated
-	double precision xyz(3*MAXANT),lat,long,height
+	logical dowide
 c
 	integer NPARM
 	parameter(NPARM=5)
@@ -2230,6 +1349,7 @@ c  Externals.
 c
 	character itoaf*8
         logical uvdatopn
+	integer PolCvt
 c
 	data parms/'UU      ','VV      ','WW      ',
      *		   'BASELINE','DATE    '/
@@ -2261,14 +1381,14 @@ c
 c  Get things which define the coordinate system.
 c
 	call uvrdvrr(tIn,'epoch',epoch,1950.)
-	call uvrdvrd(tIn,'ra',ra,0.d0)
-	call uvrdvrd(tIn,'dec',dec,0.d0)
+	call uvrdvrd(tIn,'ra',ra,0.)
+	call uvrdvrd(tIn,'dec',dec,0.)
 	call uvrdvrr(tIn,'dra',dra,0.)
 	call uvrdvrr(tIn,'ddec',ddec,0.)
 	dra0 = dra
 	ddec0 = ddec
 c
-	call uvfit2(tIn,'sfreq',nread,df,f0,fepsi)
+	call uvfit2(tIn,'frequency',nread,df,f0,fepsi)
 	if(fepsi.gt.0.1*abs(df))call bug('w',
      *	    'Channel frequencies deviated by > 10% from linearity')
 	if(nread.eq.1)call uvfit1(tIn,'bandwidth',nread,df,fepsi)
@@ -2276,25 +1396,22 @@ c
 	df = 1e9 * df
 c
 	call uvdatgta('ltype',ltype)
-	if(ltype.eq.'wide')then
+	dowide = ltype.eq.'wide'.or.nread.eq.1
+	if(dowide)then
 	  velref = 0
 	  restfreq = 0
 	else
+	  call uvrdvra(tIn,'veltype',veltype,'VELO-LSR')
+	  velref = 0
+	  do i=1,6
+	    if(veltype.eq.vtype(i)) velref = i
+	  enddo
+	  if(velref.gt.3) velref = velref - 3 + 256
+c
 	  call uvfit1(tIn,'restfreq',nread,restfreq,repsi)
 	  if(repsi.gt.0.001*restfreq) call bug('w',
      *	    'Rest frequencies varied between channels by > 0.1%')
 	  restfreq = 1e9 * restfreq
-	  if(restfreq.gt.0)then
-	    call uvrdvra(tIn,'veltype',veltype,'VELO-LSR')
-	    call uvfit2(tIn,'velocity',nread,dv,v0,vepsi)
-	    if(vepsi.gt.0.1*abs(dv))call bug('w',
-     *	      'Channel velocities deviate by > 10% from linearity')
-	    velref = 0
-	    do i=1,6
-	      if(veltype.eq.vtype(i)) velref = i
-	    enddo
-	    if(velref.gt.3) velref = velref - 3 + 256
-	  endif
 	endif
 c
 c  Get other book keeping.
@@ -2305,23 +1422,8 @@ c
 c
 c  Set the reference date.
 c
-	T0 = preamble(4)
+	T0 = preamble(3)
 	T0 = int(T0 - 0.5d0) + 0.5d0
-c
-c  Load antenna table information.
-c
-	call uvprobvr(tIn,'antpos',type,nants,updated)
-	if(mod(nants,3).ne.0)
-     *	  call bug('f','Antpos variable looks bad')
-	nants = nants/3
-	if(nants.gt.MAXANT)nants = 0
-	if(nants.gt.0)then
-	  call uvgetvrd(tIn,'antpos',xyz,3*nants)
-	  call uvrdvri(tIn,'mount',mount,1)
-	  call uvrdvrd(tIn,'latitud',lat,0.d0)
-	  call uvrdvrd(tIn,'longitu',long,0.d0)
-	  call uvrdvrd(tIn,'height',height,0.d0)
-	endif
 c
 c  Read the data. Check that we are dealing with a single pointing.
 c  If the polarisation ocde is OK, do some conversions, and write to
@@ -2339,13 +1441,10 @@ c
 c
 	  call uvdatgti('pol',P)
 	  if(P.ge.PolMin.and.P.le.PolMax.and.P.ne.0)then
+	    P = PolCvt(P)
+	    pols(P) = pols(P) + 1
 	    nvis = nvis + 1
-	    call uvdatgtr('variance',wt)
-	    if(wt.eq.0)then
-	      call uvrdvrr(tIn,'inttime',wt,1.)
-	    else
-	      wt = 1/wt
-	    endif
+	    call uvrdvrr(tIn,'inttime',inttime,1.)
 c
 c  Convert baseline number to normal AIPS form. Note the different conventions!
 c
@@ -2354,23 +1453,34 @@ c  AIPS                      bl = 256*ant1 + ant2                        ant1 - 
 c
 c  In both cases ant1 is normally less than ant2.
 c
-	    call Basant(preamble(5),ant1,ant2)
-	    pols(P) = pols(P) + 1
+	    bl = preamble(4)
+	    ant2 = bl / 256
+	    ant1 = bl - 256*ant2
+	    if(ant1.gt.ant2)then
+	      preamble(1) = -preamble(1)
+	      preamble(2) = -preamble(2)
+	      do i=1,nchan
+		data(i) = conjg(data(i))
+	      enddo
+	      itemp = ant1
+	      ant1 = ant2
+	      ant2 = itemp
+	    endif
 c
-	    OutData(uvU+1) = -1e-9 * preamble(1)
-	    OutData(uvV+1) = -1e-9 * preamble(2)
-	    OutData(uvW+1) = -1e-9 * preamble(3)
-	    OutData(uvT+1) = preamble(4) - T0
+	    OutData(uvU+1) = 1e-9 * preamble(1)
+	    OutData(uvV+1) = 1e-9 * preamble(2)
+	    OutData(uvW+1) = 0.
+	    OutData(uvT+1) = preamble(3) - T0
 	    OutData(uvBl+1) = 256*ant1 + ant2
 	    OutData(1) = P
 	    i0 = uvData
 	    do i=1,nchan
 	      OutData(i0+1) = real(Data(i))
-	      OutData(i0+2) = -aimag(Data(i))
+	      OutData(i0+2) = aimag(Data(i))
 	      if(flags(i))then
-	        OutData(i0+3) = wt
+	        OutData(i0+3) = inttime
 	      else
-	        OutData(i0+3) = -wt
+	        OutData(i0+3) = -inttime
 	      endif
 	      i0 = i0 + 3
 	    enddo
@@ -2391,16 +1501,7 @@ c
 c
 c  Determine the polarisations that we are going to output.
 c
-	call PolCheck(pols,PolMin,PolMax,npol,Pol0,PolInc)
-	if(npol.gt.maxPol)
-     *	  call bug('f','Too many polarisations for me to handle')
-	if(pol0.le.PolXX)then
-	  polty = 'XY'
-	else if(pol0.le.PolRR)then
-	  polty = 'RL'
-	else
-	  polty = '  '
-	endif
+	call PolCheck(pols,npol,Pol0,PolInc)
 	nVisRef = pols(Pol0)
 c
 c  Create the output FITS file, and write its header.
@@ -2429,19 +1530,11 @@ c
 	call fuvWrhd(tOut,Coord)
 	call fitwrhdd(tOut,'OBSRA',Coord(uvCrval,uvRa))
 	call fitwrhdd(tOut,'OBSDEC',Coord(uvCrval,uvDec))
+c
+c  Copy various things to the output.
+c
 	call fitwrhdr(tOut,'EPOCH',epoch)
-c
-c  Spectral line and velocity information.
-c
-	if(restfreq.gt.0)then
-	  call fitwrhdd(tOut,'RESTFREQ',restfreq)
-	  if(velref.gt.0)call fitwrhdi(tOut,'VELREF',velref)
-	  call fitwrhdr(tOut,'ALTRPIX',1.0)
-	  call fitwrhdr(tOut,'ALTRVAL',real(1000.0*v0))
-	endif
-c
-c  Other miscellaneous information.
-c
+	if(restfreq.ne.0)call fitwrhdd(tOut,'RESTFREQ',restfreq)
 	if(telescop.ne.' ')then
 	  call fitwrhda(tOut,'TELESCOP',telescop)
 	  call fitwrhda(tOut,'INSTRUME',telescop)
@@ -2449,6 +1542,7 @@ c
 	if(observer.ne.' ')call fitwrhda(tOut,'OBSERVER',observer)
 	string = 'Miriad '//version
 	call fitwrhda(tOut,'ORIGIN',string)
+	if(velref.ne.0) call fitwrhdi(tOut,'VELREF',velref)
 c
 c  Copy the history.
 c
@@ -2459,120 +1553,11 @@ c  data to the output FITS file.
 c
 	call uvoutWr(tScr,tOut,nvis,nVisRef,npol,nchan,Pol0,PolInc)
 c
-c  Write the antenna file.
-c
-	if(nants.gt.0)then
-	  call output('Writing FITS antenna table')
-	  call AntWrite(tOut,t0,f0,telescop,polty,mount,
-     *			xyz,nants,lat,long,height)
-	else
-	  call bug('w','Insufficent information for antenna table')
-	endif
-c
 c  Everything is done. Close up shop.
 c
 	call uvdatcls
 	call scrclose(tScr)
 	call fuvclose(tOut)
-c
-	end
-c************************************************************************
-	subroutine AntWrite(tOut,rtime,rfreq,telescop,polty,mount,
-     *			xyz,nants,lat,long,height)
-c
-	implicit none
-	integer tOut,nants,mount
-	double precision rtime,rfreq
-	double precision xyz(nants,3),lat,long,height
-	character telescop*(*),polty*(*)
-c
-c  Write an antenna table into the output.
-c------------------------------------------------------------------------
-	include 'mirconst.h'
-c
-	real zero(3)
-	character anname*8,rdate*8
-	double precision iatutc,gstia0,gstia1,degpdy,xyzd(3)
-	integer i
-c
-c  Externals.
-c
-	character itoaf*4
-	double precision deltime,eqeq
-c
-	call ftabdini(tOut,'AIPS AN')
-	call ftabdef(tOut,'ANNAME', 'A',' ',      nants,len(anname))
-	call ftabdef(tOut,'STABXYZ','D','METERS', nants,3)
-	call ftabdef(tOut,'ORBPARM','D',' ',      nants,0)
-	call ftabdef(tOut,'NOSTA',  'I',' ',      nants,1)
-	call ftabdef(tOut,'MNTSTA', 'I',' ',      nants,1)
-	call ftabdef(tOut,'STAXOF', 'R','METERS', nants,1)
-	call ftabdef(tOut,'POLTYA', 'A',' ',      nants,1)
-	call ftabdef(tOut,'POLAA',  'R','DEGREES',nants,1)
-	call ftabdef(tOut,'POLCALA','R',' ',      nants,3)
-	call ftabdef(tOut,'POLTYB', 'A',' ',      nants,1)
-	call ftabdef(tOut,'POLAB',  'R','DEGREES',nants,1)
-	call ftabdef(tOut,'POLCALB','R',' ',      nants,3)
-	call ftabdfin(tOut)
-c
-c  Determine various things to do with time.
-c
-	iatutc = deltime(rtime,'tai')
-	call jullst(rtime-iatutc,0.d0,gstia0)
-	gstia0 = 180/PI * (gstia0 + eqeq(rtime-iatutc))
-	if(gstia0.lt.0)  gstia0 = gstia0 + 360
-	if(gstia0.ge.360)gstia0 = gstia0 - 360
-	call jullst(rtime-iatutc+1.d0,0.d0,gstia1)
-	gstia1 = 180/PI * (gstia1 + eqeq(rtime-iatutc+1.d0))
-	if(gstia1.lt.0)  gstia1 = gstia1 + 360
-	if(gstia1.ge.360)gstia1 = gstia1 - 360
-	degpdy = gstia1 - gstia0 + 360
-	if(degpdy.lt.360)degpdy = degpdy + 360
-c
-c  Fill out information in the antenna table header.
-c
-	call llh2xyz(lat,long,height,xyzd(1),xyzd(2),xyzd(3))
-	call fitwrhdd(tOut,'ARRAYX',xyzd(1))
-	call fitwrhdd(tOut,'ARRAYY',xyzd(2))
-	call fitwrhdd(tOut,'ARRAYZ',xyzd(3))
-	call fitwrhdd(tOut,'GSTIA0',gstia0)
-	call fitwrhdd(tOut,'DEGPDY',degpdy)
-	call fitwrhdd(tOut,'FREQ',  rfreq)
-	call julfdate(rtime,rdate)
-	call fitwrhda(tOut,'RDATE',rdate)
-	call fitwrhdd(tOut,'POLARX',0.d0)
-	call fitwrhdd(tOut,'POLARY',0.d0)
-	call fitwrhdd(tOut,'UT1UTC',0.d0)
-	call fitwrhdd(tOut,'DATUTC',0.d0)
-	call fitwrhda(tOut,'TIMSYS','UTC')
-	call fitwrhda(tOut,'ARRNAM',telescop)
-	call fitwrhdi(tOut,'NUMORB',0)
-	call fitwrhdi(tOut,'NOPCAL',3)
-	call fitwrhdi(tOut,'FREQID',-1)
-	call fitwrhdd(tOut,'IATUTC',86400d0*iatutc)
-c
-c  Zero out the unused fields.
-c
-	zero(1) = 0
-	zero(2) = 0
-	zero(3) = 0
-	do i=1,nants
-	  anname = 'ANT'//itoaf(i)
-	  call ftabputa(tOut,'ANNAME', i,anname)
-	  xyzd(1) = DCMKS*1d-9*xyz(i,1)
-	  xyzd(2) = DCMKS*1d-9*xyz(i,2)
-	  xyzd(3) = DCMKS*1d-9*xyz(i,3)
-	  call ftabputd(tOut,'STABXYZ',i,xyzd)
-	  call ftabputi(tOut,'NOSTA',  i,i)
-	  call ftabputi(tOut,'MNTSTA', i,mount)
-	  call ftabputr(tOut,'STAXOF', i,0.0)
-	  call ftabputa(tOut,'POLTYA', i,polty(1:1))
-	  call ftabputr(tOut,'POLAA',  i,0.0)
-	  call ftabputr(tOut,'POLCALA',i,zero)
-	  call ftabputa(tOut,'POLTYB', i,polty(2:2))
-	  call ftabputr(tOut,'POLAB',  i,0.0)
-	  call ftabputr(tOut,'POLCALB',i,zero)
-	enddo
 c
 	end
 c************************************************************************
@@ -2602,13 +1587,9 @@ c  polarisation is present or not. If not, the record is discarded. Currently
 c  the reference polarisation is always the first polarisation, but this may
 c  change in the future.
 c
-	include 'maxdim.h'
-	integer maxPol,RefPol,PolMin,PolMax
-	parameter(RefPol=1,PolMin=-8,PolMax=4,maxPol=4)
-	integer uvU,uvV,uvW,uvBl,uvT,uvRandom,uvData
-	parameter(uvU=1,uvV=2,uvW=3,uvBl=4,uvT=5,uvRandom=5)
-	parameter(uvData=uvRandom+1)
-c
+	integer RefPol
+	parameter(RefPol=1)
+	include 'fits.h'
 	integer pols(PolMin:PolMax),discard(PolMin:PolMax),pnt(maxPol)
 	integer ncopy,totcopy,l,l2,InPnt,OutPnt,Bl,P,iP,i,j,jd,k,length
 	logical copied(maxPol)
@@ -2797,10 +1778,11 @@ c
 	enddo
 	end
 c************************************************************************
-	subroutine PolCheck(pols,PolMin,PolMax,npol,Pol0,PolInc)
+	subroutine PolCheck(pols,npol,Pol0,PolInc)
 c
 	implicit none
-	integer PolMin,PolMax,pols(PolMin:PolMax),npol,Pol0,PolInc
+	include 'fits.h'
+	integer pols(PolMin:PolMax),npol,Pol0,PolInc
 c
 c  The "pols" array counts the polarisations that were found in the input
 c  data. Because FITS can only handle a regular Stokes axis, and because
@@ -2813,8 +1795,6 @@ c
 c  Input:
 c    pols	The counts of the polarisations encountered in the
 c		input file.
-c    PolMin
-c    PolMax
 c  Output:
 c    npol	Number of polarisations to form in the output file.
 c    Pol0	The code for the first polarisation.
@@ -2859,6 +1839,8 @@ c
 c  Fill in the parameters to describe the choosen polarisation.
 c
 	npol = PolMx - PolMn + 1
+	if(npol.gt.maxPol)
+     *	  call bug('f','Too many polarisations for me to handle')
 	if(PolMx.gt.0)then
 	  Pol0 = PolMn
 	  PolInc = 1
@@ -2883,18 +1865,16 @@ c
 c
 	end
 c************************************************************************
-	subroutine xyin(in,out,version,dss)
+	subroutine xyin(in,out,version)
 c
 	implicit none
 	character in*(*),out*(*),version*(*)
-	logical dss
 c
 c  Read in an image FITS file.
 c
 c  Inputs:
 c    in		Name of the input image FITS file.
 c    out	Name of the output MIRIAD file.
-c    dss	Expect a DSS image. Handle header accordingly!
 c
 c  Internal Variables:
 c    lu		Handle of the FITS file.
@@ -2904,19 +1884,17 @@ c    maxdim	Size of array.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
-	real array(MAXDIM)
-	logical allgood,doflag,flags(MAXDIM)
+	real array(maxdim)
 	integer nsize(MAXNAX),axes(MAXNAX),naxis
-	integer lu,tno,i,j,iostat
+	integer lu,tno,j
 c
 c  Externals.
 c
-	logical Inc3More,FitBlank
+	logical Inc3More
 c
 c  Open the input FITS and output MIRIAD files.
 c
 	call fxyopen(lu,in,'old',MAXNAX,nsize)
-	doflag = FitBlank(lu,.false.)
 	if(nsize(1).gt.maxdim)
      *	  call bug('f','Image too big to handle')
 	call fitrdhdi(lu,'NAXIS',naxis,0)
@@ -2928,7 +1906,6 @@ c
 c
 c  Copy the image data itself.
 c
-	allgood = .true.
 	call IncIni(naxis,nsize,axes)
 	dowhile(Inc3More(naxis,nsize,axes))
 	  if(naxis.gt.2)then
@@ -2938,52 +1915,18 @@ c
 	  do j=1,nsize(2)
 	    call fxyread(lu,j,array)
 	    call xywrite(tno,j,array)
-c
-c  Handle the flags.
-c
-	    if(doflag)then
-	      call fxyflgrd(lu,j,flags)
-	      call xyflgwr(tno,j,flags)
-	      if(allgood)then
-		do i=1,nsize(1)
-		  allgood = allgood.and.flags(i)
-		enddo
-	      endif
-	    endif
-c
 	  enddo
 	enddo
 c
 c  Handle the header.
 c
 	call axisin(lu,tno,naxis)
-	if(dss)call dssfudge(lu,tno)
 c
 c  Close up shop.
 c
 	call fxyclose(lu)
 	call hisclose(tno)
 	call xyclose(tno)
-c
-c  FUDGE!!! Delete the flagging mask if all the flags were good.
-c
-	if(doflag)then
-	  if(allgood)then
-	    call hopen(tno,out,'old',iostat)
-	    if(iostat.ne.0)call bugno('f',iostat)
-	    call hdelete(tno,'mask',iostat)
-	    if(iostat.ne.0)call bugno('f',iostat)
-	    call hclose(tno)
-	    call output('There were no blanked pixels in the input')
-	  else
-	    call output(
-     *	     'Some pixels were blanked ... A blanking mask was created')
-	  endif
-	else
-	  call output(
-     *	     'There was no blanking information in the input')
-	endif
-c
 	end
 c************************************************************************
 	subroutine axisin(lu,tno,naxis)
@@ -3004,23 +1947,19 @@ c    naxis	Number of dimensions of the image.
 c
 c------------------------------------------------------------------------
 	include 'mirconst.h'
-	integer i,polcode,l
+	integer i,polcode
 	character num*2,ctype*32,bunit*32,types(5)*25,btype*32
-	character telescop*16,rdate*16
-	real bmaj,bmin,bpa
+	real bmaj,bmin
 	double precision cdelt,crota,crval,crpix,scale
-	double precision restfreq,obsra,obsdec,dtemp
-	character cellscal*16
-c	real xshift,yshift
-	logical differ,ok,ew,ewdone
+	double precision restfreq,obsra,obsdec
+	real xshift,yshift
+	logical differ,ok
 c
 c  Externals.
 c
 	character itoaf*2
-	integer len1
-c
 c                   1234567890123456789012345
-	data types/'polarized_intensity      ',
+	data types/'percent_polarization     ',
      *		   'fractional_polarization  ',
      *		   'position_angle           ',
      *		   'spectral_index           ',
@@ -3029,7 +1968,6 @@ c
 	call fitrdhda(lu,'BUNIT',bunit,' ')
 	btype = ' '
 	differ = .false.
-	ewdone = .false.
 	do i=1,naxis
 	  ok = .true.
 	  num = itoaf(i)
@@ -3038,44 +1976,23 @@ c
 	  call fitrdhdd(lu,'CROTA'//num,crota,0.d0)
 	  call fitrdhdd(lu,'CRPIX'//num,crpix,1.d0)
 	  call fitrdhdd(lu,'CRVAL'//num,crval,0.d0)
-	  if(abs(crota).gt.0.001)call bug('w',
-     *	    'Coordinate axis rotations not supported')
 c
-	  l = len1(ctype)
-	  dowhile(l.gt.0.and.ctype(l:l).eq.'-')
-	    ctype(l:l) = ' '
-	    l = l - 1
-	  enddo
 	  if(ctype.eq.' ')then
 	    if(i.eq.1)then
 	      ctype = 'RA---SIN'
 	    else if(i.eq.2)then
 	      ctype = 'DEC--SIN'
 	    endif
-	  else if (ctype.eq.'LL') then
-            ctype= 'RA---SIN'
-            call bug ('w', 'Converting LL to RA---SIN')
-          else if (ctype.eq.'MM') then
-            ctype = 'DEC--SIN'
-            call bug ('w', 'Converting MM to DEC--SIN')
-          endif
-c
-	  if(ctype(1:2).eq.'RA')then
+	  endif
+	  if(ctype(1:5).eq.'RA---')then
 	    scale = pi/180d0
 	    call fitrdhdd(lu,'OBSRA',obsra,crval)
 	    differ = differ.or.(abs(obsra-crval).gt.abs(cdelt))
-	  else if(ctype(1:3).eq.'DEC')then
+	  else if(ctype(1:5).eq.'DEC--')then
 	    scale = pi/180d0
 	    call fitrdhdd(lu,'OBSDEC',obsdec,crval) 
 	    differ = differ.or.(abs(obsdec-crval).gt.abs(cdelt))
-	  else if(ctype.eq.'ANGLE')then
-	    scale = pi/180d0
-	  else if(ctype(1:5).eq.'GLON-'.or.
-     *		  ctype(1:5).eq.'GLAT-'.or.
-     *		  ctype(1:5).eq.'ELON-'.or.
-     *		  ctype(1:5).eq.'ELAT-')then
-	    scale = pi/180.
-	  else if(ctype(1:4).eq.'VELO'.or.ctype(1:4).eq.'FELO')then
+	  else if(ctype(1:5).eq.'VELO-'.or.ctype(1:5).eq.'FELO-')then
 	    scale = 1d-3
 	  else if(ctype(1:4).eq.'FREQ')then
 	    scale = 1d-9
@@ -3087,30 +2004,12 @@ c
 	    polcode = nint(crval+(1-crpix)*cdelt)
 	    ok = polcode.ge.-8.and.polcode.le.4.and.polcode.ne.0
 	    if(polcode.ge.5.and.polcode.le.9)btype=types(polcode-4)
-	    scale = 1d0
 	  else
 	    scale = 1d0
 	  endif
-c
-c  If there is a "SIN" projection code, and the telescope is an
-c  EW one, convert the projection to NCP (after giving a message).
-c
-	  if(ctype(5:8).eq.'-SIN')then
-	    if(.not.ewdone)then
-	      ewdone = .true.
-	      call fitrdhda(lu,'TELESCOP',telescop,' ')
-	      if(telescop.eq.' ')
-     *		call fitrdhda(lu,'INSTRUME',telescop,' ')
-	      ew = telescop.ne.' '
-	      if(ew)call obspar(telescop,'ew',dtemp,ew)
-	      if(ew) ew = dtemp.gt.0
-	      if(ew)call bug('w',
-     *		'Changing projections to NCP for east-west telescope')
-	    endif
-	    if(ew)ctype(5:8) = '-NCP'
-	  endif
 	  if(ok)then
 	    call wrhdd(tno,'cdelt'//num,scale*cdelt)
+	    call wrhdd(tno,'crota'//num,crota)
 	    call wrhdd(tno,'crpix'//num,crpix)
 	    call wrhdd(tno,'crval'//num,scale*crval)
 	    if(ctype.ne.' ') call wrhda(tno,'ctype'//num,ctype)
@@ -3125,116 +2024,19 @@ c
      *		' being the same as the phase center')
 	endif
 c
-	call fitrdhda(lu,'DATE-OBS',rdate,' ')
-	if(rdate.ne.' ')then
-	  call fdatejul(rdate,dtemp)
-	  call wrhdd(tno,'obstime',dtemp)
-	endif
 	if(bunit.ne.' ')call wrhda(tno,'bunit',bunit)
 	if(btype.ne.' ')call wrbtype(tno,btype)
 	call fitrdhdd(lu,'RESTFREQ',restfreq,-1.d0)
 	if(restfreq.gt.0) call wrhdd(tno,'restfreq',1.0d-9*restfreq)
-c	call fitrdhdr(lu,'XSHIFT',xshift,0.)
-c	if(xshift.ne.0) call wrhdr(tno,'xshift',(pi/180)*xshift)
-c	call fitrdhdr(lu,'YSHIFT',yshift,0.)
-c	if(yshift.ne.0) call wrhdr(tno,'yshift',(pi/180)*yshift)
-	call fitrdhda(lu,'CELLSCAL',cellscal,'CONSTANT')
-	if(cellscal.ne.' ')call wrhda(tno,'cellscal',cellscal)
+	call fitrdhdr(lu,'XSHIFT',xshift,0.)
+	if(xshift.ne.0) call wrhdr(tno,'xshift',(pi/180)*xshift)
+	call fitrdhdr(lu,'YSHIFT',yshift,0.)
+	if(yshift.ne.0) call wrhdr(tno,'yshift',(pi/180)*yshift)
 	call fitrdhdr(lu,'BMAJ',bmaj,0.)
 	if(bmaj.ne.0) call wrhdr(tno,'bmaj',(pi/180)*bmaj)
 	call fitrdhdr(lu,'BMIN',bmin,0.)
 	if(bmin.ne.0) call wrhdr(tno,'bmin',(pi/180)*bmin)
-	call fitrdhdr(lu,'BPA',bpa,0.)
-	if(bmaj*bmin.ne.0)call wrhdr(tno,'bpa',bpa)
 c
-	end
-c************************************************************************
-	subroutine dssfudge(lu,tno)
-c
-	implicit none
-	integer lu,tno
-c
-c  Convert a DSS header into a normal Miriad one.
-c
-c------------------------------------------------------------------------
-	include 'mirconst.h'
-	real xpixelsz,ypixelsz,pltscale,objctx,objcty,cnpix1,cnpix2
-	double precision crval1,crval2,cdelt1,cdelt2,crpix1,crpix2
-	character objctra*16,objctdec*16
-c
-c  Get information from the header of the DSS file.
-c
-	call fitrdhdr(lu,'XPIXELSZ',xpixelsz,0.)
-	call fitrdhdr(lu,'YPIXELSZ',ypixelsz,0.)
-	call fitrdhdr(lu,'PLTSCALE',pltscale,0.)
-	call fitrdhdr(lu,'OBJCTX',objctx,0.)
-	call fitrdhdr(lu,'OBJCTY',objcty,0.)
-	call fitrdhda(lu,'OBJCTRA',objctra,' ')
-	call fitrdhda(lu,'OBJCTDEC',objctdec,' ')
-	call fitrdhdr(lu,'CNPIX1',cnpix1,0.)
-	call fitrdhdr(lu,'CNPIX2',cnpix2,0.)
-c
-	crpix1 = objctx - cnpix1 + 1
-	crpix2 = objcty - cnpix2 + 1
-	cdelt1 = -dpi/180.d0/3600.d0 * xpixelsz * pltscale * 1e-3
-	cdelt2 =  dpi/180.d0/3600.d0 * ypixelsz * pltscale * 1e-3
-	call decval(crval1,objctra)
-	crval1 = dpi/12.d0 * crval1
-	call decval(crval2,objctdec)
-	crval2 = dpi/180.d0 * crval2
-c
-	call wrhdr(tno,'epoch',2000.0)
-	call wrhdd(tno,'crpix1',crpix1)
-	call wrhdd(tno,'crpix2',crpix2)
-	call wrhdd(tno,'cdelt1',cdelt1)
-	call wrhdd(tno,'cdelt2',cdelt2)
-	call wrhdd(tno,'crval1',crval1)
-	call wrhdd(tno,'crval2',crval2)
-	call wrhda(tno,'ctype1','RA---CAR')
-	call wrhda(tno,'ctype2','DEC--CAR')
-	end
-c************************************************************************
-	subroutine decval(value,string)
-c
-	implicit none
-	double precision value
-	character string*(*)
-c
-c------------------------------------------------------------------------
-	integer k1,k2,length
-	character token*16
-	double precision v1,v2,v3
-	logical neg,ok
-c
-c  Externals.
-c
-	integer len1
-c
-	k1 = 1
-	k2 = len1(string)
-	call getfield(string,k1,k2,token,length)
-	neg = token(1:1).eq.'-'
-	ok = (.not.neg.and.length.ge.1).or.(neg.and.length.ge.2)
-	if(ok)then
-	  if(neg)then
-	    call atodf(token(2:length),v1,ok)
-	  else
-	    call atodf(token(1:length),v1,ok)
-	  endif
-	endif
-	call getfield(string,k1,k2,token,length)
-	ok = ok.and.length.ge.1
-	if(ok)call atodf(token(1:length),v2,ok)
-	call getfield(string,k1,k2,token,length)
-	ok = ok.and.length.ge.1
-	if(ok)call atodf(token(1:length),v3,ok)
-c
-c  Check for errors.
-c
-	if(.not.ok)call bug('f','Error decoding DSS header item')
-c
-	value = v1 + v2/60.d0 + v3/3600.d0
-	if(neg)value = -value
 	end
 c************************************************************************
 	subroutine xyout(in,out,version)
@@ -3255,16 +2057,14 @@ c------------------------------------------------------------------------
 	real array(maxdim)
 	integer naxis,tno,lu,j,nsize(MAXNAX),axes(MAXNAX)
 	character string*64
-	logical doflag,flags(MAXDIM)
 c
 c  Externals.
 c
-	logical Inc3More,FitBlank,hdprsnt
+	logical Inc3More
 c
 c  Open the input MIRIAD file and determine a few things about it.
 c
 	call xyopen(tno,in,'old',MAXNAX,nsize)
-	doflag = hdprsnt(tno,'mask')
 	if(nsize(1).gt.maxdim)
      *	  call bug('f','Image too big to handle')
 	call rdhdi(tno,'naxis',naxis,0)
@@ -3273,7 +2073,6 @@ c
 c  Open the output FITS file.
 c
 	call fxyopen(lu,out,'new',naxis,nsize)
-	doflag = FitBlank(lu,doflag)
 c
 c  Handle the output header.
 c
@@ -3293,10 +2092,6 @@ c
 	  do j=1,nsize(2)
 	    call xyread(tno,j,array)
 	    call fxywrite(lu,j,array)
-	    if(doflag)then
-	      call xyflgrd(tno,j,flags)
-	      call fxyflgwr(lu,j,flags)
-	    endif
 	  enddo
 	enddo
 c
@@ -3325,11 +2120,10 @@ c
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	integer i
-	character num*2,ctype*32,date*32
+	character num*2,ctype*32
 	real cdelt,crota,crpix,scale,bmaj,bmin
-	double precision restfreq,crval,obstime
-	character cellscal*16
-c	real xshift,yshift
+	double precision restfreq,crval
+	real xshift,yshift
 c
 c  Externals.
 c
@@ -3351,16 +2145,9 @@ c
 	  else if(ctype(1:5).eq.'DEC--')then
 	    scale = 180./pi
 	    call fitwrhdd(lu,'OBSDEC',scale*crval)
-	  else if(ctype.eq.'ANGLE')then
-	    scale =180./pi
-	  else if(ctype(1:5).eq.'GLON-'.or.
-     *		  ctype(1:5).eq.'GLAT-'.or.
-     *		  ctype(1:5).eq.'ELON-'.or.
-     *		  ctype(1:5).eq.'ELAT-')then
-	    scale = 180./pi
 	  else if(ctype(1:4).eq.'FREQ')then
 	    scale = 1e9
-	  else if(ctype(1:4).eq.'VELO'.or.ctype(1:4).eq.'FELO')then
+	  else if(ctype(1:5).eq.'VELO-')then
 	    scale = 1e3
 	  else
 	    scale = 1.
@@ -3374,19 +2161,12 @@ c
 c
 c  Write out other coordinates.
 c
-	call rdhdd(tno,'obstime',obstime,-1.d0)
-	if(obstime.gt.0) then
-	  call julfdate(obstime,date)
-	  call fitwrhda(lu,'DATE-OBS',date)
-	endif
 	call rdhdd(tno,'restfreq',restfreq,-1.d0)
 	if(restfreq.gt.0) call fitwrhdd(lu,'RESTFREQ',1.0d9*restfreq)
-	call rdhda(tno,'cellscal',cellscal,'1/F')
-	if(cellscal.ne.' ')call fitwrhda(lu,'CELLSCAL',cellscal)
-c	call rdhdr(tno,'xshift',xshift,0.)
-c	if(xshift.ne.0) call fitwrhdr(lu,'XSHIFT',(180/pi)*xshift)
-c	call rdhdr(tno,'yshift',yshift,0.)
-c	if(yshift.ne.0) call fitwrhdr(lu,'YSHIFT',(180/pi)*yshift)
+	call rdhdr(tno,'xshift',xshift,0.)
+	if(xshift.ne.0) call fitwrhdr(lu,'XSHIFT',(180/pi)*xshift)
+	call rdhdr(tno,'yshift',yshift,0.)
+	if(yshift.ne.0) call fitwrhdr(lu,'YSHIFT',(180/pi)*yshift)
 	call rdhdr(tno,'bmaj',bmaj,0.)
 	if(bmaj.ne.0) call fitwrhdr(lu,'BMAJ',(180/pi)*bmaj)
 	call rdhdr(tno,'bmin',bmin,0.)
@@ -3410,15 +2190,13 @@ c------------------------------------------------------------------------
 	integer nshort,nlong
 	parameter(nshort=6,nlong=9)
 	character short(nshort)*5,long(nlong)*8
-	integer iostat,item,n,ival
-	real rval
-	double precision dval
-	character key*12,line*80,descr*32,type*16,ukey*12
+	integer iostat,item,n,length
+	character key*12,line*80,descr*32,type*16
 	logical discard
 c
 c  Externals.
 c
-	integer len1,binsrcha
+	integer len1,bsrcha
 c
 	data short/'cdelt','crota','crpix','crval','ctype','naxis'/
 	data long/'bmaj   ','bmin   ','history ','image   ',
@@ -3432,29 +2210,22 @@ c
 	if(iostat.ne.0)call bugno('f',iostat)
 	call hreada(item,key,iostat)
 	dowhile(iostat.eq.0)
-	  discard = binsrcha(key,long,nlong).ne.0.or.
-     *		    binsrcha(key(1:5),short,nshort).ne.0
+	  discard = bsrcha(key,long,nlong).ne.0.or.
+     *		    bsrcha(key(1:5),short,nshort).ne.0
 	  if(.not.discard)then
 	    call hdprobe(tno,key,descr,type,n)
-	    if(n.eq.1)then
-	      ukey = key
-	      call ucase(ukey)
-	      if(type.eq.'integer*2'.or.type.eq.'integer')then
-		call rdhdi(tno,key,ival,0)
-		call fitwrhdi(lu,ukey,ival)
-	      else if(type.eq.'real')then
-		call rdhdr(tno,key,rval,0.)
-		call fitwrhdr(lu,ukey,rval)
-	      else if(type.eq.'double')then
-		call rdhdd(tno,key,dval,0.d0)
-		call fitwrhdd(lu,ukey,dval)
-	      else if(type.eq.'character')then
-		call fitwrhda(lu,ukey,descr(1:len1(descr)))
+	    if(n.eq.1.and.
+     *	      (type.eq.'integer*2' .or. type.eq.'integer' .or.
+     *	       type.eq.'real'      .or. type.eq.'double'  .or.
+     *	       type.eq.'character'))then
+	      if(type.eq.'character')then
+	        length = max(8,len1(descr))
+		line = key(1:8)//'= '''//descr(1:length)//''''
 	      else
-		call ucase(descr)
 		line = key(1:8)//'= '//descr
-	        call fitcdio(lu,line)
 	      endif
+	      call ucase(line)
+	      call fitcdio(lu,line)
 	    endif
 	  endif
 	  call hreada(item,key,iostat)
@@ -3510,7 +2281,7 @@ c    stokes     Stokes parameter used in conversion
 c
 c------------------------------------------------------------------------
 	integer nlong,nshort,nextra
-	parameter(nlong=31,nshort=9,nextra=7)
+	parameter(nlong=28,nshort=9,nextra=6)
 	character card*80,key*8,type*8
 	logical more,discard,ok,found
 	integer i,k1,k2
@@ -3520,25 +2291,25 @@ c------------------------------------------------------------------------
 c
 c  Externals.
 c
-	integer binsrcha,len1
+	integer bsrcha,len1
 c
 c  A table of keywords (common to uv and xy) that are either history
 c  comments, or keywords to be discarded. Some of these are handled
 c  as special cases elsewhere. Short keywords have numbers attached.
 c
 	data (uvextra(i),i=1,nextra)/
-     *	  'EPOCH   ','INSTRUME','OBJECT  ','OBSDEC  ','OBSERVER',
-     *	  'OBSRA   ','TELESCOP'/
+     *	  'EPOCH   ','OBJECT  ','OBSDEC  ','OBSERVER','OBSRA   ',
+     *	  'TELESCOP'/
 	data (long(i),history(i),i=1,nlong)/
      *	  '        ', .true.,  'ALTRPIX ', .false., 'ALTRVAL ', .false.,
-     *    'BITPIX  ', .false., 'BLANK   ', .false., 'BLOCKED ', .false.,
+     *    'BITPIX  ', .false., 'BLOCKED ', .false.,
      *	  'BMAJ    ', .false., 'BMIN    ', .false., 'BSCALE  ', .false.,
-     *	  'BUNIT   ', .false., 'BZERO   ', .false., 'CELLSCAL', .false.,
-     *	  'COMMAND ', .true.,  'COMMENT ', .true.,
-     *	  'DATE    ', .false., 'DATE-MAP ', .false.,'DATE-OBS', .false.,
-     *	  'END     ', .false., 'EXTEND  ', .false.,
+     *	  'BUNIT   ', .false.,
+     *	  'BZERO   ', .false., 'COMMAND ', .true.,  'COMMENT ', .true.,
+     *	  'DATE    ', .false.,
+     *	  'DATE-MAP', .false., 'END     ', .false., 'EXTEND  ', .false.,
      *	  'GCOUNT  ', .false., 'GROUPS  ', .false., 'HISTORY ', .true.,
-     *	  'OBSDEC  ', .false., 'OBSRA   ', .false., 'ORIGIN  ', .false.,
+     *	  'OBSDEC  ', .false., 'OBSDEC  ', .false., 'ORIGIN  ', .false.,
      *	  'PCOUNT  ', .false., 'RESTFREQ', .false., 'SIMPLE  ', .false.,
      *	  'VELREF  ', .false., 'XSHIFT  ', .false., 'YSHIFT  ', .false./
 	data short/'CDELT','CROTA','CRPIX','CRVAL','CTYPE','NAXIS',
@@ -3558,16 +2329,15 @@ c
 c
 c  Check for, and handle, special keywords.
 c
-	  discard = .false.
-	  i = binsrcha(card(1:8),long,nlong)
+	  i = bsrcha(card(1:8),long,nlong)
 	  if(i.ne.0)then
 	    discard = .true.
 	    if(history(i)) call hiscard(tno,card)
 	    more = card(1:8).ne.'END'
 	  else
-	    if(isuv) discard = binsrcha(card(1:8),uvextra,nextra).ne.0
+	    if(isuv) discard = bsrcha(card(1:8),uvextra,nextra).ne.0
 	    if(.not.discard) discard =
-     *		binsrcha(card(1:5),short,nshort).ne.0
+     *		bsrcha(card(1:5),short,nshort).ne.0
 	  endif
 c
 c  Process the card. First determine whether it represents an integer,
@@ -3658,43 +2428,24 @@ c
 c  Determine the type of a value and returns the indices which delimit
 c  the value.
 c
-c  This returns a type "unknown" if the keyword looks bad. In particular
-c  the first 8 characters must be alphanumeric with possible trailing
-c  blanks.
-c
 c  Input:
 c    card	The FITS card.
 c
 c  Output:
 c    type	Either 'integer', 'real', 'double', 'ascii' or 'unknown'.
-c    k1,k2	These delimit the value in CARD, for other than 'unknown'
+c    k1,k2	These delimit the value in CARD.
 c
 c------------------------------------------------------------------------
 	character c*1
-	integer l,i
+	integer l
 	logical more
-c
-c  Externals.
-c
-	integer len1
-c
-	type = 'unknown'
-	if(len(card).le.8)return
-c
-c  Look for the first non-alphanumeric character.
-c
-	l = len1(card(1:8))
-	do i=1,l
-	  c = card(i:i)
-	  if(.not.((c.ge.'a'.and.c.le.'z').or.
-     *		   (c.ge.'A'.and.c.le.'Z').or.
-     *		   (c.ge.'0'.and.c.le.'9')))return
-	enddo
-c
-c  Skip to the first non-blank character after the equals sign.
 c
 	k1 = 9
 	k2 = len(card)
+	type = 'unknown'
+c
+c  Skip to the first non-blank character after the equals sign.
+c
 	call spanchar(card,k1,k2,' ')
 	call spanchar(card,k1,k2,'=')
 	call spanchar(card,k1,k2,' ')
