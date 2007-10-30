@@ -199,6 +199,12 @@ c	  complement of any like axis in the first 2. E.g., the cube is
 c	  in vxy order and LABTYP=abskms,arcsec the units for the "3VALUE" 
 c	  label will be arcsec.  If LABTYP=abskms,hms the "3VALUE" label 
 c	  will be DMS (if the third [y] axis is declination).
+c@ 3format
+c       If you ask for "3value" labelling, this keyword allows you
+c       specify the FORTRAN format of the labelling.  I have given
+c       up trying to invent a decent algorithm to choose this. Examples
+c       are "1pe12.6", or "f5.2" etc   If you leave this blank cgdisp 
+c       will try something that you probably won't like.
 c@ csize
 c	Three values.  Character sizes in units of the PGPLOT default
 c	(which is ~ 1/40 of the view surface height) for the plot axis
@@ -264,12 +270,7 @@ c	to extract the slice from all channels.
 c
 c@ posout
 c	An ascii file into which the BLC and TRC for each slice are saved.
-c	The columns of the file are slice number, the slice BLC, TRC and
-c	the start and end channels from the image that this slice came
-c	from (you may have used the CHAN keyword).   The BLC and TRC are
-c	in arcseconds from the reference pixel if the axes have radian
-c	increments (RA/DEC etc).  Otherwise they are in offset pixels 
-c	from the reference pixel.
+c	The columns are in the same format as is needed for the POSIN keyword.
 c@ valout
 c	An ascii file into which the slices are saved.  If the file already
 c	exists, new slices are appended to it.  The columns of the file are
@@ -316,6 +317,18 @@ c    nebk 03sep95  Detect black/white background, add non-linear
 c		   ticks and grid
 c    nebk 12nov95  Change to deal internally in absolute pixels 
 c    nebk 29nov95  New call for CONTURCG
+c    nebk 30jan96  Remove restrictions on CHAN so groups of channels
+c		   can now overlap
+c    nebk 05feb96  Make format of POSOUT file the same as that for POSIN
+c    nebk 28feb96  Was getting slice vectors wrong with keyword POSIN
+c		   when a subimage was displayed.
+c    nebk 24jun96  Set slice frame colour depening upon background colour
+c    nebk 01dec96  'absnat' and 'relnat' were given twice in allowed lists
+c                  of label types
+c    nebk 13feb97  Add keyword "3format"
+c    rjs  21jul97  Call initco earlier
+c    rjs   7may98  Change the bunit variable to be 16 char (not 8 char).
+c    rjs  08may00  Change incorrect keyf call to keya.
 c
 c Notes:
 c
@@ -352,9 +365,9 @@ c
      +  vygap
 c
       integer blc(3), trc(3), size(maxnax), win(maxnax), 
-     +  grpbeg(maxchan), ngrp(maxchan), srtlev(maxlev),
-     +  nslice, nslp(maxnsl), slsize(maxnsl),  slpos(6,maxnsl),
-     +  seg(2,maxdim), nseg(maxnsl), his(nbins)
+     +  grpbeg(maxchan), ngrp(maxchan), srtlev(maxlev), nslice, 
+     +  nslp(maxnsl), slsize(maxnsl), slpos(6,maxnsl), seg(2,maxdim), 
+     +  nseg(maxnsl), his(nbins)
       integer nx, ny, nlevs, lin, naxis, ierr, pgbeg, iostat, ilen,
      +  nlast, ngrps, lval, lposi, lposo, lmod, i, j, k, jj, icol, 
      +  iax, ipage, wedcod, ibin(2), jbin(2), kbin(2), krng(2), 
@@ -363,7 +376,7 @@ c
       character labtyp(2)*6, ltype(nltype)*6
       character in*64, pdev*64, xlabel*40, ylabel*40, xlabel2*40, 
      +  ylabel2*40, hard*20, trfun*3, levtyp*1, fslval*80, fslposo*80, 
-     +  fslposi*80, fslmod*80, units*8
+     +  fslposi*80, fslmod*80, units*16, val3form*20
 c
       logical do3val, do3pix, eqscale, doblnk, dopixel, doerase,
      +  redisp, accum, radians, none, noimage, dofit, dobord, dobase,
@@ -375,14 +388,14 @@ c
       data ltype  /'hms   ', 'dms   ', 'abspix', 'relpix', 
      +            'arcsec', 'arcmin', 'absghz', 'relghz', 
      +            'abskms', 'relkms', 'absnat', 'relnat', 
-     +            'absdeg', 'reldeg', 'none  ', 'absnat',
-     +            'relnat'/
+     +            'absdeg', 'reldeg', 'none  ', 'abslin',
+     +            'rellin'/
       data ipage, scale /0, 0.0, 0.0/
       data xrange, yrange /0.0, 0.0, 0.0, 0.0/
       data dmm, dunsl, gaps /1.0e30, -1.0e30, .false., .false./
       data xdispls, ydispbs /3.5, 3.5/
 c-----------------------------------------------------------------------
-      call output ('CgSlice: version 29-Nov-95')
+      call output ('CgSlice: version 1.0 7-May-98')
       call output (' ')
 c
 c Get user inputs
@@ -391,11 +404,13 @@ c
      +   levtyp, slev, levs, nlevs, pixr, trfun, coltab, pdev, labtyp,
      +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase, 
      +   accum, noimage, dofit, dobase, fslval, fslposi, fslposo, 
-     +   fslmod, xrange, yrange, doxrng, dofid, dowedge, dogrid)
+     +   fslmod, xrange, yrange, doxrng, dofid, dowedge, 
+     +   dogrid, val3form)
 c
 c Open image and see if axes in radians
 c
       call opimcg (maxnax, in, lin, size, naxis)
+      call initco (lin)
       call rdhda (lin, 'bunit', units, ' ')
       radians = .false.
       call axfndco (lin, 'RAD', 0, 1, iax)
@@ -405,7 +420,7 @@ c
 c Finish key inputs for region of interest now
 c
       call region (in, naxis, size, ibin, jbin, kbin, blc, trc,
-     +             win, maxchan, grpbeg, ngrp, ngrps)
+     +             win, ngrps, grpbeg, ngrp)
 c
 c Try to allocate memory for image
 c
@@ -638,7 +653,7 @@ c
                call pgsch (cs(2))
                call pgsci (1)
                call lab3cg (lin, doerase, do3val, do3pix, labtyp,
-     +                      grpbeg(k), ngrp(k))
+     +                      grpbeg(k), ngrp(k), val3form)
              end if
              call pgupdt
 c
@@ -702,7 +717,7 @@ c
              if (fslposi.ne.' ' .and..not.noimage) then
                call setcolcg (i, icol)
                call pgsci (icol)
-               call slmark (slpos(1,i))
+               call slmark (blc, ibin, jbin, slpos(1,i))
              end if
 c
 c Allocate memory for slice 
@@ -825,6 +840,7 @@ c
       call memfree (ipnim, win(1)*win(2), 'i')
       if (.not.noimage .and. dopixel .and. trfun.ne.'lin')
      +   call memfree (ipims, win(1)*win(2), 'i')
+      call finco(lin)
       call xyclose(lin)
       if (fslval.ne.' ') call txtclose (lval)
       if (fslposo.ne.' ') call txtclose (lposo)
@@ -1798,7 +1814,7 @@ c
      +   levtyp, slev, levs, nlevs, pixr, trfun, coltab, pdev, labtyp,
      +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase, accum, 
      +   noimage,dofit, dobase, fslval, fslposi, fslposo, fslmod, 
-     +   xrange, yrange, doxrng, dofid, dowedge, grid)
+     +   xrange, yrange, doxrng, dofid, dowedge, grid, val3form)
 c-----------------------------------------------------------------------
 c     Get the unfortunate user's long list of inputs
 c
@@ -1842,6 +1858,7 @@ c   fslposo    File to put slice positions into
 c   fslmod     File to put the slice models into
 c   x,yrange   SLice display extrema
 c   grid       Overlay coordinate grid
+c   val3form   3value format
 c-----------------------------------------------------------------------
       implicit none
 c
@@ -1849,7 +1866,7 @@ c
      +  coltab
       real levs(maxlev), pixr(2), cs(3), slev, xrange(2), yrange(2)
       character*(*) labtyp(2), in, pdev, trfun, levtyp, fslval, fslposi,
-     +  fslposo, fslmod, ltype(nltype)
+     +  fslposo, fslmod, ltype(nltype), val3form
       logical do3val, do3pix, eqscale, dopixel, doerase, accum, noimage,
      +  dofit, dobase, doxrng, dofid, dowedge, grid, dunw
 cc
@@ -1885,7 +1902,6 @@ c
       call keyi ('chan', kbin(2), 1) 
       kbin(1) = max(kbin(1), 1)
       kbin(2) = max(kbin(2), 1)
-      if (kbin(2).gt.kbin(1)) kbin(2) = kbin(1)
 c
       call keya ('slev', levtyp, 'a')
       call keyr ('slev', slev, 0.0)
@@ -1956,6 +1972,8 @@ c
         if (eqscale) call bug ('i', 
      +  'You might consider options=unequal with these axis types')
       end if
+c
+      call keya ('3format', val3form, ' ')
 c
       call keyi ('nxy', nx, 0)
       call keyi ('nxy', ny, nx)
@@ -2237,22 +2255,12 @@ c
 c Write header
 c
         if (.not.exist) then
-          aline = 'NSL     BLCX           BLCY         TRCX'
+          aline = '# XTYPE  YTYPE     BLCX           BLCY         TRCX'
      +       //'          TRCY       CHANNEL RANGE'
           call txtwrite (lposo, aline, len1(aline), iostat)
           if (iostat.ne.0) call bug ('f' ,
      +      'Error writing header to slice positions file')
 c
-          if (radians) then
-            aline = '       arcsec         arcsec       arcsec'
-     +       //'         arcsec'
-          else
-            aline = '      rel pix        rel pix      rel pix'
-     +       //'        rel pix'
-          end if
-          call txtwrite (lposo, aline, len1(aline), iostat)
-          if (iostat.ne.0) call bug ('f' ,
-     +      'Error writing header to slice positions file')
         end if
       end if
 c
@@ -2454,7 +2462,6 @@ c
       nslice = 0
       iostat = 0
       pix3 = dble(2*krng(1)+krng(2)-1)/2.0
-      call initco (lun)
 c
       do while (iostat.ne.-1)
         aline = ' '
@@ -2538,7 +2545,6 @@ c
       end do
       if (nslice.eq.0) call bug ('f', 
      +  'The input slice positions file had no valid locations')
-      call finco (lun)
 c
       end
 c
@@ -2698,7 +2704,7 @@ c
 c
 c
       subroutine region (in, naxis, size, ibin, jbin, kbin, blc, trc,
-     +                   win, maxgrp, grpbeg, ngrp, ngrps)
+     +                   win, ngrps, grpbeg, ngrp)
 c----------------------------------------------------------------------
 c     Finish key routine inputs for region of interest now.
 c
@@ -2707,7 +2713,6 @@ c    in            Image file name
 c    naxis         Number of dimensions of image
 c    size          Dimensions of image
 c    i,j,kbin      Pixel increments and binning sizes
-c    maxgrp        Maximum nuber of groups of channels
 c  Output:
 c    grgbeg        List of start planes for each group of channels
 c                  that are to be avearged together for each sub-plot
@@ -2723,8 +2728,8 @@ c
 c----------------------------------------------------------------------
       implicit none
 c
-      integer naxis, size(naxis), blc(*), trc(*), win(*), maxgrp,
-     +  ngrp(maxgrp), grpbeg(maxgrp), ngrps, ibin(2), jbin(2), kbin(2)
+      integer naxis, size(naxis), blc(*), trc(*), win(*), 
+     +  ngrp(*), grpbeg(*), ngrps, ibin(2), jbin(2), kbin(2)
       character in*(*)
 cc
       include 'maxdim.h'
@@ -2750,14 +2755,11 @@ c find size of binned window
 c
       call winfidcg (size(1), 1, ibin, blc(1), trc(1), win(1))
       call winfidcg (size(2), 2, jbin, blc(2), trc(2), win(2))
-      if (win(1).le.1 .or. win(2).le.1) call bug ('f',
-     +   'Cannot display just one spatial pixel')
 c
 c Find list of start channels and number of channels for each group
 c of channels selected.
 c
-      call chnselcg (blc, trc, kbin,  maxbox, boxes, maxgrp,
-     +               grpbeg, ngrp, ngrps)
+      call chnselcg (blc, trc, kbin, maxbox, boxes, ngrps, grpbeg, ngrp)
 c
       end
 c
@@ -2970,23 +2972,37 @@ c
       end
 c
 c
-      subroutine slmark (slpos)
+      subroutine slmark (blc, ibin, jbin, slpos)
 c-----------------------------------------------------------------------
 c     Mark slice in input text file on image
 c
 c  Input
-c    slpos    SLice ends in unbinned full image pixels
+c    slpos    SLice ends in absolute binned subimage pixels
 c-----------------------------------------------------------------------
       implicit none
-      integer slpos(6)
+      integer slpos(6), blc(2), ibin, jbin
 cc
+      double precision dp
       real wblc(2), wtrc(2)
 c-----------------------------------------------------------------------
+c
+c COnvert to unbinned full image pixels
+c
+      dp = slpos(1)
+      call ppconcg (2, blc(1), ibin, dp)
+      wblc(1) = dp
+      dp = slpos(2)
+      call ppconcg (2, blc(2), jbin, dp)
+      wblc(2) = dp
+c
+      dp = slpos(4)
+      call ppconcg (2, blc(1), ibin, dp)
+      wtrc(1) = dp
+      dp = slpos(5)
+      call ppconcg (2, blc(2), jbin, dp)
+      wtrc(2) = dp
+c
       call pgsch (0.7)
-      wblc(1) = slpos(1)
-      wblc(2) = slpos(2)
-      wtrc(1) = slpos(4)
-      wtrc(2) = slpos(5)
       call pgarro (wblc(1), wblc(2), wtrc(1), wtrc(2))
 c
       end
@@ -3073,11 +3089,10 @@ c-----------------------------------------------------------------------
       win(3) = dble(2*krng(1)+krng(2)-1)/2.0 
       call rdhdi (lin, 'naxis', naxis, 0)
       naxis = min(3,naxis)
-      call initco (lin)
 c
       do i = 1, nslice
 c
-c Convert absolute pixels to arcsecond offsets
+c Convert absolute pixels to output offset units (arcsec or pixels)
 c
         win(1) = slpos(1,i)
         call ppconcg (2, blc(1), ibin, win(1))
@@ -3095,15 +3110,14 @@ c
         trcx = wout(1)
         trcy = wout(2)
 c
-        write (aline,100) i, blcx, blcy, trcx, trcy, krng(1), 
-     +                    krng(1)+krng(2)-1
-100     format (i3, 1x, 4(1pe13.6, 1x), i4, 1x, i4)
+        write (aline,100) typeo(1), typeo(2), blcx, blcy, trcx, trcy, 
+     +    krng(1), krng(1)+krng(2)-1
+100     format (a6, 1x, a6, 1x, 4(1pe13.6, 1x), i4, 1x, i4)
         ilen = len1(aline)
         call txtwrite (lpos, aline, ilen, iostat)
         if (iostat.ne.0) call bug ('f', 
      +     'Error writing slice positions file')
       end do
-      call finco (lin)
 c
       end
 c
@@ -3505,7 +3519,9 @@ c    bgcol  background colour. 0 -> black
 c			       1 -> white
 c			      -1 -> something else
 c  OUtput
-c    colour indices to use
+c    labcol labels
+c    concol contours
+c    slbcol slice plot borders
 c-----------------------------------------------------------------------
       implicit none
       integer labcol, concol, slbcol, bgcol
@@ -3513,29 +3529,28 @@ c-----------------------------------------------------------------------
 c
 c Labels first
 c
-      labcol = 7
       if (bgcol.eq.1) then
 c
 c White background
 c
         labcol = 2
+        slbcol = 2
+
       else if (bgcol.eq.0) then
 c
 c Black background
 c
         labcol = 7
+        slbcol = 7
       else
         call bug ('w', 'Non black/white background colour on device')
         labcol = 7
+        slbcol = 2
       end if
 c
 c Now contours
 c
       concol = 7
       if (bgcol.eq.1) concol = 2
-c
-c Slice display frame
-c
-      slbcol = 7
 c
       end
