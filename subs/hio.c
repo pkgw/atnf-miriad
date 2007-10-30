@@ -23,14 +23,6 @@
 			and documented this feature
        13-mar-95  rjs   Increase max number of open items.
        30-jun-95  rjs   Declaration to appease gcc.
-       15-may-96  rjs	More fiddles with roundup macro.
-       18-mar-97  rjs   Remove alignment restriction on hio_c.
-       21-mar-97  rjs   Make some previously dynamic allocations static.
-       30-sep-97  rjs   Start ntree off at 1 (rather than 0).
-       28-nov-97  rjs   Change to cope with text files which do not end with
-			a newline char.
-       09-may-00  rjs   Get rid of spurious error message in hrm_c. Why didn't
-		        I see this ages ago?
 */
 
 
@@ -40,6 +32,8 @@
 #include "hio.h"
 
 #define private static
+#define TRUE 1
+#define FALSE 0
 #if !defined(NULL)
 #  define NULL 0
 #endif
@@ -78,7 +72,6 @@ typedef struct tree { char *name;
 		 int handle,flags,rdwr,wriostat;
 		 ITEM *itemlist; } TREE;
 
-static TREE foreign = {"",0,0,0,0,NULL};
 #define MAXITEM 1024
 
 private int nitem,ntree;
@@ -88,8 +81,7 @@ private ITEM *item_addr[MAXITEM];
 #define hget_tree(tno) (tree_addr[tno])
 #define hget_item(tno) (item_addr[tno])
 
-private int header_ok,expansion[10],align_size[10];
-private char align_buf[BUFSIZE];
+private int header_ok,expansion[10];
 private int first=TRUE;
 
 /* Macro to wait for I/O to complete. If its a synchronous i/o system,
@@ -111,18 +103,22 @@ private int first=TRUE;
 
 /* Declare a few private routines. */
 
-private void hcheckbuf_c(),hcache_read_c(),hrelease_item_c(),
+private void hcheckbuf_c(),hcache_read_c(),hcache_write_c(),hrelease_item_c(),
   hcache_create_c(),hwrite_fill_c(),hdir_c(),hinit_c();
 private int hname_check();
 private ITEM *hcreate_item_c();
 private TREE *hcreate_tree_c();
 
+/* Min and max value macros. */
+
+#define min(a,b) ((a) <= (b) ? (a) : (b))
+#define max(a,b) ((a) >= (b) ? (a) : (b))
+#define roundup(a,b) ((b)*(((a)+(b)-1)/(b)))
 #define check(iostat) if(iostat) bugno_c('f',iostat)
 
 /* Define a few things so that I can avoid lint being pedantic. */
 
-void bug_c(),bugno_c(),dopendir_c(),dclosedir_c(),dreaddir_c(),drmdir_c();
-void ddelete_c(),pack16_c(),unpack16_c();
+void bug_c(),bugno_c(),dopendir_c(),dclosedir_c(),dreaddir_c();
 void dtrans_c(),dmkdir_c(),dopen_c(),dclose_c(),dread_c(),dwrite_c();
 
 private int hfind_nl();
@@ -198,14 +194,10 @@ private void hinit_c()
 {
   int i;
 
-  nitem = 0;
-  ntree = 1;
+  nitem = ntree = 0;
   for(i=0; i < MAXITEM; i++)item_addr[i] = NULL;
   for(i=0; i < MAXOPEN; i++)tree_addr[i] = NULL;
-
-/* Tree-0 is a special tree used for "foreign" files. */
-
-  tree_addr[0] = &foreign;
+  (void)hcreate_tree_c("");
 
   expansion[H_BYTE] = 1;
   expansion[H_INT]  = sizeof(int)/H_INT_SIZE;
@@ -214,14 +206,6 @@ private void hinit_c()
   expansion[H_DBLE] = sizeof(double)/H_DBLE_SIZE;
   expansion[H_CMPLX] = 2*sizeof(float)/H_CMPLX_SIZE;
   expansion[H_TXT]  = 1;
-
-  align_size[H_BYTE] = 1;
-  align_size[H_INT]  = H_INT_SIZE;
-  align_size[H_INT2] = H_INT2_SIZE;
-  align_size[H_REAL] = H_REAL_SIZE;
-  align_size[H_DBLE] = H_DBLE_SIZE;
-  align_size[H_CMPLX] =H_REAL_SIZE;
-  align_size[H_TXT]  = 1;
   first = FALSE;
   header_ok = FALSE;
 }
@@ -292,7 +276,7 @@ int tno,*iostat;
         }
 	item->io[0].state = IO_VALID;
 	item->flags |= ITEM_CACHE;
-        offset += mroundup(item->size,CACHE_ENT);
+        offset += roundup(item->size,CACHE_ENT);
       }
     }
     hdaccess_c(ihandle,iostat);					if(*iostat)return;
@@ -360,7 +344,7 @@ void habort_c()
 
       t->flags &= ~TREE_CACHEMOD;
       if(t->flags & TREE_NEW)hrm_c(t->handle);
-      else if(i != 0)hclose_c(t->handle);
+      else hclose_c(t->handle);
     }
   }
 }
@@ -406,7 +390,6 @@ int tno;
 /* Delete the directory itself. */
 
   t = hget_tree(tno);
-  t->flags &= ~TREE_CACHEMOD;
   drmdir_c(t->name,&iostat);
   hclose_c(tno);
 }
@@ -924,18 +907,16 @@ char *buf;
 			(dowrite ? item->bsize : item->io[b].length)))
 
 {
-  char *s;
-  int next,b,off,len,size;
+  int next,b,off,len;
   IOB *iob1,*iob2;
   ITEM *item;
 
   item = hget_item(ihandle);
-  size = align_size[type];
 
 /* Check various end-of-file conditions and for adequate buffers. */
 
   next = offset + (!dowrite && type == H_TXT ? 1 : length );
-/*  if(!dowrite && type == H_TXT) length = min(length, item->size - offset); */
+  if(!dowrite && type == H_TXT) length = min(length, item->size - offset);
   *iostat = -1;
   if(!dowrite && next > item->size)return;
   *iostat = 0;
@@ -1048,57 +1029,44 @@ char *buf;
 
     off  = offset - iob1->offset;
     len = min(length, iob1->length - off);
-    s = ( ( off % size ) ? align_buf : iob1->buf + off );
-    if(dowrite){
-      switch(type){
-        case H_BYTE: 	Memcpy(s,buf,len);
+    if(dowrite)switch(type){
+      case H_BYTE: 	Memcpy(iob1->buf+off,buf,len);
 			break;
-        case H_INT:  	pack32_c((int *)buf, s,len/H_INT_SIZE);
+      case H_INT:  	pack32_c((int *)buf,iob1->buf+off,len/H_INT_SIZE);
 			break;
-        case H_INT2:	pack16_c((int2 *)buf,s,len/H_INT2_SIZE);
+      case H_INT2:	pack16_c((int2 *)buf,iob1->buf+off,len/H_INT2_SIZE);
 			break;
-        case H_REAL:	packr_c((float *)buf,s,len/H_REAL_SIZE);
+      case H_REAL:	packr_c((float *)buf,iob1->buf+off,len/H_REAL_SIZE);
 			break;
-        case H_DBLE:	packd_c((double *)buf,s,len/H_DBLE_SIZE);
+      case H_DBLE:	packd_c((double *)buf,iob1->buf+off,len/H_DBLE_SIZE);
 			break;
-        case H_CMPLX:	packr_c((float *)buf,s,(2*len)/H_CMPLX_SIZE);
+      case H_CMPLX:	packr_c((float *)buf,iob1->buf+off,(2*len)/H_CMPLX_SIZE);
 			break;
-        case H_TXT:	Memcpy(s,buf,len);
+      case H_TXT:	Memcpy(iob1->buf+off,buf,len);
 			if(*(buf+len-1) == 0)*(iob1->buf+off+len-1) = '\n';
 			break;
-        default:	bug_c('f',"hio_c: Unrecognised type");
-      }
-      if(off % size) Memcpy(iob1->buf+off,align_buf,len);
-    } else {
-
-/* If the data are not aligned, copy to an alignment buffer for processing. */
-
-      if(off % size) Memcpy(align_buf,iob1->buf+off,len);
-      switch(type){
-        case H_BYTE: 	Memcpy(buf,s,len);
+      default:		bug_c('f',"hio_c: Unrecognised type");
+    } else      switch(type){
+      case H_BYTE: 	Memcpy(buf,iob1->buf+off,len);
 			break;
-        case H_INT:  	unpack32_c(s,(int *)buf,len/H_INT_SIZE);
+      case H_INT:  	unpack32_c(iob1->buf+off,(int *)buf,len/H_INT_SIZE);
 			break;
-        case H_INT2:	unpack16_c(s,(int2 *)buf,len/H_INT2_SIZE);
+      case H_INT2:	unpack16_c(iob1->buf+off,(int2 *)buf,len/H_INT2_SIZE);
 			break;
-        case H_REAL:	unpackr_c(s,(float *)buf,len/H_REAL_SIZE);
+      case H_REAL:	unpackr_c(iob1->buf+off,(float *)buf,len/H_REAL_SIZE);
 			break;
-        case H_DBLE:	unpackd_c(s,(double *)buf,len/H_DBLE_SIZE);
+      case H_DBLE:	unpackd_c(iob1->buf+off,(double *)buf,len/H_DBLE_SIZE);
 			break;
-        case H_CMPLX:	unpackr_c(s,(float *)buf,(2*len)/H_CMPLX_SIZE);
+      case H_CMPLX:	unpackr_c(iob1->buf+off,(float *)buf,(2*len)/H_CMPLX_SIZE);
 			break;
-        case H_TXT:	len = hfind_nl(s,len);
-			Memcpy(buf,s,len);
-			if(*(s+len-1) == '\n'){
+      case H_TXT:	len = hfind_nl(iob1->buf+off,len);
+			Memcpy(buf,iob1->buf+off,len);
+			if(*(iob1->buf+off+len-1) == '\n'){
 			  length = len;
-			  *(buf+len-1) = 0;
-			}else if(offset+len == item->size && len < length){
-			  length = ++len;
 			  *(buf+len-1) = 0;
 			}
 			break;
-        default:	bug_c('f',"hio_c: Unrecognised type");
-      }
+      default:		bug_c('f',"hio_c: Unrecognised type");
     }
     buf += expansion[type] * len;
     length -= len;
@@ -1319,7 +1287,7 @@ TREE *t;
     item->io[0].state = IO_VALID;
     item->io[0].buf = Malloc(item->size);
     hreadb_c(ihandle,item->io[0].buf,offset,item->size,iostat);	check(*iostat);
-    offset += mroundup(item->size,CACHE_ENT);
+    offset += roundup(item->size,CACHE_ENT);
   }
   if(*iostat != -1) bug_c('f',"hcache_read_c: Something wrong reading cache");
   hdaccess_c(ihandle,iostat);
