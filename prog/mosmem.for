@@ -15,13 +15,17 @@ c@ beam
 c	The input dirty beam, also produced by INVERTs mosaic mode. No
 c	default
 c@ model
-c	An initial model of the deconvolved image. This could be the output
-c	from a previous run of MOSMEM or any other deconvolution
-c	task. It must have flux units of Jy/pixel. The default is a flat
-c	estimate, with the correct flux.
+c	An initial estimate of the deconvolved image. For point sources,
+c	giving a good initial model may help convergence. In principle,
+c	this only helps convergence, but should not affect the final
+c	solution. The model could be the output from a previous run of
+c	MOSMEM or any other deconvolution task. It must have flux units of
+c	Jy/pixel. The default is a flat estimate, with the correct flux.
 c@ default
-c	The default image. This could be a smoothed version of a previous
-c	MOSMEM run, or some other smooth estimate of the image.
+c	The default image. This is the image that the final solution will
+c	tend towards. The final result will be influenced by this default
+c	if the constrains that the data put on the solution are weak.
+c	The default is a flat estimate, with the correct flux.
 c@ out
 c	The name of the output map. The units of the output will be Jy/pixel.
 c	It can be input to RESTOR or MOSMEM (as a model, to continue the
@@ -73,9 +77,12 @@ c  History:
 c    rjs  23nov94  Adapted from MAXEN.
 c    rjs   3dec94  Doc only.
 c    rjs   6feb95  Copy mosaic table to output component file.
+c    rjs  10aug95  New routine to modify alpha and beta.
+c    rjs  12oct95  Support "default" and "model" being different sizes from
+c		   the deconvolved region.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='MosMem: version 1.0 6-Feb-95')
+	parameter(version='MosMem: version 1.0 10-Aug-95')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
@@ -101,6 +108,7 @@ c
 	real GradHH,GradJJ,Grad11,Immax,Immin,Flux,Rms,ClipLev
 	logical converge,positive,verbose,doflux
 	integer Run(3,MaxRun),nRun,Boxes(maxBoxes),nPoint,maxPoint
+	integer xmoff,ymoff,zmoff,xdoff,ydoff,zdoff
 c
 	integer pMap,pEst,pDef,pRes,pNewEst,pNewRes,pWt
 c
@@ -189,8 +197,8 @@ c  output.
 c
 	if(ModelNam.ne.' ')then
 	  call xyopen(lModel,ModelNam,'old',3,nModel)
-	  if(nModel(1).ne.nOut(1).or.nModel(2).ne.nOut(2)
-     *	    .or.nModel(3).ne.nOut(3)) call bug('f','Model size')
+	  call AlignIni(lModel,lMap,nModel(1),nModel(2),nModel(3),
+     *						xmoff,ymoff,zmoff)
 	endif
 c
 c  Initial values for alpha and beta.
@@ -203,8 +211,8 @@ c  output.
 c
 	if(DefNam.ne.' ')then
 	  call xyopen(lDef,DefNam,'old',3,nDef)
-	  if(nDef(1).ne.nOut(1).or.nDef(2).ne.nOut(2)
-     *	    .or.nDef(3).ne.nOut(3)) call bug('f','Default Image size')
+	  call AlignIni(lDef,lMap,nDef(1),nDef(2),nDef(3),
+     *						xdoff,ydoff,zdoff)
 	endif
 c
 c  Open up the output.
@@ -266,9 +274,8 @@ c
 	    ClipLev = 0.01 * TFlux/nPoint
 	    call Assign(TFlux/nPoint,memr(pDef),nPoint)
 	  else
-	    call xysetpl(lDef,1,k-kmin+1)
-	    call GetPlane(lDef,Run,nRun,1-imin,1-jmin,
-     *			nDef(1),nDef(2),memr(pDef),maxPoint,nPoint)
+	    call AlignGet(lDef,Run,nRun,k,xdoff,ydoff,zdoff,
+     *		nDef(1),nDef(2),nDef(3),memr(pDef),maxPoint,nPoint)
 	    Imax = Ismax(npoint,memr(pDef),1)
 	    ClipLev = 0.01 * abs(memr(pDef+Imax-1))
 	    if(positive) call ClipIt(0.1*ClipLev,memr(pDef),nPoint)
@@ -280,9 +287,9 @@ c
 	  if(ModelNam.eq.' ')then
 	    call Copy(nPoint,memr(pDef),memr(pEst))
 	  else
-	    call xysetpl(lModel,1,k-kmin+1)
-	    call GetPlane(lModel,Run,nRun,1-imin,1-jmin,
-     *			nModel(1),nModel(2),memr(pEst),maxPoint,nPoint)
+	    call AlignGet(lModel,Run,nRun,k,xmoff,ymoff,zmoff,
+     *		nModel(1),nModel(2),nModel(3),memr(pEst),
+     *		maxPoint,nPoint)
 	    if(positive) call ClipIt(ClipLev,memr(pEst),nPoint)
 	  endif
 c
@@ -1008,12 +1015,16 @@ c
 c
 c  Determine new values for alpha and beta.
 c------------------------------------------------------------------------
+	real tol1,tol2
+	parameter(tol1=0.1,tol2=0.05)
+c
 	real Denom,Dalp,Dbet,l,Alpha1,Alpha2,Beta1,Beta2,b2m4ac
 c
 c  Check if things are doing poorly. If so, just aim at reducing the
 c  gradient.
 c
-	l = 10*abs(GradJJ/Grad11)
+	l = abs(GradJJ/Grad11)
+	if(Alpha.le.0)l = 0
 c
 	if(doflux)then
 	  Denom = 1./(GradEE*GradFF - GradEF*GradEF)
@@ -1034,37 +1045,37 @@ c
 	  Dbet = 0.
 	endif
 c
-	b2m4ac = GradEJ*GradEJ - (GradJJ-0.3*Grad11)*GradEE
-        if(b2m4ac.gt.0.and.Alpha.eq.0)then
+	b2m4ac = GradEJ*GradEJ - (GradJJ-tol1*Grad11)*GradEE
+        if(b2m4ac.gt.0)then
           b2m4ac = sqrt(b2m4ac)
 	  Dalp = max((GradEJ - b2m4ac)/GradEE,
      *		 min((GradEJ + b2m4ac)/GradEE,Dalp))
+	else
+	  Dalp = 0
         endif
 c
-        b2m4ac = GradFJ*GradFJ - (GradJJ-0.3*Grad11)*GradFF
-        if(b2m4ac.gt.0.and.Beta.eq.0)then
+        b2m4ac = GradFJ*GradFJ - (GradJJ-tol1*Grad11)*GradFF
+        if(b2m4ac.gt.0)then
           b2m4ac = sqrt(b2m4ac)
 	  Dbet = max((GradFJ - b2m4ac)/GradFF,
      *		 min((GradFJ + b2m4ac)/GradFF,Dbet))
+	else
+	  Dbet = 0
         endif
 c
 	Alpha2 = Alpha+ Dalp
 	Beta2  = Beta + Dbet
 c
-	if(l.ge.1.or.Alpha2.le.0)then
+	if(l.ge.tol2.or.Alpha2.le.0)then
 	  Alpha = max(Alpha1,0.)
-	else if(l.le.0.or.Alpha1.le.0)then
-	  Alpha = max(Alpha2,0.)
 	else
-	  Alpha = exp(l*log(Alpha1) + (1-l)*log(Alpha2))
+	  Alpha = max(Alpha2,0.)
 	endif
 c
-	if(l.ge.1.or.Beta2.le.0)then
+	if(l.ge.tol2.or.Beta2.le.0)then
 	  Beta = max(Beta1,0.)
-	else if(l.le.0.or.Beta1.le.0)then
-	  Beta = max(Beta2,0.)
 	else
-	  Beta = exp(l*log(Beta1) + (1-l)*log(Beta2))
+	  Beta = max(Beta2,0.)
 	endif
 c
 	end
