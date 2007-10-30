@@ -3549,3 +3549,16 @@ and in a way to be consistent with all the other changes happening.
 28mar00 rjs	uvplt.for -- Correctly handle colour indices when there are more
 		than 12 inputs.
 31mar00	rjs	obspar.for -- Added SEST/
+*********************************** 7apr00 Sent changes to Doug Roberts
+30mar00 lss,vk	hanning.for -- Adapted from hanning to include boxcar
+05apr00 mchw	velplot.for - specify RA and DEC cuts with a range and increment.
+07apr00 rjs	key.for -- Check for file existence in keyf.
+11apr00 rjs	fits.for - uvout was always writing multi-source files
+		(incorrectly).
+03may00 rjs	atjones.for -- Strip out common subroutine from offpol and offaxis,
+		and support C and X band data.
+03may00 rjs	offpol.for -- Several minor enhancements including support for
+		C and X band.
+03may00 rjs	offaxis.for -- Support for C and X band.
+04may00 rjs	uvplt.for -- Relax requirements for lat/long variables in the
+		header.
