@@ -3522,22 +3522,22 @@ and in a way to be consistent with all the other changes happening.
 *********************************** 28oct99 Sent changes to Doug Roberts
 05mar99 bpw	headcopy.for -- real->double for last argument fixed call to rdhdd
 01nov99 lss	mbspect.for -- Minor improvements.
-*********************************** 4nov99 Sent changes to Doug Roberts
+*********************************** 04nov99 Sent changes to Doug Roberts
 12nov99 rjs	fits.for,fits.h -- options=varwt and better history comments
 		in output FITS files.
 *********************************** 23nov99 Sent changes to Doug Roberts
 07dec99 rjs	imdiff.for - Fix writing of history for "adjust" image.
-*********************************** 6jan00 Sent changes to Doug Roberts
+*********************************** 06jan00 Sent changes to Doug Roberts
 10jan00 rjs	imgen.for -- Added "seed" keyword.
 23jan00 rjs	gaufit.for -- Change some subroutine args to real-valued.
 27jan00 rjs	moslst.for -- New task. Reworked/renamed version of lmclst.
 28jan00 rjs	gaufit.for -- Standardise FORTRAN.
 05jan00 rjs	plproc.for,plproc.h -- Planetary subroutines.
-*********************************** 3feb00 Sent changes to Doug Roberts
+*********************************** 03feb00 Sent changes to Doug Roberts
 07feb00 rjs	gethd.for -- Added "format" keyword.
 29feb00 rjs	psrplt.for -- mode keyword.
 07feb00 rjs	planets.for -- Print out SysI and SysII for Jupiter
-*********************************** 3mar00 Sent changes to Doug Roberts
+*********************************** 03mar00 Sent changes to Doug Roberts
 10mar00 rjs	uvplt.for -- Set maxbase2=91.
 15mar00 rjs	blcal.for -- Change in meaning of options=nopolsol
 21mar00 rjs	fitsio.for,fitsio.h -- Handle FITS vis files with freq before
@@ -3549,7 +3549,7 @@ and in a way to be consistent with all the other changes happening.
 28mar00 rjs	uvplt.for -- Correctly handle colour indices when there are more
 		than 12 inputs.
 31mar00	rjs	obspar.for -- Added SEST/
-*********************************** 7apr00 Sent changes to Doug Roberts
+*********************************** 07apr00 Sent changes to Doug Roberts
 30mar00 lss,vk	hanning.for -- Adapted from hanning to include boxcar
 05apr00 mchw	velplot.for - specify RA and DEC cuts with a range and increment.
 07apr00 rjs	key.for -- Check for file existence in keyf.
@@ -3562,7 +3562,7 @@ and in a way to be consistent with all the other changes happening.
 03may00 rjs	offaxis.for -- Support for C and X band.
 04may00 rjs	uvplt.for -- Relax requirements for lat/long variables in the
 		header.
-*********************************** 5may00 Sent changes to BIMA
+*********************************** 05may00 Sent changes to BIMA
 08may00 rjs	hanning.for,cgcurs.for,colden.for,gaufit.for,impoly.for,
 		psrplt.for,cgdisp.for,contsub.for,imblr.for,imtab.for,uvedit.for
 		cgslice.for,imcfn.for,pcsub.for,uvwide.for -- Change incorrect
@@ -3579,7 +3579,7 @@ and in a way to be consistent with all the other changes happening.
 17may00 mchw	uvgen.for -- allow for saturated spectral absorption model.
 18may00 rjs	uvgen.for -- Merge mchw and rjs versions of uvgen.for
 19may00 rjs	impos.for -- Make default "type" abspix.
-*********************************** 1jun00 Sent changes to BIMA
+*********************************** 01jun00 Sent changes to BIMA
 11jun00 rjs     atlod.for -- Include pmps switch. More robust to bad number
 		of channels etc in RPFITS file. Increase buffer space.
 14jun00 rjs	reorder.for -- Copy across llrot keyword.
@@ -3588,7 +3588,7 @@ and in a way to be consistent with all the other changes happening.
 16jun00 rjs	select.for -- Check for bad antenna numbers in selection.
 04jul00 rjs	noise.for -- Changes to be more robust to bad computer
 		rounding.
-*********************************** 6jul00 Sent changes to BIMA
+*********************************** 06jul00 Sent changes to BIMA
 11jul00 rjs	regrid.for - Added "rotate" keyword, and eliminate "norot"
 		option.
 13jul00 rjs	moment.for - Copy across llrot.
@@ -3601,7 +3601,7 @@ and in a way to be consistent with all the other changes happening.
             	             place.  grrr.
 28jul00 rjs	select.for -- Change on 16-Jul was buggy and could give spurious
 		error messages ... correct it.
-*********************************** 4aug00 Sent changes to BIMA
+*********************************** 04aug00 Sent changes to BIMA
 07aug00 rjs	zapchan.for,vblank.for,uvputhd.for -- Updated from BIMA.
 14aug00 rjs	mfclean.for -- Added output log file.
 14aug00 rjs	model.for -- Re-include external sources.
@@ -3610,3 +3610,5 @@ and in a way to be consistent with all the other changes happening.
 28aug00 rjs	clean.for - Increase max complexity of region-of-interest.
 05sep00 rjs	uvedit.for -- Change some code to double precision to avoid
 		rounding problem.
+*********************************** 08Sep00 Sent changes to BIMA
+08sep00 rjs	mfflat.for -- Make sure that the "freq0" item is always there.
