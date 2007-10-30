@@ -172,6 +172,8 @@ c		  * Get rid of skip when jstat.eq.5 in RPDISP.
 c    rjs  22sep97 Replace call to fdatejul with dayjul.
 c    rjs  07jan98 Better printing of source names.
 c    rjs  06apr98 Increase the max size of an integration.
+c    rjs  07may98 Change in handling of jstat.eq.5 return value.
+c    rjs  14may98 Handle higher time resolution.
 c
 c  Program Structure:
 c    Miriad atlod can be divided into three rough levels. The high level
@@ -197,7 +199,7 @@ c------------------------------------------------------------------------
 	integer MAXFILES
 	parameter(MAXFILES=128)
 	character version*(*)
-	parameter(version='AtLod: version 08-Apr-98')
+	parameter(version='AtLod: version 14-May-98')
 c
 	character in(MAXFILES)*64,out*64,line*64
 	integer tno
@@ -1561,7 +1563,7 @@ c------------------------------------------------------------------------
 	parameter(MAXPOL=4,MAXSIM=4,MAXXYP=5)
 	include 'rpfits.inc'
 	integer scanno,i1,i2,baseln,i,id,j
-	logical NewScan,NewSrc,NewFreq,NewTime,Accum,ok
+	logical NewScan,NewSrc,NewFreq,NewTime,Accum,ok,badbit
 	logical flags(MAXPOL)
 	integer jstat,flag,bin,ifno,srcno,simno,Ssrcno,Ssimno
 	integer If2Sim(MAX_IF),nifs(MAX_IF),Sim2If(MAXSIM,MAX_IF)
@@ -1626,9 +1628,11 @@ c
 c  Loop the loop getting data.
 c
 	jstat = 0
+	badbit = .false.
 	dowhile(jstat.eq.0)
 	  call rpfitsin(jstat,vis,weight,baseln,ut,u,v,w,flag,
      *						bin,ifno,srcno)
+	  if(jstat.ne.5)badbit = .false.
 c
 c  Handle header encountered.  Note that the next header
 c  read will be the same one we just encountered, not the
@@ -1659,16 +1663,22 @@ c
           else if(jstat.eq.4)then
             jstat = 0
 c
-c  Handle some i/o error -- look for next header
+c  Handle some i/o error. First time tolerate it, but if it happens
+c  immediately again, skip to the next header.
 c
 	  else if(jstat.eq.5)then
-            call bug('w', 
-     *        'I/O error occurred with jstat=5. Look for next header')
-	    jstat = -1
-	    call rpfitsin(jstat,vis,weight,baseln,ut,u,v,w,flag,
+	    if(badbit)then
+	      call bug('w', 
+     *          'I/O error occurred with jstat=5. Look for next header')
+	      jstat = -1
+	      call rpfitsin(jstat,vis,weight,baseln,ut,u,v,w,flag,
      *						bin,ifno,srcno)
-	    NewScan = .true.
-	    scanno = scanno + 1
+	      NewScan = .true.
+	      scanno = scanno + 1
+	    else
+	      badbit = .true.
+	      jstat = 0
+	    endif
 c
 c  Other errors, including EOF.
 c
@@ -1687,7 +1697,7 @@ c  send it through to the Poke routines right away. Otherwise, end the
 c  integration and buffer up the SYSCAL record for later delivery.
 c
 	  else if(baseln.eq.-1)then
-	    NewTime = abs(sc_ut-utprevsc).gt.4
+	    NewTime = abs(sc_ut-utprevsc).gt.0.04
 	    if(NewScan.or.an_found.or.NewTime)then
 	      call AtFlush(scinit,scbuf,xflag,yflag,MAX_IF,ANT_MAX)
 	      Accum = .false.
@@ -1715,7 +1725,7 @@ c  Determine whether to flush the buffers.
 c
 	    simno = If2Sim(ifno)
 	    NewFreq = simno.ne.Ssimno
-	    NewTime = abs(ut-utprev).gt.4
+	    NewTime = abs(ut-utprev).gt.0.04
 	    NewSrc = srcno.ne.Ssrcno
 	    if(Accum.and.(NewScan.or.an_found.or.NewSrc.or.NewFreq.or.
      *							NewTime))then
