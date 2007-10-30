@@ -10,19 +10,16 @@ c	pjt	21-feb-92	use hisinput(), still uses imhdcopy() !!
 c	pjt     10-mar-92       consistent use of MAXRUNS
 c       nebk    25-nov-92       Copy btype to output
 c       pjt      8-jun-94       region= clarification
-c       rjs     02-jul-97	cellscal change.
-c	rjs	10-nov-97	Correct handling of 3rd axis and minor
-c				improvement to the documentation.
-c       rjs     08-may-00       Change incorrect call to keyf to keya.
+c
 c-----------------------------------------------------------------------
 c= impoly - Flat field subtraction using a 2D polynomial fit
 c& pjt
 c: map combination
 c+
 c	IMPOLY (IMage POLYnomial subtraction) is a MIRIAD task which
-c	performs a polynomial least squares fit to a specified
-c	x-y region of each plane of a cube and subtracts this
-c	fit from the entire plane.
+c	applies a specified x-y region of each plane of a cube
+c	to a polynomial least squares fit, and subtracts the fit, 
+c	from across the region, across the entire plane.
 c@ in
 c	The input image. No default.
 c@ out
@@ -30,7 +27,7 @@ c	The output image. No default.
 c@ order
 c	The degree of the highest term of the polynomial fit. 
 c	It is not possible to have a different order of the polynomial 
-c	in X and Y. Default is zero (i.e. fit a constant).
+c	in X and Y. Default is zero: the fit to a constant.
 c@ coeffs
 c	A logical, specifying whether you want to see fitted polynomial
 c 	coefficients. Default: no.
@@ -58,6 +55,7 @@ c	jread		used in deciding if we read in a line from the cube
 c	len1		function to find the length of a string
 c
 c-----------------------------------------------------------------------
+c
 	INCLUDE 'maxdim.h'
 	INTEGER MAXBOXES, MAXNAX, MAXRUNS, MAXORDER, MAXLEN, MAXEXP
 	CHARACTER PVERSION*(*)
@@ -70,7 +68,6 @@ c
 	INTEGER boxes(MAXBOXES), xblc, xtrc, yblc, ytrc, runs(3,MAXRUNS)
 	INTEGER nruns, nin(3), order, nlen, idx, jread, info, runnum
 	INTEGER lin, lout, i, j, k, p, n, u, v, r, iwork(MAXLEN)
-	INTEGER naxis
 	REAL rline(MAXDIM), x, y, rms, nrms, x0, y0
 	DOUBLE PRECISION a(MAXLEN), sa(MAXLEN), expxy
         DOUBLE PRECISION m(MAXLEN,MAXLEN), sm(MAXLEN)
@@ -89,7 +86,7 @@ c
 	CALL keyf('in', in, ' ')
 	IF (in .EQ. ' ') CALL bug('f', 
      *			'You must specify an input file (in=)')
-	CALL keya('out', out, ' ')
+	CALL keyf('out', out, ' ')
 	IF (out .EQ. ' ') CALL bug('f',
      *			'You must name an output file (out=)')
 	CALL keyi('order', order, 0)
@@ -104,9 +101,7 @@ c	and get the reference pixel...crpix1/2
 c
 	nlen=((order+1)*(order+2))/2
 	CALL xyopen(lin, in, 'old', MAXNAX, nin)
-	CALL rdhdi(lin, 'naxis', naxis, 1)
-	naxis = min(naxis,MAXNAX)
-	CALL xyopen(lout, out, 'new', naxis, nin)
+	CALL xyopen(lout, out, 'new', MAXNAX, nin)
 	CALL imhdcopy(lin, lout)
 	CALL boxmask(lin, boxes, MAXBOXES)
 	CALL boxset(boxes, MAXNAX, nin, ' ')
@@ -117,18 +112,16 @@ c	-----------------------------------------------------------------
 c	Record the activities in a new history file for the output image
 c
 	CALL hisopen(lout, 'append')
-	CALL hiswrite(lout, 'IMPOLY: '//PVERSION)
 	CALL hisinput(lout,'IMPOLY')
+	CALL hiswrite(lout, 'IMPOLY: '//PVERSION)
 
 c
 c	-----------------------------------------------------------------
 c	By plane, create and subtract a background radiation polynomial fit.
 c
 	DO k=1,nin(3)
-	  if(k.gt.1)then
-	    CALL xysetpl(lin,1,k)
-	    CALL xysetpl(lout,1,k)
-	  endif
+	  CALL xysetpl(lin,1,k)
+	  CALL xysetpl(lout,1,k)
 c	  Reset sm and m to zero in order to reuse them for each
 c	  line segment of relevant data in the region of interest
 	  DO u=1,nlen
@@ -305,15 +298,15 @@ c     lout  output file pointer
 c
 c-----------------------------------------------------------------------
       INTEGER NKEYS
-      PARAMETER(NKEYS=47)
+      PARAMETER(NKEYS=48)
       CHARACTER keyw(NKEYS)*8
       INTEGER   i
       DATA keyw/   'bunit   ','crota1  ','crota2  ','crota3  ',
      *  'crota4  ','crota5  ','crval1  ','crval2  ','crval3  ',
      *  'crval4  ','crval5  ','ctype1  ','ctype2  ','ctype3  ',
-     *  'ctype4  ','ctype5  ','obstime ','epoch   ','history ',
+     *  'ctype4  ','ctype5  ','date-obs','epoch   ','history ',
      *  'instrume','niters  ','object  ','telescop','observer',
-     *  'restfreq','vobs    ','cellscal','obsra   ',
+     *  'restfreq','vobs    ','xshift  ','yshift  ','obsra   ',
      *  'obsdec  ','cdelt1  ','cdelt2  ','cdelt3  ','cdelt4  ',
      *  'cdelt5  ','crpix1  ','crpix2  ','crpix3  ','crpix4  ',
      *  'crpix5  ','ltype   ','lstart  ','lwidth  ','lstep   ',
