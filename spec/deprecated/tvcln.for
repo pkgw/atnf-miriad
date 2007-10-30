@@ -103,10 +103,6 @@ c   rjs  10feb93 - Get rid of maxdim**2 arrays (use memalloc). Copy restor.h
 c		   to tvcln.h.
 c   rjs  10sep96 - Get rid fo tvclncom common block.
 c   rjs  29jan97 - Change default region of interest.
-c   rjs  10mar97 - Default region is all channels.
-c   jm   16may97 - Modified interini() for server/panel changes.
-c   rjs  02jul97 - cellscal change.
-c   rjs  23jul97 - added pbtype.
 c
 c  Important Constants:
 c    MaxDim	The max linear dimension of an input (or output) image.
@@ -124,7 +120,7 @@ c		to write.
 c
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='TvCln: version 1.0 10-Mar-97')
+	parameter(version='TvCln: version 1.0 29-Jan-97')
 	include 'maxdim.h'
 	integer MaxBeam,maxCmp1,maxCmp2,MaxBox,MaxRun,MaxP
 	parameter(maxCmp1=66000,MaxCmp2=32000,MaxP=257)
@@ -446,9 +442,9 @@ c
 	data keyw/   'cdelt1  ','cdelt2  ','cdelt3  ','cdelt4  ',
      *	  'crpix4  ','crval1  ','crval2  ','crval3  ','crval4  ',
      *		     'ctype1  ','ctype2  ','ctype3  ','ctype4  ',
-     *    'obstime ','epoch   ','history ','instrume','lstart  ',
+     *    'date-obs','epoch   ','history ','instrume','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ',
-     *	  'observer','telescop','cellscal','obsra   ','pbtype  ',
+     *	  'observer','telescop','xshift  ','yshift  ','obsra   ',
      *	  'obsdec  ','restfreq','vobs    ','pbfwhm  ','btype   '/
 c
 c  Fill in some parameters that will have changed between the input
@@ -1409,8 +1405,9 @@ c
 	logical doCtrl,doInter
 c
 c------------------------------------------------------------------------
- 	integer length
+ 	integer length,i1,i2,status
 	character values(2)*5,lutval(3)*5,image(3)*5,fidpan(2)*5
+	character panel*24,tv*24
 c
 	integer len1
 c
@@ -1423,13 +1420,26 @@ c
 	dointer = .false.
 	length = len1(server)
 	if(length.eq.0)return
-c
-	call tvopen(server)
+	i1 = index(server,'@')
+	if(i1.le.1.or.i1.ge.length)
+     *	  call bug('f','TV device names must be of the form type@name')
+	i2 = index(server(i1+1:length),'/') + i1
+	if(i2.ne.i1.and.min(length-i2,i2-(i1+1)).le.0)
+     *	  call bug('f','Bad name for TV/panel server')
+	if(server(i2:i2).eq.'/')then
+	  tv = server(1:i2-1)
+	  panel = server(i2+1:length)
+	else
+	  tv = server(1:length)
+	  panel = server(i1+1:length)
+	endif
+	call tvopen(tv)
 	doInter = .true.
-c
-	call ctrlopen(server, doctrl)
-	if(.not.doctrl)then
+	status = -1
+	if(panel.ne.'-')call CtrlInit(panel,status)
+	if(status.ne.0)then
 	  call bug('w','Failed to connect to panel server')
+	  doCtrl = .false.
 	else
 	  call CtrlDef('pause','button',values,2)
 	  call CtrlDef('exit','button','EXIT ',1)
@@ -1441,6 +1451,7 @@ c
 	  call CtrlDef('reset','button','RESET',1)
 	  call CtrlDef('cursor','cursor','Pan',1)
 	  call CtrlView	  
+	  doCtrl = .true.
 	endif
 	end
 c************************************************************************
@@ -2149,7 +2160,7 @@ c
 	trc(2) = min(nMap(2),blc(2)+width-1)
 c
 	blc(3) = 1
-	trc(3) = nMap(3)
+	trc(3) = 1
 c
 	call BoxDef(boxes,3,blc,trc)
 c
