@@ -3503,3 +3503,21 @@ and in a way to be consistent with all the other changes happening.
 30sep99 rjs	fft.for -- Change bunit in the output header.
 01oct99 vjm	imom.for -- New program: Compute intensity-weighted moment of an image
 05oct99 rjs	blflag.for --  Added options=scalar
+*********************************** 08oct99 Sent changes to Doug Roberts
+12oct99 rjs	imblr.for -- Do not produce output mask.
+12oct99 rjs	imbin.for,imsub.for,mostab.for,mc.for,model.for -- Fix imbin
+		and imsub to correctly copy mosaic tables. Some tidying in
+		mostab.for, which has reprocussions in mc.for, model.for.
+12oct99 rjs	gpcal.for,gpscal.for,getxy.for,gpboot.for -- gpcal now attempts
+		to honour the flux scale of any input gain table. options=noxy
+		has been removed from gpboot. Change in the call sequence to
+		getxy.for, with corresponding change in gpscal.for
+17oct99 rjs	headcopy.for -- Copy mostable.
+22oct99 rjs	clean.for -- Doc change only.
+23oct99 pjt	contsub.for,gpaver.for -- Initialisation problems in LINUX.
+24oct99 rjs	noise.for -- Initalisation problems in LINUX.
+27oct99 rjs	imspec.for,imstat.for -- Get first axis label correct.
+28oct99 rjs	mostab.for -- There was a bug which caused a fractional pixel
+		shift error.
+*********************************** 28oct99 Sent changes to Doug Roberts
+05mar99 bpw	headcopy.for -- real->double for last argument fixed call to rdhdd
