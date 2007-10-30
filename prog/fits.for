@@ -313,9 +313,12 @@ c    rjs  11-nov-99  options=varwt
 c    rjs  11-apr-00  In uvout, multisource files were always being generated.
 c    rjs  10-may-00  In xyout, increase size of descr buffer.
 c    rjs  04-Oct-00  Make xyout work for arbitrarily large images.
+c    rjs  10-oct-00  Really do the above this time!
+c    dpr  01-nov-00  Change CROTAn to AIPS convention for xyout
+c    dpr  27-nov-00  fix stokes convention for xyin
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Fits: version 1.1 04-Oct-00')
+	parameter(version='Fits: version 1.1 27-nov-00')
 	character in*128,out*128,op*8,uvdatop*12
 	integer velsys
 	real altrpix,altrval
@@ -3447,7 +3450,9 @@ c
 	    cdelt(i) = 1d-9 * cdelt(i)
 	  else if(ctype(i).eq.'STOKES')then
 	    polcode = nint(crval(i)+(1-crpix(i))*cdelt(i))
-	    if(polcode.lt.-8.or.polcode.gt.4.or.polcode.ne.0)then
+c  dpr 27-nov-00 ->
+	    if(polcode.lt.-8.or.polcode.gt.4.or.polcode.eq.0)then
+c  <- dpr 27-nov-00 
 	      ctype(i) = 'ASTOKES'
 	      if(polcode.ge.5.and.polcode.le.9)btype=types(polcode-4)
 	    endif
@@ -3879,8 +3884,6 @@ c
 	call xyopen(tno,in,'old',MAXNAX,nsize)
 	call coInit(tno)
 	doflag = hdprsnt(tno,'mask')
-	if(nsize(1).gt.maxdim)
-     *	  call bug('f','Image too big to handle')
 	call rdhdi(tno,'naxis',naxis,0)
 	naxis = min(naxis,MAXNAX)
 c
@@ -4010,7 +4013,8 @@ c
      *		'HISTORY See AIPS Memo 46 for details')
 	      givegls = .false.
 	    endif
-	    if(crota.ne.0)call fitwrhdd(lu,'CROTA'//num,180.0/DPI*crota)
+	    if(crota.ne.0 .and. i.eq.2)
+     *         call fitwrhdd(lu,'CROTA'//num,180.0/DPI*crota)
 c
 	  else if(ctype.eq.'ANGLE')then
 	    scale =180.d0/DPI

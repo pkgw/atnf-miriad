@@ -3620,3 +3620,20 @@ and in a way to be consistent with all the other changes happening.
 25sep00 rjs	uvplt.for -- Correct code dealing with uvangle.
 03oct00 rjs	imcomb.for -- Output image can be arbitrarily large.
 04oct00 rjs	fits.for -- Output image can be abitrarily large.
+*********************************** 06oct00 Sent changes to BIMA
+10oct00 rjs	boxes.for - Fix bungle in the above.
+17oct00 rjs	maths.for -- Added options=unmask
+18oct00 rjs	noise.for -- Setting the seed was not working on "vms-style"
+		machines (e.g. LINUX).
+20oct00 rjs	closure.for -- Print out number of points.
+27oct00 rjs	basant.for,uvio.c,select.for - Generalisation in baseline
+		numbering convention to allow Miriad to support up to 2047
+		antennas.
+27oct00 rjs	uvgen.for -- Call antbas subroutine to compute baseline
+		number for a particular antenna pair.
+01nov00 dpr     fits.for -- Change CROTAn to AIPS convention for xyout
+08nov00 dpr     imbin.for -- Make 3-axis bin specs unnecessary for 2-D 
+                images.
+09nov00 dpr     psrfix -- handle (+n,-n) in binsl
+15nov00 dpr     gaufit -- keyf bugfix
+27nov00 dpr     fits --  fix stokes convention for xyin
