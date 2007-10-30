@@ -3200,3 +3200,13 @@ and in a way to be consistent with all the other changes happening.
 		the header.
 12nov97 rjs	imhist.for -- Add 's' flag to boxset call.
 26nov97 bmg	psrplt.for -- Added log keyword.
+*********************************** 28nov97 Sent changes to Doug Roberts
+28nov97 rjs	hio.c -- Make it work for text files missing a final newline.
+28nov97 rjs	gpnorm.for -- Add more decimal points to the printout.
+28nov97 rjs	mosmem.for,mossdi.for -- Increase max number of boxes.
+03dec97 rjs	uvspec.for -- Put back labels that disappeared 5 weeks ago.
+05dec97 rjs	convol.for -- Make sure the output is always the same size as
+		the input.
+09dec97 rjs	uvflag.for -- Make buffer to give "antennas used" message
+		longer.
+10dec97 rjs	uvgn.for -- Check that the gain table size looks OK.
