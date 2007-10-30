@@ -16,52 +16,19 @@
  *                Void typedef permits proper casting in both ANSI
  *                and non-ANSI archs.  Also added definition to permit
  *                the use of const in non-ANSI declarations.
- *     jm 17nov94 Changed the conditional definition around the typedef
- *                of Void because Sun defines __STDC__ even when it is
- *                zero!  Defined PROTOTYPE as 1 if __STDC__ is set to 1;
- *                otherwise it is undefined.  Also added ARGS definition
- *                to aide forward declartion prototyping.
- *    rjs 20nov94 Added "alpha" ifdef.
- *    rjs 19mar97 Add FORTRAN_LOGICAL define and check that miriad.h declarations
- *		  have not been done before doing them again.
+ *    rjs 20nov94 Added alphas.
  */
 
 #ifndef Null
 #define Null '\0'
 #endif
 
-/*
- *  Void is typedef'd to the proper word depending on the level of
- *  ANSI conformance.  Also, if ANSI conforming, Const is defined
- *  to const; otherwise, Const is defined as a NULL statement.
- *
- *  PROTOTYPE is defined only if function prototypes are correctly
- *  understood.
- *
- *  ARGS defines a macro that aides in presenting prototypes.
- *  Use it as (double parentheses required):
- *    extern void keyput_c ARGS((const char *task, char *arg));
- */
-
-#ifndef MIRIAD_TYPES_DEFINED
-#define MIRIAD_TYPES_DEFINED 1
 #ifdef __STDC__
-#if (__STDC__ == 1)
 typedef void Void;
-#define Const const
-#define PROTOTYPE 1
-#define ARGS(s) s
 #else
 typedef char Void;
-#define Const /* NULL */
-#define ARGS(s) ()
-#endif /* (__STDC__ == 1) */
-#else
-typedef char Void;
-#define Const /* NULL */
-#define ARGS(s) ()
-#endif /* __STDC__ */
-#endif
+#define const /* NULL */
+#endif /*__STDC__*/
 
 typedef int int2;
 
@@ -71,10 +38,9 @@ typedef int int2;
 /*									*/
 /************************************************************************/
 
-#ifdef vms
+#ifdef vaxc
 #define FORT_TRUE -1
 #define FORT_FALSE 0
-#define FORT_LOGICAL(a) (0x01 & (a))
 #define BUFDBUFF 1
 #define BUFALIGN 512
 #define BUFSIZE 16384
@@ -91,7 +57,6 @@ typedef int int2;
 #include <fortran.h>
 #define FORT_TRUE  _btol(1)
 #define FORT_FALSE _btol(0)
-#define FORT_LOGICAL(a) (_ltob((&(a))))
 #define BUFDBUFF 0
 #define BUFALIGN 8
 #define BUFSIZE 16384
@@ -111,7 +76,6 @@ typedef int int2;
 #  define FORT_TRUE 1
 #endif
 #define FORT_FALSE 0
-#define FORT_LOGICAL(a) ((a) != FORT_FALSE)
 
 #define BUFDBUFF 0
 
@@ -134,7 +98,7 @@ typedef int int2;
 /*  Short cut routines when no conversion is necessary. These are
     used for any IEEE floating point machine with FITS ordered bytes.	*/
 
-#if defined(sun) || defined(alliant) || defined(trace) || defined(convex) || defined(hpux) || defined(sgi)
+#if defined(sun) || defined(alliant) || defined(trace) || defined(convex) || defined(hpux) || defined(mips)
 #  define packr_c(a,b,c)    memcpy((b),(char *)(a),sizeof(float)*(c))
 #  define unpackr_c(a,b,c)  memcpy((char *)(b),(a),sizeof(float)*(c))
 #  define packd_c(a,b,c)    memcpy((b),(char *)(a),sizeof(double)*(c))
@@ -143,3 +107,4 @@ typedef int int2;
 #  define unpack32_c(a,b,c) memcpy((char *)(b),(a),sizeof(int)*(c))
 #endif
 #endif
+
