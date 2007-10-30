@@ -25,19 +25,25 @@
 /*    rjs  26aug93   Add hrm and habort.				*/
 /*    rjs  30aug93   Add hseek and htell.				*/
 /*    rjs   5jan94   Added hmode,hexists.				*/
-/*    rjs   5nov94   Correct declaration of hexists, and get rid of	*/
-/*		     casting int to char*.				*/
-/*    rjs  27feb96   Added xyflush.					*/
-/*    rjs  19mar97   Handle logical translation better. Tidying.	*/
+/*									*/
 /************************************************************************/
-#include <string.h>
-#include "miriad.h"
-#include "sysdep.h"
+#include "io.h"
+
+void rdhdd_c(),                    rdhda_c(),rdhdc_c();
+void wrhdd_c(),wrhdr_c(),wrhdi_c(),wrhda_c(),wrhdc_c();
+void hdprobe_c(),hdcopy_c();
+void hisopen_c(),hisread_c(),hiswrite_c(),hisclose_c();
+void uvopen_c(),uvclose_c(),uvflush_c(),uvread_c(),uvwrite_c(),uvtrack_c(),uvprobvr_c(),
+	uvgetvr_c(),uvputvr_c(),uvcopyvr_c(),uvwread_c(),uvwwrite_c(),
+	uvflgwr_c(),uvwflgwr_c(),uvvarini_c(),uvvarset_c(),
+	uvvarcpy_c(),uvset_c(),uvvselect_c(),uvsela_c();
+int uvupdate_c(),uvvarupd_c(),dexpand_c();
+void xyopen_c(),xyclose_c(),xysetpl_c(),xyread_c(),xywrite_c(),xymkrd_c(),
+	xymkwr_c(),xyflgrd_c(),xyflgwr_c();
 
 /************************************************************************/
 fortran integer function dexpand(character template,character output)
 {
-  int dexpand_c();
   return(dexpand_c(template.zterm,output.addr,output.len));
 }
 /************************************************************************/
@@ -153,24 +159,19 @@ fortran subroutine uvwflgwr(integer tno,logical flags)
 fortran subroutine uvset(integer tno,character object,character type,
 	integer n,real p1,real p2,real p3)
 {
-  uvset_c(tno.val,object.zterm,type.zterm,n.val,
-		(double)p1.val,(double)p2.val,(double)p3.val);
+  uvset_c(tno.val,object.zterm,type.zterm,n.val,p1.val,p2.val,p3.val);
 }
 /************************************************************************/
 fortran subroutine uvselect(integer tno,character object,
 	double p1,double p2,logical datasel)
 {
-  int flag;
-  flag = FORT_LOGICAL(datasel.val);
-  uvselect_c(tno.val,object.zterm,p1.val,p2.val,flag);
+  uvselect_c(tno.val,object.zterm,p1.val,p2.val,datasel.val);
 }
 /************************************************************************/
 fortran subroutine uvsela(integer tno,character object,character string,
 	logical datasel)
 {
-  int flag;
-  flag = FORT_LOGICAL(datasel.val);
-  uvsela_c(tno.val,object.zterm,string.zterm,flag);
+  uvsela_c(tno.val,object.zterm,string.zterm,datasel.val);
 }
 /************************************************************************/
 fortran subroutine uvinfo(integer tno,character object,double data)
@@ -314,7 +315,7 @@ fortran subroutine hdelete(integer tno,character name,integer iostat)
 fortran subroutine haccess(integer tno,integer item,
 	character name,character status,integer iostat)
 {
-  haccess_c(tno.val,item.addr,name.zterm,status.zterm,iostat.addr);
+  haccess_c(tno.val,(char **)item.addr,name.zterm,status.zterm,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hmode(integer tno,character mode)
@@ -323,34 +324,34 @@ fortran subroutine hmode(integer tno,character mode)
   mode.pad;
 }
 /************************************************************************/
-fortran logical function hexists(integer tno,character item)
+fortran integer function hexists(integer tno,character item)
 {
-  return( hexists_c(tno.val,item.zterm) ? FORT_TRUE : FORT_FALSE);
+  return( hexists_c(tno.val,item.zterm) ? FORTRAN_TRUE : FORTRAN_FALSE);
 }
 /************************************************************************/
 fortran subroutine hdaccess(integer item,integer iostat)
 {
-  hdaccess_c(item.val,iostat.addr);
+  hdaccess_c((char *)item.val,iostat.addr);
 }
 /************************************************************************/
 fortran integer function hsize(integer item)
 {
-  return(hsize_c(item.val));
+  return(hsize_c((char *)item.val));
 }
 /************************************************************************/
 fortran integer function htell(integer item)
 {
-  return(htell_c(item.val));
+  return(htell_c((char *)item.val));
 }
 /************************************************************************/
 fortran subroutine hseek(integer item,integer offset)
 {
-  hseek_c(item.val,offset.val);
+  hseek_c((char *)item.val,offset.val);
 }
 /************************************************************************/
 fortran subroutine hreada(integer item,character line,integer iostat)
 {
-  hreada_c(item.val,line.addr,line.len,iostat.addr);
+  hreada_c((char *)item.val,line.addr,line.len,iostat.addr);
   if(!iostat.val)line.pad;
 }
 /************************************************************************/
@@ -359,67 +360,67 @@ fortran subroutine hwritea(integer item,character line,integer iostat)
   char *s;
 
   s = line.zterm;
-  hwritea_c(item.val,s,strlen(s)+1,iostat.addr);
+  hwritea_c((char *)item.val,s,strlen(s)+1,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hreadb(integer item,character buffer,
 	integer offset,integer length,integer iostat)
 {
-  hreadb_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hreadb_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hwriteb(integer item,character buffer,
 	integer offset,integer length,integer iostat)
 {
-  hwriteb_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hwriteb_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hreadj(integer item,integer buffer,
 	integer offset,integer length,integer iostat)
 {
-  hreadj_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hreadj_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hwritej(integer item,integer buffer,
 	integer offset,integer length,integer iostat)
 {
-  hwritej_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hwritej_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hreadi(integer item,integer buffer,
 	integer offset,integer length,integer iostat)
 {
-  hreadi_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hreadi_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hwritei(integer item,integer buffer,
 	integer offset,integer length,integer iostat)
 {
-  hwritei_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hwritei_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hreadr(integer item,real buffer,
 	integer offset,integer length,integer iostat)
 {
-  hreadr_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hreadr_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hwriter(integer item,real buffer,
 	integer offset,integer length,integer iostat)
 {
-  hwriter_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hwriter_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hreadd(integer item,double buffer,
 	integer offset,integer length,integer iostat)
 {
-  hreadd_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hreadd_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hwrited(integer item,double buffer,
 	integer offset,integer length,integer iostat)
 {
-  hwrited_c(item.val,buffer.addr,offset.val,length.val,iostat.addr);
+  hwrited_c((char *)item.val,buffer.addr,offset.val,length.val,iostat.addr);
 }
 /************************************************************************/
 fortran subroutine hisopen(integer tno,character status)
@@ -430,7 +431,7 @@ fortran subroutine hisopen(integer tno,character status)
 fortran subroutine hisread(integer tno,character line,logical eof)
 {
   hisread_c(tno.val,line.addr,line.len,eof.addr);
-  if(eof.val != FORT_TRUE)line.pad;
+  if(eof.val != FORTRAN_TRUE)line.pad;
 }
 /************************************************************************/
 fortran subroutine hiswrite(integer tno,character line)
@@ -447,11 +448,6 @@ fortran subroutine xyopen(integer tno,character name,character status,
 	integer naxis,integer axes)
 {
   xyopen_c(tno.addr,name.zterm,status.zterm,naxis.val,axes.addr);
-}
-/************************************************************************/
-fortran subroutine xyflush(integer tno)
-{
-  xyflush_c(tno.val);
 }
 /************************************************************************/
 fortran subroutine xyclose(integer tno)
@@ -544,7 +540,7 @@ fortran subroutine rdhdc(integer tno,character keyword,
 /************************************************************************/
 fortran subroutine wrhdr(integer tno,character keyword,real value)
 {
-  wrhdr_c(tno.val,keyword.zterm,(double)value.val);
+  wrhdr_c(tno.val,keyword.zterm,value.val);
 }
 /************************************************************************/
 fortran subroutine wrhdd(integer tno,character keyword,double value)
