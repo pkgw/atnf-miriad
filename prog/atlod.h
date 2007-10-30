@@ -3,12 +3,13 @@ c  The common block (yuk) used to buffer up an integration.
 c
 	include 'maxdim.h'
 	integer ATIF,ATANT,ATPOL,ATDATA,ATBASE,ATBIN,ATCONT
-	parameter(ATIF=2,ATANT=6,ATPOL=4,ATBASE=((ATANT+1)*ATANT)/2)
-	parameter(ATBIN=32,ATCONT=33)
-	parameter(ATDATA=5*MAXCHAN*ATBASE)
+	parameter(ATIF=2,ATANT=8,ATPOL=4,ATBASE=((ATANT+1)*ATANT)/2)
+	parameter(ATBIN=1024,ATCONT=33)
+	parameter(ATDATA=8*MAXCHAN*ATBASE)
 	integer nifs,nfreq(ATIF),nstoke(ATIF),polcode(ATIF,ATPOL)
 	double precision sfreq(ATIF),sdf(ATIF),restfreq(ATIF)
 	double precision time
+	integer tcorr
 	real xtsys(ATIF,ATANT),ytsys(ATIF,ATANT),chi
 	real u(ATBASE),v(ATBASE),w(ATBASE)
 	real xyphase(ATIF,ATANT),xyamp(ATIF,ATANT)
@@ -32,7 +33,7 @@ c
      *	  xtsys,ytsys,chi,xyphase,xyamp,xsampler,ysampler,u,v,w,inttime,
      *	    inttim,wts,
      *	  pnt,nbin,nused,tno,nants,nifs,nfreq,nstoke,polcode,edge,
-     *	    bchan,
+     *	    bchan,tcorr,
      *	  flag,dosw,dosam,dohann,birdie,dowt,dopmps,doxyp,doif,dobary,
      *	    newfreq,hires,
      *	  newsc,newpnt
