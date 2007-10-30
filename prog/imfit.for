@@ -104,25 +104,17 @@ c    rjs  24aug94 Rewrite.
 c    rjs  12sep94 Added error estimates, deconvolution by beam and
 c		  total flux estimates.
 c    rjs  15sep94 Support object=point and object=beam.
-c    rjs  26jan95 Eliminate non-standard string concatenation.
-c    rjs  06apr95 Get solver to work with relative coordinates, to
-c		  eliminate divergence problem.
-c    rjs  01nov95 Better fiddles in gaufid.
-c    rjs  02dec96 Print out RA and DEC as well.
-c    rjs  12dec96 Correct bug in the above.
-c    nebk 28feb97 Add object to output
-c    rjs  02jul97 cellscal change.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
 c
 	character version*(*)
-	parameter(version='version 1.0 12-Dec-96')
+	parameter(version='version 1.0 15-Sep-94')
 	integer MAXBOX,MAXVAR
-	parameter(MAXBOX=1024,MAXVAR=30)
+	parameter(MAXBOX=1024,MAXVAR=20)
 c
-	character in*64,out*64,object*32
+	character in*64,out*64
 	real clip,x(MAXVAR),covar(MAXVAR*MAXVAR),rms,trms
 	real bmaj,bmin,bpa,bvol,bvolp
 	logical dores,inten,defsrc,doOut,dofit
@@ -156,7 +148,6 @@ c
 	if(nin(1).gt.maxdim)
      *	  call bug('f','Image too big for me to handle')
 	call rdhdi(lIn,'naxis',naxis,0)
-        call rdhda(lIn,'object',object, ' ')
 	naxis = min(naxis,MAXNAX)
 	call BoxSet(boxes,3,nin,' ')
 	call BoxMask(lIn,boxes,MAXBOX)
@@ -244,7 +235,7 @@ c  Convert to astronomical units, and report.
 c
 	  call CoordFid(lIn,k,.false.)
 	  if(dofit)then
-	    call Report(object,rms,trms,bvol,bvolp,bmaj,bmin,bpa)
+	    call Report(rms,trms,bvol,bvolp,bmaj,bmin,bpa)
 	  endif
 	enddo
 c
@@ -345,8 +336,7 @@ c
 	    if(topix)then
 	      call coCvt(lIn,'ow/ow/ap',in,'ap/ap/ap',out)
 	    else
-	      call coCvt(lIn,'ap/ap/ap',in,'ow/ow',out)
-	      call coCvt(lIn,'ap/ap/ap',in,'aw/aw',radec(1,i))
+	      call coCvt(lIn,'ap/ap/ap',in,'ow/ow/ap',out)
 	    endif
 	    l0(i) = out(1)
 	    m0(i) = out(2)
@@ -517,9 +507,8 @@ c  Make the header of the output image.
 c------------------------------------------------------------------------
 	integer i
 	double precision crpix3
-	character umsg*64
 	integer nkeys
-	parameter(nkeys=42)
+	parameter(nkeys=43)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -531,9 +520,9 @@ c
      *	  'cdelt1  ','cdelt2  ','cdelt3  ','cdelt4  ','cdelt5  ',
      *	  'ctype1  ','ctype2  ','ctype3  ','ctype4  ','ctype5  ',
      *	  'crpix1  ','crpix2  ',           'crpix4  ','crpix5  ',
-     *	  'obstime ','epoch   ','history ','instrume','niters  ',
+     *	  'date-obs','epoch   ','history ','instrume','niters  ',
      *	  'object  ','observer','obsra   ','obsdec  ','pbfwhm  ',
-     *	  'restfreq','telescop','vobs    ','cellscal',
+     *	  'restfreq','telescop','vobs    ','xshift  ','yshift  ',
      *	  'ltype   ','lstart  ','lwidth  ','lstep   ','btype   '/
 c
 	do i=1,nkeys
@@ -546,8 +535,7 @@ c
 	  call wrhdd(lOut,'crpix3',crpix3)
 	endif
 	call hisopen(lOut,'append')
-	umsg = 'IMFIT: Miriad '//version
-        call hiswrite (lOut, umsg)
+        call hiswrite (lOut, 'IMFIT: Miriad '//version)
 	call hisinput(lOut,'IMFIT')
 	call hisclose(lOut)
 	end
@@ -574,7 +562,7 @@ c------------------------------------------------------------------------
 	parameter(MAXRUNS=3*MAXDIM)
 	include 'imfit.h'
 	integer Runs(3,MAXRUNS),nRuns,xmin,xmax,ymin,ymax
-	integer iRun,n,n0,ipt,i,xt,yt
+	integer iRun,n,n0,ipt,i
 c
 	call BoxRuns(1,k,' ',boxes,Runs,MAXRUNS,nRuns,
      *					xmin,xmax,ymin,ymax)
@@ -587,8 +575,6 @@ c
 	n0 = 0
 	n = 0
 	ipt = 0
-	xt = 0
-	yt = 0
 	do i=1,m
 	  if(n.eq.n0)then
 	    iRun = iRun + 1
@@ -601,8 +587,6 @@ c
 	    Data(ipt) = Data(i)
 	    x(ipt) = Runs(2,iRun) + n
 	    y(ipt) = Runs(1,iRun)
-	    xt = xt + x(ipt)
-	    yt = yt + y(ipt)
 	  endif
 c
 	  n = n + 1
@@ -610,8 +594,6 @@ c
 c
 	m = ipt
 	ndata = ipt
-	xoff = xt / real(ndata)
-	yoff = yt / real(ndata)
 c
 	end
 c************************************************************************
@@ -637,11 +619,11 @@ c
 	  endif
 	  if(vl0(i))then
 	    ncurr = ncurr + 1
-	    tmp(ncurr) = l0(i) - xoff
+	    tmp(ncurr) = l0(i)
 	  endif
 	  if(vm0(i))then
 	    ncurr = ncurr + 1
-	    tmp(ncurr) = m0(i) - yoff
+	    tmp(ncurr) = m0(i)
 	  endif
 	  if(vfwhm1(i))then
 	    ncurr = ncurr + 1
@@ -736,11 +718,11 @@ c
 	  endif
 	  if(vl0(i))then
 	    n = n + 1
-	    l0(i) = var(n) + xoff
+	    l0(i) = var(n)
 	  endif
 	  if(vm0(i))then
 	    n = n + 1
-	    m0(i) = var(n) + yoff
+	    m0(i) = var(n)
 	  endif
 	  if(vfwhm1(i))then
 	    n = n + 1
@@ -884,16 +866,14 @@ c
 c
 	end
 c************************************************************************
-	subroutine Report(object,rms,trms,bvol,bvolp,bmaj,bmin,bpa)
+	subroutine Report(rms,trms,bvol,bvolp,bmaj,bmin,bpa)
 c
 	implicit none
 	real rms,trms,bvol,bvolp,bmaj,bmin,bpa
-        character*(*) object
 c
 c  Report on the source component solution.
 c
 c  Input:
-c    object     Source name
 c    rms	RMS residual error after the fit.
 c    trms	Theoretical rms noise in the image.
 c    bvol	Beam volume, in radians**2.
@@ -913,10 +893,6 @@ c
 	parameter(NOBJS=5)
 	character objects(NOBJS)*8
 c
-c  Externals.
-c
-	character hangle*24,rangle*24
-c
 	data objects(DISK)    /'disk    '/
 	data objects(GAUSSIAN)/'gaussian'/
 	data objects(LEVEL)   /'level   '/
@@ -924,10 +900,6 @@ c
 	data objects(BEAM)    /'beam    '/
 c
 	call output('-------------------------------------------------')
-        if (object.ne.' ') then
-          line = 'Object '//object
-          call output (line)
-        end if
 c
 	if(trms.gt.0)then
 	  write(line,5)rms,trms
@@ -1012,12 +984,6 @@ c
   45	        format('  Positional errors (arcsec):',2f9.2)
 	        call output(line)
 	      endif
-	      line = '  Right Ascension:                '//
-     *			hangle(radec(1,i))
-	      call output(line)
-	      line = '  Declination:                    '//
-     *			rangle(radec(2,i))
-	      call output(line)
 	    endif
 	    if(srctype(i).ne.POINT)then
 	      call GauFid(fwhm1(i),fwhm2(i),sfac*sfwhm1(i),
@@ -1085,8 +1051,8 @@ c------------------------------------------------------------------------
 	include 'mirconst.h'
 	real t
 c
-	f1 = 3600*180/pi * abs(fwhm1)
-	f2 = 3600*180/pi * abs(fwhm2)
+	f1 = 3600*180/pi * fwhm1
+	f2 = 3600*180/pi * fwhm2
 	sf1 = 3600*180/pi * sfwhm1
 	sf2 = 3600*180/pi * sfwhm2
 	p = 180./pi * pa
