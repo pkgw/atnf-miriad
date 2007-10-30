@@ -3612,3 +3612,7 @@ and in a way to be consistent with all the other changes happening.
 		rounding problem.
 *********************************** 08Sep00 Sent changes to BIMA
 08sep00 rjs	mfflat.for -- Make sure that the "freq0" item is always there.
+11sep00 rjs	offaxis.for - Correct bug introduced in July.
+14sep00 rjs	boxes.for - Make sure that coordinate file can only be an
+		image.
+21sep00 rjs	tvclip.for -- Added options=nosrc
