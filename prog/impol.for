@@ -118,13 +118,15 @@ c    nebk 22aug96 Check for I=0
 c    nebk 18dec96 Error for fractional polarization was wrong.  It needed
 c                 to be multipled by the fractional polarization
 c    rjs  02jul97 cellscal change.
+c    rjs  23jul97 added pbtype.
+c    nebk 13mar98 position angle error was factor of 2 too big
 c------------------------------------------------------------------------
       implicit none
 c
       include 'maxdim.h'
       include 'maxnax.h'
       character version*(*)
-      parameter (version = 'ImPol: version 18-Dec-96')
+      parameter (version = 'ImPol: version 13-Mar-98')
 cc
       real iline(maxdim), qline(maxdim), uline(maxdim), pline(maxdim), 
      +  mline(maxdim), paline(maxdim), epline(maxdim), emline(maxdim),
@@ -150,14 +152,14 @@ c
 c
       integer len1
       integer nkeys
-      parameter (nkeys = 22)
+      parameter (nkeys = 23)
       character keyw(nkeys)*8
 c
       data keyw/     'obstime ','epoch   ','history ','instrume',
      +    'niters  ','object  ','restfreq','telescop','vobs    ',
      +    'obsra   ','obsdec  ','observer','cellscal',
      +    'bmaj    ','bmin    ','bpa     ','pbfwhm  ','lstart  ',
-     +    'lstep   ','ltype   ','lwidth  ','vobs    '/
+     +    'lstep   ','ltype   ','lwidth  ','vobs    ','pbtype  '/
       data li, lpout, lmout, lpaout /0, 2*0, 2*0, 2*0/
 c-------------------------------------------------------------------------
       call output (version)
@@ -800,7 +802,7 @@ c conditions and all output will be blanked
 c
             paerr = -1.0
             if (paclip.gt.0.0 .and. psq.gt.0.0)
-     +        paerr = fac * sigmaqu / sqrt(psq)
+     +        paerr = 0.5 * fac * sigmaqu / sqrt(psq)
 c
 c Init all output arrays with zeros and bad flags
 c
