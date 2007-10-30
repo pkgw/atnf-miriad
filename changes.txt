@@ -3526,4 +3526,5 @@ and in a way to be consistent with all the other changes happening.
 12nov99 rjs	fits.for,fits.h -- options=varwt and better history comments
 		in output FITS files.
 *********************************** 23nov99 Sent changes to Doug Roberts
+07dec99 rjs	imdiff.for - Fix writing of history for "adjust" image.
 
