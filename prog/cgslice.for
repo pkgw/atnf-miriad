@@ -98,8 +98,9 @@ c       "sqr" (square root), "log" (logarithmic), and "heq" (histogram
 c       equalization).  The colour lookup table is an integer from 1 to 8
 c       specifying a lookup table. Valid values are 1 (b&w), 2 (rainbow),
 c       3 (linear pseudo colour), 4 (floating zero colour contours), 5 (fixed
-c       zero colour contours), 6 (rgb), 7 (background) and 8 (heat).  If you
-c       enter a negative integer, then the reversed lookup table is displayed.
+c       zero colour contours), 6 (rgb), 7 (background), 8 (heat) and 
+c	9 (absolute b&w).  If you enter a negative integer, then the 
+c	reversed lookup table is displayed.
 c
 c       The transfer function changes available with OPTIONS=FIDDLE are in
 c       addition (on top of) to the selections here, but the colour lookup
@@ -315,6 +316,9 @@ c    nebk 20feb95  Make sure PGIMAG writes black on white for hardcopy.
 c                  Ammend for new wedge call sequences.  Add lookuptable
 c                  to "range" keyword. Move to image type "pixel"
 c                  instead of "grey"
+c    nebk 28mar95  Remove annoying restriction that slices cannot
+c                  begin and end on blanked pixels
+c    nebk 10apr95  Add doc for absolute b&w lookup table
 c
 c Notes:
 c
@@ -358,7 +362,7 @@ c
       integer nx, ny, nlevs, lin, naxis, ierr, pgbeg, iostat, ilen,
      +  nlast, ngrps, lval, lposi, lposo, lmod, i, j, k, jj, icol, 
      +  iax, ipage, wedcod, ibin(2), jbin(2), kbin(2), krng(2), 
-     +  coltab, iofm
+     +  coltab
 c
       character ctype(maxnax)*9, labtyp(2)*6, ltype(nltype)*6
       character in*64, pdev*64, xlabel*40, ylabel*40, xlabel2*40, 
@@ -368,7 +372,7 @@ c
 c
       logical do3val, do3pix, eqscale, doblnk, mask, dopixel,  gaps,
      +  doerase, redisp, accum, radians, none, noimage, dofit, dobord,
-     +  dobase, doxrng, dofid, dowedge, first, dunsl, reverse
+     +  dobase, doxrng, dofid, dowedge, first, dunsl
 c
       integer len1
 c
@@ -381,7 +385,7 @@ c
       data dunsl /.false./
       data xdispls, ydispbs /3.5, 3.5/
 c-----------------------------------------------------------------------
-      call output ('CgSlice: version 20-Feb-95')
+      call output ('CgSlice: version 10-Apr-95')
       call output ('Keyword "range" can now be used to specify the')
       call output ('colour lookup table as well the transfer function')
       call output (' ')
@@ -453,11 +457,6 @@ c
       gaps = .false.
       if (ngrps.eq.1 .or. nx*ny.eq.1) gaps = .true.
 c
-c Work out if wedge outside or inside subplots. Also work out
-c if plotting one wedge per subplot or one wedge for all
-c
-      call wedgincg (dowedge, nx, ny, 1, trfun, wedcod)
-c
 c Work out default character sizes for axis and channel labels
 c
       call defchrcg (nx, ny, cs)
@@ -486,15 +485,17 @@ c
       call pgqinf ('hardcopy', hard, ilen)
       if (hard.eq.'YES' .and. fslposi.eq.' ') call bug ('f',
      +   'Must specify keyword "posin" for hardcopy device')
-c
-c Step to first sub-plot, set font and basic character size
-c
       call pgpage
       call pgscf(1)
 c
 c Init OFM routines
 c       
-      call ofmini
+      if (dopixel) call ofmini
+c
+c Work out if wedge outside or inside subplots. Also work out
+c if plotting one wedge per subplot or one wedge for all
+c
+      call wedgincg (hard, dofid, dowedge, nx, ny, 1, trfun, wedcod)
 c
 c Set label displacements from axes and set PGTBOX labelling
 c option strings
@@ -558,18 +559,9 @@ c
      +       win(1)*win(2), memi(ipnim), memr(ipim), nbins, his,
      +       cumhis)
 c
-c Apply user specified OFM or b&w OFM as default to device
+c Apply user given OFM or b&w as default to hardcopy device
 c
-           call ofmcol (coltab, pixr2(1), pixr2(2))
-c
-c For hardcopy devices we generally want black on white, not white on 
-c black.  So if no colour table has been applied, make note of this.
-c
-           reverse = .false.
-           if (hard.eq.'YES') then
-             call ofminq (iofm)
-             if (iofm.eq.1) reverse = .true.
-           end if
+           if (hard.eq.'YES') call ofmcol (coltab, pixr2(1), pixr2(2))
 c
 c Draw wedge if needed
 c
@@ -577,8 +569,8 @@ c
              call pgsci (7)
              if (hard.eq.'YES') call pgsci (2)
              call pgsch (cs(1))
-             call wedgecg (reverse, wedcod, wedwid, jj, trfun, groff, 
-     +                     nbins, cumhis, wdgvp, pixr(1), pixr(2))
+             call wedgecg (wedcod, wedwid, jj, trfun, groff, nbins,
+     +                     cumhis, wdgvp, pixr(1), pixr(2))
            end if
          end if
 c
@@ -593,19 +585,22 @@ c
 c Modify OFM for harcopy devices here; must be done before
 c PGIMAG called
 c 
-              if (hard.eq.'YES' .and. dofid)
-     +          call ofmmod (tfvp, win(1)*win(2), memr(ipim),
-     +                       memi(ipnim), pixr2(1), pixr2(2))
-c
-c Draw pixel map
-c
-               if (reverse) then
-                 call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
-     +                        win(2), pixr2(2), pixr2(1), tr)
-               else
-                 call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
-     +                        win(2), pixr2(1), pixr2(2), tr)
+               if (hard.eq.'YES') then
+                 if (dofid) call ofmmod (tfvp, win(1)*win(2), 
+     +             memr(ipim), memi(ipnim), pixr2(1), pixr2(2))
+                 call ofmcmp
                end if
+c
+c Draw pixel map and apply user given OFM
+c
+               call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
+     +                      win(2), pixr2(1), pixr2(2), tr)
+               if (hard.eq.'NO') call ofmcol (coltab, pixr2(1), 
+     +                                        pixr2(2))
+c
+c Retake b&w complement for hardcopy devices
+c
+               if (hard.eq.'YES') call ofmcmp              
              else 
 c
 c Draw contours
@@ -635,8 +630,8 @@ c
                call pgsci (7)
                if (hard.eq.'YES') call pgsci (2)
                call pgsch (cs(1))
-               call wedgecg (reverse, wedcod, wedwid, jj, trfun, groff, 
-     +                       nbins, cumhis, wdgvp, pixr(1), pixr(2))
+               call wedgecg (wedcod, wedwid, jj, trfun, groff, nbins,
+     +                       cumhis, wdgvp, pixr(1), pixr(2))
              end if
 c
 c Write velocity or channel label
@@ -662,8 +657,8 @@ c Define slice ends with cursor or read from file
 c
            redisp = .false.
            if (fslposi.eq.' ' .and. .not.noimage) then
-             call curpos (win(1), win(2), memi(ipnim), labtyp,
-     +         ibin, jbin, blc, naxis, cdelt, crpix, crval, ctype, 
+             call curpos (win(1), win(2), labtyp, ibin, jbin,
+     +         blc, naxis, cdelt, crpix, crval, ctype, 
      +         redisp, maxnsl, nslice, slpos)
 c
 c Erase subplot or write positions file if desired
@@ -839,8 +834,8 @@ c
       end
 c
 c
-      subroutine curget (ibin, jbin, blc, nx, ny, nimage, naxis, 
-     +   crval, cdelt, crpix, ctype, labtyp, ip, ipos, wpos, cch)
+      subroutine curget (ibin, jbin, blc, nx, ny, naxis, crval,
+     +   cdelt, crpix, ctype, labtyp, ip, ipos, wpos, cch)
 c-----------------------------------------------------------------------
 c     Get one end of slice
 c
@@ -848,7 +843,6 @@ c  Input
 c    i,jbin  Pixel increments
 c    blc     BLC of displayed image
 c    nx,ny   x and y sizes of displayed subimage
-c    nimage  Normalization image
 c    naxis   NUmber of axes in image
 c    cr*     Axis descriptors
 c    labtyp  Axis label types
@@ -860,7 +854,7 @@ c            under cursor
 c    cch     Character read by cursor. 
 c-----------------------------------------------------------------------
       implicit none
-      integer naxis, nx, ny, nimage(nx,ny), blc(2), ibin, jbin, ipos(2),
+      integer naxis, nx, ny, blc(2), ibin, jbin, ipos(2),
      +  ip
       double precision cdelt(naxis), crval(naxis), crpix(naxis)
       real wpos(2)
@@ -907,8 +901,6 @@ c
           if (ipos(1).lt.1 .or. ipos(1).gt.nx .or.
      +        ipos(2).lt.1 .or. ipos(2).gt.ny) then
             call bug ('w', 'Cursor off image, try again')
-          else if (nimage(ipos(1),ipos(2)).eq.0) then
-            call bug ('w', 'Pixel blanked, try again')
           else
             more = .false.
           end if
@@ -918,14 +910,13 @@ c
       end
 c
 c
-      subroutine curpos (nx, ny, nimage, labtyp, ibin, jbin, blc, naxis,
+      subroutine curpos (nx, ny, labtyp, ibin, jbin, blc, naxis,
      +  cdelt, crpix, crval, ctype, redisp, maxnsl, nslice, slpos)
 c-----------------------------------------------------------------------
 c     Define slice locations with cursor
 c
 c  Input:
 c     nx,ny   Size of image
-c     nimage  Normalization image
 c     i,jbin  PIxel increment sizes
 c     labtyp  axis label types
 c     blc     blc of window being displayed
@@ -944,7 +935,7 @@ c
 c-----------------------------------------------------------------------
       implicit none
 c
-      integer nx, ny, nimage(nx,ny), blc(2), naxis, maxnsl, nslice,
+      integer nx, ny, blc(2), naxis, maxnsl, nslice,
      +  slpos(6,maxnsl), ibin, jbin
       double precision cdelt(naxis), crval(naxis), crpix(naxis)
       character*(*) labtyp(2), ctype(naxis)
@@ -978,7 +969,7 @@ c
 c
 c Make cursor selection
 c
-        call curget (ibin, jbin, blc, nx, ny, nimage, naxis, crval, 
+        call curget (ibin, jbin, blc, nx, ny, naxis, crval, 
      +     cdelt, crpix, ctype, labtyp, ip, simpos, wldpos, cch)
         if (cch.eq.'A') then
           if (ip.eq.0) then
@@ -1924,10 +1915,6 @@ c
       if (dopixel .and. trfun.ne.'lin' .and. trfun.ne.'log' .and. 
      +    trfun.ne.'sqr' .and. trfun.ne.'heq') call bug ('f',
      +    'Unrecognized pixel map transfer function type')
-      if (coltab.lt.-8 .or. coltab.gt.8 .or. coltab.eq.0) then
-        coltab = 1
-        call bug ('w', 'Unrecognized lookup table, setting b&w')
-      end if
 c
       call mkeyr ('xrange', xrange, 2, nval)
       if (nval.ne.0 .and. nval.ne.2) call bug ('f',
@@ -2756,7 +2743,7 @@ c
 c Find hyper-rectangle surrounding region of interest
 c
       call boxinfo (boxes, 3, blc, trc)
-      do i = 1, naxis
+      do i = 1, min(3,naxis)
         blc(i) = max(1,blc(i))
         trc(i) = min(size(i),trc(i))
       end do
