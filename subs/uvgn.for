@@ -13,15 +13,7 @@ c		  introduced to be closing ones.
 c     5aug93 rjs  Changed definition of "attenuation" parameter.
 c    19jul94 rjs  Set bad gains to 0 in uvgnpsma (previously the gain
 c		  flag was marked as bad, but the gain was not initialised.
-c    31oct95 rjs  Fix horror of a bug when averaging channel gains together.
-c    13nov95 rjs  Fix possible non-closing gains in uvgnFac.
-c    16nov95 rjs  Linearly interpolate when the bandpass gains are sampled
-c		  more coarsely than the data.
-c    29mar96 rjs  Some tidying of the cgains routines!!
-c     7may96 rjs  Improved goodness measure in uvgnpsma.
-c    23sep96 rjs  Mark memory as deallocated after deallocating!
-c    26jun97 rjs  Correct channel numbering when there are multiple
-c		  windows and bandpass averaging taking place.
+c
 c************************************************************************
 	subroutine uvGnIni(tno1,dogains1,dopass1)
 	implicit none
@@ -181,28 +173,17 @@ c
 c  Free up all the memory that may have been allocated for the antenna
 c  based bandpass calibration.
 c
-	if(nTab.ne.0)then
-	  call MemFree(pTab, nTab, 'c')
-	  nTab = 0
-	endif
+	if(nTab.ne.0) call MemFree(pTab, nTab, 'c')
 	if(nDat(1).ne.0)then
 	  call MemFree(pDat(1),nDat(1),'c')
 	  call MemFree(pFlags(1),nDat(1),'l')
-	  nDat(1) = 0
 	endif
 	if(nDat(2).ne.0)then
 	  call MemFree(pDat(2),nDat(2),'c')
 	  call MemFree(pFlags(2),nDat(2),'l')
-	  nDat(2) = 0
 	endif
-	if(nFreq(1).ne.0)then
-	  call MemFree(pFreq(1),nFreq(1),'d')
-	  nFreq(1) = 0
-	endif
-	if(nFreq(2).ne.0)then
-	  call MemFree(pFreq(2),nFreq(2),'d')
-	  nFreq(2) = 0
-	endif
+	if(nFreq(1).ne.0)call MemFree(pFreq(1),nFreq(1),'d')
+	if(nFreq(2).ne.0)call MemFree(pFreq(2),nFreq(2),'d')
 c
 c  Free up all the memory that may have been allocated for the baseline
 c  based bandpass calibration.
@@ -250,8 +231,7 @@ c------------------------------------------------------------------------
 	integer i,i1,i2,ant1,ant2,s,itemp,n,offset,iostat,p,gpant
 	double precision dtemp
 	real mag,epsi
-	complex tau1,tau2,taua1,taub1,taua2,taub2,tau
-	complex ga1,gb1,ga2,gb2,g,gain
+	complex gain,tau1,tau2,tau,g1,g2,g
 	integer f1(4),f2(4)
 	save f1,f2
 	data f1/0,1,0,1/
@@ -373,87 +353,49 @@ c
 	  i1 = gpant*(ant1-1) + 1
 	  i2 = gpant*(ant2-1) + 1
 c
-c  Determine the gains for each antenna.
+c  Determine which of the gains are good.
+c
+	  t1good = abs(time-timetab(t1)).lt.dtime.and.
+     *	    gflag(i1+f1(p),t1).and.gflag(i2+f2(p),t1)
+	  t2good = abs(time-timetab(t2)).lt.dtime.and.
+     *	    gflag(i1+f1(p),t2).and.gflag(i2+f2(p),t2)
+c
+c  Now determine the baseline gain. If both t1 and t2 are good, do logarithmic
+c  interpolation. Otherwise use the good gain, if any.
+c  Failing this, give up!
 c
 	  flag = .true.
-	  t1good = abs(time-timetab(t1)).lt.dtime
-	  t2good = abs(time-timetab(t2)).lt.dtime
-c
-	  if(     t1good.and.gflag(i1+f1(p),t1))then
-	    ga1 = gains(i1+f1(p),t1)
-	  else if(t2good.and.gflag(i1+f1(p),t2))then
-	    ga1 = gains(i1+f1(p),t2)
-	  else
-	    flag = .false.
-	  endif
-c
-	  if(     t2good.and.gflag(i1+f1(p),t2))then
-	    ga2 = gains(i1+f1(p),t2)
-	  else if(t1good.and.gflag(i1+f1(p),t1))then
-	    ga2 = gains(i1+f1(p),t1)
-	  else
-	    flag = .false.
-	  endif
-c
-	  if(     t1good.and.gflag(i2+f2(p),t1))then
-	    gb1 = gains(i2+f2(p),t1)
-	  else if(t2good.and.gflag(i2+f2(p),t2))then
-	    gb1 = gains(i2+f2(p),t2)
-	  else
-	    flag = .false.
-	  endif
-	  if(     t2good.and.gflag(i2+f2(p),t2))then
-	    gb2 = gains(i2+f2(p),t2)
-	  else if(t1good.and.gflag(i2+f2(p),t1))then
-	    gb2 = gains(i2+f2(p),t1)
-	  else
-	    flag = .false.
-	  endif
-c
-	  if(ntau.eq.1.and.flag)then
-	    if(     t1good.and.gflag(i1+f1(p),t1))then
-	      taua1 = gains(i1+nfeeds,t1)
-	    else if(t2good.and.gflag(i1+f1(p),t2))then
-	      taua1 = gains(i1+nfeeds,t2)
-	    endif
-c
-	    if(     t2good.and.gflag(i1+f1(p),t2))then
-	      taua2 = gains(i1+nfeeds,t2)
-	    else if(t1good.and.gflag(i1+f1(p),t1))then
-	      taua2 = gains(i1+nfeeds,t1)
-	    endif
-c
-	    if(     t1good.and.gflag(i2+f2(p),t1))then
-	      taub1 = gains(i2+nfeeds,t1)
-	    else if(t2good.and.gflag(i2+f2(p),t2))then
-	      taub1 = gains(i2+nfeeds,t2)
-	    endif
-	    if(     t2good.and.gflag(i2+f2(p),t2))then
-	      taub2 = gains(i2+nfeeds,t2)
-	    else if(t1good.and.gflag(i2+f2(p),t1))then
-	      taub2 = gains(i2+nfeeds,t1)
-	    endif
-	  endif
-c
-c  If all is good, interpolate the gains to the current time interval.
-c
-	  if(flag)then
+	  if(t1good.and.t2good)then
 	    epsi = (timetab(t2)-time)/(timetab(t2)-timetab(t1))
 c
-	    g = ga1/ga2
+	    g1 = gains(i1+f1(p),t1)
+	    g2 = gains(i1+f1(p),t2)
+	    g = g1/g2
 	    mag = abs(g)
-	    gain = ga2 * (1 + (mag-1)*epsi) * (g/mag) ** epsi
+	    gain = g2 * (1 + (mag-1)*epsi) * (g/mag) ** epsi
 c
-	    g = gb1/gb2
+	    g1 = gains(i2+f2(p),t1)
+	    g2 = gains(i2+f2(p),t2)
+	    g = g1/g2
 	    mag = abs(g)
 	    gain = gain * 
-     *		   conjg(gb2 * (1 + (mag-1)*epsi) * (g/mag) ** epsi)
+     *		   conjg(g2 * (1 + (mag-1)*epsi) * (g/mag) ** epsi)
 c
 	    if(ntau.eq.1)then
-	      tau1 = taua1 + conjg(taub1)
-	      tau2 = taua2 + conjg(taub2)
+	      tau1 = gains(i1+nfeeds,t1) + conjg(gains(i2+nfeeds,t1))
+	      tau2 = gains(i1+nfeeds,t2) + conjg(gains(i2+nfeeds,t2))
 	      tau = tau2 - epsi * (tau2 - tau1)
 	    endif
+	  else if(t1good)then
+	    gain = gains(i1+f1(p),t1)*conjg(gains(i2+f2(p),t1))
+	    if(ntau.eq.1)
+     *		tau = gains(i1+nfeeds,t1) + conjg(gains(i2+nfeeds,t1))
+	  else if(t2good)then
+	    gain = gains(i1+f1(p),t2)*conjg(gains(i2+f2(p),t2))
+	    if(ntau.eq.1)
+     *		tau = gains(i1+nfeeds,t2) + conjg(gains(i2+nfeeds,t2))
+	  else
+	    flag = .false.
 	  endif
 	else
 	  flag = .true.
@@ -502,7 +444,7 @@ c------------------------------------------------------------------------
 	parameter(LINE=1,WIDE=2,VELO=3)
 	integer TYPE,COUNT,START,WIDTH,STEP
 	parameter(TYPE=1,COUNT=2,START=3,WIDTH=4,STEP=5)
-	integer ltype,i,j,bl,i0
+	integer ltype,i,j,bl
 	logical willcg,ok
 	double precision dat(6)
 c
@@ -515,30 +457,31 @@ c  Determine whether its cgains or wgains that we are to apply.
 c
 	if(dowide)then
 	  willcg = .false.
-	  i0 = 1
 	else
 	  call uvinfo(tno,'line',dat)
 	  ltype  = nint(dat(TYPE))
 	  willcg = ltype.eq.LINE
 	  if(ltype.eq.VELO)call bug('f',
      *	    'Cannot apply bandpass correction with velocity linetype')
-	  if(nint(dat(STEP)).ne.1.and.nint(dat(WIDTH)).ne.1)
-     *	    call bug('f','Linetype width and step must be 1')
-	  i0 = nint(dat(START))
 	endif
 c
 c  Determine the baseline number.
 c
-	bl = ((ant2-1)*ant2)/2 + ant1
+	ok = ant1.ne.ant2
+	if(ant1.lt.ant2)then
+	  bl = ((ant2-2)*(ant2-1))/2 + ant1
+	else
+	  bl = ((ant1-2)*(ant1-1))/2 + ant2
+	endif
 c
 c  Get the appropriate table.
 c
 	if(willcg.and.docgains)then
-	  j = pCgains + ncgains*(bl-1) + (i0-1)
-	  ok = bl.le.ncbase.and.ncgains.ge.nread+i0-1
+	  j = pCgains + ncgains*(bl-1)
+	  ok = ok.and.bl.le.ncbase.and.ncgains.eq.nread
 	else if(.not.willcg.and.dowgains)then
-	  j = pWgains + nwgains*(bl-1) + (i0-1)
-	  ok = bl.le.nwbase.and.nwgains.ge.nread+i0-1
+	  j = pWgains + nwgains*(bl-1)
+	  ok = ok.and.bl.le.nwbase.and.nwgains.eq.nread
 	else
 	  ok = .false.
 	endif
@@ -546,12 +489,18 @@ c
 c Check it all makes sense.
 c
 	if(.not.ok)then
+	  call output('Error applying baseline gains')
 	  do i=1,nread
 	    flags(i) = .false.
 	  enddo
-	else
+	else if(ant1.le.ant2)then
 	  do i=1,nread
 	    data(i) = data(i) * cref(j)
+	    j = j + 1
+	  enddo
+	else
+	  do i=1,nread
+	    data(i) = data(i) * conjg(cref(j))
 	    j = j + 1
 	  enddo
 	endif
@@ -1086,8 +1035,7 @@ c------------------------------------------------------------------------
 	integer i,j,k,l,ibeg,iend,n,win(MAXSPECT),ischan(MAXSPECT),off
 	integer i0
 	double precision startt,endt,startd,endd,width
-	real chan,inc,hwidth,goodness,good(MAXSPECT),epsi
-	logical nearest
+	real chan,inc,hwidth,goodness,good(MAXSPECT)
 c
 	ischan(1) = 1
 	do j=2,nspect
@@ -1122,7 +1070,7 @@ c
 	    width = min(endt,endd) - max(startt,startd)
 	    if(width.gt.0)then
 	      hwidth = abs(swidth0(j) / sdf(i))
-	      goodness = 2 * width / (endd - startd)
+	      goodness = width / (endd - startd)
 	      if(hwidth.gt.0.8) goodness = goodness + 1
 	      if(hwidth.lt.1.2) goodness = goodness + 1
 	      if(goodness.gt.good(j))then
@@ -1157,27 +1105,15 @@ c
 	      hwidth = 0.5*abs(swidth0(j) / sdf(i0))
 	      if(hwidth.lt.0.8)then
 	        do i=1,nschan0(j)
-	          l = nint(chan-0.5)
-		  nearest = l.lt.0.or.l.ge.nschan(i0)-1
+	          l = nint(chan)
+		  flags(off,k) = l.ge.0.and.l.lt.nschan(i0)
 		  l = l + ischan(i0)
-		  if(.not.nearest)nearest =
-     *		      abs(real(tab(l,k)))+abs(aimag(tab(l,k))).eq.0.or.
-     *		      abs(real(tab(l+1,k)))+abs(aimag(tab(l+1,k))).eq.0
-		  if(nearest)then
-		    l = nint(chan)
-		    flags(off,k) = l.ge.0.and.l.lt.nschan(i0)
-		    l = l + ischan(i0)
-		    if(flags(off,k)) flags(off,k) =
-     *		      real(tab(l,k)).ne.0.or.aimag(tab(l,k)).ne.0
-		    if(flags(off,k)) then
-		      dat(off,k) = tab(l,k)
-		    else
-		      dat(off,k) = 0
-		    endif
+		  if(flags(off,k)) flags(off,k) =
+     *		    real(tab(l,k)).ne.0.or.aimag(tab(l,k)).ne.0
+		  if(flags(off,k)) then
+		    dat(off,k) = tab(l,k)
 		  else
-		    epsi = chan + ischan(i0) - l
-		    dat(off,k) = (1-epsi)*tab(l,k) + epsi*tab(l+1,k)
-		    flags(off,k) = .true.
+		    dat(off,k) = 0
 		  endif
 	          off = off + 1
 	          chan = chan + inc
@@ -1189,8 +1125,7 @@ c
 	      else
 	        do i=1,nschan0(j)
 	          ibeg = max(1,nint(chan-hwidth)+ischan(i0))
-	          iend = min(nint(chan+hwidth)+ischan(i0),
-     *					ischan(i0)+nschan(i0)-1)
+	          iend = min(nint(chan+hwidth)+ischan(i0),nschan(i0))
 	          n = 0
 	          dat(off,k) = 0
 		  do l=ibeg,iend
@@ -1201,7 +1136,6 @@ c
 		  enddo
 		  flags(off,k) = n.gt.0
 		  if(n.gt.1) dat(off,k) = dat(off,k) / n
-	          off = off + 1
 	          chan = chan + inc
 	        enddo
 	      endif
