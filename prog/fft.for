@@ -56,9 +56,6 @@ c    rjs  21sep93 Handle blanking and arrays that are not powers of two,
 c		  and arbitrary dimensionality.
 c    rjs  11oct93 Increase max file name length.
 c    rjs   8nov94 Minor header beautification.
-c    rjs  02dec96 Better header.
-c    rjs  02jul97 cellscal change.
-c    rjs  12aug97 Forget NCP projection geometry.
 c------------------------------------------------------------------------
 	include 'maxnax.h'
 	include 'maxdim.h'
@@ -152,28 +149,28 @@ c  Now open the output files.
 c
 	if(rOut.ne.' ')then
 	  call xyopen(lrOut,rOut,'new',naxis,nout)
-	  call header(lrIn,lrOut,'Real',version,nout)
+	  call header(lrIn,lrOut,'Real',version,nout(1),nout(2))
 	else
 	  lrOut = 0
 	endif
 c
 	if(iOut.ne.' ')then
 	  call xyopen(liOut,iOut,'new',naxis,nout)
-	  call header(lrIn,liOut,'Imaginary',version,nout)
+	  call header(lrIn,liOut,'Imaginary',version,nout(1),nout(2))
 	else
 	  liOut = 0
 	endif
 c
 	if(Mag.ne.' ')then
 	  call xyopen(lMag,Mag,'new',naxis,nout)
-	  call header(lrIn,lMag,'Magnitude',version,nout)
+	  call header(lrIn,lMag,'Magnitude',version,nout(1),nout(2))
 	else
 	  lMag = 0
 	endif
 c
 	if(Phase.ne.' ')then
 	  call xyopen(lPhase,Phase,'new',naxis,nout)
-	  call header(lrIn,lPhase,'Phase',version,nout)
+	  call header(lrIn,lPhase,'Phase',version,nout(1),nout(2))
 	else
 	  lPhase = 0
 	endif
@@ -386,69 +383,56 @@ c
 	enddo
 	end
 c************************************************************************
-	subroutine header(lIn,lOut,Type,version,n)
+	subroutine header(lIn,lOut,Type,version,n1,n2)
 c
 	implicit none
-	integer lIn,lOut,n(2)
+	integer n1,n2
+	integer lIn,lOut
 	character Type*(*),version*(*)
 c
 c  Create the output header for the transformed file.
 c
 c------------------------------------------------------------------------
 	integer nkeys
-	parameter(nkeys=22)
+	parameter(nkeys=21)
 c
 	integer i
 	double precision cdelt
-	character ax*1
 	character keyw(nkeys)*8,line*64,ctype*16
-c
-c  Externals.
-c
-	character itoaf*1
-c
 	data keyw/   'bunit   ','obstime ','epoch   ','history ',
      *    'object  ','telescop','vobs    ','restfreq','btype   ',
-     *	  'cellscal',
      *	  'cdelt3  ','crval3  ','crpix3  ','ctype3  ',
      *	  'cdelt4  ','crval4  ','crpix4  ','ctype4  ',
      *	  'cdelt5  ','crval5  ','crpix5  ','ctype5  '/
 C
 c  Copy all the other keywords across, which have not changed.
 c
-	call wrhdr(lOut,'crpix1',real(n(1)/2+1))
-	call wrhdr(lOut,'crpix2',real(n(2)/2+1))
+	call wrhdr(lOut,'crpix1',real(n1/2+1))
+	call wrhdr(lOut,'crpix2',real(n2/2+1))
 	call wrhdd(lOut,'crval1',0.d0)
 	call wrhdd(lOut,'crval2',0.d0)
 c
-	do i=1,2
-	  ax = itoaf(i)
-	  call rdhdd(lIn,'cdelt'//ax,cdelt,1.d0)
-	  call rdhda(lIn,'ctype'//ax,ctype,' ')
-	  if(ctype(1:4).eq.'RA--')then
-	    ctype(1:2) = 'UU'
-	    cdelt = 1./(n(i)*cdelt)
-	  else if(ctype(1:4).eq.'UU--')then
-	    ctype(1:2) = 'RA'
-	    if(ctype(6:8).eq.'NCP')ctype(6:8) = 'SIN'
-	    cdelt = 1./(n(i)*cdelt)
-	  else if(ctype(1:4).eq.'DEC-')then
-	    ctype(1:3) = 'VV-'
-	    cdelt = 1./(n(i)*cdelt)
-	  else if(ctype(1:4).eq.'VV--')then
-	    ctype(1:3) = 'DEC'
-	    if(ctype(6:8).eq.'NCP')ctype(6:8) = 'SIN'
-	    cdelt = 1./(n(i)*cdelt)
-	  else if(ctype(1:4).eq.'FREQ')then
-	    ctype = 'TIME'
-	    cdelt = 1./(n(i)*cdelt*1e9)
-	  else if(ctype.eq.'TIME')then
-	    ctype = 'FREQ'
-	    cdelt = 1.e-9/(n(i)*cdelt)
-	  endif
-	  call wrhdd(lOut,'cdelt'//ax,cdelt)
-	  call wrhda(lOut,'ctype'//ax,ctype)
-	enddo
+	call rdhdd(lIn,'cdelt1',cdelt,1.d0)
+	call rdhda(lIn,'ctype1',ctype,' ')
+	if(ctype(1:2).eq.'RA')then
+	  ctype(1:2) = 'UU'
+	else if(ctype(1:2).eq.'UU')then
+	  ctype(1:2) = 'RA'
+	endif
+	cdelt = 1./(n1*cdelt)
+	call wrhdd(lOut,'cdelt1',cdelt)
+	call wrhda(lOut,'ctype1',ctype)
+c
+	call rdhda(lIn,'ctype2',ctype,' ')
+	call rdhdd(lIn,'cdelt2',cdelt,1.d0)
+	if(ctype(1:3).eq.'DEC')then
+	  ctype(1:3) = 'VV-'
+	else if(ctype(1:2).eq.'VV')then
+	  ctype(1:3) = 'DEC'
+	endif
+	cdelt = 1./(n2*cdelt)
+	call wrhdd(lOut,'cdelt2',cdelt)
+	call wrhda(lOut,'ctype2',ctype)
 c
 c  Copy other keywords and add to the history file.
 c
