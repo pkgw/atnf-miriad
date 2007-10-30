@@ -1,14 +1,4 @@
 c************************************************************************
-c  A set of routines to perform mosaic "convolution" operations.
-c
-c  History:
-c    rjs 18nov94  Original version.
-c    rjs 28nov94  Miscellaneous enhancements.
-c    rjs  2dec94  Fix bug in mccnvl when convolving regions which are blanked.
-c    rjs 24nov95  Fix minor optimisation in mcCnvlr, and avoid aliasing
-c		  via changes in mcExtent.
-c    rjs 12oct99  Change in subroutine name only.
-c************************************************************************
 	subroutine mcInitFG(tno1,bmaj1,bmin1,bpa1)
 c
 	implicit none
@@ -68,7 +58,7 @@ c
 c  Load the mosaic table.
 c
 	call mosLoad(tno,npnt1)
-	call mosGetn(nx2,ny2,npnt1)
+	call mosInfo(nx2,ny2,npnt1)
 	if(npnt1.ne.npnt)
      *	  call bug('f','Inconsistent number of pointings')
 c
@@ -171,10 +161,10 @@ c
 	  xmax = min(xmax,nox-xoff)
 	  ymax = min(ymax,noy-yoff)
 c
-	  if(xlo.lt.1)  xlo = min(1,  xmin)
-	  if(xhi.gt.nix)xhi = max(nix,xmax)
-	  if(ylo.lt.1)  ylo = min(1,  ymin)
-	  if(yhi.gt.niy)yhi = max(niy,ymax)
+	  if(xlo.lt.1)  xlo = xmin
+	  if(xhi.gt.nix)xhi = xmax
+	  if(ylo.lt.1)  ylo = ymin
+	  if(yhi.gt.niy)yhi = ymax
 c
 	  mnx = xhi - xlo + 1
 	  mny = yhi - ylo + 1
@@ -195,8 +185,6 @@ c
      *	      Out,memr(pWts1),nox,noy,
      *	      Wts3,xoff,yoff,xlo,ylo,xhi,yhi,xmin,ymin,xmax,ymax,
      *	      memr(pWrk1),memr(pWrk2),mnx,mny)
-	    if(cnvl(k).ne.0)call cnvlFin(cnvl(k))
-	    cnvl(k) = 0
 	  endif
 	enddo
 c
@@ -272,16 +260,18 @@ c
 c
 	end
 c************************************************************************
-	subroutine mcPlaneR(coObj,k,Runs,nRuns,nPoint)
+	subroutine mcPlaneR(coObj,k,Runs,nRuns)
 c
 	implicit none
-	integer coObj,k,nRuns,Runs(3,nRuns),nPoint
+	integer coObj,k,nRuns,Runs(3,nRuns)
 c
 c  Initialise the mosaic convolution routines for a particular plane.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mem.h'
 	include 'mc.h'
+c
+	integer iRuns
 c
 c  Release any old primary beams, if needed.
 c
@@ -291,7 +281,13 @@ c  Initialise the mosaicing routines.
 c
 	call mosMini(coObj,real(k))
 	mosini = .true.
-	npix = nPoint
+c
+c  Count the number of pixels.
+c
+	npix = 0
+	do iRuns=1,nRuns
+	  npix = npix + Runs(3,iRuns) - Runs(2,iRuns) + 1
+	enddo
 c
 c  Do we have enough buffer space?
 c
@@ -305,88 +301,6 @@ c
 c  Compute the mosaicing weights.
 c
 	call mosWtsR(Runs,nRuns,memr(pWts1),memr(pWts2),npix)
-c
-	end
-c************************************************************************
-	subroutine mcGain(Gain,nPoint)
-c
-	implicit none
-	integer nPoint
-	real Gain(nPoint)
-c
-c  Return the gain at each point in the region-of-interest.
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	include 'mem.h'
-	include 'mc.h'
-c
-	call mcGn(Gain,memr(pWts1),nPoint)
-	end	
-c************************************************************************
-	subroutine mcGn(Gain,Wt1,nPoint)
-c
-	implicit none
-	integer nPoint
-	real Gain(nPoint),Wt1(nPoint)
-c
-c------------------------------------------------------------------------
-	integer i
-c
-	do i=1,nPoint
-	  if(Wt1(i).eq.0)then
-	    Gain(i) = 0
-	  else
-	    Gain(i) = 1/Wt1(i)
-	  endif
-	enddo
-c
-	end
-c************************************************************************
-	subroutine mcSigma2(Sigma2,nPoint,noinvert)
-c
-	implicit none
-	integer nPoint
-	real Sigma2(nPoint)
-	logical noinvert
-c
-c  Return the variance at each point in the region-of-interest.
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	include 'mem.h'
-	include 'mc.h'
-c
-	call mcSig(Sigma2,memr(pWts1),memr(pWts2),nPoint,noinvert)
-	end
-c************************************************************************
-	subroutine mcSig(Sigma2,Wt1,Wt2,nPoint,noinvert)
-c
-	implicit none
-	integer nPoint
-	real Sigma2(nPoint),Wt1(nPoint),Wt2(nPoint)
-	logical noinvert
-c
-c  Return the variance in each point of an image.
-c------------------------------------------------------------------------
-	integer i
-c
-	if(noinvert)then
-	  do i=1,nPoint
-	    if(Wt1(i).gt.0)then
-	      Sigma2(i) = Wt2(i)/Wt1(i)
-	    else
-	      Sigma2(i) = 0
-	    endif
-	  enddo
-c
-	else
-	  do i=1,nPoint
-	    if(Wt2(i).gt.0)then
-	      Sigma2(i) = Wt1(i)/Wt2(i)
-	    else
-	      Sigma2(i) = 0
-	    endif
-	  enddo
-	endif
 c
 	end
 c************************************************************************
@@ -499,9 +413,7 @@ c
 	  if(Runs(1,iRuns).ge.ylo.and.Runs(1,iRuns).le.yhi.and.
      *	     Runs(3,iRuns).ge.xlo.and.Runs(2,iRuns).le.xhi)then
 c
-c  Determine the range where the primary beam is non-zero. Places
-c  where the primary beam is zero can be ignored (places where the
-c  model is zero generally cannot be ignored).
+c  Determine the range where the primary beam is non-zero.
 c
 	    x1 = max(xlo,Runs(2,iRuns))
 	    x2 = min(xhi,Runs(3,iRuns))
@@ -544,9 +456,7 @@ c
 	enddo
 	Runs2(1,nRuns2+1) = 0
 c
-c  If there is nothing non-zero, then there is nothing to do.
-c
-	if(ncomp.eq.0)return
+	if(n.eq.0)return
 c
 c  Initialise the convolver if needed.
 c
@@ -636,26 +546,20 @@ c  Its size is set by
 c    * the extent where the primary beam is non-zero (radius (xrad,yrad)),
 c    * the size of the beam function that we are convolving with (n1,n2), and
 c    * the maximum size that the convolution routines impose (n1d,n2d)
-c    * to avoid aliasing.
 c
 	call pbExtent(pbObj,x0,y0,xrad,yrad)
 c
 	xlo = nint(x0 - xrad + 0.5)
 	xhi = nint(x0 + xrad - 0.5)
 	x1 = nint(x0)
-	xlo = max(xlo, xmin-(n1-1)/2, x1-n1d/2,     xmax+(n1-1)/2-n1d)
-	xhi = min(xhi, xmax+n1/2,     x1+(n1d-1)/2, xmin-n1/2+n1d    )
+	xlo = max(xlo, xmin-n1/2,     x1-n1d/2)
+	xhi = min(xhi, xmax+(n1-1)/2, x1+(n1d-1)/2)
 c
 	ylo = nint(y0 - yrad + 0.5)
 	yhi = nint(y0 + yrad - 0.5)
 	y1 = nint(y0)
-	ylo = max(ylo, ymin-(n2-1)/2, y1-n2d/2,     ymax+(n2-1)/2-n2d)
-	yhi = min(yhi, ymax+n2/2,     y1+(n2d-1)/2, ymin-n2/2+n2d    )
-c
-	xmin = max(xmin,xlo)
-	ymin = max(ymin,ylo)
-	xmax = min(xmax,xhi)
-	ymax = min(ymax,yhi)
+	ylo = max(ylo, ymin-n2/2,     y1-n2d/2)
+	yhi = min(yhi, ymax+(n2-1)/2, y1+(n2d-1)/2)
 c
 	end
 c************************************************************************
@@ -726,10 +630,8 @@ c------------------------------------------------------------------------
 	integer k
 c
 	if(mosini)call mosMFin
-	mosini = .false.
 	do k=1,npnt
 	  if(cnvl(k).ne.0)call cnvlFin(cnvl(k))
-	  cnvl(k) = 0
 	enddo
 c
 	if(nWrk.gt.0)call memFree(pWrk1,2*nWrk,'r')
