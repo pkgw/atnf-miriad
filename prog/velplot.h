@@ -2,25 +2,20 @@ c*********************************************************************c
 c		velplot.h
 c	include file for velplot program
 c---------------------------------------------------------------------c
-c
-c  The maximum array dimensions and size
-c  MAXDIM is used to read the image, and for 1-dimensional arrays.
-	include 'maxdim.h'
-c
+        integer      is,ie,ib,it,mid,midy
+	common /box/ is,ie,ib,it,mid,midy
 c  box in absolute pixels. (is,ib) (ie,it) can be reset by cursor.
-        integer      is,ie,ib,it,midx,midy
-	common /box/ is,ie,ib,it,midx,midy
 c---------------------------------------------------------------------c
 
-	real crval1,crval2,epoch,xy,vel,delv,posx,posy,pospa
+	real        ras,decs,epoch,xy,vel,delv,posx,posy,pospa
 	real bmaj,bmin,bpa,dperjy,cbof,restfreq,posend,velend
 	real amin,amax,arms
 	integer		     niters
-	common/head/crval1,crval2,epoch,xy,vel,delv,posx,posy,pospa,
+	common/head/ras,decs,epoch,xy,vel,delv,posx,posy,pospa,
      *	     bmaj,bmin,bpa,dperjy,cbof,restfreq,posend,velend,
      *	     amin,amax,arms,niters
 c
-c  crval1, crval2, (epoch), bmaj, bmin (beam) [radians]
+c  ras,decs, (epoch), bmaj,bmin (beam) [radians]
 c  xy (map pixel),  [arcsecs]
 c  vel,delv - lsr velocity and width of current map [km/s]
 c  restfreq, [GHz]
@@ -66,4 +61,3 @@ c  nlevels	Number of levels
 c  conlabel	Label interval for contours
 c  cutoff	Cutoff level in moment maps.
 c---------------------------------------------------------------------c
-
