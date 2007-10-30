@@ -16,8 +16,8 @@
 #define H_TXT_SIZE	1
 #define H_CMPLX_SIZE	8
 
-#define MAXPATH		256
-#define MAXOPEN		26
+#define MAXPATH		64
+#define MAXOPEN		20
 
 /*
   The following macros define routines which read or write data of a
@@ -55,13 +55,5 @@
 
 void hopen_c(),hclose_c(),haccess_c(),hdaccess_c(),hio_c(),
 	hreada_c(),hwritea_c(),hdelete_c(),habort_c(),hrm_c(),hseek_c(),
-	hmode_c(),hflush_c();
+	hmode_c();
 int hsize_c(),hexists_c(),htell_c();
-
-/* Other handy definitions. */
-
-#define TRUE 			1
-#define FALSE			0
-#define max(a,b) ((a)>(b)?(a):(b))
-#define min(a,b) ((a)<(b)?(a):(b))
-#define mroundup(a,b) ((b)*(((a)+(b)-1)/(b)))
