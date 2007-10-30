@@ -1,6 +1,6 @@
 c**********************************************************************
 c     A collection of subroutines shared by the programs CGDISP,
-c     CGSPEC, CGCURS, CGSLICE, REGRID, IMBIN and UVSUB. 
+c     CGSPEC, CGCURS, CGSLICE, REGRID and UVSUB. 
 c
 c
 c  apptrfcg :  Apply transfer function to image
@@ -33,7 +33,6 @@ c  ppconcg  :  Convert between unbinned full image pixels and binned
 c              subimage pixels
 c  readbcg  :  Read blanking mask form mask image
 c  readimcg :  Read in image dealing with averaging and blanking
-c  savdescg :  Make a copy of the axis descriptors
 c  setcolcg :  Set a PGPLOT colour for multiple line graphics on 1 plot
 c  setdescg :  Set axis descriptors for an image by copying from another
 c  strprpcg :  Prepare string by stripping extra white space and
@@ -119,9 +118,6 @@ c     nebk   12jul94     Fix dimensioning bug in SETDESCG
 c     nebk   19jul94     Allow roundoff tolerance in CHKDESCG
 c     nebk   27aug94     Convert OL2PIXCG to use correct coordinate 
 c                        conversion routines via COSUBS.FOR
-c     nebk   15jan95     Add SAVDESCG
-c     nebk   14apr95     Add HARD and DOFID arguments to WEDGINCCG
-c     nebk   11aug95     Add arcmin labels
 c***********************************************************************
 c
 c* apptrfCG -- Apply transfer function to image
@@ -1202,9 +1198,6 @@ c
       else if (labtyp.eq.'arcsec') then
         label = str(1:l2)//' offset (arcsec; '//estr//')'
         if (estr.eq.' ') label = str(1:l2)//' offset (arcsec)'
-      else if (labtyp.eq.'arcmin') then
-        label = str(1:l2)//' offset (arcmin; '//estr//')'
-        if (estr.eq.' ') label = str(1:l2)//' offset (arcmin)'
       else if (labtyp.eq.'absdeg') then
         label = str(1:l2)//' (degrees; '//estr//')'
         if (estr.eq.' ') label = str(1:l2)//' (degrees)'
@@ -1710,9 +1703,9 @@ c    pixel   Image pixel value
 c    iax     This is the axis number in which we are interested. Should
 c            be 1, 2 or 3.
 c    labtyp  Requested type of world coordinate.   Should be one
-c            of   abspix, relpix, arcsec, arcmin, hms, dms, absghz, 
-c                 relghz, abskms, relkms, abslin, rellin, none. Note that
-c	     a request for a linear (abs or rel) axis conversion for an
+c            of   abspix, relpix, arcsec, hms, dms, absghz, relghz,
+c                 abskms, relkms, abslin, rellin, none. Note that a 
+c	     request for a linear (abs or rel) axis conversion for an
 c	     RA axis will return the RA in radians of polar rotation. 
 c	     That is, the increment will be divided by cos(DEC)
 c	     For labtyp=hms and labtyp=dms the world coordinate is in 
@@ -1784,21 +1777,6 @@ c
         end if
 c
         world = (pixel - crpix(iax)) * cdelt(iax) * r2a
-      else if (labtyp.eq.'arcmin') then
-c
-c Relative arcminutes
-c
-        if (irad.eq.0) then
-          write (msg, 100) iax
-          if (domsg) call bug ('w', msg)
-          if (domsg) call bug ('w', 
-     +      'PIX2WCG: conversion to "arcmin" requested. Continue '//
-     +      'assuming axis in radians')
-          warn(1,iax) = .false.
-          ok = .false.
-        end if
-c
-        world = (pixel - crpix(iax)) * cdelt(iax) * r2a / 60.0d0
       else if (labtyp.eq.'hms') then
 c
 c HH MM SS.S
@@ -1954,7 +1932,7 @@ c
      +            'increments in radians but')
           if (domsg) call bug ('w', msg)
           if (domsg) call bug ('w', 
-     +       'PIX2WCG: conversion to "reldeg" requested. Continue '//
+     +       'PIX2WCG: conversion to "arcsec" requested. Continue '//
      +       'assuming axis in radians')
           warn(10,iax) = .false.
           ok = .false.
@@ -1971,7 +1949,7 @@ c
      +            'increments in radians but')
           if (domsg) call bug ('w', msg)
           if (domsg) call bug ('w', 
-     +       'PIX2WCG: conversion to "absdeg" requested. Continue '//
+     +       'PIX2WCG: conversion to "arcsec" requested. Continue '//
      +       'assuming axis in radians')
           warn(11,iax) = .false.
           ok = .false.
@@ -2059,7 +2037,7 @@ c
         call strfd (world, '(1pe11.5)', str1, il)
       else if (labtyp2.eq.'absdeg' .or. labtyp2.eq.'reldeg') then
         call strfd (world, '(f8.3)', str1, il)
-      else if (labtyp2.eq.'arcsec' .or. labtyp2.eq.'arcmin' .or.
+      else if (labtyp2.eq.'arcsec' .or. 
      +         labtyp2.eq.'abslin' .or. labtyp2.eq.'rellin') then
         call strfd (world, '(1pe15.8)', str1, il)
       else if (labtyp2.eq.'hms') then
@@ -2120,10 +2098,10 @@ c            not match the axis type in ctype.
 c    iax     This is the axis number in which we are interested. Should
 c            be 1, 2 or 3.
 c    labtyp  Requested type of world coordinate.   Should be one
-c            of   abspix, relpix, arcsec, arcmin, hms, dms, absghz, 
-c                 relghz, abskms, relkms, abslin, rellin, none.   Note 
-c	     that a request for a linear (abs or rel) axis conversion 
-c	     for an RA axis will return the RA in radians of polar rotation. 
+c            of   abspix, relpix, arcsec, hms, dms, absghz, relghz,
+c                 abskms, relkms, abslin, rellin, none.   Note that a 
+c	     request for a linear (abs or rel) axis conversion for an 
+c	     RA axis will return the RA in radians of polar rotation. 
 c	     That is, the increment will be divided by cos(DEC)
 c    naxis   Number of axes in image
 c    crval   Array of image reference values
@@ -2474,39 +2452,6 @@ c
 c
       end
 c
-c* savdesCG --  Save a copy of the axis descriptors
-c& nebk
-c: plotting
-c+
-      subroutine savdescg (naxis, ctype, crval, crpix, cdelt, sctype,
-     +                   scrval, scrpix, scdelt)
-c
-      implicit none
-      integer naxis
-      double precision crval(naxis), cdelt(naxis), crpix(naxis),
-     +  scrval(naxis), scdelt(naxis), scrpix(naxis)
-      character*(*) ctype(naxis), sctype(naxis)
-c
-c  Make a copy of the axis descriptors 
-c
-c  Input
-c    naxis     Number of axes
-c    c*        Axis descriptors
-c  Output
-c    cs*       Copy of axis descriptors
-c--
-c-----------------------------------------------------------------------
-      integer i
-c-----------------------------------------------------------------------
-      do i = 1, naxis
-        sctype(i) = ctype(i)
-        scrval(i) = crval(i)
-        scdelt(i) = cdelt(i)
-        scrpix(i) = crpix(i)
-      end do
-c
-      end
-c
 c* setcolCG --  Set multiple line graphics PGPLOT colours
 c& nebk
 c: plotting
@@ -2722,8 +2667,6 @@ c-----------------------------------------------------------------------
         units = ' '
       else if (labtyp.eq.'arcsec') then
         units = 'arcsec'
-      else if (labtyp.eq.'arcmin') then
-        units = 'arcmin'
       else if (labtyp.eq.'absdeg') then
         units = 'degrees'
       else if (labtyp.eq.'reldeg') then
@@ -2779,61 +2722,38 @@ c* wedginCG -- See if grey scale wedges are inside or outside subplots
 c& nebk
 c: plotting
 c+
-      subroutine wedgincg (hard, dofid, dowedge, nx, ny, npixr, 
-     +                     trfun, wedcod)
+      subroutine wedgincg (dowedge, nx, ny, npixr, trfun, wedcod)
 c
       implicit none
-      logical dowedge, dofid
+      logical dowedge
       integer nx, ny, npixr, wedcod
-      character trfun*3, hard*3
+      character trfun*3
 c
 c Work out whether the grey scale wedges are to be drawn inside
 c or outside the subplots, and whether there will be one or many
 c  
 c Input
-c  hard      'YES' if writing to hardcopy PGPLOT device
-c  dofid     True if user has requested OFM fiddle option
 c  dowedge   True if user requests wedge
 c  nx,ny     Number of subplots in x and y directions
 c  npixr     NUmber of grey scale "range" groups given by user
 c  trfun     Transfer function type of first "range" group
 c Output
-c wedcod     0 -> No wedges
-c            1 -> one wedge to right of all subplots
+c wedcod     1 -> one wedge to right of all subplots
 c            2 -> one wedge to right per subplot
 c            3 -> one wedge per subplot inside subplot
 c--
 c-----------------------------------------------------------------------
-      if (.not.dowedge) then
-        wedcod = 0
-      else      
-        if (hard.eq.'YES') then
-          if (nx*ny.eq.1) then
-            wedcod = 1   
-          else
-            if (dofid) then
-              wedcod = 3
-            else
-              if (npixr.eq.1 .and. trfun.ne.'heq') then
-                wedcod = 1
-              else if (ny.gt.1.and.nx.eq.1 .and. ((npixr.eq.1 .and. 
-     +                 trfun.eq.'heq') .or. npixr.gt.1)) then
-                wedcod = 2
-              else
-                wedcod = 3
-              end if
-            end if
-          end if
-        else
-          if (nx*ny.eq.1 .or. (npixr.eq.1 .and. trfun.ne.'heq')) then
-              wedcod = 1
-          else if (ny.gt.1.and.nx.eq.1 .and. ((npixr.eq.1 .and. 
-     +             trfun.eq.'heq') .or. npixr.gt.1)) then
-            wedcod = 2
-          else 
-            wedcod = 3
-          end if
+      if (dowedge) then
+        if (nx*ny.eq.1 .or. (npixr.eq.1 .and. trfun.ne.'heq')) then
+          wedcod = 1
+        else if (ny.gt.1.and.nx.eq.1 .and. ((npixr.eq.1 .and. 
+     +           trfun.eq.'heq') .or. npixr.gt.1)) then
+          wedcod = 2
+        else 
+          wedcod = 3
         end if
+      else    
+        wedcod = 0
       end if
 c
       end
@@ -2938,10 +2858,8 @@ c
 c Tell user what happened
 c
       if (fail) then
-        write (aline, 50) axis
-50      format ('Can''t adjust window to contain',
-     +          ' integral no. of bins on axis ', i1)
-        call bug ('f', aline)
+        call bug ('f', 'Can''t adjust spatial window to contain'//
+     +            ' an integral number of bins')
       else if (new) then
         write (aline, 100) axis, lo, hi, blc, trc, bin(2)
 100     format ('Adjusted axis ', i1, ' window from ', i4, ',', i4,
@@ -2976,9 +2894,9 @@ c    world   World coordinate.
 c    iax     This is the axis number in which we are interested. Should
 c            be 1, 2 or 3.
 c    labtyp  Given type of world coordinate.   Should be one
-c            of   abspix, relpix, arcsec, arcmin, hms, dms, absghz, 
-c                 relghz, abskms, relkms, abslin, rellin, none.  For 
-c            RA axes linear coordinates are assumed to be in radians of
+c            of   abspix, relpix, arcsec, hms, dms, absghz, relghz,
+c                 abskms, relkms, abslin, rellin, none.  For RA axes
+c            linear coordinates are assumed to be in radians of
 c            polar rotation.  For labtyp=hms and labtyp=dms the 
 c            world coordinate is in seconds of time and seconds of arc
 c    naxis   Number of axes in image
@@ -3047,22 +2965,6 @@ c
         end if
 c
         pixel = world * a2r / cdelt(iax) + crpix(iax)
-      else if (labtyp.eq.'arcmin') then
-c
-c Relative arcminutes
-c
-        if (irad.eq.0) then
-          write (msg, 150) iax
-150       format ('W2PIXCG: Axis ', i1, ' is not RA,DEC,LAT,LON but ',
-     +            'conversion from "arcmin"')
-          call bug ('w', msg)
-          call bug ('w', 
-     +      'W2PIXCG: requested.  Continue assuming axis in radians')
-          warn(1,iax) = .false.
-          ok = .false.
-        end if
-c
-        pixel = world * 60.0d0 * a2r / cdelt(iax) + crpix(iax)
       else if (labtyp.eq.'hms') then
 c
 c HH MM SS.S
@@ -3275,7 +3177,7 @@ c            world coordinate is in seconds of time and seconds of arc. For
 c	     RA axes linear coordinates are assumed to be in radians of polar
 c            rotation.That is, the increment will be divided by cos(DEC)
 c    typein  Input world coordinate type.   Should be one
-c            of   abspix, relpix, arcsec, arcmin, hms, dms, absghz, relghz,
+c            of   abspix, relpix, arcsec, hms, dms, absghz, relghz,
 c                 abskms, relkms, abslin, rellin, none. 
 c    typeout Output world coordinate type
 c    iax     This is the axis number in which we are interested. Should
@@ -3332,8 +3234,8 @@ c            world coordinate is in seconds of time and seconds of arc. For
 c	     RA axes linear coordinates are assumed to be in radians of polar
 c            rotation.That is, the increment will be divided by cos(DEC)
 c    typein  Input world coordinate type.   Should be one
-c            of   abspix, relpix, arcsec, arcmin, hms, dms, absghz, 
-c                 relghz, abskms, relkms, abslin, rellin, none. 
+c            of   abspix, relpix, arcsec, hms, dms, absghz, relghz,
+c                 abskms, relkms, abslin, rellin, none. 
 c    typeout Output world coordinate type
 c    iax     This is the axis number in which we are interested. Should
 c            be 1, 2 or 3.
