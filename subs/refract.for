@@ -1,9 +1,9 @@
 c************************************************************************
-	subroutine refract(t,pdry,pvap,z,n,nu,T0,el,Tb,tau,Ldry,Lvap)
+	subroutine refract(t,pdry,pvap,dz,n,nu,T0,el,Tb,tau,Ldry,Lvap)
 c
 	implicit none
 	integer n
-	real T(n),Pdry(n),Pvap(n),z(n),nu,T0,el
+	real T(n),Pdry(n),Pvap(n),dz(n),nu,T0,el
 	real Tb,Ldry,Lvap,tau
 c
 c  Determine the sky brightness and excess path lengths for a
@@ -15,7 +15,7 @@ c    T		Temperature of the layers. T(1) is the temperature at the
 c		lowest layer (Kelvin).
 c    Pdry	Partial pressure of the dry components (Pascals).
 c    Pvap	Partial pressure of the water vapour component (Pascals).
-c    z		Height of the layer.
+c    dz		Width of the layer (meters).
 c    nu		Frequency of interest (Hz).
 c    T0		Astronomical brightness temperature (Kelvin). e.g. 2.7 for
 c		the cosmic background.
@@ -29,7 +29,7 @@ c------------------------------------------------------------------------
 	include 'mirconst.h'
 c
 	integer i
-	real snell,dtau,nr,ni,l,dz
+	real snell,dtau,nr,ni,l
 	complex ndry,nvap
 c
 c  Externals.
@@ -43,18 +43,11 @@ c
 c
 	snell = sin(el)
 	do i=n,1,-1
-	  if(i.eq.1)then
-	    dz = 0.5*(z(2) - z(1))
-	  else if(i.eq.n)then
-	    dz = 0.5*(z(n) - z(n-1))
-	  else
-	    dz = 0.5*(z(i+1) - z(i-1))
-	  endif
 	  Ndry = refdry(nu,T(i),Pdry(i),Pvap(i))
 	  Nvap = refvap(nu,T(i),Pdry(i),Pvap(i))
 	  nr = 1+real (Ndry+Nvap)*1e-6
 	  ni =   aimag(Ndry+Nvap)*1e-6
-	  l = dz*nr / sqrt(nr*nr+(snell*snell)-1)
+	  l = dz(i)*nr / sqrt(nr*nr+(snell*snell)-1)
 	  dtau = l*4*PI*nu/CMKS*ni
 	  Tb = (Tb-T(i))*exp(-dtau) + T(i)
 	  tau = tau + dtau
@@ -84,12 +77,8 @@ c------------------------------------------------------------------------
 c	theta = 273.0/T
 c	es = 6.105*exp(25.22*(1-theta) + 5.31*log(theta)) * 100
 c
-	if(T.gt.215)then
-	  theta = 300.0/T
-	  es = 1e5/(41.51*theta**(-5)*10**(9.834*theta-10.0))
-	else
-	  es = 0
-	endif
+	theta = 300.0/T
+	es = 1e5/(41.51*theta**(-5)*10**(9.834*theta-10.0))
 	pvapsat = es
 	end
 c************************************************************************
