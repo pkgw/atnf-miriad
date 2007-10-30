@@ -135,8 +135,8 @@ c	    rjs     10oct94 Eliminate spurious extra call to uvflgwr.
 c	    rjs     16aug96 Eliminate MAXWIDE definition. Change NSELS,
 c			    standardise some FORTRAN.
 c           rjs     09dec97 Make antennas used message more robust.
-c***********************************************************************
-c
+c           rjs     11mar98 Some FORTRAN standardisation, to appease g77.
+c           rjs     30aug99 Increase outline to 256 chars.
 c************************************************************************
 c uvflag works as follows:
 c It reads the name of the first visibility file.
@@ -148,7 +148,7 @@ c Then it asks for the next visibility file and does the whole process
 c again until the list is exhausted.
 
       character*(*) version
-      parameter ( version = 'uvflag: version 2.5 10-Oct-94')
+      parameter ( version = 'uvflag: version 2.5 11-Mar-98')
 
       character*64     vis
 
@@ -579,16 +579,18 @@ c Do statistics and reporting.
       logical          oldflags(*), newflags(*)
       logical          usech(*)
       integer          nchan
-
+c------------------------------------------------------------------------
+      integer itemp
+c
+c  Externals.
+c
+      integer counting
+c
       call flgset( unit, flagval, data,oldflags,newflags, usech, nchan )
-      call counting( type, oldflags,newflags, nchan )
+      itemp = counting( type, oldflags,newflags, nchan )
       call report( ropt, unit,preamble,tformat,line,type,
      *             data,oldflags,newflags, usech, nchan )
-      return
       end
-
-
-
 c************************************************************************
 c Loop through all channels in the record and set the new flags.
 c Depending on the value of amprange(1) a check will be made whether the
@@ -960,13 +962,15 @@ c Entry antuse produces an output line with the result.
 
       subroutine antusage( antcode )
 
+      implicit none
       double precision antcode
 
       integer          ant1, ant2
       include          'maxdim.h'
       logical          antused ( MAXANT )
       save             antused
-      integer          i, j, k, n
+      integer          i, n
+      character        line*64
       character        outline*(*)
 c
 c  Externals.
@@ -1017,11 +1021,15 @@ c Type an overview and update history to finish off
       logical       apply
       character*(*) ropt
 
-      character*16  ltype
+      character     ltype*16
       integer       lt, lt1, lt2
       integer       reccount, treccnt
-      integer       totcount, totcnt(6), i
-      character*128 outline
+      integer       totcount, totcnt(6), i, l
+      character     outline*256
+c
+c  Externals.
+c
+      character     itoaf*8
       integer       len1
 
       if( ropt.eq.'none' ) return
@@ -1042,9 +1050,11 @@ c Type an overview and update history to finish off
 
       call nrecords( reccount, 1 )
       call nrecords( treccnt,  2 )
-      write( outline, '( ''Total number of records selected: '',i5,'//
-     *                   '''; out of '',i5, '' records'' )' )
-     *                     reccount, treccnt
+      outline = 'Total number of records selected: '//itoaf(reccount)
+      l = len1(outline)
+      outline(l+1:) = '; out of '//itoaf(treccnt)
+      l = len1(outline)
+      outline(l+1:) = ' records'
       call lhwr( outline, unit, apply )
 
       call antuse( outline )
@@ -1056,9 +1066,8 @@ c Type an overview and update history to finish off
       if( type.eq.'channel' ) lt2 = 1
       if( type.eq.'wide'    ) lt1 = 2
       if( type.eq.'wide'    ) lt2 = 2
-      write( outline, '('//
-     *     '''Counts of correlations within selected channels'' )' )
-      call lhwr( outline, unit, apply )
+      call lhwr('Counts of correlations within selected channels',
+     *	  unit,apply)
 
       do lt = lt1, lt2
 
