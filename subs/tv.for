@@ -62,8 +62,6 @@ c     jm 31oct92   Added port number option to device open name.  Also
 c                  removed references to obsolete mxas server and added
 c                  a message to user.  Also added warning to tvlocal for
 c                  devices which do not support this option.
-c     jm 16may97   Changed to permit a different host name and port for
-c                  the panel server.
 c************************************************************************
 c* TvOpen -- Open an image display device.
 c& jm
@@ -79,18 +77,14 @@ c  Tv model.
 c
 c  Input:
 c    device	Name of device. This is of the form:
-c		  type@name[/pname[:pport]]
+c		  type@name
 c		or
-c		  type:port@name[/pname[:pport]]
+c		  type:port@name
 c		Here "name" is the physical device name, or the
 c		name of the server (for network display servers). If
 c               the server type permits alternate port numbers, they
-c               may be specified using the second input form.  The
-c               terms in brackets are optional designations for panel
-c               servers and, while they may be included (see the
-c               example below) in the device specification, they are
-c               ignored by this routine.  "Type" is the device or
-c               server type.  Legitimate values are:
+c               may be specified using the second input form.  "Type"
+c		is the device or server type. Legitimate values are:
 c		  'ivas'	IVAS server (on VMS only)
 c		  'sss'		Sun screen server.
 c		  'xmtv'	X-window screen server with buttons.
@@ -105,11 +99,6 @@ c		  ivserve@castor  An IVAS server on machine castor.
 c		  xmtv@colo       A XMTV server on machine colo.
 c		  xmtv:5001@astro A XMTV server on machine astro
 c                                 communicating via port number 5001.
-c		  xmtv:5001@astro/earth:5010
-c                                 A XMTV server on machine astro
-c                                 communicating via port number 5001
-c                                 with a panel server on machine earth
-c                                 communicating via port number 5010.
 c
 c--
 c------------------------------------------------------------------------
@@ -129,9 +118,7 @@ c
 c  Determine the name and type of the display device.
 c
 	length = len1(device)
-	i = index(device,'/')
-	if (i .ne. 0) length = i - 1
-	i = index(device(1:length),'@')
+	i = index(device,'@')
 	if(i.le.1.or.i.ge.length)
      *	  call bug('f','TV device names must be of the form type@name')
 	name = device(i+1:length)
@@ -224,7 +211,7 @@ c
 c  Ultra frame buffer.
 c  ===================
 c
-#ifdef unicos
+#ifdef cft
 #ifdef ULTRA
 	else if(type.eq.'ultra')then
 	  protocol = Ultra
@@ -236,7 +223,7 @@ c
 c  Dump to file.
 c  =============
 c
-#ifdef unicos
+#ifdef cft
 	else if(type.eq.'file'.or.type.eq.'vfile')then
 	  protocol = File
 	  call TVFinit(name(1:length),type.eq.'file')
@@ -246,7 +233,7 @@ c
 c  RasterTech frame buffer.
 c  ========================
 c
-#ifdef alliant
+#ifdef FX
 #ifdef RASTER
 	else if(type.eq.'raster')then
 	  protocol = Raster
@@ -291,7 +278,7 @@ c------------------------------------------------------------------------
 	else if(protocol.eq.Ivas)then
 	  call IvFiddle
 #endif
-#ifdef unicos
+#ifdef cft
 #ifdef ULTRA
 	else if(protocol.eq.Ultra)then
 	  call Ulocal
@@ -534,7 +521,7 @@ c
           call TVwrtofm(1,ofm(1,red))
           call TVwrtofm(2,ofm(1,blue))
           call TVwrtofm(3,ofm(1,green))
-#ifdef unicos
+#ifdef cft
 #ifdef ULTRA
 	else if(protocol.eq.Ultra)then
 	  call uofm(ofm(1,red),ofm(1,blue),ofm(1,green))
@@ -602,7 +589,7 @@ c------------------------------------------------------------------------
 	  call TVcheck(BufSize)
 	else if(protocol.eq.Xas)then
 	  call TVcheck(BufSize)
-#ifdef unicos
+#ifdef cft
 	else if(protocol.eq.File)then
 	  call TVFflush
 #ifdef ULTRA
@@ -674,13 +661,13 @@ c
 	  ymax = symax
 	  channels = schan
 	  levels = slevl
-#ifdef alliant
+#ifdef FX
 #ifdef RASTER
 	else if(protocol.eq.Raster)then
 	  call RSchar(xmax,ymax,channels,levels)
 #endif
 #endif
-#ifdef unicos
+#ifdef cft
 	else if(protocol.eq.File)then
 	  xmax = 1024
 	  ymax = 1024
@@ -740,7 +727,7 @@ c
 	else if(protocol.eq.Ivas)then
 	  call fivasclose(handle)
 #endif
-#ifdef unicos
+#ifdef cft
 	else if(protocol.eq.File)then
 	  call TVFclose
 #ifdef ULTRA
@@ -748,7 +735,7 @@ c
 	  call Ufin
 #endif
 #endif
-#ifdef alliant
+#ifdef FX
 #ifdef RASTER
 	else if(protocol.eq.Raster)then
 	  call RSclose
@@ -948,13 +935,13 @@ c
 	  call fivasMOUSEstatus(button,x,y,7,0)
 	  y = 1023 - y
 #endif
-#ifdef unicos
+#ifdef cft
 #ifdef ULTRA
 	else if(protocol.eq.Ultra)then
 	  call Ucursor(x,y,button)
 #endif
 #endif
-#ifdef alliant
+#ifdef FX
 #ifdef RASTER
 	else if(protocol.eq.Raster)then
 	  call rscursor(x,y,button)
@@ -1029,7 +1016,7 @@ c
 	  LastX = xmin
 	  LastY = 1023-(ymin+ny-1)
 #endif
-#ifdef unicos
+#ifdef cft
 #ifdef ULTRA
 	else if(protocol.eq.Ultra)then
 	  call Uchar(xpix,ypix,channels,levels)
@@ -1346,7 +1333,7 @@ c
 	  call fivasINITall(0)
 	  call fivasGPHset(0,0,1024,1024,0)
 #endif
-#ifdef unicos
+#ifdef cft
 	else if(protocol.eq.File)then
 	  call TVFreset
 #ifdef ULTRA
@@ -1355,7 +1342,7 @@ c
 #endif
 #endif
 
-#ifdef alliant
+#ifdef FX
 #ifdef RASTER
 	else if(protocol.eq.Raster)then
 	  call RSreset
@@ -1677,7 +1664,7 @@ c
      *						  channel-1,-1,0)
 #endif
 c
-#ifdef unicos
+#ifdef cft
 	else if(protocol.eq.File)then
 	  call TVFline(x,y,array,n)
 #ifdef ULTRA
@@ -1686,7 +1673,7 @@ c
 #endif
 #endif
 c
-#ifdef alliant
+#ifdef FX
 #ifdef RASTER
 	else if(protocol.eq.Raster)then
 	  call RSline(x,y,array,n)
@@ -1866,7 +1853,7 @@ c
         continue
 #endif
 c
-#ifdef unicos
+#ifdef cft
       else if(protocol.eq.File)then
         continue
 #ifdef ULTRA
@@ -1875,7 +1862,7 @@ c
 #endif
 #endif
 c
-#ifdef alliant
+#ifdef FX
 #ifdef RASTER
       else if(protocol.eq.Raster)then
         continue
