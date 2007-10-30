@@ -3,6 +3,8 @@ c  History:
 c    22nov93 rjs  Original version.
 c    13sep94 rjs  Added gaudfac.
 c    11aug97 rjs  Protect against atan2(0,0)
+c    11dec97 rjs  Handle images in units of Kelvin.
+c    25feb98 rjs  Correct bunit shortcoming introduced above.
 c
 c************************************************************************
 c* gaupar1 - Determine effective beam of the convolution of two images.
@@ -109,12 +111,12 @@ c* gaupar - Determine effective beam of the convolution of two images.
 c& rjs
 c: image analysis
 c+
-	subroutine GauPar(bunit1,dx1,dy1,bmaj1,bmin1,bpa1,
-     *			  bunit2,dx2,dy2,bmaj2,bmin2,bpa2,
+	subroutine GauPar(bunit1x,dx1,dy1,bmaj1,bmin1,bpa1,
+     *			  bunit2x,dx2,dy2,bmaj2,bmin2,bpa2,
      *			  bunit,bmaj,bmin,bpa,fac)
 c
 	implicit none
-	character bunit1*(*),bunit2*(*),bunit*(*)
+	character bunit1x*(*),bunit2x*(*),bunit*(*)
 	double precision dx1,dy1,dx2,dy2
 	real bmaj1,bmin1,bpa1,bmaj2,bmin2,bpa2,bmaj,bmin,bpa,fac
 c
@@ -122,7 +124,7 @@ c  Determine the units and effective beam of the convolution of
 c  two images.
 c
 c  Input:
-c    bunit1	The units of the first image, e.g. JY/PIXEL or JY/BEAM.
+c    bunit1x	The units of the first image, e.g. JY/PIXEL or JY/BEAM.
 c    dx1,dy1	Increment in x and y.
 c    bmaj1,bmin1 Beam major and minor FWHM, in same units as dx1,dy1.
 c		May be 0.
@@ -139,15 +141,41 @@ c    fac	Factor to multipl the result by to convert to correct
 c		units.
 c--
 c------------------------------------------------------------------------
-	logical pPix1,pBem1,pPix2,pBem2
+	logical pPix1,pBem1,pPix2,pBem2,pKel1,pKel2
 	integer l,ifail
-	character line*64
+	character line*64,b1a*32,b1b*32,b2a*32,b2b*32,btemp*32
 c
 c  Externals.
 c
 	integer len1
 c
 c  Set defaults.
+c
+	btemp = bunit1x
+	call ucase(btemp)
+	l = index(btemp,'/')
+	if(l.gt.1.and.l.lt.len(btemp))then
+	  b1a = btemp(1:l-1)
+	  b1b = btemp(l+1:)
+	else
+	  b1a = btemp
+	  b1b = ' '
+	endif
+	btemp = bunit2x
+	call ucase(btemp)
+	l = index(btemp,'/')
+	if(l.gt.1.and.l.lt.len(btemp))then
+	  b2a = btemp(1:l-1)
+	  b2b = btemp(l+1:)
+	else
+	  b2a = btemp
+	  b2b = ' '
+	endif
+	if(b1a.eq.'?')b1a = b2a
+	if(b2a.eq.'?')b2a = b1a
+c
+	if(b2a.ne.b1a)call bug('w','Inconsistent units')
+	bunit = b1a
 c
 	bmaj = 0
 	bmin = 0
@@ -156,26 +184,18 @@ c
 c
 c  Determine what are the units of the map and beam.
 c
-	bunit = bunit1
-	l = index(bunit1,'/')
-	if(l.gt.1)bunit = bunit1(1:l-1)
-	pPix1 = index(bunit1,'/PIXEL').gt.1
-	pBem1 = index(bunit1,'/BEAM').gt.1
-	if(.not.pPix1.and..not.pBem1)then
+	pPix1 = b1b.eq.'PIXEL'
+	pBem1 = b1b.eq.'BEAM'
+	pKel1 = b1a.eq.'KELVIN'
+	if(.not.pPix1.and..not.pBem1.and..not.pKel1)then
 	  call bug('w','Unknown units for first image ... no scaling')
 	  return
 	endif
 c
-	l = index(bunit2,'/')
-	if(l.gt.1)then
-	  if(bunit2(1:l-1).ne.bunit.and.bunit2(1:l-1).ne.'?'.and.
-     *	     bunit.eq.'?')call bug('w','Inconsistent units')
-	  if(bunit.eq.'?')bunit = bunit2(1:l-1)
-	endif
-c
-	pPix2 = index(bunit2,'/PIXEL').gt.1
-	pBem2 = index(bunit2,'/BEAM').gt.1
-	if(.not.pPix2.and..not.pBem2)then
+	pPix2 = b2b.eq.'PIXEL'
+	pBem2 = b2b.eq.'BEAM'
+	pKel2 = b2a.eq.'KELVIN'
+	if(.not.pPix2.and..not.pBem2.and..not.pKel2)then
 	  call bug('w','Unknown units for second image ... no scaling')
 	  return
 	endif
@@ -194,6 +214,19 @@ c
 	if(pPix1.and.pPix2)then
 	  bunit(l+1:) = '/PIXEL'
 c
+c  One of the other is in /PIXEL. Effective beam is just the other or one
+c
+	else if(pPix1)then
+	  if(b2b.ne.' ')bunit(l+1:) = '/'//b2b
+	  bmaj = bmaj2
+	  bmin = bmin2
+	  bpa  = bpa2
+	else if(pPix2)then
+	 if(b1b.ne.' ')bunit(l+1:) = '/'//b1b
+	  bmaj = bmaj1
+	  bmin = bmin1
+	  bpa  = bpa1
+c
 c  The hard one. Map and beam are in units of /BEAM. Calculate the effective
 c  beam and scale factor.
 c
@@ -209,21 +242,34 @@ c
 	    call bug('w','Bmaj or bmin missing ... no scaling')
 	  endif
 c
-c  The 1st is /PIXEL, and the secind is /BEAM. Effective beam is just the beam.
+	else if(pBem1.and.pKel2)then
+	  bunit = 'KELVIN'
+	  if(bmaj1*bmin1.ne.0.and.bmaj1*bmin1.ne.0.and.
+     *		dx1*dy1.ne.0)then
+	    call Gaufac(bmaj1,bmin1,bpa1,bmaj2,bmin2,bpa2,
+     *		fac,bmaj,bmin,bpa,ifail)
+	    fac = abs(dx1*dy1/fac)*abs((bmaj2*bmin2)/(bmaj*bmin))
+	    call output('Determining the appropriate scale factor ...')
+	  else
+	    call bug('w','Bmaj or bmin missing ... no scaling')
+	  endif
+	else if(pKel1.and.pBem2)then
+	  bunit = 'KELVIN'
+	  if(bmaj1*bmin1.ne.0.and.bmaj1*bmin1.ne.0.and.
+     *		dx1*dy1.ne.0)then
+	    call Gaufac(bmaj1,bmin1,bpa1,bmaj2,bmin2,bpa2,
+     *		fac,bmaj,bmin,bpa,ifail)
+	    fac = abs(dx1*dy1/fac)*abs((bmaj1*bmin1)/(bmaj*bmin))
+	    call output('Determining the appropriate scale factor ...')
+	  else
+	    call bug('w','Bmaj or bmin missing ... no scaling')
+	  endif
 c
-	else if(pPix1.and.pBem2)then
-	  bunit(l+1:) = '/BEAM'
-	  bmaj = bmaj2
-	  bmin = bmin2
-	  bpa  = bpa2
+c  Both are in Kelvin ... this makes no sense.
 c
-c  The 1st is /PIXEL, and the second is /BEAM. Effective beam is just the beam.
-c
-	else if(pBem1.and.pPix2)then
-	  bunit(l+1:) = '/BEAM'
-	  bmaj = bmaj1
-	  bmin = bmin1
-	  bpa  = bpa1
+	else if(pKel1.and.pKel2)then
+	  call bug('w',
+     *   'Map and beam are in units of Kelvin ... no scaling performed')
 	endif
 c
 	write(line,'(a,1pe10.3)')'Scaling the output by',fac
