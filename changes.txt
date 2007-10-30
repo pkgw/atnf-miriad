@@ -3714,3 +3714,233 @@ and in a way to be consistent with all the other changes happening.
 30jul01 rjs	sdip.for - Slightly improved plotting.
 08aug01 rjs	sdip.for - Include CMB temperature. Echo theoretical values.
 07sep01 rjs	opplt.for - Give log file output.
+02nov01 rjs	velocity.for - Change definition of kinematic LSR velocity.
+14nov01 nebk	cgsubs.for - Add abs max to min/max vector returned by readimcg
+14nov01 nebk	cgdisp,cgcurs,imbin,cgslice,cgspec,sfind - For box type, 
+		  make sure abs max comes from entire image
+17nov01 rjs	sdip.for - Handle new format file (which allows for CA02 and
+		more).
+19nov01 rjs	uvdiff.for -- Add warning messages if calibration tables
+		are found.
+20nov01 rjs	planet.for -- Improved model for the brightness temp of Venus
+20nov01 rjs	opcal.for - Added "select" and better help.
+02dec01 rjs	sdip.for -- Eliminate optically thin approximation.
+10feb02 rjs	log.for -- Added subroutine logInput.
+10feb02 rjs	mosgen.for -- New task. Generate "mosaic" files.
+10feb02 rjs	uvgen.for -- Increased max number of pointings
+01apr02 rjs	co.for -- Change to cope with Douglas Bock's problem.
+08apr02 rjs	calred.for,closure.for - Allow cube roots of negative
+		numbers. Calred prints out number of triples.
+16apr02 nebk    imfit.for - print flux error in exponential format
+18apr02 sj      psrfix.for - allow fractional bin shifts
+18apr02 lss     mbspect.for- Added axis label scaling (csize)
+08may02 lss     mbspect.for - Added alternative axis labelling, lengthened in,out,
+                  log strings
+10may02 rjs	pb.for - Added model for OVRO.
+22may02 rjs	pb.for - Improved model for OVRO.
+22may02 rjs	atlod.for - Added options=mmrelax
+25may02 rjs	atlod.for - Keep track of whether Tsys scaling has been
+		enabled.
+25may02 rjs	attsys.for - options=auto notes state of Tsys scaling.
+06jun02 rjs	elevcor.for - Correct gain/elevation effects.
+07jun02 rjs	elevcor.for - New gain/elevation curve at 3mm.
+07jun02 rjs	sdip.for - Added support for "dsd234" format.
+19jun02 rjs	mosgen.for - Somewhat better mode for atmosaic.
+27jun02 rjs	imcomb.for - Better error message.
+28jun02 rjs	imcomb.for - options=relax
+08jul02 rjs	bug.c - Support for "darwin" OS.
+08jul02 rjs	README, scripts/unix/darwin/* - Support for darwin OS
+02oct02 rjs	atlod.for - Added options=single.
+25oct02 rjs	lagflg.for - Added options=noflag.
+08dec02 rjs	uvgen.for - Fix bug related to whether source is up or not.
+11dec02 rjs	key.for,key.h - There was a bug reading @ files when
+		the filename hashed to a value of 0 in hio.c
+17dec02 paj     planet.for - improved model of brightness temperature for
+                  Uranus and Neptune
+17dec02 tw	Don't die if observing frequency is out of range.
+04mar03 rjs	xyio.c - Support "append" status
+17mar03 rjs	opcal - Document location of weather files in the .doc section.
+18mar03 rjs	mirhelp - Fix order of honouring of -w and MIRPAGER
+04may03 rjs	opcal - There was a bug (introduced two years ago) in the matching
+		of the time in the weather log (in AEST) with the visibility data
+		(in UT).
+04may03	rjs	$MIRCAT/dantpos.*, $MIR/specdoc/confighist.doc - Files that millimetre observers
+		might consult.
+04may03 rjs	opcal.for,uvplt.for,elevcor.for - they could compute an
+		erroneous in some circumstances.
+04may03 rjs	atfix.for - New task. Rolls into one a number of fudges sometimes
+		needed for ATCA data (particularly for millimetre data)
+15may03 rjs	atfix.for - Better jyperk values.
+16jul03 rjs	atlod.for - Changes to fiddle data for 12mm polarisation.
+19jul03 rjs	atlod.for - Changes so that options=mmrelax is now superfluous.
+14aug03 rjs	atfix.for - Fix bug causing seg dump.
+16aug03 tw	gpedit.for -  Allow gain amplitude selection
+17sep03 rjs	atfix.for,elevcor.for - New gain/elevation curve at 3mm.
+17sep03 nebk    imsad.for - prevent buffer overlow and program termination
+26sep03 nebk    MIRRC.sh - MIRRINC -> MIRINC
+03oct02 nebk    uvpflag.for - Rename funciton count to countFlags (compiler warning)
+13oct03 rjs	pb.for - Updated 12mm primary beam model.
+19oct03 rjs	atfix.for - Update array table.
+05nov03 rjs	uvsplit.h - Increase max number of sources.
+12nov03 nebk    mbspect.for - Make it compile on alpha (illegal fortran in subroutine pfit)
+14nov03 rjs	atfix.for - There was a bug in computing jyperk at bands other than 3mm
+07dec03 rjs	atlod.for,atlod.h - Write out met data, pointing error. options=opcorr
+07dec03 rjs	atfix.for - Changes to fish met data out of the datafile, where needed.
+07dec03 rjs	varplt.for - Include met data, pointing accuracy in its tables.
+07dec03 rjs	var.for - Include met data and pointing accuracy in its tables.
+07dec03 rjs	dio.c,xyzio.c - Changes to appease machines with 64-bit address range.
+07dec03 rjs	weatherdata.doc - Updated!
+07dec03	rjs	calstoke.for - High frequency functional form for 1934-638
+20dec03 rjs	atmos.for - Get it to work for 2 sources.
+29dec03 rjs	fits.for - Make it more robust to ill-constructed CTYPE values.
+30dec03 rjs	atlod.for - Doc change only.
+15feb04 rjs	atlod.for - Save calcode and input RPFITS filename.
+17feb04 rjs	trim.c - Return a status value.
+04apr04 rjs	pops.for - Print rise and set LSTs.
+06apr04 rjs	mfplan.for - Added array ew214,ew352,ew367
+04may04 rjs	calred.for - Handle more antennas.
+12may04 rjs	ephem.for - Algorithmic improvement in lstjul routine.
+13may04 rjs	opcal.for - Trivial error message correction.
+10jun04 rjs	atlod.for - Change to handle projected polarimetry flip at 12mm.
+16jun04 nebk    sfind.for - Small change from Andrew Hopkins to imporve rms computation
+03jul04 rjs	bug.c,sysdep.h - Change to use strerror routine on LINUX.
+03jul04 rjs	atrtfix.for - New task to correct data when the round trip
+		system misbehaves.
+12jul04 rjs	mc.for - In some instances it would fail to gets the range
+		of a subimage to be processed correct! Potentially affects
+		mosmem, mossdi, restor and pmosmem
+13jul04 nebk    gppltl.for - more sig figs for leakage listing in log file
+18jul04 rjs	closure.for - Check for zeros when doing division in quad
+		quantities.
+25jul04	rjs	atrtfix.for - adjust tolerance.
+27jul04 rjs	uvio.c - Relax max antennas limitation in some sections
+		of the code. Max antenna number still restricted in the
+		"select" code.
+30jul04 nebk    Update Install script for libpng for pgplot
+08aug04 rjs	calred.for - The algorithm to determine the confusion
+		was hopelessly flawed. Correct this.
+14aug04 rjs	prime.for - Increase its table of small primes.
+16aug04 rjs	uvsplit.for - Various variables were not getting
+		copied across.
+16aug04 rjs	uvio.c,select.for,select.h - Changes to support selection
+		by lst, ha and elevation.
+06sep04 nebk    wblod - New task from LSS to load wideband analogue correlator data
+                wbplt - New task from LSS to plot wideband analogue correlator data 
+07sep04 nebk    mosmem.for - Add some words about output information mosmem spits out
+17sep04 nebk    wbplt.for - formatting changes
+22sep04 rjs	atfix.for,atlod.for,atmerge.for,gpcopy.for,lagflg.for,
+		uvaver.for,uvdat.for,uvedit.for,uvgn.for,uvlin.for,uvplt.for,
+		uvsplit.for,var.for,atlod.h,uvdat.h, - Various changes to
+		better support 3mm observations with the ATCA. In particular
+		track effective system gain more thoroughly, uvplt plots some
+		extra variables, atlod makes use of some of
+		the new info in the RPFITS file [e.g. discards paddling and
+		point datatypes].
+07oct04 rjs	defsmodl.for - Subroutine to set up the default model for
+		determining the sensitivity of visibilities.
+26aug04 tw	uvflag.for- allow fractional edge flagging using edge<0
+07oct04	rjs	mfcal.for,gpcal.for - Call defsmodl to set up the model used
+		for computing visibility variance.
+11oct04 rjs	atfix.for - Use 500 Jy for default system temperature when
+		applying system temperature correction.
+24oct04 rjs	atlod.for - Fix pntra and pntdec bug - always write them out.
+02nov04 tw	imcmp.for - Replace keyf with keya for output log file.
+06jan05 rjs	uvdat.for - Fix bug introduced on 22 Sep relating to variance
+		on some polarisation conversions.
+18jan05 nebk    uvfit.for - formatting change from Bryan Gaensler
+28jan05 rjs	boxes.for,bug.c,bugwrap.f2c,cgdisp.for,cgpgsubs.for,cgspec.for,
+		clean.for,clplot.for,clstats.for,defsmodl.for,dio.c,ellint.for,
+		fitsio.for,gaufit.for,getbeam.for,gpedit.for,gplist.for,gpscal.for,
+		headio.c,hio.c,hio.h,histo.for,imcmp.for,imframe.for,imgen.for,
+		imhol.for,immask.for,immerge.for,impol.for,interface.c,
+		invert.for,io.h,keyc.c,maskio.c,mfcal.for,mircadd.csh,miriad.h,
+		mm.f2c,moment.for,mossdi.for,nswc.for,obspar.for,oscalls.f2c,
+		pack.c,pack.mar,pack.s,packwrap.f2c,pb.for,pb.h,prthd.for,restor.for,
+		scrio.c,sfind.for,sysdep.h,tcpio.f2c,telepar.for,title.for,
+		tvclip.for,tvcln.for,uvamp.for,uvaver.for,uvdat.for,uvdiff.for,
+		uvgetbl.for,uvgn.for,uvio.c,uvputhd.for,uvredo.for,uvsplit.for,
+		uvsubs.for,velfit.for,velplot.for,velplot.h,wrap.f2c,xyio.c,xyzio.c,
+		xyziowrap.f2c
+		* Make changes to support large files (> 2**31 pixels)
+		* C header files generally use ANSI prototyping.
+		* Merge miscellaneous BIMA enhancements and bug fixes.
+		* A few miscellaneous other bug fixes and enhancements.
+10mar05 rjs	mosgen.for - Improve documentation. Hadle cases of structural
+13mar05 rjs	uvgen.for - Add antenna azimuth and elevation to output dataset.
+26mar05 rjs	atmos.for - options=fixed. Minor miscellaneous enhancements.
+26apr05 tw	gaupar.for - Default is Kelvin-like scaling rather than no scaling
+10may05 rjs	varplt.for - Increase buffer size.
+21may05 rjs	pb.for - Updated model for the ATCA primary beam function at 12mm.
+26may05 rjs	varplt.for - Include definition of pntra,pntdec.
+27may05 rjs	maths.for - Eliminate a redundant statement which was confusing
+		the optimiser on Solaris.
+04jun05 rjs	fits.for - Some changes to make it more robust to wierdo image
+		files.
+04jun05 rjs	fitsio.for,wrap.f2c - Changes to help cope better with files
+		that are greater than 2 Gbytes in size.
+05jun05 rjs	plboot.for - Give the option to plot the planetary data against
+		the model.
+07jun05 rjs	varmerge.for - New program. Merge in a new variable into a
+		visibility dataset.
+18jun05 rjs	opplt.for - More space between teh numbers in the log file.
+19jun05 rjs	varplt.for - More sig figures in the log file.
+23jun05 rjs	pb.for - Added model for 3mm primary beam.
+24jun05 rjs	atfix.for - Updated gain/elevation curve at 3mm.
+29jun05 rjs	invert.for,mostab.for,hdtab.for,hdtab.h - Changes to allow NCP vs SIN
+		projection to be worked out from the data.
+29jun05 rjs	uvspec.for,uvspec.h - Use full lmn/uvw to perform shift.
+26jul05 rjs	ephem.for - Updated leap second table for 1 Jan 2006.
+10aug05 rjs	atfix.for - Horrible bug related to "array" keyword. Subsequent
+		shadowing calculation would not have worked.
+18aug05 rjs	atfix.for - Include correction for the elevation-dependence
+		of CA01 phase.
+24aug05 rjs	odnh3 - Corrected bug related to maximum dimension declaration.
+27aug05 rjs	uvindex.for - Increase buffer size.
+28aug05 rjs	atfix.for - Include correction for the elevation-dependence of CA05
+		phase.
+18sep05 rjs	contsub.for,dsdcal.for,ellplt.for,gaufit.for,imcmp.for,imdiff.for,
+		imsad.for,uvedit.for,zeesim.for,zeestat.for - Correct subroutine argument
+		mismatch.
+18sep05 rjs	model.for,trnio.for - Correct subroutine argument mismatch.
+19sep05 rjs	fits.for - Better defaults for velocities, and more accurate formula.
+		Handle OB tables.
+20sep05 rjs	fitsio.for - Handle the presence of degenerate tables.
+24sep05 rjs	mosgen.for - Handle up to 9999 pointings correctly.
+24sep05 rjs	fits.for - Increase max number of sources with op=uvout
+31dec05 rjs     refract.for - Correct the handling of CMB brightness temp.
+01jan06 rjs	varplt.for - Include definition of reference pointing.
+02jan06 rjs	atlod.for - Added options=nopol and nocacal. Save reference pointing.
+		Add 8 MHz birdie algorithm. Misc other fixes.
+12dec05 rjs	atfix.for - It failed to use the select keyword.
+20dec05 rjs	pops.for - Make LST rise greater that 0.
+26nov05 rjs	atmos.h - Change to circumvent a compiler bug.
+02jan06 rjs 	julday.for - General clean up and generalisation of format.
+02jan06 rjs	var.for,atxy.for - Include definition of reference pointing var.
+02jan06 rjs	mfcal.for - Stokes selection. Weight by variance, push XY phase
+		into bandpass, duplicate gains when bandpass dual polarisation
+		and gains is single polarisation.
+18sep05 rjs	uvlin.for,contsen.for - More rigorously avoid mixed use of arrays.
+18sep05 rjs	mirnewer.c,miriad.c - Minor changes for UNIX standardisation.
+14jan06 rjs	atlod.for,atlod.h - Be more relaxed about occassional missing
+		meteorological records when options=opcorr is given.
+15jan06 rjs	mfboot.for - New task, superceding plboot.
+19jan06 rjs     mfboot.for - Fix call to subroutine with //char*(*) arg.
+19jan06 rjs	mm.f2c - Call mallopt on 64-bit address machines on Linux
+19jan06	rjs	imbin.for - Fortran standardisation.
+02jul05 rjs	calred.for - Improved error estimate
+15jan06 rjs	mfcal.for - Improve weighting.
+00sep05 rjs	lagwt.for,lsqu1.for,lsqfit.for,nllsqu.for,uvdat.h - Changes
+		to work on 64-bit FORTRAN INTEGER, 32-bit C int.
+26nov05 rjs	uvflag.for - Change to avoid compiler bug.
+29jan06 rjs	gamma.for - Change in gammln to work around compiler bug.
+05feb06 rjs	julday.for - Correct bug in handling time-of-day formats on 2 jan.
+29jan06 rjs	atfix.for - Major revisions.
+18feb06 rjs	intf2c.c,unix/alpha_linux/pack.c,xyio.c,wrap.f2c,mm.f2c,
+		mem.for,xyzio.c,headio.c,xyziowrap.f2c,tcpio.f2c,packwrap.f2c,
+		uvio.c,keyc.c,iface.f2c - Changes to support FORTRAN and C integers being different data types.
+24feb06 rjs	atfix.for - Fix bug in tsyscal=none and some tidying.
+27feb06 rjs	atfix.for - Fix bug when there are multiple frequencies.
+13mar06 rjs	mm.f2c - Conditional include of malloc.h, which appears not to
+		exist in MacOS.
+09may06 rjs	mfboot.for - Increase size of MAXPNT.
+09may06 rjs	uvplt.for - Disable planet processing steps.
