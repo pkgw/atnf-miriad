@@ -137,6 +137,9 @@ c   rjs  10mar97 - Default region is all channels.
 c   rjs  25mar97 - Checks when plane is constant and when a plane is not
 c		   selected.
 c   rjs  24jun97 - Correct call to Alignini.
+c   rjs  02jul97 - cellscal change.
+c   rjs  23jul97 - added pbtype.
+c
 c  Important Constants:
 c    MaxDim	The max linear dimension of an input (or output) image.
 c
@@ -644,7 +647,7 @@ c------------------------------------------------------------------------
 	real crpix1,crpix2,crpix3
 	character line*72,txtblc*32,txttrc*32
 	integer nkeys
-	parameter(nkeys=31)
+	parameter(nkeys=33)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -656,7 +659,7 @@ c
      *		     'ctype1  ','ctype2  ','ctype3  ','ctype4  ',
      *    'obstime ','epoch   ','history ','instrume','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ','mostab  ',
-     *	  'observer','telescop','obsra   ',
+     *	  'observer','telescop','obsra   ','cellscal','pbtype  ',
      *	  'obsdec  ','restfreq','vobs    ','pbfwhm  ','btype   '/
 c
 c  Fill in some parameters that will have changed between the input
