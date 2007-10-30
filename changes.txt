@@ -3248,3 +3248,8 @@ and in a way to be consistent with all the other changes happening.
 25feb98 rjs	gaupar.for -- Fix bug in determining outout "bunit" value, Problem
 		introduced in December 98 I think.
 05mar98 rjs	uvfft.for -- some FORTRAN standardisation
+05mar98 rjs	ratty.c,intf2c.c,velplot.for,noise.for,tv.for,tv.h,oscalls.f2c,
+		tcpio.f2c,sysdep.h,doc.c -- Rationalise the names of the different architectures.
+*********************************** 05mar98 Sent changes to Doug Roberts
+05mar98 rjs	nllsqu.for,lsqu.for -- Broke these into separate files to
+		work around a problem on some LINUX systems.
