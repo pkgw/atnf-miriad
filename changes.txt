@@ -1,4 +1,4 @@
-History of Miriad program changes:-
+1History of Miriad program changes:-
 MPLOT   31aug89 mchw - Changed header items in annotation.
 test.csh  Sept 1989  mchw  New script to test uv linetypes and imaging.
 #    3nov89	mchw	added other line types
@@ -3280,3 +3280,19 @@ and in a way to be consistent with all the other changes happening.
 07may98 rjs	atlod.for -- New way of handling jstat.eq.5 returned by rpfitsin.
 07may98 rjs	log.for -- Fix to PJT's change.
 07may98 rjs	cgslice.for -- Increase size of "bunit" variable.
+*********************************** 07may98 Sent changes to Doug Roberts
+08may98 rjs	imsad.for -- Do not call logclose unless needed.
+*********************************** 08may98 Sent changes to Doug Roberts
+11may98 rjs	fitsio.for -- Change it so that NaNs and Infs in floating
+		point FITS are always recognised as blanked.
+14may98 rjs	atlod.for -- Changes to handle high-time-resolution
+		data.
+14may96 rjs	clfind.for,clstats.for,clplot.for -- New programs from
+		Maryland.
+16may98 nebk    cgrego.for -- COnvert regions to overlays
+18may98 rjs	cgrego.for -- Fortran standardisation.
+18may98 rjs	imspect.for -- Correct velocity axis labelling.
+22may98 rjs	uvgen.for -- Include circular polarization handling.
+22may98	rjs	gpcal.for -- Turn off xyref on early iterations of weakly polarised
+		source.
+
