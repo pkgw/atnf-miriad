@@ -90,14 +90,16 @@ c    rjs  24jun97  Correct call to alignini
 c    rjs  02jul97  cellscal change.
 c    rjs  23jul97  Add pbtype.
 c    rjs  01aug97  Fiddle default to make it always reasonably valued.
+c    rjs  28nov97  Increase max number of boxes.
+c    rjs  23feb98  Added extra protection against underflow.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='MosMem: version 1.0 1-Aug-97')
+	parameter(version='MosMem: version 1.0 23-Feb-98')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
 	integer MaxRun,MaxBoxes
-	parameter(MaxRun=3*maxdim,MaxBoxes=1024)
+	parameter(MaxRun=3*maxdim,MaxBoxes=2048)
 c
 	integer gull,cornwell
 	parameter(gull=1,cornwell=2)
@@ -755,7 +757,7 @@ c
 	if(doClip)then
 	  do i=1,nPoint
 	    Stepd = StLen*max(NewEst(i),-0.9*Est(i)/StLim)
-	    NewEst(i) = Est(i) + Stepd
+	    NewEst(i) = max(Est(i) + Stepd,1e-30)
 	  enddo
 	else
 	  do i=1,nPoint
