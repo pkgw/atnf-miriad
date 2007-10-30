@@ -3210,3 +3210,12 @@ and in a way to be consistent with all the other changes happening.
 09dec97 rjs	uvflag.for -- Make buffer to give "antennas used" message
 		longer.
 10dec97 rjs	uvgn.for -- Check that the gain table size looks OK.
+11dec97 rjs	uvplanet.for -- New task. Perform fiddles on planetary
+		visibility data.
+11dec97 rjs	gaupar.for -- Support units of Kelvin.
+11dec97 rjs	imgen.for -- Make totflux option consistent when there
+		is an input image.
+16dec97 rjs	imsad.for -- refix the plotting of the cross in the image.
+16dec97 rjs	key.for,key.h -- Added keyinic and keyputc. Some tidying.
+16dec97 rjs	mbanal.for -- Some enhancements.
+17dec97 rjs	qvack.for -- Allow the "interval" parameter to be negative.
