@@ -99,7 +99,7 @@ char s,*m;
   if(doabort){
     reentrant = !reentrant;
     if(reentrant)habort_c();
-#ifdef vms
+#ifdef vaxc
 # include ssdef
     lib$stop(SS$_ABORT);
 #else
@@ -116,7 +116,7 @@ int n;
 ------------------------------------------------------------------------*/
 {
   static char string[128];
-#ifdef vms
+#ifdef vaxc
 #include <descrip.h>
   $DESCRIPTOR(string_descriptor,string);
   short int len0;
@@ -127,10 +127,8 @@ int n;
   string[len0] = 0;
   return(string);
 #else
-# if !defined(linux)
   extern int sys_nerr;
   extern char *sys_errlist[];
-# endif
 
 
   if(n > 0 && n <= sys_nerr)return(sys_errlist[n]);
