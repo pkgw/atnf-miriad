@@ -59,7 +59,6 @@ c	             is to give a one line message at each iteration.
 c--
 c  History:
 c    rjs   7aug95  Adapted from MOSMEM.
-c    rjs  02jul97  cellscal change.
 c------------------------------------------------------------------------
 	character version*(*)
 	parameter(version='MosTess: version 1.0 7-Aug-95')
@@ -84,7 +83,7 @@ c
 	integer i,icentre,jcentre,offset(3)
 	integer maxniter,niter
 	integer measure
-	real Tol,rmsfac,TFlux,Qest,Q,Sigt
+	real Tol,rmsfac,TFlux,Qest,Q
 	real Alpha,Beta,De,Df
 	real StLim,StLen1,StLen2,OStLen1,OStLen2,J0,J1
 	real GradEE,GradEF,GradEH,GradEJ,GradFF,GradFH,GradFJ
@@ -251,7 +250,6 @@ c
 c------------------------------------------------------------------------
 c  Now start to iterate at long last.
 c
-	call output('Start iterating')
 	OStLen1 = 0
 	OStLen2 = 0
 	Converge = .false.
@@ -385,11 +383,6 @@ c
 c
 c  Write out this plane.
 c
-	  Sigt = Sigma(1)
-	  do i=2,npnt
-	    Sigt = max(Sigt,Sigma(i))
-	  enddo
-	  call PlTaper(Sigt,memr(pWt),memr(pEst),mnx,mny)
 	  call PlSave(lOut,memr(pEst),mnx,mny)
 c
 c  Construct a header for the output file, and give some history
@@ -882,7 +875,7 @@ c
 c
 c  Set the derivative of chi**2 to 0.
 c
-	do j=1,mny
+	do j=1,mnx
 	  do i=1,mnx
 	    DChi(i,j) = 0
 	  enddo
@@ -940,7 +933,7 @@ c------------------------------------------------------------------------
 	real crpix
 	character line*72,num*2
 	integer nkeys
-	parameter(nkeys=16)
+	parameter(nkeys=15)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -950,7 +943,7 @@ c
 	data keyw/   'obstime ','epoch   ','history ','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ','pbfwhm  ',
      *	  'observer','telescop','restfreq','vobs    ','btype   ',
-     *	  'mostable','cellscal'/
+     *	  'mostable'/
 c
 c  Fill in some parameters that will have changed between the input
 c  and output.
@@ -1000,16 +993,12 @@ c
 c
 c  Determine new values for alpha and beta.
 c------------------------------------------------------------------------
-	real tol1,tol2
-	parameter(tol1=0.1,tol2=0.05)
-c
 	real Denom,Dalp,Dbet,l,Alpha1,Alpha2,Beta1,Beta2,b2m4ac
 c
 c  Check if things are doing poorly. If so, just aim at reducing the
 c  gradient.
 c
-	l = abs(GradJJ/Grad11)
-	if(Alpha.le.0)l = 0
+	l = 10*abs(GradJJ/Grad11)
 c
 	if(doflux)then
 	  Denom = 1./(GradEE*GradFF - GradEF*GradEF)
@@ -1030,37 +1019,37 @@ c
 	  Dbet = 0.
 	endif
 c
-	b2m4ac = GradEJ*GradEJ - (GradJJ-tol1*Grad11)*GradEE
-        if(b2m4ac.gt.0)then
+	b2m4ac = GradEJ*GradEJ - (GradJJ-0.3*Grad11)*GradEE
+        if(b2m4ac.gt.0.and.Alpha.eq.0)then
           b2m4ac = sqrt(b2m4ac)
 	  Dalp = max((GradEJ - b2m4ac)/GradEE,
      *		 min((GradEJ + b2m4ac)/GradEE,Dalp))
-	else
-	  Dalp = 0
         endif
 c
-        b2m4ac = GradFJ*GradFJ - (GradJJ-tol1*Grad11)*GradFF
-        if(b2m4ac.gt.0)then
+        b2m4ac = GradFJ*GradFJ - (GradJJ-0.3*Grad11)*GradFF
+        if(b2m4ac.gt.0.and.Beta.eq.0)then
           b2m4ac = sqrt(b2m4ac)
 	  Dbet = max((GradFJ - b2m4ac)/GradFF,
      *		 min((GradFJ + b2m4ac)/GradFF,Dbet))
-	else
-	  Dbet = 0
         endif
 c
 	Alpha2 = Alpha+ Dalp
 	Beta2  = Beta + Dbet
 c
-	if(l.ge.tol2.or.Alpha2.le.0)then
+	if(l.ge.1.or.Alpha2.le.0)then
 	  Alpha = max(Alpha1,0.)
-	else
+	else if(l.le.0.or.Alpha1.le.0)then
 	  Alpha = max(Alpha2,0.)
+	else
+	  Alpha = exp(l*log(Alpha1) + (1-l)*log(Alpha2))
 	endif
 c
-	if(l.ge.tol2.or.Beta2.le.0)then
+	if(l.ge.1.or.Beta2.le.0)then
 	  Beta = max(Beta1,0.)
-	else
+	else if(l.le.0.or.Beta1.le.0)then
 	  Beta = max(Beta2,0.)
+	else
+	  Beta = exp(l*log(Beta1) + (1-l)*log(Beta2))
 	endif
 c
 	end
@@ -1244,27 +1233,6 @@ c------------------------------------------------------------------------
 c
 	do j=1,ny
 	  call xyread(lu,j,Data(1,j))
-	enddo
-c
-	end
-c************************************************************************
-	subroutine PlTaper(Sigt,Wt,Est,mnx,mny)
-c
-	implicit none
-	integer mnx,mny
-	real Sigt,Wt(mnx,mny),Est(mnx,mny)
-c
-c  Taper the edge of the image.
-c------------------------------------------------------------------------
-	integer i,j
-	real Sigt2
-c
-	Sigt2 = Sigt*Sigt
-	do j=1,mny
-	  do i=1,mnx
-	    if(Sigt2*Wt(i,j).lt.1)
-     *		Est(i,j) = Est(i,j) * sqrt(Sigt2*Wt(i,j))
-	  enddo
 	enddo
 c
 	end
