@@ -3295,4 +3295,5 @@ and in a way to be consistent with all the other changes happening.
 22may98 rjs	uvgen.for -- Include circular polarization handling.
 22may98	rjs	gpcal.for -- Turn off xyref on early iterations of weakly polarised
 		source.
+*********************************** 04jun98 Sent changes to Doug Roberts
 
