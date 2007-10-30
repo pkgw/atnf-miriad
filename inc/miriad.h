@@ -179,8 +179,8 @@ void uvinfo_c ARGS((int tno, Const char *object, double *data));
 #define uvputvrc_c(tno,name,value,n) \
         uvputvr_c(tno,H_CMPLX,name,(char *)(value),n)
 
-#define uvgetvra_c(tno,name,value)   \
-        uvputvr_c(tno,H_BYTE,name,value,strlen(value))
+#define uvgetvra_c(tno,name,value,n)   \
+        uvgetvr_c(tno,H_BYTE,name,value,n)
 #define uvgetvrj_c(tno,name,value,n) \
         uvgetvr_c(tno,H_INT2,name,(char *)(value),n)
 #define uvgetvri_c(tno,name,value,n) \
@@ -198,9 +198,9 @@ void uvinfo_c ARGS((int tno, Const char *object, double *data));
 	uvrdvr_c(tno,H_INT,name,(char *)(data),(char *)(def),1)
 #define uvrdvrr_c(tno,name,data,def) \
 	uvrdvr_c(tno,H_REAL,name,(char *)(data),(char *)(def),1)
-#define uvrdvri_c(tno,name,data,def) \
+#define uvrdvrd_c(tno,name,data,def) \
 	uvrdvr_c(tno,H_DBLE,name,(char *)(data),(char *)(def),1)
-#define uvrdvri_c(tno,name,data,def) \
+#define uvrdvrc_c(tno,name,data,def) \
 	uvrdvr_c(tno,H_CMPLX,name,(char *)(data),(char *)(def),1)
 /* xyio.c */
 
@@ -245,7 +245,21 @@ void scrclose_c ARGS((int handle));
 void scrread_c ARGS((int handle, float *buffer, int offset, int length));
 void scrwrite_c ARGS((int handle, Const float *buffer, int offset, int length));
 
+/* keyc.c */
+
+void keyini_c ARGS((int argc, char *argv[]));
+void keyfin_c ARGS((void));
+int keyprsnt_c ARGS((Const char *keyword));
+void keya_c ARGS((Const char *keyword, char *value, char *keydef));
+void keyf_c ARGS((Const char *keyword, char *value, char *keydef));
+void keyd_c ARGS((Const char *keyword, double *value, double keydef));
+void keyr_c ARGS((Const char *keyword, float *value, float keydef));
+void keyi_c ARGS((Const char *keyword, int *value, int keydef));
+void keyl_c ARGS((Const char *keyword, int *value, int keydef));
+void mkeyd_c ARGS((Const char *keyword, double value[], int nmax, int *n));
+void mkeyr_c ARGS((Const char *keyword, float value[], int nmax, int *n));
+void mkeyi_c ARGS((Const char *keyword, int value[], int nmax, int *n));
+
 #if defined(__cplusplus)
 }
 #endif
-
