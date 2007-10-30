@@ -139,6 +139,8 @@
 /*  rjs  15sep97 Fix error in pointing selection.			*/
 /*  rjs  09oct97 Check for restfreq==0 when converting to velocity.	*/
 /*  rjs  15oct97 Minor correction definition of felocity.		*/
+/*  rjs  22oct97 Change in the format of "on" selection.		*/
+/*  rjs  30aug99 Increase MAXVHANDS to 64				*/
 /*----------------------------------------------------------------------*/
 /*									*/
 /*		Handle UV files.					*/
@@ -459,7 +461,7 @@ typedef struct {
 	WINDOW *win;
 		} UV;
 
-#define MAXVHANDS 20
+#define MAXVHANDS 64
 
 static UV *uvs[MAXOPEN];
 static VARHAND *varhands[MAXVHANDS];
@@ -2286,7 +2288,7 @@ double p1,p2;
 /* Selection by "on" parameter. */
 
   } else if(!strcmp(object,"on")){
-    uv_addopers(sel,SEL_ON,discard,0.0,0.0,(char *)NULL);
+    uv_addopers(sel,SEL_ON,discard,p1,p1,(char *)NULL);
     uv->need_on = TRUE;
 
 /* Selection by polarisation. */
@@ -3069,7 +3071,7 @@ UV *uv;
 private int uvread_select(uv)
 UV *uv;
 {
-  int i1,i2,bl,pol,n,nants,inc,selectit,selprev,discard,binlo,binhi;
+  int i1,i2,bl,pol,n,nants,inc,selectit,selprev,discard,binlo,binhi,on;
   float *point,pointerr,dra,ddec;
   double time,t0,uu,vv,uv2,uv2f,ra,dec,skyfreq,diameter;
   SELECT *sel;
@@ -3261,9 +3263,9 @@ UV *uv;
 
     if(op->type == SEL_ON){
       discard = !op->discard;
+      on = *(int *)(uv->on->buf);
       while(n < sel->noper && op->type == SEL_ON){
-        if(*(int *)(uv->on->buf) == 1)
-	  discard = op->discard;
+        if(op->loval == on ) discard = op->discard;
         op++; n++;
       }
       if(discard || n >= sel->noper) goto endloop;
