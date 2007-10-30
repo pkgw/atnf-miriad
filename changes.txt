@@ -3183,3 +3183,20 @@ and in a way to be consistent with all the other changes happening.
 15oct97 rjs	co.for,uvio.c -- Minor correction to the definition of "felocity"
 22oct97 rjs	uvio.c,select.for -- Change form of "on" selection.
 23oct97 rjs	uvaver.for -- Do not average across changes in the "on" variable.
+*********************************** 23oct97 Sent changes to Doug Roberts
+29oct97 rjs	imgen.for -- Check that point source lies within the image.
+29oct97 rjs	tin.for -- tinLen was terribly flawed ... fix it.
+23oct97 mchw	imgen.for -- Add comet model for parent molecule.
+31oct97 rjs	uvspec.for -- Use colours in the plot label.
+02nov97 rjs	tin.for,tin.h -- Added a few options, settable in the tinopen
+		call.
+02nov97	rjs	uvgen.for -- Change in call sequence to tinpoen.
+10nov97 rjs	impoly.for -- Handle 2d images correctly. Somewhat better
+		documentation.
+10nov97 rjs	cosubs.for -- Make ctypeco robust to lack of ctype value.
+10nov97 rjs	co.for -- The routines use pixel coordinates as the 
+		physical coordinates if there is nothing better already there.
+10nov97 rjs	cgpgsubs.for -- Make it more robust to things missing from
+		the header.
+12nov97 rjs	imhist.for -- Add 's' flag to boxset call.
+26nov97 bmg	psrplt.for -- Added log keyword.
