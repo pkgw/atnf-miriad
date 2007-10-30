@@ -3297,3 +3297,6 @@ and in a way to be consistent with all the other changes happening.
 		source.
 *********************************** 04jun98 Sent changes to Doug Roberts
 
+16jun98 nebk    cgdisp.for -- FIx problem in posdec2 where ocen2 was of 
+                size 2 instead of 3. Was stuffing up in w2wco for ellipses.
+18jun98 nebk    uvplt.for -- Document nofqav option better
