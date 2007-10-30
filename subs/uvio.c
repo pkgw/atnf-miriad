@@ -136,6 +136,8 @@
 /*  rjs  22nov96 Minor correction (spheroid correction) to planet flux  */
 /*		 scaling.						*/
 /*  rjs  18mar97 Plug minor memory leak.				*/
+/*  rjs  15sep97 Fix error in pointing selection.			*/
+/*  rjs  09oct97 Check for restfreq==0 when converting to velocity.	*/
 /*----------------------------------------------------------------------*/
 /*									*/
 /*		Handle UV files.					*/
@@ -3154,8 +3156,8 @@ UV *uv;
       nants = VARLEN(uv->axisrms)/2;
       if(i2 < 1 || i1 > nants){
 	BUG('f',"Bad antenna numbers when checking pointing, in UVREAD(select)"); }
-      pointerr = max( *(point+2*i1),*(point+2*i1-1));
-      pointerr = max( *(point+2*i2), pointerr);
+      pointerr = max( *(point+2*i1-2),*(point+2*i1-1));
+      pointerr = max( *(point+2*i2-2), pointerr);
       pointerr = max( *(point+2*i2-1), pointerr);
     
       while(n < sel->noper && op->type == SEL_POINT){
@@ -4624,13 +4626,15 @@ int mode;
       for(i=0; i < line->width; i++){
 	if(offset == *nschan){
 	  offset = 0;
-	  sfreq++; sdf++; nschan++;
+	  sfreq++; sdf++; nschan++; restfreq++;
 	}
-	if(mode == VELO)
+	if(mode == VELO){
+	  if(*restfreq <= 0)BUG('f',"Cannot determine velocity as rest frequency is 0");
 	  temp += CKMS * ( 1 - ( *sfreq + offset * *sdf ) / *restfreq ) - vobs;
-        else if(mode == FELO)
+        }else if(mode == FELO){
+	  if(*restfreq <= 0)BUG('f',"Cannot determine velocity as rest frequency is 0");
 	  temp += CKMS * ( *restfreq / ( *sfreq + offset * *sdf ) - 1 ) - vobs;
-	else if(mode == RFREQ) temp += *restfreq;
+	}else if(mode == RFREQ) temp += *restfreq;
 	else if(mode == BW)    temp += (*sdf > 0 ? *sdf : - *sdf);
 	else if(mode == FREQ)
 	  temp += *sfreq + offset * *sdf + vobs/CKMS * *restfreq;
