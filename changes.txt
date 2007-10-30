@@ -3535,4 +3535,17 @@ and in a way to be consistent with all the other changes happening.
 05jan00 rjs	plproc.for,plproc.h -- Planetary subroutines.
 *********************************** 3feb00 Sent changes to Doug Roberts
 07feb00 rjs	gethd.for -- Added "format" keyword.
-
+29feb00 rjs	psrplt.for -- mode keyword.
+07feb00 rjs	planets.for -- Print out SysI and SysII for Jupiter
+*********************************** 3mar00 Sent changes to Doug Roberts
+10mar00 rjs	uvplt.for -- Set maxbase2=91.
+15mar00 rjs	blcal.for -- Change in meaning of options=nopolsol
+21mar00 rjs	fitsio.for,fitsio.h -- Handle FITS vis files with freq before
+		pol axis.
+22mar00 rjs	mc.for -- Protect against convolving up to something larger than
+		MAXDIM.
+22mar00 rjs	gpscal.for -- Relax implicit assumption that XX/YY much stronger
+		than RL/LR.
+28mar00 rjs	uvplt.for -- Correctly handle colour indices when there are more
+		than 12 inputs.
+31mar00	rjs	obspar.for -- Added SEST/
