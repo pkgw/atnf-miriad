@@ -2,8 +2,10 @@ c**********************************************************************c
 	program clplot
 	implicit none
 c
-c= CLPLOT - Task to plot integrated maps, etc and clump assigment from clfind
-c& pjt
+c= CLPLOT - Interactive task to selectively plot integrated
+c           maps, spectra, and pos-vel slices of a MIRIAD
+c           data cube and clump assignment cube from clfind
+c& jpw
 c: image analysis
 c+
 c	CLPLOT is an interactive task to analyse spectra, position-velocity
@@ -56,11 +58,10 @@ c		   3) velocity-averaged x-y contour plots
 c
 c  History:
 c    20jan94 jpw   Copied from MIRIAD program velplot
-c    13jul98 pjt   linux/g77 cleanup
 c----------------------------------------------------------------------c
 	include 'clplot.h'
 	character*(*) version
-	parameter(version='(version 1.0 13-jul-98)')
+	parameter(version='(version 1.0 20-Jan-94)')
 c
 	integer maxnax,maxboxes
 	parameter(maxnax=3,maxboxes=maxdim)
@@ -334,7 +335,7 @@ c-----------------------------------------------------------------------
 	subroutine GetRange(imaps,vmin,vmax,vlsr,nc)
 	implicit none
 	integer imaps,nc
-	real vmin(2),vmax(2),vlsr(2)
+	real vmin(1),vmax(1),vlsr(1)
 c
 c  Get range of velocities to plot.
 c
@@ -417,7 +418,7 @@ c
 	do k=1,nc
 	  call maxmap(ary(1,1,k),nx,ny,is,ie,ib,it,
      *			tmax,imax,jmax,tmin,imin,jmin,ave,arms,num)
-	  write(line,'(1x,i4,1x,6(1x,f11.4))')
+	  write(line,'(x,i4,x,6(x,f11.4))')
      *		k,vlsr(k),ave*num/cbof,tmax,tmin,ave,arms
 	  call output(line)
 	enddo
@@ -426,7 +427,7 @@ c
 	subroutine ListMaps(imaps,vmin,vmax,vlsr,nc)
 	implicit none
 	integer imaps,nc
-	real vmin(2),vmax(2),vlsr(2)
+	real vmin(1),vmax(1),vlsr(1)
 c
 c  List the maps available and current selection
 c
@@ -1431,7 +1432,7 @@ c define box and find integral and rms.
 	end if
   	go to 10
 113	format(' spectra(',i2,') x=',f8.3,'  y=',f8.3)
-114     format(' cut(',i2,') x=',f8.3,' y=',f8.3,' pa=',f8.3)
+114     format(' cut(',i2,') x='f8.3,' y=',f8.3,' pa=',f8.3)
 	end
       subroutine gaufit(nc,vlsr,t,spec,rms)
       implicit none
@@ -1764,8 +1765,8 @@ c
 12      CONTINUE
         IF (KK.NE.(MA+1)) PAUSE 'Improper permutation in LISTA'
         ALAMDA=0.001
-        CALL MRQCOF(X,Y,SIG,NDATA,A,MA,LISTA,MFIT,ALPHA,BETA,NCA,CHISQ,
-     *       FUNCS)
+        CALL MRQCOF(X,Y,SIG,NDATA,A,MA,LISTA,MFIT,ALPHA,BETA,NCA,CHISQ,F
+     *UNCS)
         OCHISQ=CHISQ
         DO 13 J=1,MA
           ATRY(J)=A(J)
@@ -1786,8 +1787,8 @@ c
       DO 16 J=1,MFIT
         ATRY(LISTA(J))=A(LISTA(J))+DA(J)
 16    CONTINUE
-      CALL MRQCOF(X,Y,SIG,NDATA,ATRY,MA,LISTA,MFIT,COVAR,DA,NCA,CHISQ,
-     *            FUNCS)
+      CALL MRQCOF(X,Y,SIG,NDATA,ATRY,MA,LISTA,MFIT,COVAR,DA,NCA,CHISQ,FU
+     *NCS)
       IF(CHISQ.LT.OCHISQ)THEN
         ALAMDA=0.1*ALAMDA
         OCHISQ=CHISQ
@@ -1811,7 +1812,7 @@ c--------------------------------------------------------------------------
       PARAMETER (MMAX=30)
       integer ndata,ma,lista,mfit,nalp
       real x,y,sig,alpha,beta,dyda,a,chisq
-      external funcs
+      real funcs
       integer i,j,k
       real sig2i,dy,ymod,wt
       DIMENSION X(NDATA),Y(NDATA),SIG(NDATA),ALPHA(NALP,NALP),BETA(MA),
@@ -2019,7 +2020,7 @@ c
 	  call LogWrit(line(1:len1(line)))
 	endif
 
-100	format(a,1x,2(f5.0,f3.0,f6.3),' xy:',f8.3,' vel:',f8.2,
+100	format(a,x,2(f5.0,f3.0,f6.3),' xy:',f8.3,' vel:',f8.2,
      *	' delv:',f8.2)
 101  	format(a,a,a,3f6.2,' freq:',f9.5,' unit:',a)
 102  	format('beam:',3f6.1,' niters:',i7,' K/Jy:',f9.2,' cbof:',f7.2)
@@ -2170,34 +2171,34 @@ c
 	call output('Default plotting parameters:')
 	call output(' ')
 c units 
-        write(line,'(''Units for display [J/K].....'',1x,A)') units 
+        write(line,'(''Units for display [J/K].....'',x,A)') units 
         call output(line)
 c negative contours 
-        write(line,'(''Negative contours [Y/N].....'',1x,A)') cneg 
+        write(line,'(''Negative contours [Y/N].....'',x,A)') cneg 
         call output(line)
 c header
-        write(line,'(''Plot header [Y/N]...........'',1x,A)') alabel 
+        write(line,'(''Plot header [Y/N]...........'',x,A)') alabel 
         call output(line)
 c Write map to file 
-        write(line,'(''Write map to file [Y/N].....'',1x,A)') write 
+        write(line,'(''Write map to file [Y/N].....'',x,A)') write 
         call output(line)
 c Absolute coords
-        write(line,'(''Absolute coordinates [Y/N]..'',1x,A)') abscoord 
+        write(line,'(''Absolute coordinates [Y/N]..'',x,A)') abscoord 
         call output(line)
 c Integer plot
-        write(line,'(''Integer plot [Y/N]..........'',1x,A)') apint 
+        write(line,'(''Integer plot [Y/N]..........'',x,A)') apint 
         call output(line)
 c Spectra Positions
-        write(line,'(''Spectra positions [Y/N].....'',1x,A)') pspec 
+        write(line,'(''Spectra positions [Y/N].....'',x,A)') pspec 
         call output(line)
 c Gaussian Fits
-        write(line,'(''Fit Gaussians [Y/N].........'',1x,A)') lgaufit 
+        write(line,'(''Fit Gaussians [Y/N].........'',x,A)') lgaufit 
         call output(line)
 c Plot Gaussian Fits
-        write(line,'(''Overlay Gauss Fits [Y/N]....'',1x,A)') lgauplot 
+        write(line,'(''Overlay Gauss Fits [Y/N]....'',x,A)') lgauplot 
         call output(line)
 c Gray Scale
-        write(line,'(''Gray Scale [Y/N]............'',1x,A)') gray
+        write(line,'(''Gray Scale [Y/N]............'',x,A)') gray
         call output(line)
 c Exit
         call output('Exit default menu')
@@ -2207,7 +2208,7 @@ c Contour levels
         else
           tline='absolute'
         endif
-        write(line,'(''Current contours: '',1x,A)') tline
+        write(line,'(''Current contours: '',x,A)') tline
         call output(line)
         do i=1,nlevels
           print 109, i,levels(i)
@@ -2423,7 +2424,7 @@ c
 c  object
         call pgtext(0.,0.95,object)
 c  ra and dec
-	write(line,'(2i3,f6.2,1x,2i3,f5.1)') int(rae(1)),
+	write(line,'(2i3,f6.2,x,2i3,f5.1)') int(rae(1)),
      *    int(rae(2)),rae(3),int(dece(1)),int(dece(2)),dece(3)
         call pgtext(0.,0.9,line)
 c  epoch
@@ -2442,7 +2443,7 @@ c  delv
 	write(line,'(''Width:    '',F10.3,'' km/s'')') abs(delv)
         call pgtext(0.0,0.58,line)
 c  file
-        write(line,'(''filename:'',1x,A)') file
+        write(line,'(''filename:'',x,A)') file
         call pgtext(0.0,0.54,line)
 c  beam
 	if(bmaj.gt.0.) then
@@ -2457,7 +2458,7 @@ c  convolving beam
           call pgtext(0.0,0.46,line)
         endif
 c  bunit
-        write(line,'(''Map Unit:'',1x,A)') bunit
+        write(line,'(''Map Unit:'',x,A)') bunit
         call pgtext(0.0,0.40,line)
 c  dperjy
 	write(line,'(''K/Jy ='',1pg10.3)') dperjy
@@ -2469,13 +2470,13 @@ c
          goto 202
         endif
 c  max
-	write(line,'(''Maximum:'',1pg10.3,1X,A)') amax*cf,units
+	write(line,'(''Maximum:'',1pg10.3,X,A)') amax*cf,units
         call pgtext(0.0,0.30,line)
 c  min
-	write(line,'(''Minimum:'',1pg10.3,1x,a)') amin*cf,units
+	write(line,'(''Minimum:'',1pg10.3,x,a)') amin*cf,units
         call pgtext(0.0,0.26,line)
 c  rms
-	write(line,'(''Rms:    '',1pg10.3,1x,a)') arms*cf,units
+	write(line,'(''Rms:    '',1pg10.3,x,a)') arms*cf,units
         call pgtext(0.0,0.22,line)
 c  contours
 	scale=1.
@@ -2484,7 +2485,7 @@ c  contours
 	  if(cneg.eq.'Y') absmax=(max(abs(amax),abs(amin)))
 	  scale=absmax*cf/100.
 	endif
-        write(line,'(''Contour Levels:'',1x,A)') units
+        write(line,'(''Contour Levels:'',x,A)') units
         call pgtext(0.0,0.18,line)
 c  levels
 	j=0
@@ -2656,7 +2657,7 @@ c
 	  print 103,j-midy,(line(i),i=1,iend)
 	enddo
 	print 103,j-midy,(i-mid,i=1,iend)
-103	format(1x,i4,1x,24i3)
+103	format(x,i4,x,24i3)
 	end
 	subroutine rdary
 	implicit none
@@ -3661,7 +3662,7 @@ c                call pgwnad(xmin,xmax,ymin,ymax)
 c              else
                 call plotcoord(0,nx,ny,xmin,xmax,ymin,ymax)
                 call pgwnad(xmin,xmax,ymin,ymax)
-                call pgbox('BCNST',0.0,0.0,'BCNST',0.0,0.0)
+                call pgbox('BCNST',0.0,0,'BCNST',0.0,0)
                 xlabel='Relative R.A. (arcsec)'
                 ylabel='Relative Dec. (arcsec)'
 c              endif
@@ -3695,7 +3696,7 @@ c  and have to set window back.
                 call pgwnad(xmin,xmax,ymin,ymax)
               endif
 c  redraw box
-              call pgbox('BCNST',0.0,0.0,'BCNST',0.0,0.0)
+              call pgbox('BCNST',0.0,0,'BCNST',0.0,0)
 c
 c  Transpose RA axis for cursor and overlay.
               call pgwnad(-xmin,-xmax,ymin,ymax)
