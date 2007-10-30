@@ -1,29 +1,29 @@
-		and ovro arrays.
-10feb99 rjs	mosmem.for,maxen.for -- Get measure=cornwell to work by
-		setting initial estimate to zero.
-15feb99 rjs	pmosmem.for -- New task. Joint deconvolution of MEM polarimetric
-		images, including mosaics.
-26feb99 rjs	fitsio.for,fits.for -- Changes to be more robust to bad
-		dates.
-05mar99	rjs	fitsio.for -- Fix to the above change.
-27jun97 bpw	contsub.for -- add options=verbose
-22mar99 pjt	contsub.for -- fixed treating options(2) as integer in boolean expr
-23mar99 rjs	imstat.for,imspec.for -- Fix bug in determining region of interest.
-12mar99 bpw	convol.for -- Increase size of map/beam/out to 512 to allow directories
-27mar99 pjt	headio.c -- make history a static, so nobody can see it :-)
-19dec97 bpw	imspec.for,imstat.for -- Add cutoff,lower and options=guaranteespaces
-22dec97 bpw	imspec.for,imstat.for -- Add options hanning,boxcar,deriv also to imstat
-23mar99 bpw	imspec.for,imstat.for -- Merged bpw updates and rjs updates
-07apr99 rjs	imspec.for,imstat.for -- Merge rjs and bpw versions.
-09apr99 rjs	blflag.for -- Added an extra error check.
-09apr99 nebk	cgdisp.for -- Fix problem with hard copy colour tables
-14apr99 rjs	sigest.for -- New task to estimate the variance in an
-		image.
-21apr99 rjs	psrfix.for -- Allow de-dispersion and bin selection in the
-		one run.
-28apr99 pjt,rjs	mathd.for,pcsub.for -- Increase size of "descr" argument to
-		hdprobe.
-28apr99 rjs	headio.c -- Check for string buffer overflow.
-05mar99 mchw	velplot.for -- added logarithmic contour levels.
+01oct99 vjm	imom.for -- New program: Compute intensity-weighted moment of an image
+05oct99 rjs	blflag.for --  Added options=scalar
+12oct99 rjs	imblr.for -- Do not produce output mask.
+12oct99 rjs	imbin.for,imsub.for,mostab.for,mc.for,model.for -- Fix imbin
+		and imsub to correctly copy mosaic tables. Some tidying in
+		mostab.for, which has reprocussions in mc.for, model.for.
+12oct99 rjs	gpcal.for,gpscal.for,getxy.for,gpboot.for -- gpcal now attempts
+		to honour the flux scale of any input gain table. options=noxy
+		has been removed from gpboot. Change in the call sequence to
+		getxy.for, with corresponding change in gpscal.for
+17oct99 rjs	headcopy.for -- Copy mostable.
+22oct99 rjs	clean.for -- Doc change only.
+23oct99 pjt	contsub.for,gpaver.for -- Initialisation problems in LINUX.
+24oct99 rjs	noise.for -- Initalisation problems in LINUX.
+27oct99 rjs	imspec.for,imstat.for -- Get first axis label correct.
+28oct99 rjs	mostab.for -- There was a bug which caused a fractional pixel
+		shift error.
+05mar99 bpw	headcopy.for -- real->double for last argument fixed call to rdhdd
+01nov99 lss	mbspect.for -- Minor improvements.
+12nov99 rjs	fits.for,fits.h -- options=varwt and better history comments
+		in output FITS files.
+07dec99 rjs	imdiff.for - Fix writing of history for "adjust" image.
+10jan00 rjs	imgen.for -- Added "seed" keyword.
+23jan00 rjs	gaufit.for -- Change some subroutine args to real-valued.
+27jan00 rjs	moslst.for -- New task. Reworked/renamed version of lmclst.
+28jan00 rjs	gaufit.for -- Standardise FORTRAN.
+05jan00 rjs	plproc.for,plproc.h -- Planetary subroutines.
  
 See $MIR/changes.txt for a history of earlier changes.
