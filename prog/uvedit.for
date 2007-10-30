@@ -34,22 +34,7 @@ c                     allows old data to be read) made on 12feb93.
 c    jm    23apr93    Corrected an argument mismatch in the call
 c                     to hreada() in the subroutine trackit().
 c    jm    03jun93    Added apfile keyword.
-c    rjs   11aug93    Rotation of uv coordinates to correct epoch.
-c                     Also fixed continuation bug in getcoor.
-c    rjs   19nov93    Output correlations are in the same format as the
-c                     input.
-c    jm    03dec93    Only call uvset for corr format if corr exists!
-c   bpw/jm 17dec93    Added options=dra to correct for MINT problems.
-c    rjs   16dec95    Make phase shift calculation more accurate.
-c    jm    19feb96    Added warnings if no obvious changes are made or
-c                     if the requested source is not found.
-c    jm    06jun96    Correctly add dra/ddec to RA/Dec in Getrdphz.
-c    rjs   11oct96    Added delra,deldec,pntra,pntdec to the output.
-c    rjs   24mar97    Copy all calibration tables.
-c    rjs   12may97    Doc change only.
-c    rjs   14jul97    nspect etc was not getting read when the source
-c		      selected was not the first source in the file.
-c    rjs   08may00    Change incorrect call of keyf to keya.
+c
 c***********************************************************************
 c= Uvedit - Editing of the baseline of a UV data set.
 c& jm
@@ -85,10 +70,6 @@ c     one source is present in a UV data set.  All UV data that does
 c     not correspond to the input source name is copied without being
 c     edited.  If this keyword is not set (the default), then all
 c     sources are edited.  Only one source name may be input.
-c     Note: it probably doesn't make sense to use this keyword with
-c     any other options except the ra and dec keywords.  If any other
-c     editing (except ra/dec) is requested along with this keyword,
-c     a warning message will be issued but the editing will proceed.
 c
 c@ apfile
 c     The name of a file that contains the absolute antenna positions
@@ -133,11 +114,7 @@ c     number.  Antenna present in the data but not included in the
 c     input value list are treated as having a zero coordinate offset.
 c     NOTE: You may only specify at most one of the ``apfile'',
 c           ``antpos'', or ``dantpos'' keywords.
-c     NOTE: The dantpos keyword is the usually used when correcting antenna
-c     position errors in a VLA observation. The  coordinate system used by
-c     Miriad and the VLA are the same, and the baseline changes provided
-c     by the VLAIS system need only be changed from units of meters to nanosec
-c     when using uvedit (1 nanosec = 0.2997 meters).
+c
 c@ ra
 c     Input is either an absolute or delta right ascension of the
 c     phase tracking center.  If one value is present, it is considered
@@ -156,9 +133,7 @@ c     Otherwise, three values are expected and are to be entered in
 c     the following order:
 c          dec = DD,MM,SS.S
 c     The declination (offset) is relative to the epoch coordinates.
-c     The default value is 0 arcseconds offset (no change).  If the
-c     absolute declination is negative but the DD value is 0, then make
-c     the MM value negative.  If MM is also 0, then make SS.S negative.
+c     The default value is 0 arcseconds offset (no change).
 c
 c@ time
 c     Input is a time offset (in seconds) to be added to the clock time.
@@ -192,18 +167,6 @@ c       nouv     Do not recompute the u and v variables (coord(1) and
 c                coord(2), respectively).  This option should, in
 c                principle, only be used with the delay correction;
 c                all other corrections should recompute u and v.
-c       dra
-c                Multiply the dra values by a cos(obsdec) correction.
-c                This is used to correct the dra value in the uv
-c                dataset for MINT data taken at Hat Creek before
-c                11dec93.  Before that date, the 1/cos(obsdec)
-c                correction was not applied to the dra in the grid
-c                file, so that the pointing was incorrect (instead
-c                of dra arcseconds offsets, the offsets were
-c                dra*cos(obsdec) arcseconds).
-c                NOTE:  The obsdec used is the "old" obsdec.  If there
-c                is a correction in declination, this is NOT applied
-c                in computing the cos(obsdec).
 c
 c--
 c-----------------------------------------------------------------------
@@ -215,7 +178,7 @@ c
       character PROG*(*)
       parameter (PROG = 'UVEDIT: ')
       character VERSION*(*)
-      parameter (VERSION = 'version 1.8 19-Feb-96')
+      parameter (VERSION = 'V1.6 03-Jun-93')
 c
       real SECRAD, ASECRAD
 c  -------------(SECRAD = PI / (12.0 * 3600.0))
@@ -236,7 +199,7 @@ c  Internal variables.
 c
       character Vis(MAXFILES)*132, Outsave*132, Outfile*132
       character Selsrc*132, apFile*132, source*132
-      character except(15)*11, type*1, corrtype*1
+      character except(15)*11, type*1
       character errmsg*175, mesg*80, antkey*7
       integer j, k, m
       integer Lin, Lout
@@ -248,7 +211,6 @@ c
       integer ant1, ant2
       integer nschan(MAXCHAN), ischan(MAXCHAN)
       real timeoff
-      real dra
       real wt, wtup, wtdn
       real phase, timphz, radphz, antphz, tmphaz, tmpdelay
       real delay(MAXANT)
@@ -267,14 +229,12 @@ c
       double precision antpos(MAXANT, 3)
       double precision XYZ(MAXANT, 3), newxyz(MAXANT, 3)
       double precision sdf(MAXCHAN), sfreq(MAXCHAN)
-      double precision epoch, jepoch, theta, costh, sinth
       complex delta
       complex data(MAXCHAN), wdata(MAXCHAN)
-      logical suffix, allsrc, srcfound, changed
+      logical suffix, allsrc
       logical raabs, decabs, antabs
-      logical dotime, dorad, doants, dodelay, douv, dodra
-      logical dopntra, dopntdec, dodelra, dodeldec
-      logical updUT, updLst, updodra, updora, updodec, updra, upddec
+      logical dotime, dorad, doants, dodelay, douv
+      logical updUT, updLst, updora, updodec, updra, upddec
       logical dowide, docorr
       logical more, updated
       logical flags(MAXCHAN), wflags(MAXCHAN)
@@ -283,7 +243,6 @@ c  Externals.
 c
       integer Len1
       logical KeyPrsnt
-      double precision epo2jul
 c
 c  End declarations.
 c-----------------------------------------------------------------------
@@ -304,7 +263,7 @@ c
 c
       suffix = .TRUE.
       if (Nfiles .eq. 1) then
-        call Keya('out', Outsave, ' ')
+        call Keyf('out', Outsave, ' ')
         if (Outsave .ne. ' ') suffix = .FALSE.
       endif
 c
@@ -335,17 +294,15 @@ c
         Nflags = Nflags + 1
       endif
 c
-c Position.  Default these logicals here in case only an RA or Dec
-c correction (but not both) is specified.
+c Position.
 c
       raoff = 0
       decoff = 0
       dorad = .FALSE.
-      raabs = .FALSE.
-      decabs = .FALSE.
 c RA.
       if (KeyPrsnt('ra')) then
         call Keyd('ra', raoff, -100001.0)
+        raabs = .FALSE.
         if (KeyPrsnt('ra')) then
           call Keyd('ra', val1, -1.0)
           call Keyd('ra', val2, -1.0)
@@ -367,6 +324,7 @@ c RA.
 c Dec.
       if (KeyPrsnt('dec')) then
         call Keyd('dec', decoff, -100001.0)
+        decabs = .FALSE.
         if (KeyPrsnt('dec')) then
           call Keyd('dec', val1, -1.0)
           call Keyd('dec', val2, -1.0)
@@ -374,13 +332,7 @@ c Dec.
             errmsg = PROG // 'Incorrect DEC entered.'
             call Bug('f', errmsg)
           endif
-          if (decoff .eq. 0.0) then
-            if (val1 .ge. 0.0) then
-              decoff = (val1 * 60.0) + val2
-            else
-              decoff = (val1 * 60.0) - val2
-            endif
-          else if (decoff .gt. 0.0) then
+          if (decoff .ge. 0.0) then
             decoff = (decoff * 3600.0) + (val1 * 60.0) + val2
           else
             decoff = (decoff * 3600.0) - (val1 * 60.0) - val2
@@ -489,16 +441,6 @@ c  Initialize the delay array.
         Nflags = Nflags + 1
       endif
 c
-c Options.
-c
-      call GetOpt(douv, dodra)
-      if ((.not. douv) .and. (dorad .or. dotime .or. doants))
-     *  call Bug('w',
-     *  'OPTIONS=NOUV possibly unsafe for these editing options.')
-      if (dodra) Nflags = Nflags + 1
-c
-      call KeyFin
-c
 c Should never get in this if-conditional!
 c
       if (Nflags .eq. 0) then
@@ -506,17 +448,14 @@ c
         call Bug('f', errmsg)
       endif
 c
-c  Check if the user has specified a source name but not selected
-c  RA/Dec editing.  If this is the case, send a warning message
-c  but continue on with the program.
+c Options.
 c
-      if (.not. allsrc) then
-        if ((.not. dorad) .or. dotime .or. doants .or. dodelay) then
-          errmsg = PROG //
-     *      'Options selected for a single source might cause problems?'
-          call Bug('w', errmsg)
-        endif
-      endif
+      call GetOpt(douv)
+      if ((.not. douv) .and. (dorad .or. dotime .or. doants))
+     *  call Bug('w',
+     *  'OPTIONS=NOUV possibly unsafe for these editing options.')
+
+      call KeyFin
 c
 c  End of user inputs.
 c-----------------------------------------------------------------------
@@ -547,17 +486,11 @@ c
         except(Nexcept + 4) = 'obsdec'
         Nexcept = Nexcept + 4
       endif
-      if (dodra) then
-        except(Nexcept + 1) = 'dra'
-        Nexcept = Nexcept + 1
-      endif
       Nant = -1
 c
 c  Open the input visibility file.
 c
       do j = 1, Nfiles
-        srcfound = allsrc
-        changed = .FALSE.
         call UvOpen(Lin, Vis(j), 'old')
         call UvTrack(Lin, 'antpos', 'u')
         call TrackIt(Lin, except, Nexcept)
@@ -566,7 +499,7 @@ c
 c  Check that this data set is in cross correlation mode.
 c
         k = Len1(Vis(j))
-        call uvrdvri(Lin, 'coropt', coropt, 0)
+        call Uvrdvri(Lin, 'coropt', coropt, 0)
         if (coropt .ne. 0) then
           errmsg = PROG //
      *             'Correlator is not set in cross correlation mode.'
@@ -582,13 +515,12 @@ c
           call UvProbvr(Lin, 'corr', type, k, updated)
           call Lcase(type)
           docorr = ((type .eq. 'r') .or. (type .eq. 'j'))
-          corrtype =  type
           if (.not. docorr) then
-            if (dodelay) then
-              k = Len1(Vis(j))
-              errmsg = PROG //
+            k = Len1(Vis(j))
+            errmsg = PROG //
      *             'No narrow band data present in ' // Vis(j)(1:k)
-              call Bug('w', errmsg)
+            call Bug('w', errmsg)
+            if (dodelay) then
               errmsg = PROG //
      *             'No delay correction will be applied to ' //
      *             Vis(j)(1:k)
@@ -598,6 +530,12 @@ c
           call UvProbvr(Lin, 'wcorr', type, k, updated)
           call Lcase(type)
           dowide = (type .eq. 'c')
+          if (.not. dowide) then
+            k = Len1(Vis(j))
+            errmsg = PROG //
+     *             'No wide band data present in' // Vis(j)(1:k)
+            call Bug('w', errmsg)
+          endif
           if ((.not. docorr) .and. (.not. dowide)) then
             k = Len1(Vis(j))
             errmsg = PROG // 'No wide or narrow band data to edit.'
@@ -619,20 +557,14 @@ c
             call UvOpen(Lout, Outfile, 'new')
             mesg = PROG // 'Writing visibilities to: '// Outfile
             call Output(mesg)
-            if (docorr)
-     *        call uvset(Lout, 'corr', corrtype, 0, 0.0, 0.0, 0.0)
-c
-c  Copy all calibration tables.
-c
-	    call CalCopy(Lin,Lout,PROG)
 c
 c  Copy the old history entries to the new file and then add a few
 c  additional history entries to the new file.
 c
             call hdcopy(Lin, Lout, 'history')
             call HisOpen(Lout, 'append')
-            call HisWrite(Lout, PROG // ' Miriad '// PROG // VERSION)
-            call HisInput(Lout, PROG)
+            call HisWrite(Lout, PROG // ' (MIRIAD)  ' // VERSION)
+            call HisInput(Lout, PROG // ' (MIRIAD)')
 c
 c  Initialize the new coordinate array, but only if necessary.
 c
@@ -651,17 +583,6 @@ c
               call uvset(Lin, 'data','wide',0, 1.0, 1.0, 1.0)
               call uvset(Lout,'data','wide',0, 1.0, 1.0, 1.0)
             endif
-c
-c  See if the delay tracking or pointing center RA and DEC are present.
-c
-	    call UvProbvr(Lin, 'delra', type, k, updated)
-	    dodelra = type.eq.' '
-	    call UvProbvr(Lin, 'deldec',type, k, updated)
-	    dodeldec = type.eq.' '
-	    call UvProbvr(Lin, 'pntra', type, k, updated)
-	    dopntra = type.eq.' '
-	    call UvProbvr(Lin, 'pntdec',type, k, updated)
-	    dopntdec = type.eq.' '
 c
 c  Begin editing the input file.
 c
@@ -686,7 +607,7 @@ c
 c               call UvProbvr(Lin, 'nants', type, k, updated)
 c               if (updated) then
 c--             call UvGetvri(Lin, 'nants', k, 1)
-                call uvrdvri(Lin, 'nants', k, 0)
+                call UvRdVri(Lin, 'nants', k, 0)
                 if (k .ne. Nant) then
                   if (Nant .eq. -1) then
                     Nant = k
@@ -703,17 +624,16 @@ c  Get lo1 and lo2 for use with delay corrections.
 c
                 call UvProbvr(Lin, 'lo1', type, k, updated)
 c--             if (updated) call UvGetvrd(Lin, 'lo1', lo1, 1)
-                if (updated) call uvrdvrd(Lin, 'lo1', lo1, 0.0D0)
+                if (updated) call UvRdVrd(Lin, 'lo1', lo1, 0.0D0)
                 call UvProbvr(Lin, 'lo2', type, k, updated)
 c--             if (updated) call UvGetvrd(Lin, 'lo2', lo2, 1)
-                if (updated) call uvrdvrd(Lin, 'lo2', lo2, 0.0D0)
+                if (updated) call UvRdVrd(Lin, 'lo2', lo2, 0.0D0)
 c
 c  Check if we are looking at the proper source.
 c
                 call UvProbvr(Lin, 'source', type, k, updated)
                 if (updated) call UvGetvra(Lin, 'source', source)
                 if ((allsrc) .or. (Selsrc .eq. source)) then
-                  srcfound = .TRUE.
 c
 c  Get the antenna positions for this particular baseline and then
 c  compute the baseline positions (in wavelength/GHz units).
@@ -777,7 +697,6 @@ c
                   call GetUpd(Lin, 'obsdec', dorad, obsdec, updodec)
                   call GetUpd(Lin, 'ra', dorad, RA, updra)
                   call GetUpd(Lin, 'dec', dorad, dec, upddec)
-                  call GetUpr(Lin, 'dra', dodra, dra, updodra) 
    10             format(A, A, ' changed from ', G17.9, ' to ', G17.9)
                   if (updUT) then
                     val1 = UT + timeoff
@@ -802,8 +721,6 @@ c
                     val1 = RA + raoff
                     if (raabs) val1 = raoff
                     call UvPutvrd(Lout, 'ra', val1, 1)
-                    if(dopntra)call UvPutvrd(lOut, 'pntra', RA, 1)
-                    if(dodelra)call UvPutvrd(lOut, 'delra', RA, 1)
                     write (mesg, 10) PROG, 'RA', RA, val1
                     call HisWrite(Lout, mesg)
                   endif
@@ -818,15 +735,7 @@ c
                     val1 = dec + decoff
                     if (decabs) val1 = decoff
                     call UvPutvrd(Lout, 'dec', val1, 1)
-                    if(dopntdec)call UvPutvrd(lOut, 'pntdec', dec, 1)
-                    if(dodeldec)call UvPutvrd(lOut, 'deldec', dec, 1)
                     write (mesg, 10) PROG, 'Dec', dec, val1
-                    call HisWrite(Lout, mesg)
-                  endif
-                  if (updodra) then
-                    write (mesg, 10) PROG, 'DRA', dra, dra * cos(obsdec)
-                    dra = dra * cos(obsdec)
-                    call UvPutvrr(Lout, 'dra', dra, 1)
                     call HisWrite(Lout, mesg)
                   endif
 c
@@ -849,10 +758,8 @@ c Time.
                   timphz = -uu * cosdec * timeoff
                   if (dotime) phase = phase - timphz
 c Ra and Dec.
-                  if (dorad) then
-                    call Getrdphz(Lin,RA+delra,dec+deldec,uu,vv,radphz)
-                    phase = phase - radphz
-                  endif
+                  radphz = (uu * cosdec * delra) + (vv * deldec)
+                  if (dorad) phase = phase - radphz
 c Antenna.
                   antphz = (((delX * cosHA) - (delY * sinHA)) * cosdec)
      *                     + (delZ * sindec)
@@ -870,10 +777,7 @@ c
 c  Set headers variables to new values.
 c
 c  Get new uv coordinates...
-                  if (dotime) then
-                    preamble(3) = preamble(3) + (timeoff / (2 * PI))
-                    HA = HA + timeoff
-                  endif
+                  if (dotime) HA = HA + timeoff
                   if (dorad) HA = HA - delra
                   if (dotime .or. dorad) then
                     cosHA = cos(HA)
@@ -885,15 +789,11 @@ c  Get new uv coordinates...
                     uu = (bxnew * sinHA) + (bynew * cosHA)
                     vv = (((-bxnew * cosHA) + (bynew * sinHA)) * sindec)
      *                 + (bznew * cosdec)
-c
-                    call uvrdvrd(Lin, 'epoch', epoch, 2000.0d0)
-                    jepoch = epo2jul(epoch, ' ')
-                    call prerotat(jepoch, RA, dec, preamble(3), theta)
-                    costh = cos(theta)
-                    sinth = sin(theta)
-c
-                    preamble(1) = (uu * costh) + (vv * sinth)
-                    preamble(2) = (vv * costh) - (uu * sinth)
+                    preamble(1) = uu
+                    preamble(2) = vv
+                  endif
+                  if (dotime) then
+                    preamble(3) = preamble(3) + (timeoff / (2 * PI))
                   endif
 c
 c  Get particular headers necessary to do editing (these items have
@@ -907,7 +807,6 @@ c  Apply corrections...
 c
                   if(dowide .and. (.not. docorr)) then
                     if (phase .ne. 0.0) then
-                      changed = .TRUE.
                       do k = 1, nwide
                         tmphaz = phase * wfreq(k)
                         delta = cmplx(cos(tmphaz), sin(tmphaz))
@@ -919,7 +818,6 @@ c
                   tmphaz = phase
                   if (dodelay) tmphaz = tmphaz - tmpdelay
                   if ((docorr) .and. (tmphaz .ne. 0.0)) then
-                    changed = .TRUE.
                     do k = 1, nspect
                       LastChn = ischan(k) + nschan(k) - 1
                       do m = ischan(k), LastChn
@@ -1030,103 +928,23 @@ c  Close the old UV data set.
 c
         call UvClose(Lin)
 c
-c  Warn if source not found in a particular dataset.
-c
-        if (.not. srcfound) then
-          k = Len1(Vis(j))
-          m = Len1(Selsrc)
-          errmsg = PROG // 'Source [' // Selsrc(1:m) //
-     *      '] not found in ' // Vis(j)(1:k)
-          call bug('w', errmsg)
-        endif
-c
-c  Warn if no apparent changes have been made.
-c
-        if (.not. changed) then
-          k = Len1(Vis(j))
-          errmsg = PROG // 'No apparent changes made to ' // Vis(j)(1:k)
-          call bug('w', errmsg)
-        endif
-c
 c  End of Nfiles do loop.
 c
       enddo
 c
 c  End of main routine.
 c
+      stop
       end
-c***********************************************************************
-	subroutine CalCopy(Lin,Lout,prog)
 c
-	implicit none
-	integer Lin,Lout
-	character prog*(*)
-c
-c  Copy the calibration tables from the input to the output.
-c
-c  Input:
-c    Lin,Lout	Handles of the input and output datasets.
-c    prog	Program name (for messages).
-c------------------------------------------------------------------------
-	character umsg*64
-c
-c  Externals.
-c
-	logical hdprsnt
-c
-	if(hdprsnt(Lin,'gains'))then
-	  umsg = prog//'Copying antanne gain calibration'
-	  call output(umsg)
-          call hdcopy(Lin,Lout,'interval')
-          call hdcopy(Lin,Lout,'nsols')
-          call hdcopy(Lin,Lout,'ngains')
-          call hdcopy(Lin,Lout,'nfeeds')
-          call hdcopy(Lin,Lout,'ntau')
-          call hdcopy(Lin,Lout,'gains')
-          call hdcopy(Lin,Lout,'freq0')
-	endif
-c
-	if(hdprsnt(Lin,'bandpass'))then
-	  umsg = prog//'Copying bandpass calibration'
-	  call output(umsg)
-	  call hdcopy(Lin,Lout,'ngains')
-          call hdcopy(Lin,Lout,'nfeeds')
-          call hdcopy(Lin,Lout,'ntau')
-          call hdcopy(Lin,Lout,'bandpass')
-          call hdcopy(Lin,Lout,'freqs')
-          call hdcopy(Lin,Lout,'nspect0')
-          call hdcopy(Lin,Lout,'nchan0')
-	endif
-c
-	if(hdprsnt(Lin,'cgains'))then
-	  umsg = prog//'Copying cgains table'
-	  call output(umsg)
-          call hdcopy(Lin,Lout,'cgains')
-          call hdcopy(Lin,Lout,'ncbase')
-          call hdcopy(Lin,Lout,'ncgains')
-	endif
-	if(hdprsnt(Lin,'wgains'))then
-	  umsg = prog//'Copying wgains table'
-	  call output(umsg)
-          call hdcopy(Lin,Lout,'wgains')
-          call hdcopy(Lin,Lout,'nwbase')
-          call hdcopy(Lin,Lout,'nwgains')
-	endif
-c
-	if(hdprsnt(Lin,'leakage'))then
-	  umsg = prog//'Copying polarisation calibration'
-	  call output(umsg)
-	  call hdcopy(Lin,Lout,'leakage')
-	endif
-	end
 c***********************************************************************
 cc= GetOpt - Internal routine to get command line options.
 cc& jm
 cc: internal utility
 cc+
-      subroutine GetOpt(douv, dodra)
+      subroutine GetOpt(douv)
       implicit none
-      logical douv, dodra
+      logical douv
 c
 c  Get user options from the command line.
 c
@@ -1134,60 +952,25 @@ c  Input:
 c    none
 c
 c  Output:
-c    douv     If true, then recompute u and v.
-c    dodra    If true, then multiply dra by 1/cos(obsdec).
+c    douv     If true, recompute u and v.
 c
 c--
 c-----------------------------------------------------------------------
 c
 c  Internal variables.
 c
-      integer NOPTS
-      parameter (NOPTS = 2)
+      integer nopts
+      parameter (nopts = 1)
 c
-      character opts(NOPTS)*9
-      logical present(NOPTS)
-      data opts/'nouv', 'dra'/
+      character opts(nopts)*9
+      logical present(nopts)
+      data opts/'nouv    '/
 c
-      call Options('options', opts, present, NOPTS)
+      call Options('options', opts, present, nopts)
       douv = .not. present(1)
-      dodra = present(2)
 c
       end
-c************************************************************************
-      subroutine Getrdphz(Lin,RA,dec,uu,vv,radphz)
 c
-      implicit none
-      integer Lin
-      double precision RA,dec,uu,vv
-      real radphz
-c
-c  Determine the phase shift to apply to center the dataset at a particular
-c  position.
-c
-c  Input:
-c    Lin    Handle of the input dataset.
-c    RA,dec Coordinates (radians) of the point of interest.
-c    uu,vv  u-v coordinates.
-c  Output:
-c    radphz
-c------------------------------------------------------------------------
-      real dra, ddec
-      double precision x1(2),x2(2)
-c
-      call uvrdvrr(Lin, 'dra', dra, 0.0)
-      call uvrdvrr(Lin, 'ddec', ddec, 0.0)
-
-      x1(1) = RA
-      if (dra .ne. 0.0) x1(1) = x1(1) + (dra / cos(dec))
-      x1(2) = dec + ddec
-c
-      call coInit(Lin)
-      call coCvt(Lin,'aw/aw',x1,'op/op',x2)
-      call coFin(Lin)
-      radphz = (uu * x2(1)) + (vv * x2(2))
-c
-      end
 c***********************************************************************
 cc= TrackIt - Internal routine to track almost all UV variables.
 cc& jm
@@ -1393,7 +1176,7 @@ c
         value = 0.0
       else if (updated) then
 c--     call UvGetvrd(Lin, variable, value, 1)
-        call uvrdvrd(Lin, variable, value, 0.0D0)
+        call Uvrdvrd(Lin, variable, value, 0.0D0)
       endif
       updated = updated .and. doedit
       return
@@ -1436,7 +1219,7 @@ c
         value = 0.0
       else if (updated) then
 c--     call UvGetvrr(Lin, variable, value, 1)
-        call uvrdvrr(Lin, variable, value, 0.0)
+        call Uvrdvrr(Lin, variable, value, 0.0)
       endif
       updated = updated .and. doedit
       return
@@ -1460,18 +1243,29 @@ c  Input:
 c    lin      The input file descriptor.
 c    maxwide  Maximum size of the ``wfreq'' array.
 c
-c  Output:
+c  Input/Output:
 c    nwide    The number of wide band channels.
 c    wfreq    The array of wide band coorelation average frequencies.
 c             This value is updated if ``nwide'' or ``wfreq'' changes.
 c
 c--
 c-----------------------------------------------------------------------
-      call uvrdvri(Lin, 'nwide', nwide, 0)
-      if(nwide.gt.maxwide)call bug('f','Too many wideband chans for me')
-      if(nwide.gt.0)call UvGetvrr(Lin, 'wfreq', wfreq, nwide)
 c
+c  Internal variables.
+c
+      character type*1
+      integer length
+      logical nupd, updated
+c
+      call UvProbvr(Lin, 'nwide', type, length, nupd)
+c--   if (nupd) call UvGetvri(Lin, 'nwide', nwide, 1)
+      if (nupd) call UvRdVri(Lin, 'nwide', nwide, 0)
+      call UvProbvr(Lin, 'wfreq', type, length, updated)
+      if ((nupd .or. updated) .and. (nwide .gt. 0))
+     *  call UvGetvrr(Lin, 'wfreq', wfreq, nwide)
+      return
       end
+c
 c***********************************************************************
 cc= GetCoor - Internal routine to get the narrow band frequency arrays.
 cc& jm
@@ -1492,7 +1286,7 @@ c  Input:
 c    lin      The input file descriptor.
 c    maxn     Maximum size of the arrays.
 c
-c  Output:
+c  Input/Output:
 c    nspect   The number of filled elements in the arrays.
 c    nschan   The number of channels in a spectral window.
 c    ischan   The starting channel of the spectral window.
@@ -1502,17 +1296,37 @@ c             in each window.
 c
 c--
 c-----------------------------------------------------------------------
-      call uvrdvri(Lin, 'nspect', nspect, 0)
 c
-      if(nspect.gt.maxn)call bug('f','Too many windows')
+c  Internal variables.
+c
+      character type*1
+      integer length
+      logical nupd, update
+c
+      call UvProbvr(Lin, 'nspect', type, length, nupd)
+c--   if (nupd) call UvGetvri(Lin, 'nspect', nspect, 1)
+      if (nupd) call UvRdVri(Lin, 'nspect', nspect, 0)
+c
       if (nspect .gt. 0) then
-        call UvGetvri(Lin, 'nschan', nschan, nspect)
-	call UvGetvri(Lin, 'ischan', ischan, nspect)
-	call UvGetvrd(Lin, 'sdf', sdf, nspect)
-	call UvGetvrd(Lin, 'sfreq', sfreq, nspect)
-      endif
+        call UvProbvr(Lin, 'nschan', type, length, update)
+        if (nupd .or. update)
+       *  call UvGetvri(Lin, 'nschan', nschan, nspect)
 c
+        call UvProbvr(Lin, 'ischan', type, length, update)
+        if (nupd .or. update)
+       *  call UvGetvri(Lin, 'ischan', ischan, nspect)
+c
+        call UvProbvr(Lin, 'sdf', type, length, update)
+        if (nupd .or. update)
+       *  call UvGetvrd(Lin, 'sdf', sdf, nspect)
+c
+        call UvProbvr(Lin, 'sfreq', type, length, update)
+        if (nupd .or. update)
+       *  call UvGetvrd(Lin, 'sfreq', sfreq, nspect)
+      endif
+      return
       end
+c
 c***********************************************************************
 cc= readAPF - Internal routine to read an antenna position file keyword.
 cc& jm
