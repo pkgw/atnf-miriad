@@ -3392,3 +3392,11 @@ and in a way to be consistent with all the other changes happening.
 *********************************** 03dec98 Sent changes to Doug Roberts
 04dec98 rjs	tin.for,tin.h -- Better error messages.
 15dec98 rjs	cgsubs.for -- Some tidying.
+21dec98 nebk    atmos.for -- The binary was not atmos !  It said it was atmos,
+                   version 1.0 from Feb 1996, but I can't work out whatsource
+                   that was from.  It gave an error message that did appear
+                   to be releavent to atmos.  I pushed MAXSCAL up to 500
+                   in atmos.h (arbitary as I don't know what it does)
+06jan99 rjs	cgsubs.for -- Yet again another try at a decent algorithm for
+		razerocg.
+07jan99 rjs	fits.for -- Write dates in new FITS form.
