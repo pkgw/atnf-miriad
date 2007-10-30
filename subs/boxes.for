@@ -41,6 +41,8 @@ c		  and removed this capacity from BoxSet.
 c    rjs 07jul97  Change argument to coVelSet and replace coAxDesc with coAxGet
 c    rjs 09jul97  Correctly handle ANDing with completely flagged plane.
 c    rjs 17may99  Increase size of a buffer.
+c    rjs 14sep00  Make sure that coordinate file can only be an image.
+c    rjs 10oct00  Fix bungle in the above.
 c************************************************************************
 c* Boxes -- Summary of region of interest routines.
 c& mjs
@@ -135,14 +137,14 @@ c    ztype:  'abspix' or 'kms  '.
 c  The default is 'abspix'.
 c------------------------------------------------------------------------
 	include 'boxes.h'
+	include 'maxnax.h'
 c
 	integer ntypes
 	parameter(ntypes=10)
 	integer nshape,length,k1,k2,n,spare,offset,i,boxtype,lu(3)
-	integer iostat
 	character types(ntypes)*9,type*9,spec*512,xytype*6,ztype*6
 	character line*64
-	integer iax,iax1,iax2,tmp(4)
+	integer iax,iax1,iax2,tmp(4),nsize(MAXNAX)
 	double precision t1,t2,t3
 	logical more,coordini,units
 c
@@ -251,16 +253,11 @@ c
 	      coordini = .true.
 	      if(file.eq.' ') call bug('f',
      *	        'Only absolute pixel region specification supported')
-	      call hopen(lu,file,'old',iostat)
-	      if(iostat.ne.0)then
-	        line = 'Error opening coordinate info file: '//file
-	        call bug('w',line)
-	        call bugno('f',iostat)
-	      endif
+	      call xyopen(lu,file,'old',MAXNAX,nsize)
 	      call coInit(lu)
 	      call rdhdi(lu,'naxis1',lu(2),1)
 	      call rdhdi(lu,'naxis2',lu(3),1)
-	      call hclose(lu)
+	      call xyclose(lu)
 	    endif
 	    if(boxtype.eq.ARCSEC)then
 	      call coFindAx(lu,'longitude',iax1)
