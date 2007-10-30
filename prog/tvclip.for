@@ -70,6 +70,10 @@ c    rjs   11nov94    Eliminate bounds violation for large numbers of times.
 c    mhw&ip 22nov94   Add clip option
 c    mhw   13aug95    Make clip iterative and compile stats
 c    mhw    2sep95    Add 'batch-mode': commands, notv option
+c    smw   15mar98    Converted TVCLIP to TVWCLIP by using wides not channels
+c    pjt   19aug99    Consolidated TVWCLIP into TVCLIP
+c    smw   30aug99    Submitted!
+c    rjs   21sep00    options=nosrc
 c***********************************************************************
 c= Tvclip - Interactive editing of a UV data set on a TV device.
 c& jm
@@ -188,8 +192,8 @@ c     value is input, the y coordinate value is set to the x value.
 c
 c< line
 c
-c     NOTE: Here ``type'' must be `channel' and the maximum of
-c     both ``width'' and ``step'' must be 1.  The default is
+c     NOTE: Here ``type'' must be `channel' or ``wide'' and the maximum 
+c     of  both ``width'' and ``step'' must be 1.  The default is
 c     to display all channels.
 c
 c@ mode
@@ -239,9 +243,13 @@ c     keyboard if "commands" is set.
 c
 c
 c< select
-c
 c     NOTE: The default is to use all visibilities.
-c
+c@ options
+c     Extra processing options. Several can be given, separated by
+c     commas. Minimum match is used. Possible values are:
+c       nosrc   Do not cause a break in the display when the source
+c               changes. Normally TVFLAG puts a gap in the display
+c               whenever the source changes.
 c--
 c-----------------------------------------------------------------------
 c
@@ -251,7 +259,7 @@ c
       character PROG*(*)
       parameter (PROG = 'TVCLIP: ')
       character VERSION*(*)
-      parameter (VERSION = PROG // 'version 2.3 9-Mar-94')
+      parameter (VERSION = PROG // 'Version 30-aug-99')
       integer NMODE,MAXSELS,MAXEDIT,MAXCMD
       parameter (NMODE=4,MAXCMD=10,MAXSELS=256,MAXEDIT=100000)
 c
@@ -261,6 +269,7 @@ c
       character Line*30, errmsg*80
       character apri*9
       character Modes(NMODE)*10
+      character Lines(2)*8
       character Commands(MAXCMD)*10
       integer Lin, nchan, MostChan, channel
       integer maxxpix, maxypix, levels, msglen
@@ -272,6 +281,7 @@ c
       real clip
       real Sels(MAXSELS)
       logical center, Ctrl, nochan, notime, nopixel, notv, batch
+      logical nosrc
       integer nedit,edits(2,MAXBASE)
       real times(2,MAXEDIT)
       integer chans(2,MAXEDIT)
@@ -284,6 +294,7 @@ c
       logical KeyPrsnt
 c
       data Modes / 'amplitude', 'phase','real', 'imaginary'/
+      data Lines / 'channel', 'wide'/
 c
 c  End declarations.
 c-----------------------------------------------------------------------
@@ -302,8 +313,10 @@ c
       center = .not. KeyPrsnt('tvcorn')
       call Keyi('tvcorn', jx0, 0)
       call Keyi('tvcorn', jy0, jx0)
-c
-      call keymatch('line',1,'channel',1,Line,nout)
+
+c - figure out 'channel' or 'wide' data
+
+      call keymatch('line',2,Lines,1,Line,nout)
       if(nout.eq.0) Line = 'channel'
       call Keyi('line', nchan, 0)
       call Keyr('line', start, 1.0)
@@ -315,7 +328,7 @@ c
       call Keyr('taver', taver(1), 5.0)
       call Keyr('taver', taver(2), taver(1) )
       call Keyr('clip', clip, 5.0)
-      call GetOpt(nochan,notime,nopixel,notv)
+      call GetOpt(nochan,notime,nopixel,notv,nosrc)
       call mkeya('commands',Commands, MAXCMD, ncmd)
       batch=(ncmd.gt.0)
       if (batch) then
@@ -327,6 +340,10 @@ c
 c
 c  Check the input parameters.
 c
+
+      if (MAXWIDE .GT. MAXCHAN) then
+        call Bug('f','MAXWIDE not large enough - recompile')
+      endif
       if (Vis .eq. ' ') then
         errmsg = PROG // 'A Visibility file must be given.'
         msglen = Len1(errmsg)
@@ -344,11 +361,12 @@ c
         call Bug('f', errmsg(1:msglen))
       endif
 c
-      if (Line .ne. 'channel') then
-        errmsg = PROG // 'Line type must be channel.'
-        msglen = Len1(errmsg)
-        call Bug('f', errmsg(1:msglen))
-      endif
+c      if (Line .ne. 'channel') then
+c        errmsg = PROG // 'Line type must be channel.'
+c        msglen = Len1(errmsg)
+c        call Bug('f', errmsg(1:msglen))
+c      endif
+c
       if (width .le. 0.0) then
         errmsg = PROG // 'Negative width is useless.'
         msglen = Len1(errmsg)
@@ -415,7 +433,7 @@ c
 c  Determine the flagging to be done.
 c
       call doEdit(Lin,apri,taver,center,jx0,jy0,channel,
-     *	  Ctrl,pmin,pmax,
+     *	  Ctrl,nosrc,pmin,pmax,
      *    edits,MAXBASE,day0,times,chans,flagval,MAXEDIT,nedit, clip,
      *    notime, nochan, nopixel, notv, batch, Commands, ncmd)
 c
@@ -442,10 +460,10 @@ c
       end
 c************************************************************************
 c************************************************************************
-        subroutine GetOpt(nochan,notime,nopixel,notv)
+        subroutine GetOpt(nochan,notime,nopixel,notv,nosrc)
 c
         implicit none
-        logical nochan,notime,nopixel,notv
+        logical nochan,notime,nopixel,notv,nosrc
 c
 c  Get extra processing options.
 c
@@ -454,12 +472,14 @@ c    nochan     True for no channel flagging by CLIP command
 c    notime     True for no time flagging by CLIP command
 c    nopixel    True for no single pixel flagging by CLIP command
 c    notv       True for no display on tv, only useful in 'batch' mode
+c    nosrc     
 c------------------------------------------------------------------------
         integer NOPTS
-        parameter(NOPTS=4)
+        parameter(NOPTS=5)
         logical present(NOPTS)
         character opts(NOPTS)*9
-        data opts/'nochannel','notime   ','nopixel  ','notv     '/
+        data opts/'nochannel','notime   ','nopixel  ','notv     ',
+     *		  'nosrc    '/
 c
         call options('options',opts,present,NOPTS)
 c
@@ -467,12 +487,13 @@ c
         notime  = present(2)
         nopixel = present(3)
         notv    = present(4)
+	nosrc   = present(5)
 c
         end
 
 c************************************************************************
 	subroutine doEdit(Lin,apri,taver,center,jx0,jy0,channel,
-     *	  Ctrl,pmin,pmax,
+     *	  Ctrl,nosrc,pmin,pmax,
      *    edits,nbase,day0,times,chans,flagval,MAXEDIT,nedit, clip,
      *    notime, nochan, nopixel, notv, batch, Commands, ncmd)
 c
@@ -482,6 +503,7 @@ c
 	integer Lin,channel,jx0,jy0,nbase,maxedit,nedit, ncmd
 	character apri*1, Commands(MAXCMD)*10
 	logical center,Ctrl, notime, nochan, nopixel, notv, batch
+        logical nosrc
 	real taver(2),pmin,pmax
 	double precision day0
 	real times(2,maxedit), clip
@@ -499,6 +521,7 @@ c    jx0,jy0	BLC of the region to display.
 c    channel	Channel to use for the display.
 c    Ctrl	Whether to use the panel server or not.
 c    pmin,pmax	Scaling parameters.
+c    nosrc
 c    clip,notime,nochan,nopixel - used by clip option
 c    notv, batch, iCmds - used in batch mode
 c  Output:
@@ -570,7 +593,7 @@ c  baselines and times are present.
 c
 	call Output('Loading the data ...')
 	call CopyDat(lIn,lScr,apri,nchan,t1,MAXTIME,ntime,day0,ttol,
-     *		blpres,nbased,nvis,chanoff)
+     *		blpres,nbased,nvis,chanoff,nosrc)
 c
 c  Determine the time ranges to average together.
 c
@@ -1090,14 +1113,14 @@ c
 	end
 c************************************************************************
 	subroutine CopyDat(lIn,lScr,apri,nchan,time,MAXTIME,ntime,
-     *		day0,ttol,blpres,nbase,nvis,chanoff)
+     *		day0,ttol,blpres,nbase,nvis,chanoff,nosrc)
 c
 	implicit none
 	integer lIn,lScr,nchan,maxtime,ntime,nbase,nvis,chanoff
 	character apri*1
 	real time(maxtime),ttol
 	double precision day0
-	logical blpres(nbase)
+	logical blpres(nbase),nosrc
 c
 c  Copy the data to a scratch file.
 c
@@ -1167,7 +1190,11 @@ c
 	  if(bl.gt.0.and.bl.lt.nbase)then
 	    if(abs(t-tprev).gt.ttol)then
 	      if(t.lt.tprev)torder = .false.
-	      newsrc = uvVarUpd(vsrc)
+	      if(nosrc)then
+	        newsrc = .false.
+	      else
+	        newsrc = uvVarUpd(vsrc)
+	      endif
 	      if(ntime.gt.0.and.
      *		(newsrc.or.t-tprev.gt.120*ttol.or.t.lt.tprev))then
 		if(ntime.ge.MAXTIME)
