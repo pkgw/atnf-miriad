@@ -3681,4 +3681,21 @@ and in a way to be consistent with all the other changes happening.
 03mar01 rjs	planet.for -- Improved brightness temperature functions for the
 		planets.
 15mar01 dpr     psrbl.for - New task for pulsar off-bin subtraction.
+05apr01 dpr	fits.for Add region key for op=xyout
 10apr01 dpr     atlod.for - handle correlator UT day rollover bug
+11apr01 dpr	iffix.for - New task. Adapted from transifx.
+24apr01 rjs	opplt.for,dsdplt.for,opcal.for,refract.for -- Change (improve)
+		"standard" model of the atmosphere. Put this model into
+		refract.for and get opplt,dsdplt,opcal to call this routine.
+03may01 rjs	psrplt.for -- Add mode=phase
+10may01 dpr     fits.for - change options dss to rawdss
+10may01 dpr     im2uv.for - doc change only
+11may01 dpr     fits.for - check history exists before copying it
+11may01 dpr     headio.c - more informative hisopen_c message
+14may01 bmg     imbin.for - add options=sum
+16may01 rjs	obsrms.for - Copy across MCHW's program.
+15may01 dpr     mirimport.csh - make OS specific.
+15may01 dpr     mirimport.csh - change alpha to delete files before tar xvf
+29may01 dpr     gpcomb - first version
+29may01 dpr     gpdof  - first version
+07jun01 dpr     gpdof  - finesse output
