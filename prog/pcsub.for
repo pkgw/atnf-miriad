@@ -36,7 +36,6 @@ c    pjt  21jul91 make it work when cont= exists
 c    pjt  10mar92 consistent MAXRUNS length
 c    nebk 25nov92 Copy btype to output
 c    mjs  27feb93 use tmpdim.h instead of maxdim.h
-c    rjs  08may00 Change incorrect call of keyf to keya.
 c
 c= pcsub - Subtract a plane (optional by polynomial fit) from a cube
 c& pjt
@@ -107,8 +106,8 @@ c Get the input parameters.
 c
       CALL keyini
       CALL keyf ('in', in, ' ')
-      CALL keya ('out', out, ' ')
-      CALL keya ('cont', cont, ' ')
+      CALL keyf ('out', out, ' ')
+      CALL keyf ('cont', cont, ' ')
       IF (in .EQ. ' ') CALL bug ('f',
      *    'You must specify an input dataset (in=)')
       IF (out .EQ. ' ' .AND. cont .EQ. ' ') CALL bug ('f',
