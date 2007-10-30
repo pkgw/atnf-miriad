@@ -3431,4 +3431,22 @@ and in a way to be consistent with all the other changes happening.
 *********************************** 05mar99 Sent changes to Doug Roberts
 05mar99	rjs	fitsio.for -- Fix to the above change.
 *********************************** 05mar99 Sent changes to Doug Roberts
-
+27jun97 bpw	contsub.for -- add options=verbose
+22mar99 pjt	contsub.for -- fixed treating options(2) as integer in boolean expr
+23mar99 rjs	imstat.for,imspec.for -- Fix bug in determining region of interest.
+12mar99 bpw	convol.for -- Increase size of map/beam/out to 512 to allow directories
+27mar99 pjt	headio.c -- make history a static, so nobody can see it :-)
+19dec97 bpw	imspec.for,imstat.for -- Add cutoff,lower and options=guaranteespaces
+22dec97 bpw	imspec.for,imstat.for -- Add options hanning,boxcar,deriv also to imstat
+23mar99 bpw	imspec.for,imstat.for -- Merged bpw updates and rjs updates
+07apr99 rjs	imspec.for,imstat.for -- Merge rjs and bpw versions.
+09apr99 rjs	blflag.for -- Added an extra error check.
+09apr99 nebk	cgdisp.for -- Fix problem with hard copy colour tables
+14apr99 rjs	sigest.for -- New task to estimate the variance in an
+		image.
+21apr99 rjs	psrfix.for -- Allow de-dispersion and bin selection in the
+		one run.
+28apr99 pjt,rjs	mathd.for,pcsub.for -- Increase size of "descr" argument to
+		hdprobe.
+28apr99 rjs	headio.c -- Check for string buffer overflow.
+05mar99 mchw	velplot.for -- added logarithmic contour levels.
