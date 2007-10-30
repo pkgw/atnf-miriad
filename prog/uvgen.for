@@ -65,23 +65,6 @@ c			Generalize hybrid correlator model.
 c    18aug94 rjs   Exact geometry for point sources, and better
 c		   geometry for other sources.
 c    29aug94 rjs   Write w axis value.
-c    15sep94 mchw  Change the site keyword to be the 'telescop' uv-variable.
-c    21sep94 mchw  Better value for sfreq in coramhat.
-c    28sep94 rjs   Merge mchw/rjs changes.
-c    19jan95 mchw  Added atmospheric phase model to pnoise input.
-c    25jan95 mchw  Fix bug (lst = ha + ra)
-c    27nov95 mchw  Correct sign of source position angle.
-c    27nov95 rjs   (Re-)add some commas to appease g77.
-c    20dec95 mchw  Added polarization switching.
-c    04jun96 mchw  Doc change only.
-c     5jun96 pjt   Better setting of random number seed
-c    06jun96 rjs   Fiddles to make lst and longitude more honest.
-c    10jun96 mchw  Atmospheric and elevation dependent systemp and tpower.
-c    10jul96 mchw  No default for output uv-data file.
-c    16aug96 rjs   Change phase convention for circularly polarised data.
-c    25aug97 rjs   General tidy up.
-c    09oct97 rjs   Fix error in generating spectral datasets (introduced
-c		   7 weeks ago).
 c
 c  Bugs/Shortcomings:
 c    * Frequency and time smearing is not simulated.
@@ -102,8 +85,10 @@ c	value of the visibilities. The calculation includes the response to
 c	polarized sources with linear and circularly polarized feeds. U-V
 c	trajectories for all pairs of antennas are computed.
 c@ source
-c	The name of a text file containing the source components. There is
-c	no default. The source components are elliptical
+c	The name of a text file containing the source components. The
+c	default is "uvgen.source". If the specified model components file
+c	does not exist, UVGEN interactively prompts the user for information,
+c	and then generates the file. The source components are elliptical
 c	Gaussian components described by the total flux (Jy) and
 c	position offsets (arcsecs) from the phase center in the directions
 c	of ra and dec. The sources are specified by the full width to half
@@ -115,14 +100,13 @@ c	a position angle. A value of 0 for the percentage polarization forms
 c	an unpolarized source.
 c@ ant
 c	The name of a text file containing the position of the antennae.
-c	There is no default.
+c	The default is "uvgen.ant". If the specified antenna file does
+c	not exist, UVGEN interactively prompts the user for the coordinates
+c	of the antennas, and then generates the antenna file.
 c	The antenna positions can be given in either a right handed
 c	equatorial system or as a local ground based coordinates measured to the
 c	north, east and in elevation. See the "baseunit" parameter to
-c	specify the coordinate system. Some standard antenna configurations
-c	can be found in $MIRCAT/*.ant for ATCA, BIMA and VLA telescopes.
-c	The BIMA and VLA antenna tables, use with baseunit=1, whereas for
-c	the ATCA, use baseunit=51.0204.
+c	specify the coordinate system.
 c@ baseunit
 c	This specifies the coordinate system used in the antenna file.
 c	A positive value for "baseunit" indicates an equatorial system,
@@ -130,35 +114,34 @@ c	whereas a negative value indicates a local system. The magnitude of
 c	"baseunit" gives the conversion factor between the baseline units
 c	used in the antenna file, and nanoseconds. The default value is +1,
 c	which means that the antenna file gives the antenna position in an
-c	equatorial system measured in nanoseconds.
-c	E.g. 	baseunit=-1 for topocentric coordinates in nanosecs, 
-c		baseunit=3.33564 for geocentric coordinates in meters.
-c@ telescop
+c	equatorial system measured in nanoseconds. Remember 1 ns is equivalent
+c	to 0.3 meters.
+c@ site
 c	This can take on the value of "hatcreek", "atca" or "other".
 c	This determines miscellaneous parameters. In particular, this
 c	determines the interpretation of the correlator setup file
 c	(see below), the "evector" variable and the telescope name.
 c	The default is "hatcreek".
 c@ corr
-c	This gives the name of a text file of two lines, giving the
-c	correlator setup, and a spectral line model. There is no default.
+c	This gives the name of a text file specifying the correlator
+c	setup, and a spectral line model. The default name is "uvgen.corr".
+c	If it does not exist, UVGEN prompts interactively, and then creates
+c	the file.
 c	The values are:
 c	  Number of channels in each spectral window. 0=wideband only.
 c	  Number of spectra: up to 4 spectral windows can be specified.
-c	  Then up to four starting frequencies followed by the corresponding
-c	  bandwidths for each spectral window. These are specified in MHz.
-c	  Then follow three parameters which model a spectral line:
-c	  famp, fcen and fwid, giving line to continuum
-c	  ratio, freq and width (GHz). This gives a simple spectral line.
-c	  In particular, the visibility value for a channel is scaled by
-c	  a factor:
+c	  Four starting frequencies and bandwidths for each spectral window. 
+c	   These are specified in MHz. For other than Hat Creek, only
+c	   the first correlator bandwidth is used.
+c	   No checking is made for valid combinations.
+c	  Three parameters, famp, fcen and fwid, giving line to continuum
+c	   ratio, freq and width (GHz). This gives a simple spectral line.
+c	   In particular, the visibility value for a channel is scaled by
+c	   a factor:
 c	    1 + famp*( 1-min(1,|(f-fcen)/fwid|) )
 c@ time
-c	The time of the observation (this corresponds to ha=0). This is in
-c	the form
-c	  yymmmdd.ddd
-c	or
-c	  yymmmdd:hh:mm:ss.s
+c	The start time of the observation. This is in the form
+c	  yymmmdd.ddd or yymmmdd:hh:mm:ss.s
 c	The default is 80JAN01.0. A function of this is also used
 c	as a seed for the random number generator.
 c@ freq
@@ -166,17 +149,14 @@ c	Frequency and 2nd IF frequency for the model in GHz.
 c	Defaults are 100,0.250 GHz. 
 c	The IF parameter is currently ignored if the telescope is not 
 c	hatcreek.
-c@ radec
-c	Source right ascension and declination. These can be given in
-c	hh:mm:ss,dd:mm:ss format, or as decimal hours and decimal
-c	degrees. The default is 0,30.
+c@ dec
+c	Source declination in degrees. Default=30 degrees.
 c@ harange
 c	Hour Angle range (start,stop,step) in hours. Default is
 c	-6 hrs to + 6 hrs, with a sample interval=0.1 (6 minute)
-c@ ellim
-c	Elevation limit in degrees. The default is not to limit
-c	uv coverage by elevation. If set, then hour angles below the
-c	limit are not "observed".
+c@ elev
+c	Elevation limit in degrees. Default=15 degrees. Both harange
+c	and elev are used to limit the extent of the u-v track.
 c@ stokes
 c	This selects the polarization parameters formed. Up to 4
 c	polarizations can be formed in one run . They can be 'i' (default),
@@ -186,24 +166,6 @@ c	will form a file with the 4 polarisations corresponding to an array
 c	with linear feeds.
 c	For linear feeds the convention is that the X feed has a position
 c	angle of 0, and the Y feed is 90 (measured north towards east).
-c@ polar
-c	Polarization patterns for generating time shared polarization data. 
-c	Up to MAXPOLAR=20 strings of the characters R and L, or X and Y, 
-c	to represent the polarization of each antenna
-c	R(right circular polarization), L(left circular polarization)
-c	X(linear polarization PA=0), Y(linear polarization PA=90).
-c	E.g. for 3 antennas, the polar=LLL,LRR,RRL,RLR cycles
-c	through all combinations of LCP and RCP for each baseline every
-c	4 integrations. The default is to use the stokes keyword.
-c@ leakage
-c	Polarization leakage errors, given as a percent. This gives the
-c	rms value of leakages of one polarisation feed into another.
-c	Polarization leakage errors are constant over the observation.
-c	To use this, you must set
-c	  stokes=xx,yy,xy,yx
-c	or
-c	  stokes=rr,ll,rl,lr
-c	The default is 0 (i.e. no polarization leakage).
 c@ lat
 c	Latitude of observatory, in degrees. Default is 40 degrees.
 c@ cycle
@@ -244,35 +206,32 @@ c	The default is 0 (i.e. no gain error).
 c@ pnoise
 c	Antenna based phase noise, in degrees. This gives the phase
 c	noise, specified by the rms phase noise to be added to each
-c	antenna. Up to 4 values can be given to compute the phase noise
-c	  pnoise(1) + pnoise(2)*(baseline)**pnoise(3)*sinel**pnoise(4)
-c	where ``baseline'' is the baseline length in km. Typical values
-c	for pnoise(2) are 1mm rms pathlength (e.g. 2 radians at 100 GHz),
-c	For Kolmogorov turbulence pnoise(3)=5/6 for baseline < 100m
-c	and 0.33 for baseline > 100m (outer scale of turbulence).
-c	pnoise(4)=-0.5 for a thick turbulent screen, and -1 for a thin layer.
-c	See also the ``gnoise'' parameter. Default is 0,0,0,0 (i.e.
+c	antenna. See also the ``gnoise'' parameter. The default is 0 (i.e.
 c	no phase error).
 c@ systemp
-c	System temperature used to compute additive random noise and
-c	total power. One or 3 values can be given; either the average
-c	single sideband systemp including the atmosphere (TELEPAR gives
-c	typical values), or the double sideband receiver temperature, 
-c	sky temperature, and zenith opacity, when systemp is computed as:
-c         systemp = 2.*(Trx + Tsky*(1-exp(-tau/sinel)))*exp(tau/sinel)
-c	where systemp, Trx and Tsky are in Kelvin. Typical values for Hat Ck
-c	Trx, Tsky, and tau are 75,290,0.15. (OBSTAU gives values for tau).
-c	systemp is used	to generate random Gaussian noise to add to each 
-c	data point. Default is 0,0,0 (i.e. no additive noise).
+c	System temperature for additive noise, in Kelvin. This is used
+c	to generate random Gaussian noise to add to each data point. The
+c	default is 0 K (i.e. no noise).
+c@ leakage
+c	Polarization leakage errors, given as a percent. This gives the
+c	rms value of leakages of one polarisation feed into another.
+c	Polarization leakage errors are constant over the observation.
+c	To use this, you must set
+c	  stokes=xx,yy,xy,yx
+c	or
+c	  stokes=rr,ll,rl,lr
+c	The default is 0 (i.e. no polarization leakage).
 c@ tpower
-c	Two values can be given to represent the total power variations
-c	due to receiver instability (Trms), and atmospheric noise (Tatm). 
-c	         tpower = Trms * systemp +  Tatm * pnoise
-c	The receiver instablity is modeled as multiplicative Gaussian noise.
+c	Three numbers can be given to represent the total power variations
+c	due to receiver instability, telescope elevation dependence, and
+c	atmospheric noise. The total power is computed as:
+c	  tpower = systemp + trms + telev * cos(el) + tatm * antpnoise
+c	The receiver instablity is modeled as additive Gaussian noise.
 c	The atmospheric noise is modeled to be correlated with the antenna
-c	phase noise. Typical values at 3 millimeter wavelength
-c	are Trms=10-3 and Tatm=0.2 K/radian (280 degrees/K).
-c	Default is tpower=0,0
+c	phase noise. Units of trms, telev in Kelvin and tatm in Kelvin/radian.
+c	The systemp is not changed. Typical values for millimeter wavelengths
+c	are trms=1 K (10-4 * systemp) telev=100 K and tatm=0.5 K/radian.
+c	Default is tpower=0,0,0
 c@ jyperk
 c	The system sensitivity, in Jy/K. Its value is given by 2*k/(eta * A)
 c	where k is Boltzmans constant (1.38e3 Jy m**2 / K), A is the physical
@@ -282,15 +241,19 @@ c	efficiency (0.88) and an antenna efficiency (0.65 at 6 cm). The
 c	overall result is jyperk=12.7. The default jyperk=150, a typical
 c	value for the Hat Creek 6.1 m antennas.
 c@ out
-c	This gives the name of the output Miriad data file. There is
-c	no default. If the dataset exists, visibilities are appended to
+c	This gives the name of the output Miriad data file. The default
+c	it "uvgen". If the dataset exists, visibilities are appended to
 c	the dataset, with an appropriate informational message.
 c--
 c------------------------------------------------------------------------
+	real sqrt2
 	character version*(*)
-	parameter(version = 'Uvgen: version 1.0 25-Aug-97')
+	parameter(sqrt2=1.414214)
+	parameter(version = 'Uvgen: version 1.0 29-Aug-94' )
 	include 'mirconst.h'
 	include 'maxdim.h'
+	integer maxsrc,maxpol,maxpnt
+	parameter(maxsrc=1000,maxpol=4,maxpnt=100)
 	include 'uvgen.h'
 c
 	real corfin(4),corbw(4)
@@ -299,35 +262,31 @@ c
 	real wsignal(maxspect),tpower(MAXANT),pnoise(MAXANT)
 	logical flags(MAXCHAN)
 	logical donoise,dogains,doleak,dopoint
-	real sind,cosd,sinl,cosl,sinel,flux,dra,ddec
+	real sind,cosd,sinl,cosl,sinel,cosel,flux,dra,ddec
 	double precision freq,iffreq
 	real wmaj,wmin,wpa,poln,polpa,x,z,h,sinha,cosha,ha,haend
 	double precision bxx,byy,bzz,bxy,byx
 	real pbfwhm,center(2,MAXPNT),evector
-	integer n,nant,npnt,ipnt,i,jj,m,is,ic,nchan,nospect,ntemp
+	integer n,nant,npnt,ipnt,i,j,jj,m,is,ic,nchan,nospect,ntemp
 	double precision preamble(5),timeout
 	real b1(MAXANT),b2(MAXANT),b3(MAXANT),temp,psi,sinq,cosq,leakrms
 	real systemp(MAXANT*maxspect),inttime
 	double precision restfreq(maxspect),lst
 	double precision antpos(3*MAXANT),ra,dec
-	integer item, unit
+	integer item, unit, iostat
+	integer tunit,leng,status
 	character line*132, umsg*80
-	complex gatm
-	real baseline,patm,pslope,pelev
-	logical doatm,dopolar,doellim
 c
 c  Parameters from the user.
 c
-	integer NTELS
-	parameter(NTELS=3)
+	integer NSITES
+	parameter(NSITES=3)
 	character sfile*64,antfile*64,corfile*64,outfile*64
-	real hbeg, hend, hint, arms, prms, utns
-	real tsys,tsky,tau,trms,tatm,cycleon,cycleoff
-	double precision alat,along,sdec,sra,elev
-	integer pol(maxpol),npol,ipol,npolar,ipolar
-	character telescop*16,tels(NTELS)*8
-	character polar(MAXPOLAR)*27,xpolar*27
-c	character polar(MAXPOLAR)*MAXANT,xpolar*MAXANT
+	real hbeg, hend, hint, arms, prms, tsys, utns
+	real trms,telev,tatm,cycleon,cycleoff
+	double precision alat,sdec,sra,elev
+	integer pol(maxpol),npol,ipol
+	character site*16,sites(NSITES)*8
 c
 c  Variables describing the source.
 c
@@ -346,47 +305,53 @@ c  Externals.
 c
 	complex expi
 	real rang
-        integer PolsP2C,len1,tinNext
-	logical keyprsnt
 c
 c  Data initialisation.
 c
 	data flags /MAXCHAN*.true./
-	data tels/'hatcreek','other   ','atca    '/
+	data sites/'hatcreek','other   ','atca    '/
+c	data nospect/0/,famp/0./,fcen/0./,fwid/0./
 c
 c  Get command line arguments.
 c
 	call output( version )
 	call keyini
 	call keya('source',sfile,' ')
-	if(sfile.eq.' ')call bug('f','A source table must be given')
-	call keya('ant',antfile,' ')
-	if(antfile.eq.' ')call bug('f','An antenna table must be given')
-	call keya('corr',corfile,' ')
-	if(corfile.eq.' ')call bug('f',
-     *				      'A correlator file must be given')
+	if(sfile.eq.' ')then
+	  sfile='uvgen.source'
+	  call bug('w','Source file will be uvgen.source')
+	endif
 c
-	call keymatch('telescop',NTELS,tels,1,telescop,ntemp)
-	if(ntemp.eq.0) telescop = tels(1)
-	call ucase(telescop)
+	call keya('ant',antfile,' ')
+	if(antfile.eq.' ')then
+	  antfile='uvgen.ant'
+	  call bug('w','Ant file will be uvgen.ant')
+	endif
+c
+	call keymatch('site',NSITES,sites,1,site,ntemp)
+	if(ntemp.eq.0) site = sites(1)
+	call ucase(site)
+c
+	call keya('corr',corfile,' ')
+	if(corfile.eq.' ')then
+	  corfile='uvgen.corr'
+	  call bug('w','Corr file will be uvgen.corr')
+	endif
 c
 	call keyr('baseunit',utns,1.0)
 	call keyd('freq',freq,100.d0)
 	call keyd('freq',iffreq,0.250d0)
 	call keyt('time',timeout,'atime',0.d0)
 	if(timeout.le.1)call dayjul('80JAN01',timeout)
-	call keyt('radec',sra,'hms',0.d0)
-	call keyt('radec',sdec,'dms',30.d0*dpi/180.)
-	doellim = keyprsnt('ellim')
-	call keyt('ellim',elev,'dms',15.d0*pi/180.)
+	call keyt('dec',sdec,'dms',30.d0*pi/180.)
+	sra = 0
+	call keyt('elev',elev,'dms',15.d0*pi/180.)
 	sind = sin(sdec)
 	cosd = cos(sdec)
 	call GetPol(pol,npol,maxpol)
-	call mkeya('polar',polar,MAXPOLAR,npolar)
-	dopolar = npolar.gt.0
 	call keyt('lat',alat,'dms',40.d0*pi/180)
-	sinl = sin(alat)
-	cosl = cos(alat)
+	sinl=sin(alat)
+	cosl=cos(alat)
 c
 	call keyr('harange',hbeg,-6.)
 	call keyr('harange',hend,6.)
@@ -421,58 +386,53 @@ c
 	arms = arms /100.
 	call keyr('pnoise',prms,0.)
 	prms = prms * pi/180
-	call keyr('pnoise',patm,0.)
-	patm = patm * pi/180
-	call keyr('pnoise',pslope,0.)
-	call keyr('pnoise',pelev,0.)
 	call keyr('leakage',leakrms,0.)
 	leakrms = leakrms / 100.
 	call keyr('systemp',tsys,0.)
-	call keyr('systemp',tsky,0.)
-	call keyr('systemp',tau,0.)
 	call keyr('tpower',trms,0.)
+	call keyr('tpower',telev,0.)
 	call keyr('tpower',tatm,0.)
-	call keyr('jyperk',jyperk,150.)
+	call keyr('jyperk',jyperk,150.0)
 c
-	call keya('out',outfile,' ')
-	if(outfile.eq.' ')
-     *	  call bug('f','Output file must be given')
+	call keya('out',outfile,'uvgen')
+	if(outfile.eq.'uvgen')
+     *	  call bug('w','Output file will be UVGEN')
 	call keyfin
 c
 c  Determine the rise and set times of the source, at the minimum
 c  elevation angle.
 c
-	if(doellim)then
-	  sinel = sin(elev)
-	  temp = (sinel - sinl*sind ) / ( cosl*cosd )
-	  if(abs(temp).gt.1)then
-	    if(sdec*alat.lt.0)then
-	      call bug('f','Source never rises above elevation limit.')
-	    else
-	      call output('Source never sets below elevation limit.')
-	    endif
+	sinel = sin(elev)
+	temp = (sinel - sinl*sind ) / ( cosl*cosd )
+	if(abs(temp).gt.1)then
+	  if(sdec*alat.lt.0)then
+	    call output('Source never rises above elevation limit.')
+	    stop
 	  else
-	    temp = acos(temp)
-	    temp = 12/pi * temp
-	    write(line,'(a,f5.1,a,f5.1,a)') 'Hour angle limit is ',temp,
-     *		' hrs at ',elev*180./pi,' degrees elevation'
-	    call output(line)
-	    if(hbeg.lt.-temp.or.hend.gt.temp)
-     *	      call bug('w','Source is not always up for given HA range')
-	    hbeg = max(hbeg,-temp) 
-	    hend = min(hend,temp) 
-	    write(line,'(a,f5.1,a,f5.1,a)') 'Hour angle range is ',hbeg,
-     *		' to ',hend,' hours'
-	    call output(line)
+	    call output('Source never sets below elevation limit.')
+	    temp = 12.
 	  endif
+	else
+	  temp = acos(temp)
+	  temp = 12/pi * temp
+	  write(line,'(a,f5.1,a,f5.1,a)') 'Hour angle limit is ',temp,
+     *		' hrs at ',elev*180./pi,' degrees elevation'
+	  call output(line)
+	  if(hbeg.lt.-temp.or.hend.gt.temp)
+     *	    call bug('w','Source is not always up for given HA range')
 	endif
 c
 c  Find HA limits.
 c
+	hbeg = max(hbeg,-temp) 
+	hend = min(hend,temp) 
+	write(line,'(a,f5.1,a,f5.1,a)') 'Hour angle range is ',hbeg,
+     *		' to ',hend,' hours'
+	call output(line)
+c
 	donoise = tsys.gt.0
-	dogains = arms.gt.0.or.prms.gt.0.or.patm.gt.0.
+	dogains = arms.gt.0.or.prms.gt.0
 	doleak = leakrms.gt.0
-	doatm = patm.gt.0.
 	if(doleak)then
 	  doleak = npol.eq.4
 	  if(doleak)doleak = (pol(1).eq.-1.and.pol(4).eq.-4).or.
@@ -483,18 +443,29 @@ c
 	  endif
 	endif
 c
-c  Open the output dataset.
+c  Start the history file. 
+c  First test if the outfile exists, if so, open output file
+c  in append mode.
 c
-	call uvopen(unit,outfile,'new')
-	call hisopen(unit,'write')
+        call hopen(unit,outfile,'old',iostat)
+        if(iostat.eq.0) then
+	  call hclose(unit)
+	  call uvopen(unit,outfile,'append')
+	  call hisopen(unit,'append')
+        else
+	  call uvopen(unit,outfile,'new')
+	  call hisopen(unit,'write')
+        endif
 	call uvset(unit,'preamble','uvw/time/baseline',0,0.,0.,0.)
-c
         call hiswrite(unit,'UVGEN: Miriad '//version)
         call hisinput(unit,'UVGEN')
         umsg = 'UVGEN: '//line
 	call hiswrite(unit, umsg )
 
+c
 c  Open the source components file.
+c
+	call modcomp(sfile,tunit)
 c
 	call hiswrite(unit,'UVGEN: Source specifications:')
 	write(line,'(a)')'     Flux  Offset   Offset   Major  Minor  '//
@@ -516,21 +487,11 @@ c
 c  Read the source component file.
 c
 	ns = 0
-	call tinOpen(sfile)
-	dowhile(tinNext().gt.0)
-	  call tinGetr(flux,0.0)
-	  call tinGetr(dra,0.0)
-	  call tinGetr(ddec,0.0)
-	  call tinGetr(wmaj,0.0)
-	  call tinGetr(wmin,0.0)
-	  if (wmaj .eq. 0.) wmaj = 0.0001
-	  if (wmin .eq. 0.) wmin = 0.0001
-	  call tinGetr(wpa,0.0)
-	  call tinGetr(poln,0.0)
-	  call tinGetr(polpa,0.0)
+	call txtread(tunit,line,leng,status)
+	dowhile(status.eq.0.and.ns.lt.maxsrc)
+	  read(line(1:leng),100) flux,dra,ddec,wmaj,wmin,wpa,poln,polpa
+100	  format(1x,8f10.4)
 	  ns = ns + 1
-	  if(ns.gt.maxsrc)
-     *	    call bug('f','Max number of source components read')
 	  ta(ns) = flux
 	  sx(ns) = dra  * pi/180/3600
 	  sy(ns) = ddec * pi/180/3600
@@ -538,7 +499,7 @@ c
 	  if(wmin .eq. 0.) wmin = 0.0001
 	  smaj(ns) = wmaj * pi/180/3600
 	  smin(ns) = wmin * pi/180/3600
-	  spa(ns)  =  wpa * pi/180
+	  spa(ns)  = wpa  * pi/180
 	  per(ns) = poln / 100.
 	  pa(ns)  = polpa * pi/180
 	  write(line,101) ns,flux,dra,ddec,wmaj,wmin,wpa,poln,polpa
@@ -546,25 +507,31 @@ c
 	  call output(line)
           umsg = 'UVGEN: '//line
 	  call hiswrite(unit, umsg )
+	  call txtread(tunit,line,leng,status)
 	enddo
 c
-	call tinClose
+	call txtclose(tunit)
 	write(line,'(i4,a)')  ns,' sources read from model'
+	if(ns.eq.maxsrc)
+     *	  call bug('w','Max number of source components read')
 	call output(line)
 c
 c  Read the antenna positions file.
 c
+	call modant(antfile,tunit)
+c
 	call output('Antenna positions :')
 	call hiswrite(unit,'UVGEN: Antenna positions :')
 	nant = 0
-c
-	call tinOpen(antfile)
-	dowhile(tinNext().gt.0)
+	call txtread(tunit,line,leng,status)
+	dowhile(status.eq.0.and.nant.lt.MAXANT)
 	  nant = nant + 1
-	  if(nant.gt.MAXANT)call bug('f','Too many antennas')
-	  call tinGetr(b1(nant),0.0)
-	  call tinGetr(b2(nant),0.0)
-	  call tinGetr(b3(nant),0.0)
+	  read(line(1:leng),'(3f12.4)') b1(nant),b2(nant),b3(nant)
+	  write(line,'(a,3f12.4)')'Inputs x,y,z:   ',
+     *				b1(nant),b2(nant),b3(nant)
+	  call output(line(1:53))
+          umsg = 'UVGEN: '//line(1:62)
+	  call hiswrite(unit, umsg )
 c
 c  Convert to equatorial coordinates.
 c
@@ -585,36 +552,21 @@ c
 	  write(line,'(a,3f12.4)') 'Equatorial (ns):',
      *				b1(nant),b2(nant),b3(nant)
 	  call output(line(1:53))
+	  call txtread(tunit,line,leng,status)
 	enddo
 c
-	call tinClose
-c
-	if(dopolar)then
-	  do ipolar=1,npolar
-	    if(len1(polar(ipolar)).lt.nant) call bug('f',
-     *            'Less than NANT characters in polarization cycle')
-	  enddo
-	endif
+	call txtclose(tunit)
+	if(nant.eq.MAXANT)
+     *	  call bug('w','Max number of antenna positions read')
 c
 c  Get frequency/correlator parameters.
 c
-	call tinOpen(corfile)
-	if(tinNext().eq.0)call bug('f',
-     *	  'Error reading from correlator file')
-	call tinGeti(nchan,0)
-	call tinGeti(nospect,0)
-	do i=1,nospect
-	  call tinGetr(corfin(i),0.)
-	enddo
-	do i=1,nospect
-	  call tinGetr(corbw(i),0.0)
-	enddo
-	call tinGetr(famp,1.0)
-	call tinGetr(fcen,0.)
-	call tinGetr(fwid,0.)
-	call tinClose
+	call modcor(corfile,tunit)
 c
-	write(line,150) (corfin(i),i=1,nospect), (corbw(i),i=1,nospect)
+	call txtread(tunit,line,leng,status)
+	read(line(1:leng),'(i5,i2,8f9.2,3f8.1)')
+     *		nchan,nospect,corfin,corbw,famp,fcen,fwid
+	write(line,150) (corfin(i),i=1,4), (corbw(i),i=1,4)
 	call output(line)
         umsg = 'UVGEN: '//line
 	call hiswrite(unit, umsg)
@@ -626,12 +578,14 @@ c
 	umsg = 'UVGEN: '//line
 	call hiswrite(unit, umsg)
 c
+	call txtclose(tunit)
+c
 c  Calculate spectra frequencies from correlator setup
 c
-	if(telescop.eq.'HATCREEK')then
+	if(site.eq.'HATCREEK')then
 	  call coramhat(nospect,nchan,corfin,corbw,freq,iffreq)
 	else
-	  call coramoth(nospect,nchan,corfin,corbw,freq,iffreq)
+	  call coramoth(nospect,nchan,corfin,corbw,freq)
 	endif
 c
 c  Give some messages to the user.
@@ -667,26 +621,29 @@ c
 	call uvputvrd(unit,'freq',freq,1)
 	call uvputvrd(unit,'freqif',freqif,1)
 	call uvputvrd(unit,'latitud',alat,1)
-c
-c  Compute the effective longitude of the observatory.
-c
-	call jullst(timeout,0.d0,along)
-	along = mod(sra-along+2*DPI,2*DPI)
-	if(along.gt.DPI)along = along - 2*DPI
-	call uvputvrd(unit,'longitu',along,1)
+	call uvputvrd(unit,'longitu',0.d0,1)
 c
 c  Miscellaneous.
 c
-	if(telescop.eq.'ATCA')then
+	if(site.eq.'ATCA')then
 	  evector = pi/4
 	else
 	  evector = 0
 	endif
 	call uvputvrr(unit,'evector',evector,1)
-	call uvputvra(unit,'telescop',telescop)
+	call uvputvra(unit,'telescop',site)
 c
 c  Fake some header information.
 c
+	systemp(1) = tsys
+	jj = 1
+	do j = 2,nant*max(nwide,nspect)
+	  jj = jj + 1
+	  systemp(jj)=tsys
+	end do
+	call uvputvrr(unit,'systemp',systemp,max(1,nant*nspect))
+	call uvputvrr(unit,'wsystemp',systemp,max(1,nant*nwide))
+
 	call uvputvrr(unit,'jyperk',jyperk,1)
 	inttime = max(3600*hint,1.)
 	call uvputvrr(unit,'inttime',inttime,1)
@@ -717,7 +674,7 @@ c
 	  call uvputvrr(unit,'wfreq',wfreq,nwide)
 	  call uvputvrr(unit,'wwidth',wwidth,nwide)
 	endif
-c
+C
 	do jj=1,nant
 	  antpos(jj) = b1(jj)
 	  antpos(jj+nant) = b2(jj)
@@ -725,21 +682,45 @@ c
         end do
 	call uvputvrd(unit,'antpos',antpos,nant*3)
 c
-c  Determine the rms for each polarisation using systemp at zenith.
+c  Calculate random noise based on Tsys, integration time and bandwidth.
 c
-	if(Tsky*tau.gt.0.)then
-          systemp(1) = 2.*(Tsys + Tsky*(1-exp(-tau)))*exp(tau)
-	else
-          systemp(1) = Tsys
-	endif
-        call NoiseRms
-     *	  (unit,nant,npol,jyperk,systemp,pol,inttime,wrms,rrms,wsignal)
+	do i=1,nwide
+	  wrms(i,1) = jyperk*tsys / sqrt(2*wwidth(i)*1e9*inttime)
+	  wsignal(i) = 0
+	  do ipol=2,npol
+	    wrms(i,ipol) = wrms(i,1)
+	  enddo
+	enddo
+	do j = 1,nspect
+	  temp = jyperk * tsys / sqrt(2 * abs(sdf(j)) * 1e9 * inttime)
+	  do ipol=1,npol
+	    do i = ischan(j), ischan(j)+nschan(j)-1
+	      rrms(i,ipol) = temp
+	    enddo
+	  enddo
+	enddo
+c
+c  Divide noise levels by sqrt(2) if its a true Stokes correlation.
+c
+	do ipol=1,npol
+	  if(pol(ipol).gt.0)then
+	    do i=1,nwide
+	      wrms(i,ipol) = wrms(i,ipol)/sqrt2
+	    enddo
+	    do i=1,numchan
+	      rrms(i,ipol) = rrms(i,ipol)/sqrt2
+	    enddo
+	  endif
+	enddo
+c
+c  Determine the rms for each polarisation.
+c
 c
 c  Write noise info to the history file.
 c
-	write(line,170) Tsys,Tsky,tau
-170	format('Tsys(K): ',f6.0,'  Tsky(K): ',f6.0,
-     *						'  tau(zenith): ',f6.2)
+	write(line,170) Tsys,Trms,Telev,Tatm
+170	format('Tsys(K): ',f6.0,'  Trms(K): 'f8.2,
+     *			'  Telev(K): ',f6.0,'  Tatm(K/rad): 'f5.2)
 	call output(line)
 	umsg = 'UVGEN: '//line
 	call hiswrite(unit, umsg )
@@ -774,9 +755,7 @@ c
 c  Miscellaneous initialization.
 c
 	item = 0
-c	call Randset(nint(10*timeout))
-        call Randset(nint(timeout) +
-     *               nint(10000000 * (timeout - int(timeout))))
+	call Randset(nint(10*timeout))
 c	timeout = int(timeout-0.5) + 0.5
 c
 c  Initialise the effective source parameters, to account for pointing
@@ -805,14 +784,6 @@ c
 	  enddo
 	endif
 c
-c  Set atmospheric gain.
-c
-	gatm = 1
-c
-c  Start the polarization switching cycle.
-c
-	ipolar = -1
-c
 c  Compute visibility for each hour angle.
 c
 	ha = hbeg
@@ -821,13 +792,6 @@ c
 	dec = sdec
 	dowhile(ha.lt.hend)
 	  haend = min(ha + cycleon,hend)
-c
-c  Increment the polarization switching cycle.
-c
-	if(dopolar) then
-	  ipolar = mod(ipolar+1,npolar)
-	  xpolar = polar(ipolar+1)
-	endif
 c
 c  Compute effective source parameters when mosaicing.
 c
@@ -854,38 +818,34 @@ c
 	  endif
 c
 	  dowhile(ha.lt.haend)
-	    lst = ha * pi / 12 + ra
+	    lst = ha * pi / 12
 	    if (lst.lt.0.d0) lst = lst + 2*pi
 	    h = lst - ra
 	    call uvputvrd(unit,'ut',lst,1)
 	    call uvputvrd(unit,'lst',lst,1)
-	    preamble(4) = timeout + 365.25/366.25*ha/24.
+	    preamble(4) = timeout + ha/24.
 	    sinha = sin(h)
 	    cosha = cos(h)
 	    sinq = cosl*sinha
 	    cosq = sinl*cosd - cosl*sind*cosha
-	    sinel=sinl*sind+cosl*cosd*cosha
 c
 c  Offset the parallactic angle by evector.
 c
 	    psi = atan2(sinq,cosq) + evector
 	    call uvputvrr(unit,'chi',psi,1)
 c
-c  Compute systemp and tpower variations for each antenna.
+c  Compute total power variations for each antenna.
 c
-	    if(Tsky*tau*sinel.gt.0.)then
-              temp = exp(-tau/sinel)
-              systemp(1) = 2.*(Tsys + Tsky*(1-temp)) / temp
-              call NoiseRms
-     *	  (unit,nant,npol,jyperk,systemp,pol,inttime,wrms,rrms,wsignal)
-	    endif
-	    if(trms.gt.0. .or. tatm.gt.0.) then
+	    if (trms + telev + tatm .gt. 0.) then
+	      sinel=sinl*sind+cosl*cosd*cosha
+	      cosel=sqrt(1.-sinel*sinel)
 	      do n = 1, nant
-	        tpower(n) = rang(1.,trms)*systemp(1) + tatm*pnoise(n) 
-	      enddo
+	        tpower(n) = tsys + rang(1.,trms) + telev * cosel 
+     * 						 + tatm  * pnoise(n) 
+	      end do
 	      call uvputvri(unit,'ntpower',nant,1)
 	      call uvputvrr(unit,'tpower',tpower,nant)
-	    endif
+	    end if
 c
 c  Compute visibility for each baseline.
 c
@@ -900,13 +860,6 @@ c
 	        preamble(1) = bxy
 	        preamble(2) =  byx*sind + bzz*cosd
 		preamble(3) = -byx*cosd + bzz*sind
-		baseline = 3.e-4 * sqrt(bxx*bxx + byy*byy + bzz*bzz)
-c
-c  Find the polcode for the polarization switching cycle.
-c
-		if(dopolar)then
-		  pol(1) = PolsP2C(xpolar(m:m)//xpolar(n:n))
-		endif
 c
 c  Calculate wideband correlations.
 c
@@ -921,14 +874,12 @@ c
 	              wcorr(is,ipol) = vis
 	            enddo
 		  enddo
-		  if(doatm) gatm = expi(
-     *		     rang(0.,patm * baseline**pslope * sinel**pelev))	
 		  if(doleak)
      *		     call PolLeak(wcorr,nwide,maxspect,npol,
      *			leak(1,m),leak(1,n))
 		  if(dogains)
      *		     call AntGain(wcorr,nwide,maxspect,npol,
-     *			Gain(m)*conjg(gain(n)*gatm))
+     *			Gain(m)*conjg(gain(n)))
 		  if(donoise)
      *		     call NoiseAdd(wcorr,nwide,maxspect,npol,wrms)
 	        endif
@@ -964,8 +915,7 @@ c
 c  Write data records.
 c
 		do ipol=1,npol
-                  if(npol.gt.1.or.npolar.gt.1) 
-     *                  call uvputvri(unit,'pol',pol(ipol),1)
+		  if(npol.gt.1) call uvputvri(unit,'pol',pol(ipol),1)
 	          if(numchan.gt.0) then
 		    if(nwide.gt.0)
      *		      call uvwwrite(unit,wcorr(1,ipol),flags,nwide)
@@ -990,7 +940,7 @@ c
 c  All done. Summarize, tidy up and exit.
 c
 	write(line,'(i5,a,a)')
-     *	  Item,' records written to file: ',outfile
+     *	  Item,' records written to file:',outfile
 	call output(line)
 	umsg = 'UVGEN: '//line
 	call hiswrite(unit, umsg )
@@ -1320,21 +1270,24 @@ c    pa		Position angle of the polarisation, in radians.
 c  Output:
 c    cont	The computed visibility.
 c------------------------------------------------------------------------
-	include 'mirconst.h'
 	integer PolI,PolRR,PolLL,PolRL,PolLR,PolXX,PolYY,PolXY,PolYX
 	parameter(PolI=1,PolRR=-1,PolLL=-2,PolRL=-3,PolLR=-4)
 	parameter(	 PolXX=-5,PolYY=-6,PolXY=-7,PolYX=-8)
-c
+	real pi
+	parameter(pi=3.141592653589793)
 	real p,umaj,umin,uvmaj,uvmin,gaus,flux
 	complex vis
-	logical inten
 	double precision u,v,w
 	integer j
+	logical inten(-8:1)
 c
 c  Externals.
 c
 	complex expi
-	logical polspara
+c
+	data inten/.false.,.false.,.true.,.true.,
+     *		   .false.,.false.,.true.,.true.,
+     *		   .false.,.true./
 c
 c  Convert u and v to wavelengths.
 c
@@ -1345,23 +1298,25 @@ c
 c  Loop over the source components. Avoid as much work as possible by
 c  checking for situations where the component contributes nothing.
 c
-	inten = polspara(code)
 	cont = (0.,0.)
 	do j = 1,ns
 	  flux = 0
-	  if(per(j).ne.0.or.inten)then
+	  if(per(j).ne.0.or.inten(code))then
 	    uvmaj = 1. / ( pi * 0.6 * smaj(j) )
 	    uvmin = 1. / ( pi * 0.6 * smin(j) )
-	    umaj = (u * sin(spa(j)) + v * cos(spa(j))) / uvmaj
-	    umin = (u * cos(spa(j)) - v * sin(spa(j))) / uvmin
+	    umaj = (u * cos(spa(j)) - v * sin(spa(j))) / uvmaj
+	    umin = (u * sin(spa(j)) + v * cos(spa(j))) / uvmin
 	    gaus = umaj*umaj + umin*umin
 	    if (gaus .lt. 20) flux = ta(j) * exp(-gaus)
 	  endif
 c
 c  Determine the contribution for the various polarisations.
+c  NOTE! I have multiplied the RL and LR correlations by expi(2*psi),
+c  as it is the VLA convention to perform this on line. The polarisation
+c  handling software in Miriad assumes this!!!!
 c
 	  if (flux.ne.0)then
-	    if((per(j).eq.0.and.inten).or.
+	    if((per(j).eq.0.and.inten(code)).or.
      *		code.eq.PolI.or.code.eq.PolRR.or.code.eq.PolLL)then
 	      vis = 1
 	    else if(code.eq.PolXX)then
@@ -1371,9 +1326,9 @@ c
 	    else if(code.eq.PolXY.or.code.eq.PolYX)then
 	      vis = per(j) * sin(2.* (pa(j) - psi))
 	    else if(code.eq.PolRL)then
-	      vis = per(j) * expi(-2.* (pa(j) - psi))
+	      vis = per(j) * expi(-2.* (pa(j)))
 	    else if(code.eq.PolLR)then
-	      vis = per(j) * expi( 2.* (pa(j) - psi))
+	      vis = per(j) * expi( 2.* (pa(j)))
 	    else
 	      call bug('f','Unsupported polarization, in ModVis')
 	    endif
@@ -1383,12 +1338,162 @@ c
 	enddo
 	end
 c************************************************************************
-	subroutine coramoth(nospect,nchan,corfin,corbw,freq,iffreq)
+	subroutine modcomp(sfile,tunit)
+c
+	implicit none
+	character sfile*(*)
+	integer tunit
+c
+c	open or create source component list for model program
+c		mchw	july 1983
+c------------------------------------------------------------------------
+	integer status
+	character*90 line
+        character*80 umsg
+c
+	integer leng
+	real flux,ra,dec,wmaj,wmin,wpa,pol,pa
+
+	call txtopen(tunit,sfile,'old',status)
+	if (status.ne.0) then
+	  call txtopen(tunit,sfile,'new',status)
+	  call output('Enter Flux,position,FWHP size and polarization')
+	  call output(' End list with RETURN')
+	  call output(' Enter 8 numbers separated by commas')
+          umsg = ' Flux  Offset   Offset   Major  Minor  Axis '//
+     *	         '  Polar    Polar'
+	  call output( umsg )
+          umsg = '         Ra      Dec     Axis   Axis   Angle'//
+     *           '  ization  Angle'
+	  call output( umsg )
+          umsg = ' (Jy)   (")      (")     (")    (")    (deg)'//
+     *           '   (%)      (deg)'
+	  call output( umsg )
+
+10	  call prompt(line,leng,'F,RA,DEC,M,m,A,P%,A:')
+	  if(leng.eq.0) goto 20
+	    read(line(1:leng),'(8F15.0)')
+     *			 flux,ra,dec,wmaj,wmin,wpa,pol,pa
+	    if (wmaj .eq. 0.) wmaj = 0.0001
+	    if (wmin .eq. 0.) wmin = 0.0001
+	    write(line,'(8F10.4)') flux,ra,dec,wmaj,wmin,wpa,pol,pa
+	    call txtwrite(tunit,line,80,status)
+	  goto 10
+c
+20	  call txtclose(tunit)
+c
+	  call txtopen(tunit,sfile,'old',status)
+	end if
+	end
+c************************************************************************
+	subroutine modant(antfile,tunit)
+c
+	implicit none
+	character antfile*(*)
+	integer tunit
+c
+c	create antenna position file for model programs
+c		mchw	july 1983
+c------------------------------------------------------------------------
+	include 'maxdim.h'
+	integer status
+	character*90 line
+        character*80 umsg
+c
+	integer n,leng
+	real bx,by,bz
+
+	call txtopen(tunit,antfile,'old',status)
+	if (status.ne.0) then
+	  call txtopen(tunit,antfile,'new',status)
+          umsg = 'Enter antenna coordinates: bx,by,bz '//
+     *	         '(or North,East,Elev)'
+	  call output( umsg )
+	  call output(' End list with RETURN')
+
+	  n=0
+10	  call prompt(line,leng,'Bx,By,Bz:')
+	  if(leng.eq.0) goto 20
+	    read(line(1:leng),'(3F20.0)') bx,by,bz
+	    write(line,'(3F12.4)') bx,by,bz
+	    call txtwrite(tunit,line,36,status)
+	    n=n+1
+	  if(n.lt.MAXANT) go to 10
+	  write (umsg,'(a,i2,a)')'Maximum of ',MAXANT,' antennas'
+	  call output(umsg)
+
+20	  call txtclose(tunit)
+
+	  call txtopen(tunit,antfile,'old',status)
+	end if
+	end
+c************************************************************************
+	subroutine modcor(corfile,tunit)
+c
+	implicit none
+	character corfile*(*)
+	integer tunit
+c
+c  Create correlator settup file.
+c------------------------------------------------------------------------
+	integer status
+	real corfin(4),corbw(4)
+	character*120 line
+	integer leng,nospect,numchn,i
+	real famp,fcen,fwid
+c	data nospect/0/,numchn/0/,famp/0./,fcen/0./,fwid/0./
+c
+c  Initialize variables.
+c
+	nospect = 0
+	numchn = 0
+	famp = 0
+	fcen = 0
+	fwid = 0
+	do i=1,4
+	  corfin(i) = 0.
+	  corbw(i) = 0.
+	enddo
+c
+	call txtopen(tunit,corfile,'old',status)
+	if (status.ne.0) then
+	  call txtopen(tunit,corfile,'new',status)
+	  call output('Enter correlator parameters')
+20	  call prompt(line,leng,
+     *      'Enter number of spectral windows (1 to 4): ')
+	  read(line(1:leng),'(i4)',err=20) nospect
+c
+25	  call prompt(line,leng,
+     *      'Enter number of channels per spectra (0=wideband only): ')
+	  read(line(1:leng),'(i4)',err=25) numchn
+c
+30	  call prompt(line,leng,
+     *		'Enter 4 correlator frequencies (70 - 900) MHz: ')
+	  read(line(1:leng),'(4f20.0)',err=30) (corfin(i),i=1,4)
+c
+40	  call prompt(line,leng,
+     *		'Enter 4 correlator bandwidths (6.25 - 100) MHz: ')
+	  read(line(1:leng),'(4f20.0)',err=40) (corbw(i),i=1,4)
+c
+50	  call output('Enter model spectrum parameters')
+	  call prompt(line,leng,
+     *	   'Enter line/continuum ratio, center freq and width (GHz): ')
+	  read(line(1:leng),'(3f20.0)',err=50) famp, fcen, fwid
+c
+	  write(line,'(i5,i2,8f9.2,3f8.1)')
+     *		numchn, nospect, corfin, corbw, famp, fcen, fwid
+	  call txtwrite(tunit,line,87,status)
+	  call txtclose(tunit)
+	  call txtopen(tunit,corfile,'old',status)
+	endif
+	end
+c************************************************************************
+	subroutine coramoth(nospect,nchan,corfin,corbw,freq)
 c
 	implicit none
 	integer nospect,nchan
 	real corfin(4),corbw(4)
-	double precision freq,iffreq
+	double precision freq
 c
 c  Derives spectra parameters from correlator setup.
 c
@@ -1401,39 +1506,33 @@ c    freq	Frequency of primary line, in upper sideband.
 c
 c  Outputs via the uvgencom common.
 c------------------------------------------------------------------------
-	integer i
 	include 'uvgen.h'
 c
 c  Determine down-conversion chain characteristics.
 c
-	if(nospect.ne.1)
-     *	  call bug('f','Invalid nspect in correlator file')
-	freqif = iffreq
+	freqif = 4e-3*corbw(1)
 	lo1 = freq - freqif
 	lo2 = 0.d0
 c
 c  Set up the wide correlator characteristics.
 c
-	nwide = nospect
-	do i=1,nwide
-	  wfreq(i) = freq + 1e-3*corfin(i)
-	  wwidth(i) = 1e-3*corbw(i)
-	enddo
+	nwide = 1
+	wfreq(1) = freq
+	wwidth(1) = 1e-3*corbw(1)
 c
 c  Fill in spectral correlator details.
 c
-	if(nchan.eq.0)then
-	  nspect  = 0
-	  numchan = 0
-	else
-	  nspect = nospect
-	  numchan = nspect*nchan
-	  do i=1,nspect
-	    sdf(i) = 1e-3 * corbw(i) / nchan
-	    sfreq(i) = freq + 1e-3*corfin(i) - 0.5*(nchan-1)*sdf(1)
-	    ischan(i) = 1 + nchan*(i-1)
-	    nschan(i) = nchan
-	  enddo
+	if((nospect.ne.0.and.nospect.ne.1).or.
+     *	   (nospect.eq.1.and.nchan.le.0))
+     *	  call bug('f','Illegal value of nspect or nchan')
+	nspect = nospect
+	numchan = nspect*nchan
+c
+	if(nspect.eq.1)then
+	  sdf(1) = 1e-3 * corbw(1) / numchan
+	  sfreq(1) = freq - 0.5 * (numchan-1) * sdf(1)
+	  ischan(1) = 1
+	  nschan(1) = numchan
 	endif
 	end
 c************************************************************************
@@ -1471,7 +1570,7 @@ c
 	  nspect = nospect
 	  do i = 1,nspect
 	    sdf(i) = 1e-3 * corbw(i) / nchan
-	    sfreq(i) = lo1 + lo2 + 1e-3 * corfin(i)
+	    sfreq(i) = 1e-3 * corfin(i)
 	    ischan(i) = (i-1)*nchan + 1
 	    nschan(i) = nchan
 	  enddo
@@ -1491,59 +1590,3 @@ c
 	wwidth(2) = wwidth(1)
 c
 	end
-c************************************************************************
-        subroutine NoiseRms
-     *	  (unit,nant,npol,jyperk,systemp,pol,inttime,wrms,rrms,wsignal)
-	implicit none
-c
-c  Calculate random noise based on systemp, integration time and bandwidth.
-c
-	include 'maxdim.h'
-	include 'uvgen.h'
-	integer unit,nant,npol,pol(MAXPOL)
-	real jyperk,inttime
-	real wrms(MAXSPECT,MAXPOL),rrms(MAXCHAN,MAXPOL)
-	real systemp(MAXANT*MAXSPECT),wsignal(MAXSPECT)
-c---------------------------------------------------------------------
-	integer i,j,jj,ipol
-	real sqrt2,temp
-	parameter(sqrt2=1.414214)
-c
-	jj = 1
-	do j = 2,nant*max(nwide,nspect)
-	  jj = jj + 1
-	  systemp(jj)=systemp(1)
-	end do
-	call uvputvrr(unit,'systemp',systemp,max(1,nant*nspect))
-	call uvputvrr(unit,'wsystemp',systemp,max(1,nant*nwide))
-
-	do i=1,nwide
-	  wrms(i,1) = jyperk*systemp(1) / sqrt(2*wwidth(i)*1e9*inttime)
-	  wsignal(i) = 0
-	  do ipol=2,npol
-	    wrms(i,ipol) = wrms(i,1)
-	  enddo
-	enddo
-	do j = 1,nspect
-	  temp = jyperk * systemp(1) / sqrt(2*abs(sdf(j))*1e9*inttime)
-	  do ipol=1,npol
-	    do i = ischan(j), ischan(j)+nschan(j)-1
-	      rrms(i,ipol) = temp
-	    enddo
-	  enddo
-	enddo
-c
-c  Divide noise levels by sqrt(2) if its a true Stokes correlation.
-c
-	do ipol=1,npol
-	  if(pol(ipol).gt.0)then
-	    do i=1,nwide
-	      wrms(i,ipol) = wrms(i,ipol)/sqrt2
-	    enddo
-	    do i=1,numchan
-	      rrms(i,ipol) = rrms(i,ipol)/sqrt2
-	    enddo
-	  endif
-	enddo
-	end
-
