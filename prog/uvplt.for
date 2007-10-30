@@ -40,9 +40,6 @@ c	  uvangle                  [uv pos'n angle clockwise from v axis]
 c	  hangle                   [hour angle in HH MM SS.S]
 c	  dhangle                  [hour angle in decimal hours]
 c	  parang                   [parallactic angle in degrees]
-c	NOTE: parang is the true parallactic angle of the source, which can
-c	be quite different from the angle between source and antenna feed
-c	(Miriad variable chi).
 c
 c	Defaults are axis=time,amp  (x and y axes).
 c@ xrange
@@ -97,16 +94,10 @@ c
 c	 nofqav  By default, uvplt averages together all channels from
 c	         a visibility record before plotting. The nofqav option
 c	         disables this, and causes individual channels to be
-c	         plotted.  Note that this option is not active when
-c		 time averaging is invoked (frequency averaging is always
-c 		 done then).
+c	         plotted.
 c
 c	 nobase  Plot all baselines on the same plot, otherwise
 c	         each baseline is plotted on a separate sub-plot.
-c
-c        notitle Do not write any title on the plot.  Probably most useful 
-c                if plotting all baselines on the same plot (using the
-c                "nobase" option).
 c	 
 c	 2pass   Normally uvplt makes assumptions about what it is
 c	 	 expecting to find in the data with regards polarizations
@@ -304,15 +295,6 @@ c    nebk 22may96  Add options=mrms
 c    rjs  06jun96  Change frequency behaviour to default to all channels.
 c    rjs  30jul96  2pass tries to guess the number of points needed.
 c    rjs  14feb97  If the user sets nxy in options=nobase, then honour it.
-c    nebk 18jun98  Document nofqav options better
-c    rjs  19nov98  Minor correction to computation of LST, and recompute from
-c		   scratch the parallactic angle.
-c    swa  03sep99  Add options=notitle.
-c    rjs  10mar00  Set maxbase2=91.
-c    rjs  28mar00  Fix colour indices when there are more than NCOL
-c		   inputs.
-c    rjs  04may00  Tidy up requirement for lat,long,lst and more.
-c    rjs  26sep00  Correct uvangle code.
 c
 c To do:
 c
@@ -374,7 +356,7 @@ c
       include 'mirconst.h'
 c
       integer maxbase2, maxco, maxpol, maxfile
-      parameter (maxbase2 = 91, maxco = 7, maxpol = 4, maxfile = 30)
+      parameter (maxbase2 = 36, maxco = 7, maxpol = 4, maxfile = 30)
 c
       complex data(maxchan)
       double precision freq(maxchan)
@@ -412,9 +394,9 @@ c
      +  plpts(maxbase,maxpol,maxfile), a1a2(maxbase,2)
 c
       double precision preamble(4), fday, dayav, baseday, day, 
-     +  ha, ra, dec, lst, lat, dtemp
+     +  ha, ra
       real size(2), xmin, xmax, ymin, ymax, u, v, uvdist, uvpa, xvalr,
-     +  yvalr, paran
+     +  yvalr, parang, evec
       integer lin, ivis, nread, dayoff, j,  nx, ny, inc, hann, tunit,
      +  ofile, ifile, jfile, vupd, ip, nkeep, npnts
       character in*64, xaxis*10, yaxis*10, pdev*80, comment*80, 
@@ -423,7 +405,7 @@ c
      +  dovec(2), dorms(3), doall, doflag, dobase, doperr, dointer,
      +  dolog, dozero, doequal, donano, dosrc, doavall, bwarn(2), 
      +  skip, xgood, ygood, doxind, doyind, dowrap, none, dosymb, 
-     +  dodots, false(2), allfull, docol, twopass, dofqav, dotitle
+     +  dodots, false(2), allfull, docol, twopass, dofqav
 c
 c Externals
 c
@@ -443,7 +425,7 @@ c
       data npts, plpts, basmsk /ifac1*0, ifac1*0, ifac2*0/
       data polmsk /13*0/
 c-----------------------------------------------------------------------
-      call output ('UvPlt: version 4-May-00')
+      call output ('UvPlt: version 30-Jul-96')
 c
 c  Get the parameters given by the user and check them for blunders
 c
@@ -451,7 +433,7 @@ c
      +   tunit, dorms, dovec, doflag, doall, dobase, dointer, doperr,
      +   dolog, dozero, doequal, donano, dosrc, doavall, doxind, 
      +   doyind, dowrap, dosymb, dodots, docol, inc, nx, ny, pdev, 
-     +   logf, comment, size, hann, ops, twopass, dofqav, dotitle)
+     +   logf, comment, size, hann, ops, twopass, dofqav)
       call chkinp (xaxis, yaxis, xmin, xmax, ymin, ymax, dayav,
      +   dodoub, dowave, doave, dovec, dorms, dointer, doperr,
      +   dowrap, hann, xrtest, yrtest)
@@ -536,6 +518,11 @@ c
           call goodat ( nread, goodf, nkeep)
           if (nkeep.eq.0) goto 950
 c
+          call uvrdvrd (lin, 'obsra', ra, 0.0d0)
+          call uvrdvrr (lin, 'chi', parang, 0.0)
+          call uvrdvrr (lin, 'evector', evec, 0.0)
+          parang = (parang-evec) * 180.0 / dpi
+c
           ivis = ivis + 1
           day = preamble(3) + 0.5
 c
@@ -578,39 +565,10 @@ c
 c Get info from preamble
 c
           if (dowave) then
-            call getwvl (donano, preamble, u, v, uvdist, uvpa)
+            call getwvl (lin, xaxis, yaxis, ra, donano, preamble, 
+     +                   u, v, uvdist, uvpa, ha)
             call uvinfo (lin, 'sfreq', freq)
-          endif
-c
-c Fish out hour angle if required.
-c
-          if (xaxis.eq.'hangle' .or. xaxis.eq.'dhangle' .or.
-     +        yaxis.eq.'hangle' .or. yaxis.eq.'dhangle') then
-	    call uvrdvrd(lin,'ra',dtemp,0.d0)
-	    call uvrdvrd(lin,'obsra',ra,dtemp)
-	    call getlst(lin,lst)
-            ha = (lst - ra) 
-            if (ha.gt.dpi) then
-              ha = ha - 2.0d0*dpi
-            else if (ha.lt.-dpi) then
-              ha = ha + 2.0*dpi
-            end if
-            ha = ha * 12.0d0*3600.0d0/dpi
-          endif
-c
-c  Fish out the parallactic angle if required.
-c
-	  if(xaxis.eq.'parang'.or.yaxis.eq.'parang')then
-	    call uvrdvrd(lin,'ra',dtemp,0.d0)
-            call uvrdvrd (lin, 'obsra', ra, dtemp)
-	    call uvrdvrd(lin,'dec',dtemp,0.d0)
-	    call uvrdvrd(lin, 'obsdec',dec,dtemp)
-	    call getlst(lin, lst)
-	    call getlat(lin, lat)
-	    call parang(ra,dec,lst,lat,paran)
-            paran = paran * 180.0 / dpi
-	  endif
-c
+           end if
           fday = day - dayoff
 c
 c Loop over channels for this visibility, accumulating, or 
@@ -624,9 +582,9 @@ c
 c Set x and y values
 c
               call setval (xaxis, ha, u, v, uvdist, uvpa, fday,
-     +                     paran, data(j), j, freq, xvalr, xgood)
+     +                     parang, data(j), j, freq, xvalr, xgood)
               call setval (yaxis, ha, u, v, uvdist, uvpa, fday, 
-     +                     paran, data(j), j, freq, yvalr, ygood)
+     +                     parang, data(j), j, freq, yvalr, ygood)
               if (xgood .and. ygood) then
                 if (doave) then
 c
@@ -743,7 +701,7 @@ c
      +     xxmax, yymin, yymax, pdev, pl1dim, pl2dim, pl3dim, pl4dim,
      +     maxbase, maxpol, maxfile, nbases, npols, npts, buffer(ip), 
      +     xo, yo, elo, eho, nx, ny, a1a2, order, size, polmsk, 
-     +     doavall, docol, dotitle)
+     +     doavall, docol)
 c
       call logclose
       call memfree (ip, maxbuf2, 'r')
@@ -1571,7 +1529,7 @@ c
         pl3dim = min(npols,maxpol)
       end if
 c
-c Work out file dimension of plot buffer. Cannot have files in
+c Work out file dimension of plot buffer. Can't have files in
 c different colours if plotting more than one polarization
 c as the different polarizations get the colours
 c
@@ -1857,44 +1815,6 @@ c
       end if
 c
       end
-c************************************************************************
-      subroutine getlst (lin, lst)
-c
-      implicit none
-      integer lin
-      double precision lst
-c
-c  Get lst of the current data point.
-c
-c  Input:
-c    lin         Handle of file
-c  Output:
-c    lst         LAST in radians
-c-----------------------------------------------------------------------
-      double precision time,ra,long,dtemp
-      character type*1
-      integer length
-      logical ok
-c
-c  Externals.
-c
-      double precision eqeq
-c
-      lst = 0.0d0
-      call uvprobvr (lin, 'lst', type, length, ok)
-      if (type(1:1).eq.' ') then
-	call uvrdvrd (lin, 'ra', dtemp, 0.d0)
-	call uvrdvrd (lin, 'obsra', ra, dtemp)
-	call getlong(lin,long)
-        call jullst (time, long, lst)
-	lst = lst + eqeq(time)
-      else
-         call uvrdvrd (lin, 'lst', lst, 0.0d0)
-      end if
-c
-      end
-c
-c
 c
 c
       subroutine getlong (lin, long)
@@ -1911,16 +1831,12 @@ c-----------------------------------------------------------------------
 c
       character type*1, telescop*10
       integer length
-      logical ok, printed
-      save printed
-      data printed/.false./
+      logical ok
 c------------------------------------------------------------------------ 
       long = 0.0d0
       call uvprobvr (lin, 'longitu', type, length, ok)
       if (type(1:1).eq.' ') then
-         if(.not.printed)call bug ('w', 
-     *		'No longitude variable; trying telescope')
-	 printed = .true.
+         call bug ('w', 'No longitude variable; trying telescope')
          call uvprobvr (lin, 'telescop', type, length, ok)
          if (type(1:1).eq.' ') then
             call bug ('f', 
@@ -1938,52 +1854,10 @@ c
       end
 c
 c
-      subroutine getlat (lin, lat)
-c-----------------------------------------------------------------------
-c     Get latitude from variable or obspar subroutine
-c
-c  Input:
-c    lin         Handle of file
-c  Output:
-c    lat        Latitude in radians
-c-----------------------------------------------------------------------
-      integer lin
-      double precision lat
-c
-      character type*1, telescop*10
-      integer length
-      logical ok, printed
-      save printed
-      data printed/.false./
-c------------------------------------------------------------------------ 
-      lat = 0.0d0
-      call uvprobvr (lin, 'latitud', type, length, ok)
-      if (type(1:1).eq.' ') then
-         if(.not.printed)call bug ('w', 
-     *		'No latitude variable; trying telescope')
-	 printed = .true.
-         call uvprobvr (lin, 'telescop', type, length, ok)
-         if (type(1:1).eq.' ') then
-            call bug ('f', 
-     +      'No telescope variable either, can''t work out latitude')
-         else
-            call uvrdvra (lin, 'telescop', telescop, ' ')
-            call obspar (telescop, 'latitude', lat, ok)
-            if (.not.ok) call bug('f', 
-     +          'No valid latitude found for '//telescop)
-         end if
-      else
-         call uvrdvrd (lin, 'latitud', lat, 0.0d0)
-      end if
-c
-      end
-c
-c
       subroutine getopt (dorms, dovec, doflag, doall, doday, dohour,
      +  dosec, dobase, dointer, doperr, dolog, dozero, doequal,
      +  donano, docal, dopass, dopol, dosrc, doavall, doxind, 
-     +  doyind, dowrap, dosymb, dodots, docol, twopass, dofqav,
-     +  dotitle)
+     +  doyind, dowrap, dosymb, dodots, docol, twopass, dofqav)
 c-----------------------------------------------------------------------
 c     Get user options
 c
@@ -1996,7 +1870,6 @@ c     doday     Averaging time in days if true, else minutes
 c     dohour    Averaging time in hours if true, esle minutes
 c     dosec     Averaging time in seconds if true, else minutes
 c     dobase    True if user wants each baseline on a differnet plot
-c     dotitle   If false then don't write plot title
 c     dointer   True if user wants to interactively fiddle with the
 c               plot after first drawing it.
 c     doperr    If true then the automatically determined Y window
@@ -2023,10 +1896,10 @@ c
       logical dorms(3), dovec(2), doall, doflag, dobase, dointer, 
      +  doperr, dolog, dozero, doequal, donano, docal, dopol, dosrc,
      +  doday, dohour, dosec, doavall, doxind, doyind, dowrap, 
-     +  dosymb, dodots, dopass, docol, twopass, dofqav, dotitle
+     +  dosymb, dodots, dopass, docol, twopass, dofqav
 cc
       integer nopt
-      parameter (nopt = 29)
+      parameter (nopt = 28)
 c
       character opts(nopt)*8
       logical present(nopt)
@@ -2036,8 +1909,7 @@ c
      +           'nocal   ', 'source  ', 'nopol   ', 'days    ', 
      +           'hours   ', 'avall   ', 'xind    ', 'yind    ', 
      +           'unwrap  ', 'symbols ', 'dots    ', 'nopass  ',
-     +           'nocolour', '2pass   ', 'mrms    ', 'nofqav  ',
-     +           'notitle '/
+     +           'nocolour', '2pass   ', 'mrms    ', 'nofqav  '/
 c-----------------------------------------------------------------------
       call options ('options', opts, present, nopt)
 c
@@ -2079,7 +1951,6 @@ c
       docol    = .not.present(25)
       twopass  =      present(26)
       dofqav   = .not.present(28)
-      dotitle  = .not.present(29)
 c
       end
 c
@@ -2300,27 +2171,36 @@ c
 c
       end
 c
-c************************************************************************
-      subroutine getwvl (donano, preamble, u, v, uvdist, uvpa)
 c
-      implicit none
-      double precision preamble(2)
-      real u, v, uvdist, uvpa
-      logical donano
+      subroutine getwvl (lin, xaxis, yaxis, ra, donano, preamble, 
+     +                   u, v, uvdist, uvpa, ha)
 c-----------------------------------------------------------------------
 c     Get some things from the preamble
 c
 c  Input:
 c    lin          Handle of vis file
+c    x,yaxis      Axis types
+c    ra           Apparent ra (radians)
 c    donano       True for wavelengths in nanoseconds, else kilo-lambda
 c    preamble     u and v in raw form (nsec or lambda)
 c  Output:
 c    u,v          u and v in form selected by user (nsec or klambda)
 c    uvdist       sqrt(u**2 + v**2)
 c    uvpa         Position angle of u,v clockwise from v axis
+c    ha           Hour angle in seconds
+c
 c-----------------------------------------------------------------------
+      implicit none
+c 
+      double precision preamble(4), ha, ra
+      real u, v, uvdist, uvpa
+      logical donano
+      integer lin
+      character*(*) xaxis, yaxis
 cc
       include 'mirconst.h'
+      double precision lst, rtod, rtos, long
+      parameter (rtod = 180.0d0/dpi, rtos = 12.0d0*3600.0d0/dpi)
 c-----------------------------------------------------------------------
       u = preamble(1)
       v = preamble(2)
@@ -2333,17 +2213,41 @@ c
       uvdist = sqrt(u*u + v*v)
 c 
       if (u.ne.0.0 .or. v.ne.0.0) then
-        uvpa = 180.0/DPI * atan2(u, v) 
+        uvpa = rtod * atan2(u, v) 
       else
 c
 c Signal this one no good
 c
         uvpa = 999.0
       end if
-      end
-c************************************************************************
-      subroutine goodat ( n, flags, nkeep)
 c
+c Fish out hour angle if required; some datasets
+c will have neither longitude nor telescope so be gentle
+c
+      if (xaxis.eq.'hangle' .or. xaxis.eq.'dhangle' .or.
+     +    yaxis.eq.'hangle' .or. yaxis.eq.'dhangle') then    
+c
+c Get observatory longitude in radians
+c
+        call getlong (lin, long)
+c
+c Get lst in radians and find HA, +/- pi
+c
+        call jullst (preamble(3), long, lst)
+        ha = (lst - ra) 
+        if (ha.gt.dpi) then
+          ha = ha - 2.0d0*dpi
+        else if (ha.lt.-dpi) then
+          ha = ha + 2.0*dpi
+        end if
+        ha = ha * rtos
+      end if
+c
+      end
+c
+c
+      subroutine goodat ( n, flags, nkeep)
+c-----------------------------------------------------------------------
 c     See if there is any wanted data in this visibility
 c
 c  Input
@@ -2454,8 +2358,7 @@ c
      +    dayav, tunit, dorms, dovec, doflag, doall, dobase, dointer,
      +    doperr, dolog, dozero, doequal, donano, dosrc, doavall, 
      +    doxind, doyind, dowrap, dosymb, dodots, docol, inc, nx, ny, 
-     +    pdev, logf, comment, size, hann, ops, twopass, dofqav,
-     +    dotitle )
+     +    pdev, logf, comment, size, hann, ops, twopass, dofqav )
 c-----------------------------------------------------------------------
 c     Get the user's inputs 
 c
@@ -2473,7 +2376,6 @@ c    dovec        True for vector averging, else scalar; x and y
 c    doflag       Plot flagged visbiltites only else plot unflagged
 c    doall        Plot flagged and unflagged.  Overrides DOFLAG
 c    dobase       User wants baselines on separaet plots
-c    dotitle      If false then don't write plot title
 c    dointer      User gets to play interactively with the plot
 c    doperr       If true then the automatically determined Y window
 c                 includes the ends of the error bars
@@ -2500,7 +2402,6 @@ c    size         PGPLOT character sizes for the labels and symbols
 c    hann         Hanning smoothing length
 c    twopass      Make two passes through the data
 c    dofqav       Average frequency channels before plotting.
-c    dotitle      When false don't write plot title
 c-----------------------------------------------------------------------
       implicit none
 c
@@ -2510,7 +2411,7 @@ c
       logical dorms(3), dovec(2), doflag, doall, dobase, dointer, 
      +  doperr, dolog, dozero, doequal, donano, docal, dopol, dosrc,
      +  doavall, doxind, doyind, dowrap, dosymb, dodots, dopass, 
-     +  docol, twopass, dofqav, dotitle
+     +  docol, twopass, dofqav
       integer nx, ny, inc, hann, maxco, ilen, ilen2, tunit
 cc
       integer i
@@ -2534,7 +2435,7 @@ c
       call getopt (dorms, dovec, doflag, doall, doday, dohour, dosec,
      +   dobase, dointer, doperr, dolog, dozero, doequal, donano, 
      +   docal, dopass, dopol, dosrc, doavall, doxind, doyind, 
-     +   dowrap, dosymb, dodots, docol, twopass, dofqav, dotitle)
+     +   dowrap, dosymb, dodots, docol, twopass, dofqav)
 c
       ops = 'sdlp'
       i = 4
@@ -2833,7 +2734,7 @@ c
      +   xxmax, yymin, yymax, pdev, pl1dim, pl2dim, pl3dim, pl4dim, 
      +   maxbase, maxpol, maxfile, nbases, npols, npts, buffer, xo, 
      +   yo, elo, eho, nx, ny, a1a2, order, size, polmsk, 
-     +   doavall, docol, dotitle)
+     +   doavall, docol)
 c-----------------------------------------------------------------------
 c     Draw the plot
 c
@@ -2853,7 +2754,6 @@ c   dowrap         False to unwrap phases
 c   dosymb         Plot each file with a differnet symbol
 c   dodots         Plot averaged data as dots rather than filled circles
 c   docol          Plot differnt files in different colours if one polarization
-c   dotitle        False to not write plot title
 c   title          Title for plot
 c   x,yaxis        X and Y axis types
 c   x,ymin,max     User specified plot extrema
@@ -2892,14 +2792,12 @@ c
      +  yopt*10
       logical doave, dorms(2), dobase, dointer, dolog, dozero, doequal,
      +  donano, doxind, doyind, dowrap, doperr, dosymb, dodots, doavall,
-     +  docol, dotitle
+     +  docol
 cc
-      integer NCOL
-      parameter(NCOL=12)
       real xmnall, xmxall, ymnall, ymxall, xlo, xhi, ylo, yhi
       integer ierr, il1, il2, sym, ip, jf, lp, kp, k, ii,
-     +  ipl1, ipl2, npol, i, j, cols1(NCOL), cols2(NCOL), cols(NCOL),
-     +  nb, np, ipt, il, ilen, icol
+     +  ipl1, ipl2, npol, i, j, cols1(12), cols2(12), cols(12), nb, np, 
+     +  ipt, il, ilen
       character xlabel*100, ylabel*100, ans*1, devdef*80, 
      +  str*80, units*10
       character*2 fmt(2), polstr(12)*2, hard*3
@@ -3116,11 +3014,11 @@ c DOn't use yellow for hardcopy
 c
             call pgqinf ('hardcopy', hard, ilen)
             if (hard.eq.'YES') then
-              do i = 1, NCOL
+              do i = 1, 12
                 cols(i) = cols2(i)
               end do
             else
-              do i = 1, NCOL
+              do i = 1, 12
                 cols(i) = cols1(i)
               end do
             end if
@@ -3174,18 +3072,14 @@ c
               call pgpage
               call pgtbox (xopt, 0.0, 0, yopt, 0.0, 0)
               call pglab (xlabel, ylabel, ' ')
-              if (dotitle) then
-                call pltitle (npol, polstr, title, cols, doavall)
-              end if
+              call pltitle (npol, polstr, title, cols, doavall)
 c
 c  Plot points and errors
 c
               do lp = 1, np
-	        icol = mod(lp-1,NCOL)+1
-                if (np.ne.1 .and. .not.doavall) call pgsci (cols(icol))
+                if (np.ne.1 .and. .not.doavall) call pgsci (cols(lp))
                 do jf = 1, pl4dim
-	          icol = mod(jf-1,NCOL)+1
-                  if (np.eq.1 .and. docol) call pgsci (cols(icol))
+                  if (np.eq.1 .and. docol) call pgsci (cols(jf))
                   if (dosymb) then
                     sym = jf
                     if (sym.eq.2) then
