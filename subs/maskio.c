@@ -13,20 +13,15 @@
 /*    rjs   6nov89   Does not abort if the mask file is missing.	*/
 /*    rjs   3mar93   Make mkflush a user-callable routine.		*/
 /*    rjs  23dec93   Do not open in read/write mode unless necessary.	*/
-/*    rjs   6nov94   Change item handle to an integer.			*/
-/*    rjs  19apr97   Handle FORTRAN LOGICALs better. Some tidying.      */
 /************************************************************************/
 
 #define BUG(sev,a)   bug_c(sev,a)
 #define ERROR(sev,a) bug_c(sev,((void)sprintf a,message))
 #define CHECK(x) if(x) bugno_c('f',x)
+
 #define private static
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
+char *sprintf();
 private void mkfill();
 void mkflush_c();
 
@@ -34,7 +29,7 @@ static char message[128];
 
 #define BITS_PER_INT 31
 
-static int bits[BITS_PER_INT] = {
+int bits[BITS_PER_INT] = {
 		0x00000001,0x00000002,0x00000004,0x00000008,
 		0x00000010,0x00000020,0x00000040,0x00000080,
 		0x00000100,0x00000200,0x00000400,0x00000800,
@@ -44,7 +39,7 @@ static int bits[BITS_PER_INT] = {
 		0x01000000,0x02000000,0x04000000,0x08000000,
 		0x10000000,0x20000000,0x40000000};
 
-static int masks[BITS_PER_INT+1]={
+int masks[BITS_PER_INT+1]={
 		0x00000000,0x00000001,0x00000003,0x00000007,0x0000000F,
 			   0x0000001F,0x0000003F,0x0000007F,0x000000FF,
 			   0x000001FF,0x000003FF,0x000007FF,0x00000FFF,
@@ -56,11 +51,13 @@ static int masks[BITS_PER_INT+1]={
 
 #include "io.h"
 
+char *malloc();
+
 #define MK_FLAGS 1
 #define MK_RUNS 2
 #define BUFFERSIZE 128
 #define OFFSET (((ITEM_HDR_SIZE-1)/H_INT_SIZE + 1)*BITS_PER_INT)
-typedef struct {int item;
+typedef struct {char *item;
 		int buf[BUFFERSIZE],offset,length,size,modified,rdonly,tno;
 		char name[32];
 		} MASK_INFO;
@@ -298,9 +295,8 @@ int offset,n,*flags,nsize;
         blen = min( BITS_PER_INT - boff,len);
         bitmask = *buf;
         for(i=boff; i<boff+blen; i++){
-	  if(FORT_LOGICAL(*flags)) bitmask |=  bits[i];
-	  else			       bitmask &= ~bits[i];
-	  flags++;
+	  if(*flags++ == FORT_FALSE) bitmask &= ~bits[i];
+	  else			     bitmask |=  bits[i];
         }
         *buf++ = bitmask;
         len -= blen;
