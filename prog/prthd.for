@@ -33,24 +33,12 @@ c    rjs  24nov93 Correct units of xshift and yshift.
 c    rjs  24jul94 Message about aipsfg tables.
 c    rjs  15aug94 More decimal places for restfreq.
 c    rjs  24oct94 More information for images.
-c    rjs  26sep95 Somewhat more tolerant of screwy headers.
-c    rjs  14dec95 Support "ANGLE" ctype value.
-c    mchw 14jun96 Replace rangle and hangle, with rangleh and hangleh.
-c    rjs  07aug96 Fix crval conversion for ctype=ANGLE (care Vince McIntyre).
-c    rjs  11oct96 Print delay tracking and pointing RA and DEC.
-c    rjs  14mar97 Recognise "time" axes.
-c    rjs  23jul97 Print galactic and ecliptic coordinates in decimal format.
-c		  Support pbtype.
-c    rjs  31jul97 Use MAXWIN for number of spectra.
-c    rjs  01aug97 Better format for beam size.
-c    rjs  24feb98 Use MAXWIDE rather than MAXWIN for number of wide channels.
-c
 c  Bugs and Shortcomings:
 c    * Descriptions in brief mode could be a bit more verbose!
 c------------------------------------------------------------------------
 	character version*(*)
 	integer MAXIN
-	parameter(version='Prthd: version 24-Feb-98')
+	parameter(version='Prthd: version 1.0 24-Oct-94')
 	parameter(MAXIN=256)
 	integer tno,i,iostat,nin
 	character in(MAXIN)*64,logf*64,line*80
@@ -219,21 +207,31 @@ c
 	call logwrite('Map flux units: '//aval1,more)
       endif
 c
+c  Rms noise.
+c
+      call rdhdr (tno, 'rms', rval1, -1.0)
+      if(rval1.gt.0)then
+        write (line,'(a,1pe10.3)')'Nominal Theoretical Rms: ',rval1
+        call logwrite(line,more)
+      endif
+c
+c  Primary beam parameters.
+c
+      call rdhdr (tno, 'pbfwhm', rval1, -1.0)
+      if(rval1.gt.0)then
+        write (line,'(a,g10.3)')'Primary beam size (arcsec): ',rval1
+        call logwrite(line,more)
+      endif
+c
 c  Synthesised beam parameters.
 c
       call rdhdr(tno,'bmaj',rval1,0.)
       call rdhdr(tno,'bmin',rval2,0.)
       call rdhdr(tno,'bpa',rval3,0.)
       if(rval1.gt.0.and.rval2.gt.0)then
-	if(max(rval1,rval2)*3600*180/pi.lt.1000)then
-	  write(line,'(a,f7.2,a,f7.2,a)')'Beam Size:',3600*180/pi*rval1,
-     *				         ' by',	      3600*180/pi*rval2,
-     *				         ' arcsec.'
-	else
-	  write(line,'(a,f7.2,a,f7.2,a)')'Beam Size:',60*180/pi*rval1,
-     *				         ' by',	      60*180/pi*rval2,
-     *				         ' arcmin.'
-	endif
+	write(line,'(a,f6.2,a,f6.2,a)')'Beam Size:',3600*180/pi*rval1,
+     *				       ' by',	    3600*180/pi*rval2,
+     *				       ' arcsec.'
 	call logwrite(line,more)
 	write(line,'(a,f7.1,a)')'Position angle:',rval3,' degrees.'
 	call logwrite(line,more)
@@ -251,64 +249,32 @@ c
       call rdhdd (tno, 'obstime', dval, 0.d0)
       if(dval.gt.0)then
 	call julday(dval,'H',aval1)
-	line =
-     *	  'Average Time of observation: '//aval1
+	line = 'Average Time of observation: '//aval1
 	call logwrite(line,more)
       endif
       call rdhdr (tno, 'epoch', rval1, 0.0)
       if(rval1.gt.0)then
-	if(rval1.lt.1984)then
-	  aval1 = 'B'
-	else
-	  aval1 = 'J'
-	endif
-	il1 = len1(aval1)
-	write (line, '(a,a,f7.2,a)')
-     *	  'Equinox:                     ',aval1(1:1),rval1
+	write (line, '(a,f8.2,a)') 'Epoch:',rval1,' years'
 	call logwrite(line,more)
       endif
       call rdhdd(tno,'restfreq',dval,0.d0)
       if(dval.gt.0)then
-	write(line,'(a,f13.6,a)')
-     *	  'Rest frequency:         ',dval,' GHz'
+	write(line,'(a,f13.6,a)')'Rest frequency:',dval,' GHz'
 	call logwrite(line,more)
       endif
       if(hdprsnt(tno,'vobs'))then
 	call rdhdr(tno,'vobs',rval1,0.0)
-	write(line,'(a,f8.2,a)')
-     *	  'Observatory radial velocity:',rval1,' km/s'
+	write(line,'(a,f8.2,a)') 'Observatory radial velocity:',
+     *				rval1,' km/s'
 	call logwrite(line,more)
       endif
       
-c
-c  Rms noise.
-c
-      call rdhdr (tno, 'rms', rval1, -1.0)
-      if(rval1.gt.0)then
-        write (line,'(a,1pe10.3)')
-     *	  'Nominal Theoretical Rms:    ',rval1
-        call logwrite(line,more)
-      endif
-c
-c  Primary beam parameters.
-c
-      call rdhda (tno, 'pbtype', aval1, ' ')
-      if(aval1.ne.' ')then
-	call logwrite('Primary beam type: '//aval1,more)
-      else
-	call rdhdr (tno, 'pbfwhm', rval1, -1.0)
-	if(rval1.gt.0)then
-          write (line,'(a,1pg10.3)')
-     *	    'Primary beam size (arcsec): ',rval1
-          call logwrite(line,more)
-	endif
-      endif
 c
 c  Number of clean components.
 c
       call rdhdi(tno,'niters',ival,0)
       if(ival.gt.0)call logwrite(
-     *	  'Number of iterations:       '//itoaf(ival),more)
+     *	'Number of iterations: '//itoaf(ival),more)
 c
 c  Check for extra tables, etc.
 c
@@ -338,7 +304,7 @@ c
 c  Externals.
 c
       integer len1
-      character itoaf*2,rangleh*32,hangleh*32,PolsC2P*2
+      character itoaf*2,rangle*32,hangle*32,PolsC2P*2
 c
       call logwrite('--------------------------------'//
      *		  '--------------------------------',more)
@@ -356,32 +322,23 @@ c
         call rdhdd (tno, 'cdelt'//str, cdelt,0.0d0)
 c
 c  RA.
-        if (aval(1:4).eq.'RA--'.or.aval.eq.'RA') then
-	  radec = hangleh(crval)
+        if (aval(1:4).eq.'RA--') then
+	  radec = hangle(crval)
           write (line, 20) aval(1:8), n, radec,
      *                          crpix,180*3600/pi*cdelt,'  arcsec'
-20        format (a8, i7, 3x, a11, f10.2, 1pe16.6,a)
+20        format (a8, i7, 3x, a11, f10.2, 3x, 1pe13.6,a)
 c
-c  DEC
-        else if (aval(1:4).eq.'DEC-'.or.aval.eq.'DEC')then
-	  radec = rangleh(crval)
+c  DEC, Galactic and Ecliptic coordinates.
+        else if (aval(1:4).eq.'DEC-'.or.
+     *		 aval(1:4).eq.'GLON'.or.aval(1:4).eq.'GLAT'.or.
+     *		 aval(1:4).eq.'ELON'.or.aval(1:4).eq.'ELAT') then
+	  radec = rangle(crval)
           write (line, 30) aval(1:8), n, radec,
      *                          crpix,180*3600/pi*cdelt,'  arcsec'
-30        format (a8, i7, 2x, a12, f10.2, 1pe16.6,a)
-C  Galactic and Ecliptic coordinates.
-	else if (aval(1:4).eq.'GLON'.or.aval(1:4).eq.'GLAT'.or.
-     *		 aval(1:4).eq.'ELON'.or.aval(1:4).eq.'ELAT') then
-	  write(line,35) aval(1:8),n,180/DPI*crval,crpix,
-     *				180/pi*cdelt,'  deg'
-35	  format (a8,i7,f14.6,f10.2,1pe16.6,a)
-c
-c  Angles on the sky.
-	else if (aval.eq.'ANGLE')then
-          write(line, 40)aval(1:8),n,180/pi*crval,crpix,
-     *				3600*180/pi*cdelt,'arcsec'
+30        format (a8, i7, 2x, a12, f10.2, 3x, 1pe13.6,a)
 c
 c  STOKES.
-	else if(aval.eq.'STOKES')then
+	else if(aval(1:6).eq.'STOKES')then
 	  length = 0
 	  do j=1,n
 	    if(length+5.lt.len(pols))then
@@ -395,8 +352,8 @@ c  STOKES.
 	      endif
 	    endif
 	  enddo
-          write (line, 38) aval(1:8), n, pols(2:length)
-38        format (a8, i7, 8x, a)
+          write (line, 35) aval(1:8), n, pols(2:length)
+35        format (a8, i7, 8x, a)
 c
 c  Others.
         else
@@ -406,8 +363,6 @@ c  Others.
 	    units = 'GHz'
 	  else if(aval(1:3).eq.'UU-'.or.aval(1:3).eq.'VV-')then
 	    units = 'lambda'
-	  else if(aval.eq.'TIME')then
-	    units = 'seconds'
 	  endif
           write(line, 40)aval(1:8),n,crval,crpix,cdelt,units
 40        format (a8, i7, 2x, 1pe13.6, 0pf9.2, 3x, 1pe13.6,2x,a)
@@ -440,21 +395,21 @@ c
 c
 c  Give a summary about a uv data-set.
 c------------------------------------------------------------------------
-      include 'maxdim.h'
+      integer MAXSPECT
+      parameter(MAXSPECT=16)
       character line*80,aval1*64,aval2*64,type*1,obstype*32
-      integer il1,il2,length,nschan(MAXWIN),nchan,nspect,npol,pol,i
+      integer il1,il2,length,nschan(MAXSPECT),nchan,nspect,npol,pol,i
       integer nants,ival,ncorr,tno,n
       real epoch
-      double precision sdf(MAXWIN),sfreq(MAXWIN),restfreq(MAXWIN)
-      double precision time
-      double precision obsra,obsdec,ra,dec,delra,deldec,pntra,pntdec
-      real wwidth(MAXWIDE),wfreq(MAXWIDE)
+      double precision sdf(MAXSPECT),sfreq(MAXSPECT),restfreq(MAXSPECT)
+      double precision time,obsra,obsdec,ra,dec
+      real wwidth(MAXSPECT),wfreq(MAXSPECT)
       logical updated,present,more
 c
 c  Externals.
 c
       integer len1
-      character itoaf*8,PolsC2P*2,hangleh*12,rangleh*12
+      character itoaf*8,PolsC2P*2,hangle*12,rangle*12
       logical hdprsnt
 c
 c  Close and reopen the file as a visibility file.
@@ -537,7 +492,7 @@ c
 	call uvrdvri(tno,'nchan',nchan,1)
 	call uvrdvri(tno,'nspect',nspect,1)
 	call logwrite('Spectral Correlations:',more)
-	if(nspect.le.MAXWIN)then
+	if(nspect.le.MAXSPECT)then
 	  call uvgetvri(tno,'nschan',nschan,nspect)
 	  call uvgetvrd(tno,'sfreq',sfreq,nspect)
 	  call uvgetvrd(tno,'sdf',sdf,nspect)
@@ -572,7 +527,7 @@ c
 	if(present)call logwrite(' ',more)
 	call logwrite('Continuum (wide) correlations: ',more)
 	call uvrdvri(tno,'nwide',nchan,1)
-	if(nchan.le.MAXWIDE)then
+	if(nchan.le.MAXSPECT)then
 	  call uvgetvrr(tno,'wfreq',wfreq,nchan)
 	  call uvgetvrr(tno,'wwidth',wwidth,nchan)
 	  call logwrite(
@@ -606,40 +561,14 @@ c
       else
 	aval1(1:9) = itoaf(nint(epoch))
       endif
-      line = aval1(1:9)//'Source RA: '//hangleh(ra)//
-     *			     '  Dec: '//rangleh(dec)
+      line = aval1(1:9)//'Source RA: '//hangle(ra)//
+     *			     '  Dec: '//rangle(dec)
       call logwrite(line,more)
-c
-      call uvprobvr(tno,'delra', type,length,updated)
-      present = type.ne.' '
-      call uvprobvr(tno,'deldec',type,length,updated)
-      present = present.or.type.ne.' '
-      if(present)then
-	call uvrdvrd(tno,'delra', delra,ra)
-	call uvrdvrd(tno,'deldec',deldec,dec)
-        line = 'Delay Tracking  RA: '//hangleh(delra)//
-     *	         '  Dec: '//rangleh(deldec)
-        call logwrite(line,more)
-      endif
-c
-      call uvprobvr(tno,'pntra', type,length,updated)
-      present = type.ne.' '
-      call uvprobvr(tno,'pntdec',type,length,updated)
-      present = present.or.type.ne.' '
-      if(present)then
-	call uvrdvrd(tno,'pntra', pntra,ra)
-	call uvrdvrd(tno,'pntdec',pntdec,dec)
-        line = 'Pointing Centre RA: '//hangleh(pntra)//
-     *	         '  Dec: '//rangleh(pntdec)
-        call logwrite(line,more)
-      endif
-c
-      call uvrdvrd(tno,'obsra',obsra,ra)
-      call uvrdvrd(tno,'obsdec',obsdec,dec)
-      line = 'Apparent Source RA: '//hangleh(obsra)//
-     *	         '  Dec: '//rangleh(obsdec)
+      call uvrdvrd(tno,'obsra',obsra,0.d0)
+      call uvrdvrd(tno,'obsdec',obsdec,0.d0)
+      line = 'Apparent Source RA: '//hangle(obsra)//
+     *	         '  Dec: '//rangle(obsdec)
       call logwrite(line,more)
-c
       call uvprobvr(tno,'dra',type,length,updated)
       present = type.ne.' '
       call uvprobvr(tno,'ddec',type,length,updated)
