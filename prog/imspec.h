@@ -12,74 +12,68 @@ c 4) Change name to imspec.for
       include      'maxnax.h'
       include      'maxdim.h'
       include      'mirconst.h'
-      integer      MAXBOXES
-      parameter    ( MAXBOXES = 1024 )
 
       character*6  NAME
 
 c plot and options for IMSTAT
 c      parameter    ( NAME = 'IMSTAT' )
-c      character    plotopts*(*)
+c      character*28 plotopts
 c      parameter    ( plotopts = 'mean,sum,rms,maximum,minimum' )
-c      character    defplt*(*), idstr*(*)
+c      character    defplt*3, idstr*10
 c      parameter    ( defplt = 'rms', idstr = 'statistics' )
+c      character*80 commonop
+c      parameter    ( commonop =
+c     *'tb,noheader,nolist,list,style,title,xmin,xmax,ymin,ymax' )
 
 c plot and options for IMSPEC
       parameter    ( NAME = 'IMSPEC' )
-      character    plotopts*(*)
+      character*21 plotopts
       parameter    ( plotopts = 'mean,sum,flux,pbcflux' )
-      character    defplt*(*), idstr*(*)
+      character    defplt*4, idstr*8
       parameter    ( defplt = 'flux', idstr = 'spectrum' )
-
-      character    commonop*(*)
+      character*80 commonop
       parameter    ( commonop =
-     *'tb,noheader,nolist,list,eformat,guaranteespaces,hanning,'//
-     *'boxcar,deriv,style,title,xmin,xmax,ymin,ymax')
+     *'tb,noheader,nolist,list,hanning,boxcar,deriv,style,title,xmin,xma
+     *x,ymin,ymax' )
 
 c common variables for IMSTAT and IMSPEC
 
-      character    styles*(*)
+      character*20 styles
       parameter    ( styles = 'connect,step,histo' )
 
       integer      NPLOTV, NPLOTR, NPLOTP
-      parameter    ( NPLOTV = 10, NPLOTR = 10, NPLOTP = 5 )
+      parameter    ( NPLOTV = 8, NPLOTR = 10, NPLOTP = 5 )
       integer      plotvar(  NPLOTV )
       real         plotrnge( NPLOTR )
       character*80 plotpar(  NPLOTP )
 
-c plotvar(1-10)
-      integer      SEL, HEAD, LIST, EFMT, GSPAC, DUNIT, STYLE
-      integer      DOSMOOTH, SMOWID, DERIV
-      parameter    ( SEL=1, HEAD=2, LIST=3, EFMT=4, GSPAC=5, DUNIT=6 )
-      parameter    ( STYLE=7, DOSMOOTH=8, SMOWID=9, DERIV=10 )
-
-c values of plotvar(DUNIT)
+      integer      SEL, HEAD, LIST, DUNIT, STYLE
+      parameter    ( SEL=1, HEAD=2, LIST=3, DUNIT=4, STYLE=5 )
       integer      ORIG, JANSKY, KELVIN
       parameter    ( ORIG=1, JANSKY=2, KELVIN=3 )
-c values of plotvar(DOSMOOTH)
+      integer      DOSMOOTH, SMOWID, DERIV
+      parameter    ( DOSMOOTH=6, SMOWID=7, DERIV=8 )
       integer      HANNING, BOXCAR
       parameter    ( HANNING=1, BOXCAR=2 )
 
-c plotrng2(1-10)
       integer      XLOW, XUPP, YLOW, YUPP, FLXL, FLXU, FLYL, FLYU
       parameter    ( XLOW=1,  XUPP=2,  YLOW=3,  YUPP=4 )
       parameter    ( FLXL=5,  FLXU=6,  FLYL=7,  FLYU=8 )
       integer      XTITLE, YTITLE
       parameter    ( XTITLE=9, YTITLE=10 )
 
-c plotpar(1-5)
       integer      XLABP, YLABP, INFOP, BOXP, TITLE
       parameter    ( XLABP=1, YLABP=2, INFOP=3, BOXP=4, TITLE=5 )
 
-      integer      cindex(MAXNAX), cIn
+      integer      crpix(MAXNAX)
+      double precision crval(MAXNAX), cdelt(MAXNAX)
       character*9  ctype(MAXNAX)
-
-      common /VAR/ plotvar, plotrnge
-      common /CRD/ cindex, cin
-      common /CHR/ plotpar, ctype
 
       integer      NSTATS
       parameter    ( NSTATS = 6 )
+      common /VAR/ plotvar, plotrnge
+      common /CRD/ crval, cdelt, crpix
+      common /CHR/ plotpar, ctype
 
       integer      SUMBM, KPERJY, BEAMX, BEAMY
       parameter    ( SUMBM=1, KPERJY=2, BEAMX=3, BEAMY=4 )
@@ -90,4 +84,3 @@ c plotpar(1-5)
       parameter    ( XOFF=0.02, BASE=2.3, YOFF=0.7, COFF=0.23, SC=0.7 )
       real         MAGICVAL
       parameter    ( MAGICVAL = -1.e30 )
-

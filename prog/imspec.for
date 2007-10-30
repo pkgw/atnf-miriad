@@ -52,7 +52,6 @@ c
 c   'noheader'    Do not write the header information, just the numbers,
 c                 producing an ASCII file for a plotting program
 c   'list'        Write the spectrum to the screen/logfile
-c   'eformat'     Always use format 'e' instead of 'g' to write results
 c
 c   'xmin,#'      Give lower x-value on axis
 c   'xmax,#'      Give upper x-value on axis
@@ -167,11 +166,6 @@ c    14jul93  bpw  Fix error in output if planes fully masked.
 c    30sep93   jm  Corrected the calling sequence of pgplot routines.
 c    26nov93  bpw  Fix to avoid array bounds violation pointed out by rjs.
 c                  Also work arounds HP compiler bug as indicated by rjs
-c    17jun94  bpw  Finally add the real region keyword (i.e. boxruns),
-c                  because Doug needed it
-c    25oct94  bpw  introduce option 'eformat'
-c    22nov94  bpw  fixed non-plotting: forgot to change some values of plotvar
-c                  parameters (equivalent to a C 'enum').
 c
 c------------------------------------------------------------------------
 
@@ -207,14 +201,12 @@ c the include file.
       program imstaspc
 
       character*21     version
-      parameter        ( version = 'version 2.2 22-Nov-94' )
+      parameter        ( version = 'version 2.2 30-sep-93' )
       character*29     string
 
       include          'imspec.h'
-
       integer          tinp
       integer          naxis, dim
-      integer          corners(4), boxes(MAXBOXES)
       real             cut(2)
       integer          counts(0:MAXNAX+2)
       double precision beaminfo(4)
@@ -223,10 +215,8 @@ c the include file.
 
       string = NAME // ': ' // version
       call output( string )
-      call inputs( tinp,naxis,dim,corners,boxes,cut,counts,
-     *             beaminfo,axlabel,device )
-      call stats(  tinp,naxis,dim,corners,boxes,cut,counts,
-     *             beaminfo,axlabel,device )
+      call inputs( tinp,naxis,dim,cut,counts,beaminfo,axlabel,device )
+      call stats(  tinp,naxis,dim,cut,counts,beaminfo,axlabel,device )
       call xyzclose( tinp )
       call logclose
 
@@ -252,12 +242,11 @@ c After all input are read labset makes the final nice labels to put along
 c the plot
 c header puts out some information about the dataset and units
 
-      subroutine inputs( tinp,naxis,dim, corners, boxes, cut, counts,
-     *                   beaminfo, axlabel, device )
+      subroutine inputs( tinp,naxis,dim, cut, counts, beaminfo,
+     *                   axlabel, device )
 
       integer            tinp
       integer            naxis, dim
-      integer            corners(*), boxes(*)
       real               cut(*)
       integer            counts(0:*)
       double precision   beaminfo(*)
@@ -267,9 +256,12 @@ c header puts out some information about the dataset and units
       include            'maxnax.h'
 
       integer            i, dimen
+      integer            MAXBOXES
+      parameter          ( MAXBOXES = 1024 )
 
       character*1024     file
       integer            axlen( MAXNAX )
+      integer            boxes( MAXBOXES )
       integer            blc(MAXNAX), trc(MAXNAX)
       integer            viraxlen( MAXNAX ), vircsz( MAXNAX )
       character*(MAXNAX) subcube
@@ -280,14 +272,10 @@ c header puts out some information about the dataset and units
       naxis = MAXNAX
       call xyzopen( tinp, file, 'old', naxis, axlen )
 
-      call boxinput( 'region', file, boxes, 1024 )
+      call boxinput( 'region', file, boxes, MAXBOXES )
       call boxset(   boxes, naxis, axlen, ' ' )
       call boxinfo(  boxes, naxis, blc, trc )
-      corners(1) = blc(1)
-      corners(2) = trc(1)
-      corners(3) = blc(2)
-      corners(4) = trc(2)
-                                                  
+
       call optinp
 
       call cutinp( cut )
@@ -376,8 +364,6 @@ c the default is to write a header
 c the default is to write out the spectrum for IMSTAT, not for IMSPEC
       if( NAME.eq.'IMSTAT' ) plotvar( LIST ) =  1
       if( NAME.eq.'IMSPEC' ) plotvar( LIST ) =  0
-c the default is 'g' format
-      plotvar( EFMT )     = 0
 c the default plot style is to connect the points
       plotvar( STYLE )    = matchnr( 'connect', styles )
 c the default is not to convert the data units
@@ -433,8 +419,6 @@ c with arguments, these are read and tested.
                plotvar(LIST) = 0
             elseif( i.eq.matchnr('list',commonop) ) then
                plotvar(LIST) = 1
-            elseif( i.eq.matchnr('eformat',commonop) ) then
-               plotvar(EFMT) = 1
             elseif( i.eq.matchnr('style',commonop) ) then
                call keya( 'options', option, ' ' )
                call assertl( match(option,styles,i), 'Illegal style' )
@@ -1091,12 +1075,11 @@ c These are found for different 'levels'. level 1 corresponds to the
 c statistics of the selected averaging-axes. level 2 combines these
 c statistics for a subcube with one higher dimension, etc.
 
-      subroutine stats( tinp,naxis,dim, corners, boxes, cut, counts,
-     *                  beaminfo, axlabel, device )
+      subroutine stats( tinp,naxis,dim, cut, counts, beaminfo,
+     *                  axlabel, device )
 
       integer          tinp
       integer          naxis, dim
-      integer          corners(*), boxes(*)
       real             cut(*)
       integer          counts(0:*)
       double precision beaminfo(*)
@@ -1114,9 +1097,7 @@ c statistics for a subcube with one higher dimension, etc.
       real             data(MAXBUF/2)
       logical          mask(MAXBUF/2)
 
-      integer          runs(3,2048), nruns
-      
-      logical          inbox, init(MAXNAX)
+      logical          unmasked, init(MAXNAX)
       double precision v
       integer          npoints(MAXNAX)
       double precision maxval(MAXNAX), minval(MAXNAX)
@@ -1124,9 +1105,6 @@ c statistics for a subcube with one higher dimension, etc.
 
 
       nlevels = naxis - abs(dim) + 1
-      do i = 1, MAXNAX
-         coo(i) = 1
-      enddo
 
       doplot = device .ne. ' '
 c Open the plot device
@@ -1141,10 +1119,6 @@ c loop over all subcubes for which statistics are to be calculated.
       do subcube = 1, counts(nlevels)
 
          call xyzs2c( tinp, subcube, coo )
-
-         if( abs(dim).eq.2 )
-     *     call boxruns(  naxis,coo,'r',boxes,runs,2048,nruns,
-     *                    corners(1),corners(2),corners(3),corners(4) )
 
 c if init(i)=.true., the statistics for this level must be reinitialized.
          init(1) = .true.
@@ -1162,9 +1136,7 @@ c Unless dim was -2, in which case a plane is read profile by profile
 
          do i = 1, counts(0)
 c if datapoint falls within limits as defined by cutoff and masking, use it
-c          print*,i,data(i),mask(i)
-           if( inbox(dim,i,data(i),mask(i),runs,corners,cut) ) then
-c              print*,'    used'
+           if( unmasked( data(i), mask(i), cut ) ) then
 c convert to Kelvin if requested.
                if( plotvar(DUNIT).eq.KELVIN )
      *            data(i) = data(i) * sngl(beaminfo(KPERJY))
@@ -1565,11 +1537,7 @@ c Construct the output line for the typed list
      *          write( line, '( i6,1x, a )' ) nint(iarr(i)), carr(i)
 c 13 is really len(axlabel)+1, but axlabel is an unknown variable here
 c and it would be messy to transfer just to get the length of it.
-            if(plotvar(EFMT).eq.1) then
-	      write( fmt, '( ''( '',i1,''(1pe10.3),i8 )'' )' ) nstat-1
-            else
-              write( fmt, '( ''( '',i1,''(1pg10.3),i8 )'' )' ) nstat-1
-            endif
+            write( fmt, '( ''( '',i1,''(1pg10.3),i8 )'' )' ) nstat-1
             write( temp, fmt=fmt )
      *             ( statarr(j,i),j=1,nstat-1 ), nint(statarr(nstat,i))
 c           The following is workaround HP compiler bug
@@ -1768,56 +1736,20 @@ c include file.
 
 ************************************************************************
 
-c Test if data are within unmasked, above the cut and inside the region
+c Test of data are within range of unmasked
 
-      logical function inbox( dim, i, data, mask, runs,corners, cut )
-      integer dim, i
-      real    data
-      logical mask
-      integer runs(3,2048)
-      integer corners(*)
-      real    cut(*)
-
-      integer runpnt, xlen, x,y
-      save    runpnt, xlen, x,y
-      logical unmasked
-
-      if( i.eq.1 ) then
-         runpnt = 1
-         x      = 0
-         y      = 1
-         xlen   = corners(2) - corners(1) + 1
-      endif
-
-      if(      cut(2).eq.0. ) then
-         unmasked = mask
-      else if( cut(2).eq.1. ) then
-         unmasked = mask .and.     data .ge.cut(1)
-      else if( cut(2).eq.2. ) then
-         unmasked = mask .and. abs(data).ge.cut(1)
-      endif
-c     if( mask.eq..true. ) print*,'    mask'
-
-      if( abs(dim).eq.2 ) then
-         x = x + 1
-         if( x.gt.xlen ) then
-            x = 1
-            y = y + 1
-         endif
-         if( runs(1,runpnt).eq.y ) then
-            if( unmasked ) then
-               inbox = runs(2,runpnt).le.x .and. x.le.runs(3,runpnt)
-            else
-               inbox = .false.
-            endif
-            if( x.eq.runs(3,runpnt) ) runpnt = runpnt + 1
-         else
-            inbox = .false.
-         endif
+      logical function unmasked( data, mask, cut )
+      real       data
+      logical    mask
+      real       cut(*)
+      if( cut(2).gt.0. ) then
+         unmasked =
+     *   ( ( cut(2).eq.1. .and.     data .ge.cut(1) ) .or.
+     *     ( cut(2).eq.2. .and. abs(data).ge.cut(1) )     )
+     *     .and. mask
       else
-         inbox = unmasked
+         unmasked = mask
       endif
-
       return
       end
 
