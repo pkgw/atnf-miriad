@@ -97,7 +97,6 @@ c  If specified, output is written to the file given by log= instead
 c  of to the terminal.
 c--
 c
-c
 c   History:
 c
 c    20jul91  bpw  Original version
@@ -136,7 +135,18 @@ c                  Also work arounds HP compiler bug as indicated by rjs
 c    17jun94  bpw  Finally add the real region keyword (i.e. boxruns),
 c                  because Doug needed it
 c    25oct94  bpw  introduce option 'eformat'
-c
+c    22nov94  bpw  fixed non-plotting: forgot to change some values of plotvar
+c                  parameters (equivalent to a C 'enum').
+c    28jun95  mhw  change printing formats: guarantee 1 space between fields
+c                  in eformat mode and add some decimal places to the freq
+c    10jan96  rjs  Make MAXRUNS depend on MAXDIM. Also eliminate dfloat.
+c     9apr96  rjs  Changed dfloat to dble.
+c    08oct96  rjs  Fix call to inbox. Use Fortran-5 functions. Propagate
+c                  MAXBOXES.
+c    14nov96  nebk Change crpix from integer to double precision as it was
+c                  messing up coordinate labelling
+c    29nov96  rjs  Change crpix from integer to double, and include mhw's
+c                  formatting changes.
 c------------------------------------------------------------------------
 
 c Main program of imstat and imspec. Puts out the identification, where
@@ -171,7 +181,7 @@ c the include file.
       program imstaspc
 
       character*21     version
-      parameter        ( version = 'version 2.2 25-Oct-94' )
+      parameter        ( version = 'version 2.2 28-Nov-96' )
       character*29     string
 
       include          'imstat.h'
@@ -188,7 +198,7 @@ c the include file.
       string = NAME // ': ' // version
       call output( string )
       call inputs( tinp,naxis,dim,corners,boxes,cut,counts,
-     *             beaminfo,axlabel,device )
+     *             beaminfo,axlabel,device, MAXBOXES )
       call stats(  tinp,naxis,dim,corners,boxes,cut,counts,
      *             beaminfo,axlabel,device )
       call xyzclose( tinp )
@@ -217,10 +227,10 @@ c the plot
 c header puts out some information about the dataset and units
 
       subroutine inputs( tinp,naxis,dim, corners, boxes, cut, counts,
-     *                   beaminfo, axlabel, device )
+     *                   beaminfo, axlabel, device, MAXBOXES )
 
       integer            tinp
-      integer            naxis, dim
+      integer            naxis, dim, MAXBOXES
       integer            corners(*), boxes(*)
       real               cut(*)
       integer            counts(0:*)
@@ -244,7 +254,7 @@ c header puts out some information about the dataset and units
       naxis = MAXNAX
       call xyzopen( tinp, file, 'old', naxis, axlen )
 
-      call boxinput( 'region', file, boxes, 1024 )
+      call boxinput( 'region', file, boxes, MAXBOXES )
       call boxset(   boxes, naxis, axlen, ' ' )
       call boxinfo(  boxes, naxis, blc, trc )
       corners(1) = blc(1)
@@ -258,7 +268,7 @@ c header puts out some information about the dataset and units
 
       call axinp( tinp,naxis, dim,subcube,axlabel )
 
-      dimen = iabs( dim )
+      dimen = abs( dim )
       call xyzsetup( tinp, subcube(:dimen), blc,trc, viraxlen,vircsz )
       if( dim.gt. 0 ) counts(0)       = vircsz(dimen)
       if( dim.eq.-2 ) counts(0)       = viraxlen(1)
@@ -571,7 +581,7 @@ c              Following is workaround HP compiler bug
                temp = ctype(n)
                call rdhda( tinp, keyw('ctype',i), ctype(n), temp      )
                call rdhdd( tinp, keyw('crval',i), crval(n-dim), 1.d0  )
-               call rdhdi( tinp, keyw('crpix',i), crpix(n-dim), 1     )
+               call rdhdd( tinp, keyw('crpix',i), crpix(n-dim), 1.d0  )
                call rdhdd( tinp, keyw('cdelt',i), cdelt(n-dim), 0.d0  )
             endif
          enddo
@@ -813,7 +823,7 @@ c Relate beam to gridspacing
 c If area large enough integral is simple formula, else calculate it.
 c For conversion to flux only sum in equivalent region, for conversion
 c to brightness temperature sum full beam always.
-            frln2 = 4.d0 * alog(2.)
+            frln2 = 4.d0 * log(2.)
             if( bmsiz(1).gt.8.*ratio(1) .and. bmsiz(2).gt.8.*ratio(2)
      *          .or. toKelvin )
      *      then
@@ -984,6 +994,7 @@ c the number after a piece of text starts in column 'align'.
       character*40     units
       character*80     rtfmt
       character*9      typ, cubetype
+      external rtfmt
 
       if( plotvar(HEAD).eq.0 ) return
 
@@ -1067,6 +1078,8 @@ c statistics for a subcube with one higher dimension, etc.
       character*(*)    axlabel(*)
       character*(*)    device
       include          'imstat.h'
+      integer          MAXRUNS
+      parameter(MAXRUNS=3*MAXDIM)
 
       integer          subcube, i
       integer          iloop, nloop
@@ -1078,7 +1091,7 @@ c statistics for a subcube with one higher dimension, etc.
       real             data(MAXBUF/2)
       logical          mask(MAXBUF/2)
 
-      integer          runs(3,2048), nruns
+      integer          runs(3,MAXRUNS), nruns
       
       logical          inbox, init(MAXNAX)
       double precision v
@@ -1107,7 +1120,7 @@ c loop over all subcubes for which statistics are to be calculated.
          call xyzs2c( tinp, subcube, coo )
 
          if( abs(dim).eq.2 )
-     *     call boxruns(  naxis,coo,'r',boxes,runs,2048,nruns,
+     *     call boxruns(  naxis,coo,'r',boxes,runs,MAXRUNS,nruns,
      *                    corners(1),corners(2),corners(3),corners(4) )
 
 c if init(i)=.true., the statistics for this level must be reinitialized.
@@ -1127,11 +1140,12 @@ c Unless dim was -2, in which case a plane is read profile by profile
          do i = 1, counts(0)
 c if datapoint falls within limits as defined by cutoff and masking, use it
 c          print*,i,data(i),mask(i)
-           if( inbox(dim,i,data(i),mask(i),runs,corners,cut) ) then
+           if( inbox(dim,i.eq.1.and.iloop.eq.1,
+     *         data(i),mask(i),runs,corners,cut) ) then
 c              print*,'    used'
 c convert to Kelvin if requested.
                if( plotvar(DUNIT).eq.KELVIN )
-     *            data(i) = data(i) * sngl(beaminfo(KPERJY))
+     *            data(i) = data(i) * real(beaminfo(KPERJY))
                if( init(1)  ) then
                   npoints(1) = 0
                   maxval(1)  = data(i)
@@ -1143,8 +1157,8 @@ c convert to Kelvin if requested.
                endif
                npoints(1) = npoints(1) + 1
                v          = dble( data(i) )
-               maxval(1)  = dmax1( maxval(1), v )
-               minval(1)  = dmin1( minval(1), v )
+               maxval(1)  = max( maxval(1), v )
+               minval(1)  = min( minval(1), v )
                sum(1)     = sum(1)    + v
 c              sumpbc(1)  = sumpbc(1) + v*pbccorr(i,coo(1))
                sumsq(1)   = sumsq(1)  + v*v
@@ -1169,8 +1183,8 @@ c been handled.
                    init(level)    = .false.
                 endif
                 npoints(level) = npoints(level) + npoints(1)
-                maxval(level)  = dmax1( maxval(level), maxval(1) )
-                minval(level)  = dmin1( minval(level), minval(1) )
+                maxval(level)  = max( maxval(level), maxval(1) )
+                minval(level)  = min( minval(level), minval(1) )
                 sum(level)     = sum(level)    + sum(1)
                 sumpbc(level)  = sumpbc(level) + sumpbc(1)
                 sumsq(level)   = sumsq(level)  + sumsq(1)
@@ -1322,6 +1336,7 @@ c and a nice string for the x-axis.
       character*9        typ, cubetype
       character*256      rtfmt
       integer            n(4), nn
+      external rtfmt
 
       call logwrit( ' ' )
 
@@ -1530,7 +1545,7 @@ c Construct the output line for the typed list
 c 13 is really len(axlabel)+1, but axlabel is an unknown variable here
 c and it would be messy to transfer just to get the length of it.
             if(plotvar(EFMT).eq.1) then
-	      write( fmt, '( ''( '',i1,''(1pe10.3),i8 )'' )' ) nstat-1
+              write( fmt, '( ''( '',i1,''(1pe10.3),i8 )'' )' ) nstat-1
             else
               write( fmt, '( ''( '',i1,''(1pg10.3),i8 )'' )' ) nstat-1
             endif
@@ -1575,7 +1590,8 @@ c find min and max for plot
       call pgpage
       call pgvstd
       call pgqinf( 'hardcopy',  pginfo, i )
-      call pgscf(  index( 'NY', pginfo(:1) ) )
+      i = index( 'NY', pginfo(:1) )
+      call pgscf(i)
 
       if( imin.ne.imax .and. plotvar(HEAD).eq.1 ) then
          call pgswin( imin, imax, ymin, ymax )
@@ -1734,11 +1750,11 @@ c include file.
 
 c Test if data are within unmasked, above the cut and inside the region
 
-      logical function inbox( dim, i, data, mask, runs,corners, cut )
-      integer dim, i
+      logical function inbox( dim, init, data, mask, runs,corners, cut )
+      integer dim
       real    data
-      logical mask
-      integer runs(3,2048)
+      logical mask, init
+      integer runs(3,*)
       integer corners(*)
       real    cut(*)
 
@@ -1746,7 +1762,7 @@ c Test if data are within unmasked, above the cut and inside the region
       save    runpnt, xlen, x,y
       logical unmasked
 
-      if( i.eq.1 ) then
+      if( init ) then
          runpnt = 1
          x      = 0
          y      = 1
@@ -1798,7 +1814,7 @@ c Calculate the rms from the sum and sumsquared.
       double precision rms
 
       if(     npoints.ge.2 ) then
-         rms = ( sumsq - sum**2/dfloat(npoints) ) / dfloat(npoints-1) 
+         rms = ( sumsq - sum**2/dble(npoints) ) / dble(npoints-1) 
          if( rms.ge.0.d0 ) then
             rms = sqrt(rms)
             ok = .true.
@@ -1885,5 +1901,3 @@ c Write out an identifying message above the plot.
       endif
       return
       end
-
-
