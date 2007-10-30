@@ -1,29 +1,29 @@
-		refractivity of air (dry and wet).
-15sep97 rjs	uvio.c -- Fix pointing selection.
-10sep97 mchw	velplot.for,velplot.h -- Upgraded, Report absolute positions
-		with cursor. Fix new bug at exactly 45.0 position angle.
-05sep97 mchw	pb.for -- Change lower freq for HATCREEK to 24 GHz.
-17sep97 rjs	demos.for -- Doc change only.
-21sep97 rjs	fits.for,fitsio.for -- Replace julfdate,fdatejul with julday,dayjul
-25sep97 rjs	refract.for -- Minor changes.
-25sep97 rjs	julday.for -- Added subroutine julcal.
-26sep97 rjs	model.for,uvmodel.for -- Re-added mhw's "zero" option.
-30sep97 rjs	hio.c,hio.h -- Correct initialisation of ntree and bump
-		up the max number of open files.
-09oct97 rjs	uvgen.for -- fix error in generating spectral datasets
-		(introduced 7 weeks ago).
-09oct97 rjs	uvaflag.for -- Do back to the drawing board and improve
-		program.
-09oct97 rjs	tvflag.for -- Handle width parameter which is not 1.
-09oct97 rjs	uvio.c -- Add check for restfreq==0 when converting to
-		velocity.
-10oct97 rjs	uvaver.for -- Eliminate bad call to uvvarcopy just before
-		final buffer flush (when time averaging).
-10oct97 rjs	blflag.for -- Added options=rms
-10oct97 rjs	uvstat.for -- General tidy up.
-13oct97 nebk    mfplan.for -- Add 210m array and colours
-15oct97 rjs	co.for,uvio.c -- Minor correction to the definition of "felocity"
-22oct97 rjs	uvio.c,select.for -- Change form of "on" selection.
-23oct97 rjs	uvaver.for -- Do not average across changes in the "on" variable.
+17dec97 rjs	ppmtomir.for -- New task. Convert non-raw PPM format to Miriad
+		format image.
+02jan98	mchw	uvaver.for -- Increase averaging buffer size to 163840.
+06jan98 rjs	qvack.for -- Make changes added on 17 December work!
+06jan98 rjs	uvdat.for -- A change in uvlkcorr to sidestep a compiler
+		bug in IRIX machines.
+07jan98 rjs	qvack.for -- Added options=anticipate, and the interval
+		parameter capable of two inputs.
+07jan98 rjs	atlod.for -- Print source names after the de-mangling process.
+09jan98 rjs	julday.for -- Make it tolerant of dates containing blanks.
+09jan98 rjs	model.for -- Break a statement into two to avoid a compiler bug.
+07feb98 rjs	gpboot.for -- Doc change only.
+15feb98 pjt	imfit.fir -- More precision in outputing results.
+23feb98 rjs	mosmem.for -- Better protection against underflow.
+24feb98 rjs	prthd.for -- Use MAXWIDE rather than MAXWIN for number of wide
+		channels.
+24feb98 rjs	uvgn.for -- Handle applying "bandpass" functions to wide-only
+		files.
+24feb98 rjs	plotone.for -- Some fortran standardisation.
+24feb98	rjs	uvsector.for -- Handle near vertical and horizontal regions
+		more robustly.
+24feb98 rjs	mossen.for -- Write bunit keyword to the output.
+25feb98 rjs	restor.for -- Honour documentation so that a beam is not
+		needed with mode=convolve.
+25feb98 rjs	gaupar.for -- Fix bug in determining outout "bunit" value, Problem
+		introduced in December 98 I think.
+05mar98 rjs	uvfft.for -- some FORTRAN standardisation
  
 See $MIR/changes.txt for a history of earlier changes.
