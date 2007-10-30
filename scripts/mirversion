@@ -9,7 +9,7 @@
 #--
 
 
-  if ( -r $MIR/changes.txt ) then
+  if ( -r $MIR/changes.txt ) \
     set hostupdate = `grep '^[0-9]' $MIR/changes.txt|tail -1|awk '{print $1}'`
   else
     set hostupdate = "unknown"

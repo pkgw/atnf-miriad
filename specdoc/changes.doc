@@ -1,29 +1,29 @@
-10apr01 dpr     atlod.for - handle correlator UT day rollover bug
-11apr01 dpr	iffix.for - New task. Adapted from transifx.
-24apr01 rjs	opplt.for,dsdplt.for,opcal.for,refract.for -- Change (improve)
-		"standard" model of the atmosphere. Put this model into
-		refract.for and get opplt,dsdplt,opcal to call this routine.
-03may01 rjs	psrplt.for -- Add mode=phase
-10may01 dpr     fits.for - change options dss to rawdss
-10may01 dpr     im2uv.for - doc change only
-11may01 dpr     fits.for - check history exists before copying it
-11may01 dpr     headio.c - more informative hisopen_c message
-14may01 bmg     imbin.for - add options=sum
-16may01 rjs	obsrms.for - Copy across MCHW's program.
-15may01 dpr     mirimport.csh - make OS specific.
-15may01 dpr     mirimport.csh - change alpha to delete files before tar xvf
-29may01 dpr     gpcomb - first version
-29may01 dpr     gpdof  - first version
-07jun01 dpr     gpdof  - finesse output
-18jun01 dpr     cgdisp - added blacklab option
-19jun01 dpr     smooth - lenghten in and out keys
-20jun01 dpr     elevcor - new task
-21jun01 dpr     convol - doc change only
-21jun01 dpr     smooth - added options=force
-26jun01 dpr     fits - relax antenna table input format restrictions
-28jun01 rjs	restor.for - Doc change only.
-29jun01 dpr     Install - accept version suffixes for dynamic libraries
-02jul01 dpr     fits - relax AN table restrictions properly
-05jul01 dpr     opcal - re-allow orig met format
+		of channels etc in RPFITS file. Increase buffer space.
+14jun00 rjs	reorder.for -- Copy across llrot keyword.
+13jun00 rjs	uvindex.for -- Handle blank source names somewhat better.
+16jun00 rjs	uvio.c -- Handle bad antenna numbers somewhat better.
+16jun00 rjs	select.for -- Check for bad antenna numbers in selection.
+04jul00 rjs	noise.for -- Changes to be more robust to bad computer
+		rounding.
+11jul00 rjs	regrid.for - Added "rotate" keyword, and eliminate "norot"
+		option.
+13jul00 rjs	moment.for - Copy across llrot.
+13jul00 rjs	cgdisp.for -- Plot beam correctly when there is a rotation of
+		the pixel grid.
+13jul00 rjs	assert.for -- Use hexists rather than FORTRAN INQUIRE
+		to check for file existence (and to avoid Digital UNIX bug).
+17jul00 rjs	attsys.for -- Apply or unapply ATCA Tsys correction.
+27jul00 nebk    impol.for -- position angle error was factor of 2 too big in a second
+            	             place.  grrr.
+28jul00 rjs	select.for -- Change on 16-Jul was buggy and could give spurious
+		error messages ... correct it.
+07aug00 rjs	zapchan.for,vblank.for,uvputhd.for -- Updated from BIMA.
+14aug00 rjs	mfclean.for -- Added output log file.
+14aug00 rjs	model.for -- Re-include external sources.
+25aug00 nebk    imrm.for -- bump to 20 images.  subroutine chkdes should not
+                  be checking cdelt/crpix on frequency axis
+28aug00 rjs	clean.for - Increase max complexity of region-of-interest.
+05sep00 rjs	uvedit.for -- Change some code to double precision to avoid
+		rounding problem.
  
 See $MIR/changes.txt for a history of earlier changes.
