@@ -3641,3 +3641,9 @@ and in a way to be consistent with all the other changes happening.
 14dec00 dpr     imhist -- added xrange key
 03jan01 dpr     mirexport.pl -- users can generate their own updates
 03jan01 dpr     ellint -- allow radii with non-integral number of steps
+*********************************** 04jan01 Sent changes to BIMA
+08jan01 rjs	gpscal.for - Fix buggy error message.
+08jan01 dpr     tidy up scripts
+10jan01 rjs	uvplt.for - Plot axes of az, el and lst.
+12jan01 dpr     linux/mirclnk - forced removal of files 
+16jan01 dpr     bugfix mirexport.pl
