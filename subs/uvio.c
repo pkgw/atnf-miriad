@@ -144,6 +144,9 @@
 /*  rjs  31aug99 Correct an error message.				*/
 /*  rjs   2sep99 Added average channel flagging tolerance.		*/
 /*  rjs  16sep99 Corrections to velocity definitions.			*/
+/*  rjs   4may00 Correct incorrect resetting of callno in uvrewind for  */
+/*               variables that have been overridden.                   */
+/*  rjs  16jun00 Handle bad baseline numbers more gracefully.	        */
 /*----------------------------------------------------------------------*/
 /*									*/
 /*		Handle UV files.					*/
@@ -1246,7 +1249,8 @@ int tno;
   uv = uvs[tno];
 
   uv->callno = uv->mark = 0;
-  for(i=0, v = uv->variable; i < uv->nvar; i++, v++) v->callno = 0;
+  for(i=0, v = uv->variable; i < uv->nvar; i++, v++) 
+    v->callno = ( (v->flags & UVF_OVERRIDE) ? 1 : 0);
   for(vh = uv->vhans; vh != NULL; vh = vh->fwd) vh->callno = 0;
   uv->offset = 0;
   uv->corr_flags.offset = 0;
@@ -3101,8 +3105,11 @@ UV *uv;
       i1 = max( bl / 256, bl % 256);
       i2 = min( bl / 256, bl % 256);
       if(i2 < 1 || i1 > MAXANT){
-	BUG('f',"Bad antenna numbers when doing selection, in UVREAD(select)"); }
-      discard = sel->ants[(i1*(i1-1))/2+i2-1];
+	BUG('w',(message,"Discarded data with bad antenna numbers when selecting: baseline number is %d\n",bl));
+	discard = TRUE;
+      }else{
+        discard = sel->ants[(i1*(i1-1))/2+i2-1];
+      }
       if(discard) goto endloop;
     }
     if( n >= sel->noper ) goto endloop;
