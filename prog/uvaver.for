@@ -82,18 +82,6 @@ c    rjs  25sep93 Check when we run out of baseline slots in bufacc.
 c    rjs  19oct93 Check that data is read.
 c    rjs  23sep93 W axis change.
 c    rjs  10oct94 relax option.
-c    rjs  24oct94 Weight data (in time averaging) according to integration
-c		  time.
-c    rjs  19sep95 Handle data that is not quite in time order.
-c    rjs  21sep95 Really do it this time.
-c    rjs  14dec95 Increase buffer in averaging (MAXAVER).
-c    rjs  14jun96 Add warning about time averaging pulsar bin data.
-c    rjs  10feb97 Improve averaging in the face of bad, out-of-sequence, data.
-c    rjs  10oct97 Eliminate incorrect call to uvvarcopy just before the
-c		  final buffer flush.
-c    rjs  23oct97 Do not average across changes in the "on" variable.
-c    mchw 02jan98 Increase buffer in averaging (MAXAVER=163840).
-c    rjs  19sep04 Handle varying jyperk.
 c
 c  Bugs:
 c    * The way of determining whether a source has changed is imperfect.
@@ -103,13 +91,13 @@ c    * Too much of this code worries about polarisations.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)
-	parameter(version='UvAver: version 1.0 19-Sep-04')
+	parameter(version='UvAver: version 1.0 23-Sep-94')
 	character uvflags*12,ltype*16,out*64
-	integer npol,Snpol,pol,tIn,tOut,vupd,nread,nrec,i,nbin
-	real inttime,jyperk
+	integer npol,Snpol,pol,tIn,tOut,vupd,nread,nrec,i
+	real inttime
 	logical dotaver,doflush,buffered,PolVary,ampsc,vecamp,first
 	logical relax,ok,donenpol
-	double precision preamble(5),Tmin,Tmax,Tprev,interval
+	double precision preamble(5),T0,T1,Tprev,interval
 	complex data(MAXCHAN)
 	logical flags(MAXCHAN)
 c
@@ -151,23 +139,12 @@ c
 c  Open the input and the output files.
 c
 	dowhile(uvDatOpn(tIn))
-	  nbin = 1
-	  if(dotaver)then
-	    call uvrdvri(tIn,'nbin',nbin,1)
-	    if(nbin.gt.1)then
-	      call bug('w',
-     *	      'Time averaging or pol''n selection of bin-mode data')
-	      call bug('w',
-     *	      'This will average all bins together')
-	    endif
-	  endif
 	  call uvDatGta('ltype',ltype)
 	  call VarInit(tIn,ltype)
 	  call uvVarIni(tIn,vupd)
 	  call uvVarSet(vupd,'dra')
 	  call uvVarSet(vupd,'ddec')
 	  call uvVarSet(vupd,'source')
-	  call uvVarSet(vupd,'on')
 c
 c Special processing the first time around.
 c
@@ -187,8 +164,8 @@ c  Loop over the data.
 c
 	  call uvDatRd(preamble,data,flags,maxchan,nread)
 	  Tprev = preamble(4)
-	  Tmin = Tprev
-	  Tmax = Tmin
+	  T1 = Tprev + interval
+	  T0 = Tprev
 	  dowhile(nread.gt.0)
 c
 c  Count the number of records read.
@@ -209,9 +186,8 @@ c
 	    doflush = ok.and.dotaver
 	    if(doflush)then
 	      doflush = uvVarUpd(vupd)
-	      doflush = (doflush.or.preamble(4)-Tmin.gt.interval.or.
-     *				    Tmax-preamble(4).gt.interval)
-     *			.and.buffered
+	      doflush = (doflush.or.preamble(4).gt.T1.or.
+     *				    preamble(4).lt.T0).and.buffered
 	    endif
 c
 c  Flush out the accumulated data -- the case of time averaging.
@@ -221,8 +197,8 @@ c
 	      PolVary = PolVary.or.npol.eq.0.or.
      *		(Snpol.ne.npol.and.Snpol.gt.0)
 	      Snpol = npol
-	      Tmin = preamble(4)
-	      Tmax = Tmin
+	      T0 = preamble(4)
+	      T1 = T0 + interval
 	      buffered = .false.
 c
 c  Flush out the accumulated data -- the case of no time averaging.
@@ -239,8 +215,6 @@ c
 		call uvDatGti('pol',pol)
 		call uvputvri(tOut,'pol',pol,1)
 		call VarCopy(tIn,tOut)
-		call uvDatGtr('jyperk',jyperk)
-		call uvputvrr(tOut,'jyperk',jyperk,1)
 		call uvwrite(tOut,preamble,data,flags,nread)
 		donenpol = npol.gt.1
 	      endif
@@ -254,22 +228,18 @@ c
 	      call BufAcc(preamble,inttime,data,flags,nread)
 	      buffered = .true.
 	      call VarCopy(tIn,tOut)
-	      if(nbin.gt.1)call uvputvri(tOut,'nbin',1,1)
 	    endif
 c
 c  Keep on going. Read in another record.
 c
-	    if(ok)then
-	      Tprev = preamble(4)
-	      Tmin = min(Tmin,Tprev)
-	      Tmax = max(Tmax,Tprev)
-	    endif
+	    Tprev = preamble(4)
 	    call uvDatRd(preamble,data,flags,maxchan,nread)
 	  enddo
 c
 c  Flush out anything remaining.
 c
 	  if(buffered)then
+	    call VarCopy(tIn,tOut)
 	    call BufFlush(tOut,ampsc,vecamp,npol)
 	    PolVary = PolVary.or.npol.le.0.or.
      *	      (Snpol.ne.npol.and.Snpol.gt.0)
@@ -435,27 +405,46 @@ c
 	    call uvputvri(tOut,'pol',pols(i,j),1)
 	    doamp = ampsc.or.(vecamp.and.PolsPara(pols(i,j)))
 	    nbp = nbp + 1
+	    if(cntp(i,j).gt.1)then
+	      do k=1,nchan(i,j)
+		if(count(k+p).gt.0)then
+		  flags(k) = .true.
 c
-c  Loop over the channels. If we are doing amp-scalar averaging, and
-c  the average visibility is zero, flag the data. Otherwise just
-c  depend on whether we have good data or not.
+c Amp-scalar averaging; vector phase scalar amplitude
 c
-	    do k=1,nchan(i,j)
-	      if(doamp.and.
-     *		abs(real(buf(k+p)))+abs(aimag(buf(k+p))).eq.0)
-     *		count(k+p) = 0
-	      flags(k) = count(k+p).gt.0
-	      if(.not.flags(k))then
-		data(k) = 0
-	      else if(doamp)then
-                amp = abs(buf(k+p))
-		data(k) = (bufr(k+p) / count(k+p)) *  
+		  if(doamp)then
+                    amp = abs(buf(k+p))
+                    if (amp.gt.0) then
+		      data(k) = (bufr(k+p) / count(k+p)) *  
      *                          (buf(k+p) / amp)
-	      else
-		data(k) = buf(k+p) / count(k+p)
-              endif
-	    enddo
- 	    call uvwrite(tOut,preambl,data,flags,nchan(i,j))
+                    else
+		      flags(k) = .false.
+		      data(k) = 0
+                    endif
+c
+c  Vector averaging.
+c
+		  else
+		    data(k) = buf(k+p) / count(k+p)
+                  endif
+c
+c  Case of no data.
+c
+		else
+		  flags(k) = .false.
+		  data(k) = 0
+		endif
+	      enddo
+ 	      call uvwrite(tOut,preambl,data,flags,nchan(i,j))
+c
+c  Case of just one set of data.
+c
+	    else
+	      do k=1,nchan(i,j)
+	        flags(k) = count(k+p).gt.0
+	      enddo
+	      call uvwrite(tOut,preambl,buf(p+1),flags,nchan(i,j))
+	    endif		
 	  enddo
 	enddo
 c
@@ -507,21 +496,21 @@ c
 c  Add in this visibility.
 c
 	if(cnt(bl).eq.0)then
-	  cnt(bl) = inttime
+	  cnt(bl) = 1
 	  npols(bl) = 0
-	  preamble(1,bl) = inttime * preambl(1)
-	  preamble(2,bl) = inttime * preambl(2)
-	  preamble(3,bl) = inttime * preambl(3)
-	  preamble(4,bl) = inttime * preambl(4)
-	  preamble(5,bl) = inttime * preambl(5)
+	  preamble(1,bl) = preambl(1)
+	  preamble(2,bl) = preambl(2)
+	  preamble(3,bl) = preambl(3)
+	  preamble(4,bl) = preambl(4)
+	  preamble(5,bl) = preambl(5)
 	  preamble(6,bl) = inttime
 	else
-	  cnt(bl) = cnt(bl) + inttime
-	  preamble(1,bl) = preamble(1,bl) + inttime * preambl(1)
-	  preamble(2,bl) = preamble(2,bl) + inttime * preambl(2)
-	  preamble(3,bl) = preamble(3,bl) + inttime * preambl(3)
-	  preamble(4,bl) = preamble(4,bl) + inttime * preambl(4)
-	  preamble(5,bl) = preamble(5,bl) + inttime * preambl(5)
+	  cnt(bl) = cnt(bl) + 1
+	  preamble(1,bl) = preamble(1,bl) + preambl(1)
+	  preamble(2,bl) = preamble(2,bl) + preambl(2)
+	  preamble(3,bl) = preamble(3,bl) + preambl(3)
+	  preamble(4,bl) = preamble(4,bl) + preambl(4)
+	  preamble(5,bl) = preamble(5,bl) + preambl(5)
 	  preamble(6,bl) = preamble(6,bl) + inttime
 	endif
 c
@@ -541,6 +530,7 @@ c
 	  if(p.gt.MAXPOL) call bug('f',
      *	    'Too many polarizations, in BufAcc')
 	  pols(p,bl) = pol
+	  cntp(p,bl) = 1
 	  nchan(p,bl) = nread
 	  pnt(p,bl) = free
 	  free = free + nread
@@ -552,9 +542,9 @@ c
 	  p = pnt(p,bl) - 1
 	  do i=1,nread
 	    if(flags(i))then
-	      buf(i+p) = inttime * data(i)
-              bufr(i+p) = inttime * abs(data(i))
-	      count(i+p) = inttime
+	      buf(i+p) = data(i)
+              bufr(i+p) = abs(data(i))
+	      count(i+p) = 1
 	    else
 	      buf(i+p) = (0.0,0.0)
               bufr(i+p) = 0.0
@@ -565,14 +555,15 @@ c
 c  Else accumulate new data for old baseline.
 c
 	else
+	  cntp(p,bl) = cntp(p,bl) + 1
 	  nread = min(nread,nchan(p,bl))
 	  nchan(p,bl) = nread
 	  p = pnt(p,bl) - 1
 	  do i=1,nread
 	    if(flags(i))then
-	      buf(i+p) = buf(i+p) + inttime * data(i)
-              bufr(i+p) = bufr(i+p) + inttime * abs(data(i))
-	      count(i+p) = count(i+p) + inttime
+	      buf(i+p) = buf(i+p) + data(i)
+              bufr(i+p) = bufr(i+p) + abs(data(i))
+	      count(i+p) = count(i+p) + 1
 	    endif
 	  enddo
 	endif
