@@ -45,8 +45,8 @@ c
 c@ in
 c	The input image.
 c@ type
-c	Specifies the image type given, respectively, in the IN keyword.  
-c	Minimum match is supported (note that "pixel" was formerly "grey"
+c	Specifies the image type given in the IN keyword.  Minimum
+c	match is supported (note that "pixel" was formerly "grey"
 c	which is still supported).     Choose from:
 c
 c	"contour"  (contour)
@@ -98,9 +98,8 @@ c       "sqr" (square root), "log" (logarithmic), and "heq" (histogram
 c       equalization).  The colour lookup table is an integer from 1 to 8
 c       specifying a lookup table. Valid values are 1 (b&w), 2 (rainbow),
 c       3 (linear pseudo colour), 4 (floating zero colour contours), 5 (fixed
-c       zero colour contours), 6 (rgb), 7 (background), 8 (heat) and 
-c	9 (absolute b&w).  If you enter a negative integer, then the 
-c	reversed lookup table is displayed.
+c       zero colour contours), 6 (rgb), 7 (background) and 8 (heat).  If you
+c       enter a negative integer, then the reversed lookup table is displayed.
 c
 c       The transfer function changes available with OPTIONS=FIDDLE are in
 c       addition (on top of) to the selections here, but the colour lookup
@@ -127,7 +126,6 @@ c
 c	"hms"       the label is in H M S (e.g. for RA)
 c	"dms"       the label is in D M S (e.g. for DEC)
 c	"arcsec"    the label is in arcsecond offsets
-c	"arcmin"    the label is in arcminute offsets
 c	"absdeg"    the label is in degrees
 c	"reldeg"    the label is in degree offsets
 c		    The above assume the  pixel increment is in radians.
@@ -137,9 +135,9 @@ c	"abskms"    the label is in Km/s
 c	"relkms"    the label is in Km/s offsets
 c	"absghz"    the label is in GHz
 c	"relghz"    the label is in GHz offsets
-c	"absnat"    the label is in natural coordinates as defined by 
-c	 	    the header.
-c	"relnat"    the label is in offset natural coordinates
+c	"abslin"    the label is in linear coordinates as defined by 
+c	 	    the header you might call this the natural axis label
+c	"rellin"    the label is in offset linear coordinates
 c	"none"      no labels or ticks on the axes
 c       
 c	All offsets are from the reference pixel.  
@@ -154,8 +152,14 @@ c	  before the slices from the current sub-plot are displayed.
 c	  The initial slice window extrema are defined from the first 
 c	  sub-plot so slices from succeeding sub-plots may not fit 
 c	  unless you use keywords XRANGE and YRANGE.
-c	"baseline" means fit a baseline (offset and slope) as well as 
-c	  a Gaussian when OPTIONS=fit.
+c
+c	"noimage"  means do not generate the pixel map or contour plot
+c	  display of the image.   Useful if you have specified the slice
+c	  locations with a text file via the POSIN keyword and you don't
+c	  want to see the slice locations displayed on the image. The region
+c	  of the viewsurface used for the slice display is larger with 
+c	  this option active.
+c
 c       "fiddle" means enter a routine to allow you to interactively change
 c         the display lookup table.  You can cycle through a variety of   
 c         colour lookup tables, as well as alter a linear transfer function
@@ -167,24 +171,23 @@ c         fiddle is offered; you can cycle through different colour tables
 c         and invoke the predefined transfer functions, but the linear
 c         fiddler is not available.   In this way you can make colour
 c         hardcopy plots.
-c	"fit" means fit a Gaussian to each slice.  The cursor is used
-c	  to make the initial estimates of the Gaussian parameters.
-c	"grid" means overlay a  coordinate grid on the display	
-c	"noerase"  Don't erase a snugly fitting rectangle into which the 
-c	  "3-axis" value string is written.
-c	"noimage"  means do not generate the pixel map or contour plot
-c	  display of the image.   Useful if you have specified the slice
-c	  locations with a text file via the POSIN keyword and you don't
-c	  want to see the slice locations displayed on the image. The region
-c	  of the viewsurface used for the slice display is larger with 
-c	  this option active.
-c	"unequal"  means display image with unequal scales in x and y. The
-c	  default is that the scales are equal.
+c
 c	"wedge" means that if you are drawing a pixel map, also draw
 c	  and label a wedge to the right of the plot, showing the map 
 c	  of intensity to colour.
+c
+c	"fit" means fit a Gaussian to each slice.  The cursor is used
+c	  to make the initial estimates of the Gaussian parameters.
+c
+c	"baseline" means fit a baseline (offset and slope) as well as 
+c	  a Gaussian when OPTIONS=fit.
+c
 c	"xrange" means when OPTIONS=fit, use the cursor to define an x-range
 c	  outside of which pixels will be excluded from the fit.
+c
+c	"unequal"  means display image with unequal scales in x and y. The
+c	  default is that the scales are equal.
+c
 c	"3value"   means label each sub-plot with the appropriate value
 c	  of the third axis (e.g. velocity or frequency for an
 c	  xyv ordered cube, position for a vxy ordered cube).
@@ -199,12 +202,10 @@ c	  complement of any like axis in the first 2. E.g., the cube is
 c	  in vxy order and LABTYP=abskms,arcsec the units for the "3VALUE" 
 c	  label will be arcsec.  If LABTYP=abskms,hms the "3VALUE" label 
 c	  will be DMS (if the third [y] axis is declination).
-c@ 3format
-c       If you ask for "3value" labelling, this keyword allows you
-c       specify the FORTRAN format of the labelling.  I have given
-c       up trying to invent a decent algorithm to choose this. Examples
-c       are "1pe12.6", or "f5.2" etc   If you leave this blank cgdisp 
-c       will try something that you probably won't like.
+c
+c	"noerase"  Don't erase a snugly fitting rectangle into which the 
+c	  "3-axis" value string is written.
+c
 c@ csize
 c	Three values.  Character sizes in units of the PGPLOT default
 c	(which is ~ 1/40 of the view surface height) for the plot axis
@@ -239,9 +240,9 @@ c	XOTYPE and YOTYPE  give the coordinate types of the slice BLC and
 c	TRC in the file for the x- and y-directions, respectively.  
 c	Choose from:
 c
-c	 "hms", "dms", "arcsec", "arcmin", "absdeg", "reldeg", "abspix", 
-c	 "relpix", "absnat", "relnat", "absghz", "relghz", "abskms", & 
-c	 "relkms"  as described in the keyword LABTYP.  
+c	 "hms", "dms", "arcsec", "absdeg", "reldeg", "abspix", 
+c	 "relpix", "abslin", "rellin", "absghz", "relghz", 
+c	 "abskms", & "relkms"  as described in the keyword LABTYP.  
 c	Note that %OTYPE does not depend upon what you specified for LABTYP.
 c
 c	X1,Y1 defines the BLC of the slice in the nominated OTYPE
@@ -249,10 +250,9 @@ c	coordinate system (X- and Y-OTYPE can be different).
 c	X2,Y2 defines the TRC of the slice in the nominated OTYPE
 c	coordinate system (X- and Y-OTYPE can be different).  
 c
-c	  For %OTYPE = "abspix ", "relpix", "arcsec", "arcmin", "absdeg",
-c		       "reldeg", "absghz", "relghz", "abskms", "relkms", 
-c		       "absnat" and "relnat"   X1,Y1 and X2,Y2 are all 
-c		        single numbers.
+c	  For %OTYPE = "abspix ", "relpix", "arcsec", "absdeg", "reldeg",
+c		       "absghz", "relghz", "abskms", "relkms", "abslin"
+c		   and "rellin"   X1,Y1 and X2,Y2 are all single numbers.
 c
 c	  For %OTYPE = "hms" or "dms", the X and/or Y location is/are replaced
 c	  by three numbers such as  HH MM SS.S or DD MM SS.S.  Thus if
@@ -270,7 +270,12 @@ c	to extract the slice from all channels.
 c
 c@ posout
 c	An ascii file into which the BLC and TRC for each slice are saved.
-c	The columns are in the same format as is needed for the POSIN keyword.
+c	The columns of the file are slice number, the slice BLC, TRC and
+c	the start and end channels from the image that this slice came
+c	from (you may have used the CHAN keyword).   The BLC and TRC are
+c	in arcseconds from the reference pixel if the axes have radian
+c	increments (RA/DEC etc).  Otherwise they are in offset pixels 
+c	from the reference pixel.
 c@ valout
 c	An ascii file into which the slices are saved.  If the file already
 c	exists, new slices are appended to it.  The columns of the file are
@@ -312,23 +317,6 @@ c                  to "range" keyword. Move to image type "pixel"
 c                  instead of "grey"
 c    nebk 28mar95  Remove annoying restriction that slices cannot
 c                  begin and end on blanked pixels
-c    nebk 10apr95  Add doc for absolute b&w lookup table
-c    nebk 03sep95  Detect black/white background, add non-linear 
-c		   ticks and grid
-c    nebk 12nov95  Change to deal internally in absolute pixels 
-c    nebk 29nov95  New call for CONTURCG
-c    nebk 30jan96  Remove restrictions on CHAN so groups of channels
-c		   can now overlap
-c    nebk 05feb96  Make format of POSOUT file the same as that for POSIN
-c    nebk 28feb96  Was getting slice vectors wrong with keyword POSIN
-c		   when a subimage was displayed.
-c    nebk 24jun96  Set slice frame colour depening upon background colour
-c    nebk 01dec96  'absnat' and 'relnat' were given twice in allowed lists
-c                  of label types
-c    nebk 13feb97  Add keyword "3format"
-c    rjs  21jul97  Call initco earlier
-c    rjs   7may98  Change the bunit variable to be 16 char (not 8 char).
-c    rjs  08may00  Change incorrect keyf call to keya.
 c
 c Notes:
 c
@@ -349,53 +337,58 @@ c-----------------------------------------------------------------------
       include 'mem.h'
 c
       integer maxlev, nxdef, nydef, maxnsl, nltype, nbins
-      real grid, wedwid, tfdisp
+      real grid, wedwid, wedisp, tfdisp
       parameter (maxlev = 50, nxdef = 4, nydef = 4, maxnsl = 20,
-     +  nbins = 128, grid = 0.25, nltype = 17, wedwid = 0.05, 
-     +  tfdisp = 0.5)
+     +   nbins = 128, grid = 0.25, nltype = 14, wedisp = 1.0, 
+     +   wedwid = 0.05, tfdisp = 0.5)
 c
       integer ipim, ipp, ipims, ipnim, ipslx(maxnsl), ipsly(maxnsl),
      +  ipsls(maxnsl), ipsle(maxnsl)
 c
+      double precision cdelt(maxnax), crval(maxnax), crpix(maxnax)
       real levs(maxlev), pixr(2), tr(6), cs(3), pixr2(2), scale(2),
      +  bound(4,maxnsl), vblc(2,2), vtrc(2,2), xrange(2), yrange(2),
      +  tfvp(4), wdgvp(4), cumhis(nbins), dmm(2)
-      real slev, vx, vy, vxsize, vysize, ydispb, ydispbs, xdispl, 
-     +  xdispls, groff, blank, sxmin, sxmax, symin, symax, vxgap, 
-     +  vygap
+      real slev, xmin, xmax, ymin, ymax, vx, vy, vxsize, vysize, ydispb,
+     +  ydispbs, xdispl, xdispls, groff, blank, epoch, sxmin, sxmax, 
+     +  symin, symax
 c
       integer blc(3), trc(3), size(maxnax), win(maxnax), 
-     +  grpbeg(maxchan), ngrp(maxchan), srtlev(maxlev), nslice, 
-     +  nslp(maxnsl), slsize(maxnsl), slpos(6,maxnsl), seg(2,maxdim), 
-     +  nseg(maxnsl), his(nbins)
+     +  grpbeg(maxchan), ngrp(maxchan), srtlev(maxlev),
+     +  nslice, nslp(maxnsl), slsize(maxnsl),  slpos(6,maxnsl),
+     +  seg(2,maxdim), nseg(maxnsl), his(nbins)
       integer nx, ny, nlevs, lin, naxis, ierr, pgbeg, iostat, ilen,
      +  nlast, ngrps, lval, lposi, lposo, lmod, i, j, k, jj, icol, 
      +  iax, ipage, wedcod, ibin(2), jbin(2), kbin(2), krng(2), 
-     +  coltab, concol, labcol, slbcol, bgcol
+     +  coltab, iofm
 c
-      character labtyp(2)*6, ltype(nltype)*6
+      character ctype(maxnax)*9, labtyp(2)*6, ltype(nltype)*6
       character in*64, pdev*64, xlabel*40, ylabel*40, xlabel2*40, 
-     +  ylabel2*40, hard*20, trfun*3, levtyp*1, fslval*80, fslposo*80, 
-     +  fslposi*80, fslmod*80, units*16, val3form*20
+     +  ylabel2*40, xopts*20, yopts*20, hard*20, xxopts*22, yyopts*22,
+     +  trfun*3, levtyp*1, fslval*80, fslposo*80, fslposi*80, fslmod*80,
+     +  units*8
 c
-      logical do3val, do3pix, eqscale, doblnk, dopixel, doerase,
-     +  redisp, accum, radians, none, noimage, dofit, dobord, dobase,
-     +  doxrng, dofid, dowedge, first, dunsl, dogrid, doaxlab, doaylab,
-     +  donxlab(2), donylab(2), gaps
+      logical do3val, do3pix, eqscale, doblnk, mask, dopixel,  gaps,
+     +  doerase, redisp, accum, radians, none, noimage, dofit, dobord,
+     +  dobase, doxrng, dofid, dowedge, first, dunsl, reverse
 c
       integer len1
 c
       data ltype  /'hms   ', 'dms   ', 'abspix', 'relpix', 
-     +            'arcsec', 'arcmin', 'absghz', 'relghz', 
-     +            'abskms', 'relkms', 'absnat', 'relnat', 
-     +            'absdeg', 'reldeg', 'none  ', 'abslin',
-     +            'rellin'/
+     +            'arcsec', 'absghz', 'relghz', 'abskms', 
+     +            'relkms', 'abslin', 'rellin', 'absdeg',
+     +            'reldeg', 'none  '/
       data ipage, scale /0, 0.0, 0.0/
       data xrange, yrange /0.0, 0.0, 0.0, 0.0/
-      data dmm, dunsl, gaps /1.0e30, -1.0e30, .false., .false./
+      data dunsl /.false./
       data xdispls, ydispbs /3.5, 3.5/
 c-----------------------------------------------------------------------
-      call output ('CgSlice: version 1.0 7-May-98')
+      call output ('CgSlice: version 28-Mar-95')
+      call output ('Keyword "range" can now be used to specify the')
+      call output ('colour lookup table as well the transfer function')
+      call output (' ')
+      call output ('Options=fiddle is now keyboard driven for '//
+     +             'hard-copy devices')
       call output (' ')
 c
 c Get user inputs
@@ -404,23 +397,22 @@ c
      +   levtyp, slev, levs, nlevs, pixr, trfun, coltab, pdev, labtyp,
      +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase, 
      +   accum, noimage, dofit, dobase, fslval, fslposi, fslposo, 
-     +   fslmod, xrange, yrange, doxrng, dofid, dowedge, 
-     +   dogrid, val3form)
+     +   fslmod, xrange, yrange, doxrng, dofid, dowedge)
 c
 c Open image and see if axes in radians
 c
-      call opimcg (maxnax, in, lin, size, naxis)
-      call initco (lin)
+      call opimcg (maxdim, maxnax, in, lin, naxis, size, epoch, 
+     +             mask, crpix, cdelt, crval, ctype)
       call rdhda (lin, 'bunit', units, ' ')
       radians = .false.
-      call axfndco (lin, 'RAD', 0, 1, iax)
-      if (iax.eq.1) call axfndco (lin, 'RAD', 0, 2, iax)
+      call axfndcg ('RAD', 1, ctype(1), iax)
+      if (iax.eq.1) call axfndcg ('RAD', 1, ctype(2), iax)
       if (iax.eq.1) radians = .true.
 c
 c Finish key inputs for region of interest now
 c
       call region (in, naxis, size, ibin, jbin, kbin, blc, trc,
-     +             win, ngrps, grpbeg, ngrp)
+     +             win, maxchan, grpbeg, ngrp, ngrps)
 c
 c Try to allocate memory for image
 c
@@ -440,19 +432,33 @@ c
         call grfixcg (pixr, lin, naxis, size, trfun, pixr2,
      +                groff, blank)
       else
-        call conlevcg (.false., maxlev, lin, levtyp, slev, nlevs, 
-     +                 levs, srtlev)
+        call conlevcg (.false., maxlev, lin, naxis, size, levtyp,
+     +                 slev, nlevs, levs, srtlev)
         blank = -99999999.0
       end if
+c
+c Linearize axis descriptors if non-pixel labels requested
+c
+      call linco (lin, labtyp, blc, trc, grpbeg, ngrp, ctype,
+     +            crval, crpix, cdelt)
 c
 c Work out array index limits, coordinate transformation array and
 c labels.   Also return header items.
 c
-      call limitscg (blc, ibin, jbin, tr)
+      call limitscg (labtyp, blc, trc, naxis, epoch, crpix, cdelt, 
+     +   crval, ctype, .false., xmin, xmax, ymin, ymax, ibin, jbin,
+     +   tr, xlabel, ylabel)
 c
 c Work out number of plots per page and number of plots
 c
       call nxnycg (nxdef, nydef, ngrps, nx, ny, nlast)
+      gaps = .false.
+      if (ngrps.eq.1 .or. nx*ny.eq.1) gaps = .true.
+c
+c Work out if wedge outside or inside subplots. Also work out
+c if plotting one wedge per subplot or one wedge for all
+c
+      call wedgincg (dowedge, nx, ny, 1, trfun, wedcod)
 c
 c Work out default character sizes for axis and channel labels
 c
@@ -482,48 +488,36 @@ c
       call pgqinf ('hardcopy', hard, ilen)
       if (hard.eq.'YES' .and. fslposi.eq.' ') call bug ('f',
      +   'Must specify keyword "posin" for hardcopy device')
+c
+c Step to first sub-plot, set font and basic character size
+c
       call pgpage
       call pgscf(1)
 c
-c Find out if background white
-c
-      call bgcolcg (bgcol)
-c
-c Set line graphics colours
-c
-      call setlgc (bgcol, labcol, concol, slbcol)
-c
 c Init OFM routines
 c       
-      if (dopixel) call ofmini
+      call ofmini
 c
-c Work out if wedge outside or inside subplots. Also work out
-c if plotting one wedge per subplot or one wedge for all
+c Set label displacements from axes and set PGTBOX labelling
+c option strings
 c
-      call wedgincg (hard, dofid, dowedge, nx, ny, 1, trfun, wedcod)
-c
-c Set axis labels
-c
-      call setdspcg (lin, labtyp, blc, trc, xdispl, ydispb)
-
-c Set label displacements 
-c
-      call setlabcg (lin, labtyp, .false., xlabel, ylabel)
+      call setlabcg (labtyp, ymin, ymax, xdispl, ydispb, xopts, yopts)
 c
 c Work out viewport encompassing all sub-plots and the viewport
 c that defines the slice plotting region.   Also return the
 c the viewport size of sub-plots, and the gap between sub-plots.
 c
       call vpsiz (noimage, dofid, nx, ny, cs, xdispl, ydispb, xdispls,
-     +  ydispbs, wedcod, wedwid, tfdisp, vblc, vtrc, vxsize, 
-     +  vysize, vxgap, vygap, tfvp, wdgvp)
+     +  ydispbs, wedcod, wedisp, wedwid, tfdisp, vblc, vtrc, vxsize, 
+     +  vysize, tfvp, wdgvp)
 c
 c Adjust viewport increments and start locations if equal scales
 c requested or if scales provided by user
 c
       if (.not.noimage) then
-        call vpadjcg (lin, hard, eqscale, scale, vblc(1,2), vblc(2,2),
-     +   vtrc(2,2), nx, ny, blc, trc, tfvp, wdgvp, vxsize, vysize)
+        call vpadjcg (hard, eqscale, scale, vblc(1,2), vblc(2,2),
+     +   vtrc(2,2), nx, ny, blc, trc, naxis, crval, crpix, cdelt, 
+     +   ctype, tfvp, wdgvp, vxsize, vysize)
 c
 c Set viewport location of first sub-plot
 c
@@ -543,13 +537,13 @@ c Set viewport and window for current sub-plot
 c
          if (.not.noimage) then
            call pgsvp (vx, vx+vxsize, vy, vy+vysize)
-           call pgswin (blc(1)-0.5, trc(1)+0.5, blc(2)-0.5, trc(2)+0.5)
+           call pgswin (xmin, xmax, ymin, ymax)
          end if
 c
 c Read in image  
 c
-         call readimcg (.true., blank, lin, ibin, jbin, krng,
-     +      blc, trc, .true., memi(ipnim), memr(ipim), doblnk, dmm)
+         call readimcg (.true., mask, blank, lin, ibin, jbin, krng,
+     +         blc, trc, .true., memi(ipnim), memr(ipim), doblnk, dmm)
 c
 c Some imaging chores
 c
@@ -562,21 +556,31 @@ c
 c
 c Apply transfer function directly to image if desired
 c
-           if (trfun.ne.'lin') call apptrfcg (pixr, trfun, groff, 
+           if (trfun.ne.'lin') call apptrfcg (pixr2, trfun, groff, 
      +       win(1)*win(2), memi(ipnim), memr(ipim), nbins, his,
      +       cumhis)
 c
-c Apply user given OFM or b&w as default to hardcopy device
+c Apply user specified OFM or b&w OFM as default to device
 c
-           if (hard.eq.'YES') call ofmcol (coltab, pixr2(1), pixr2(2))
+           call ofmcol (coltab, pixr2(1), pixr2(2))
+c
+c For hardcopy devices we generally want black on white, not white on 
+c black.  So if no colour table has been applied, make note of this.
+c
+           reverse = .false.
+           if (hard.eq.'YES') then
+             call ofminq (iofm)
+             if (iofm.eq.1) reverse = .true.
+           end if
 c
 c Draw wedge if needed
 c
            if (wedcod.eq.1 .or. wedcod.eq.2) then
-             call pgsci (labcol)
+             call pgsci (7)
+             if (hard.eq.'YES') call pgsci (2)
              call pgsch (cs(1))
-             call wedgecg (wedcod, wedwid, jj, trfun, groff, nbins,
-     +                     cumhis, wdgvp, pixr(1), pixr(2))
+             call wedgecg (reverse, wedcod, wedwid, jj, trfun, groff, 
+     +                     nbins, cumhis, wdgvp, pixr(1), pixr(2))
            end if
          end if
 c
@@ -588,63 +592,53 @@ c
            if (.not.noimage) then
              if (dopixel) then
 c
-c Modify OFM for hardcopy devices here; must be done before PGIMAG
-c called. Take complement of b&w transfer functions if background white
+c Modify OFM for harcopy devices here; must be done before
+c PGIMAG called
 c 
-               if (hard.eq.'YES') then
-                 if (dofid) call ofmmod (tfvp, win(1)*win(2), 
-     +             memr(ipim), memi(ipnim), pixr2(1), pixr2(2))
-                 if (bgcol.eq.1) call ofmcmp
+              if (hard.eq.'YES' .and. dofid)
+     +          call ofmmod (tfvp, win(1)*win(2), memr(ipim),
+     +                       memi(ipnim), pixr2(1), pixr2(2))
+c
+c Draw pixel map
+c
+               if (reverse) then
+                 call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
+     +                        win(2), pixr2(2), pixr2(1), tr)
+               else
+                 call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
+     +                        win(2), pixr2(1), pixr2(2), tr)
                end if
-c
-c Draw pixel map and apply user given OFM
-c
-               call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
-     +                      win(2), pixr2(1), pixr2(2), tr)
-               if (hard.eq.'NO') call ofmcol (coltab, pixr2(1), 
-     +                                        pixr2(2))
-c
-c Retake b&w complement for white background
-c
-               if (hard.eq.'YES' .and. bgcol.eq.1) call ofmcmp
              else 
 c
 c Draw contours
 c
-               call pgsci (concol)
-               call conturcg (.false., blank, .false., win(1), win(2), 
-     +                        doblnk, memr(ipim), nlevs, levs, tr, 0.0)
+               call pgsci (7)
+               call conturcg (blank, .false., win(1), win(2), doblnk,
+     +                        memr(ipim), nlevs, levs, tr, 0.0)
              end if
 c
 c Label if first time through redisplay loop; axes not erased
 c
              call pgsch (cs(1))
-             call pgsci (labcol)
+             call pgsci (7)
+             if (hard.eq.'YES') call pgsci (2)
+             if (first) call axlabcg (gaps, nx, ny, ngrps, nlast, k, 
+     +         xopts, yopts, xdispl, ydispb, labtyp, xlabel, ylabel, 
+     +         xxopts, yyopts)
 c
-c Determine if the axes need ascii or numeric labelling
-c for this subplot
+c Draw axes
 c
-             call dolabcg (gaps, .false., nx, ny, ngrps, nlast, k,
-     +                     labtyp, doaxlab, doaylab, donxlab, donylab)
-c       
-c Write on ascii axis labels
-c       
-             if (first) call aaxlabcg (doaxlab, doaylab, xdispl, ydispb,
-     +                                 xlabel, ylabel)
-c       
-c Draw frame, write numeric labels, ticks and optional grid
-c       
-             call naxlabcg (lin, first, blc, trc, krng, labtyp,
-     +                      donxlab, donylab, .false., dogrid)
+             call boxcg (first, xxopts, yyopts)
              call pgupdt
 c
 c Draw wedge if inside subplot
 c
              if (wedcod.eq.3) then
-               call pgsci (labcol)
+               call pgsci (7)
+               if (hard.eq.'YES') call pgsci (2)
                call pgsch (cs(1))
-               call wedgecg (wedcod, wedwid, jj, trfun, groff, nbins,
-     +                       cumhis, wdgvp, pixr(1), pixr(2))
+               call wedgecg (reverse, wedcod, wedwid, jj, trfun, groff, 
+     +                       nbins, cumhis, wdgvp, pixr(1), pixr(2))
              end if
 c
 c Write velocity or channel label
@@ -653,7 +647,7 @@ c
                call pgsch (cs(2))
                call pgsci (1)
                call lab3cg (lin, doerase, do3val, do3pix, labtyp,
-     +                      grpbeg(k), ngrp(k), val3form)
+     +                      grpbeg(k), ngrp(k))
              end if
              call pgupdt
 c
@@ -670,22 +664,19 @@ c Define slice ends with cursor or read from file
 c
            redisp = .false.
            if (fslposi.eq.' ' .and. .not.noimage) then
-             call curpos (win(1), win(2), ibin, jbin, blc, redisp, 
-     +                    maxnsl, nslice, slpos)
+             call curpos (win(1), win(2), labtyp, ibin, jbin,
+     +         blc, naxis, cdelt, crpix, crval, ctype, 
+     +         redisp, maxnsl, nslice, slpos)
 c
 c Erase subplot or write positions file if desired
 c
              if (redisp) then
-               call erswincg (blc(1)-0.5, trc(1)+0.5, 
-     +                        blc(2)-0.5, trc(2)+0.5)
+               call erswincg (xmin, xmax, ymin, ymax)
              else
                if (fslposo.ne.' ') call slposw (lin, lposo, krng,
      +           radians, blc, ibin, jbin, maxnsl, nslice, slpos)
              end if
            else
-c
-c Read positions from text file and decode
-c
              call txtopen (lposi, fslposi, 'old', iostat)
              if (iostat.ne.0) 
      +       call bug ('f', 'Error opening input text file'//fslposi)
@@ -717,7 +708,8 @@ c
              if (fslposi.ne.' ' .and..not.noimage) then
                call setcolcg (i, icol)
                call pgsci (icol)
-               call slmark (blc, ibin, jbin, slpos(1,i))
+               call slmark (blc, ibin, jbin, labtyp, slpos(1,i), 
+     +                      naxis, crval, cdelt, crpix, ctype)
              end if
 c
 c Allocate memory for slice 
@@ -731,10 +723,10 @@ c
              ipp = ipim
              if (.not.noimage .and. dopixel .and. trfun.ne.'lin') 
      +          ipp = ipims
-             call slice (lin, ibin, jbin, slpos(1,i), grid, win(1), 
-     +          win(2), memr(ipp), memi(ipnim), radians, slsize(i), 
-     +          memr(ipslx(i)), memr(ipsly(i)), nslp(i), bound(1,i), 
-     +          nseg(i), seg)
+             call slice (ibin, jbin, slpos(1,i), grid, win(1), win(2),
+     +          memr(ipp), memi(ipnim), radians, naxis, cdelt, 
+     +          slsize(i), memr(ipslx(i)), memr(ipsly(i)), nslp(i), 
+     +          bound(1,i), nseg(i), seg)
 c
 c Allocate memory for slice segment pointers and copy in
 c if slice not all blanked
@@ -780,13 +772,13 @@ c
                dobord = (i.eq.1.and.(.not.dunsl .or. .not.accum))
      +                   .or. dofit
                if (dofit) then
-                 call drawbox (dobord, slbcol, vblc, vtrc, xrange, 
-     +              yrange, bound(1,i), bound(3,i), bound(2,i), 
-     +              bound(4,i), xlabel2, ylabel2, xdispls, ydispb)
+                 call drawbox (dobord, vblc, vtrc, xrange, yrange, 
+     +              bound(1,i), bound(3,i), bound(2,i), bound(4,i),
+     +              xlabel2, ylabel2, xdispls, ydispb, hard)
                else
-                 call drawbox (dobord, slbcol, vblc, vtrc, xrange, 
-     +              yrange, sxmin, sxmax, symin, symax, xlabel2, 
-     +              ylabel2, xdispls, ydispbs)
+                 call drawbox (dobord, vblc, vtrc, xrange, yrange, 
+     +              sxmin, sxmax, symin, symax, xlabel2, ylabel2, 
+     +              xdispls, ydispbs, hard)
                end if
                dunsl = .true.
 c
@@ -807,7 +799,7 @@ c Do Gaussian fit if desired
 c
                  if (dofit) call gaufit (lmod, dobase, doxrng, i, 
      +             nslp(i), nseg(i),ipslx(i), ipsly(i),  ipsls(i), 
-     +             ipsle(i), xdispls, ydispbs, xlabel2, ylabel2, slbcol)
+     +             ipsle(i), xdispls, ydispbs, xlabel2, ylabel2, hard)
                end if
              end do
            end if
@@ -827,7 +819,7 @@ c
 c Increment sub-plot viewport locations 
 c
          call subinccg (k, nx, ny, vblc(1,2), vtrc(2,2), vxsize, 
-     +                  vysize, vxgap, vygap, vx, vy)
+     +                  vysize, 0.0, 0.0, vx, vy)
 c
 c Page plot device
 c
@@ -840,7 +832,6 @@ c
       call memfree (ipnim, win(1)*win(2), 'i')
       if (.not.noimage .and. dopixel .and. trfun.ne.'lin')
      +   call memfree (ipims, win(1)*win(2), 'i')
-      call finco(lin)
       call xyclose(lin)
       if (fslval.ne.' ') call txtclose (lval)
       if (fslposo.ne.' ') call txtclose (lposo)
@@ -850,7 +841,8 @@ c
       end
 c
 c
-      subroutine curget (ibin, jbin, blc, nx, ny, ip, ipos, wpos, cch)
+      subroutine curget (ibin, jbin, blc, nx, ny, naxis, crval,
+     +   cdelt, crpix, ctype, labtyp, ip, ipos, wpos, cch)
 c-----------------------------------------------------------------------
 c     Get one end of slice
 c
@@ -858,6 +850,9 @@ c  Input
 c    i,jbin  Pixel increments
 c    blc     BLC of displayed image
 c    nx,ny   x and y sizes of displayed subimage
+c    naxis   NUmber of axes in image
+c    cr*     Axis descriptors
+c    labtyp  Axis label types
 c    ip      Number of points accumulated so far.  SHould be 0 or 1
 c  Output
 c    wpos    Position in world coordinates for the point under cursor
@@ -866,14 +861,16 @@ c            under cursor
 c    cch     Character read by cursor. 
 c-----------------------------------------------------------------------
       implicit none
-      integer nx, ny, blc(2), ibin, jbin, ipos(2), ip
+      integer naxis, nx, ny, blc(2), ibin, jbin, ipos(2),
+     +  ip
+      double precision cdelt(naxis), crval(naxis), crpix(naxis)
       real wpos(2)
-      character cch*1
+      character cch*1, ctype(naxis)*(*), labtyp(2)*(*)
 cc
-      integer ci
+      integer k, ci
       double precision pix(2)
       real wx, wy
-      logical  more
+      logical ok, more
 c-----------------------------------------------------------------------
       call pgqci (ci)
       more = .true.
@@ -881,9 +878,6 @@ c-----------------------------------------------------------------------
       wy = wpos(2)
 c
       do while (more)
-c
-c Get cursor location in unbinned full image pixels
-c
         if (ip.eq.1) then
           call pgband (1, 1, wx, wy, wpos(1), wpos(2), cch)
         else
@@ -897,10 +891,15 @@ c
           more = .false.
         else if (cch.eq.'A') then
 c
+c Convert world coordinate to unbinned full image pixels 
+c
+          do k = 1, 2
+            call w2pixcg (dble(wpos(k)), k, labtyp(k), naxis, crval, 
+     +                    crpix, cdelt, ctype, pix(k), ok)
+          end do
+c
 c Convert to nearest binned subimage pixels
 c
-          pix(1) = wpos(1)
-          pix(2) = wpos(2)
           call ppconcg (1, blc(1), ibin, pix(1))
           call ppconcg (1, blc(2), jbin, pix(2))
           ipos(1) = nint(pix(1))
@@ -918,15 +917,21 @@ c
       end
 c
 c
-      subroutine curpos (nx, ny, ibin, jbin, blc, redisp, maxnsl, 
-     +                   nslice, slpos)
+      subroutine curpos (nx, ny, labtyp, ibin, jbin, blc, naxis,
+     +  cdelt, crpix, crval, ctype, redisp, maxnsl, nslice, slpos)
 c-----------------------------------------------------------------------
 c     Define slice locations with cursor
 c
 c  Input:
 c     nx,ny   Size of image
 c     i,jbin  PIxel increment sizes
+c     labtyp  axis label types
 c     blc     blc of window being displayed
+c     naxis   Numebr of axes in image
+c     cdelt   Pixel increments
+c     crpix   Reference pixel
+c     crval   Reference value
+c     ctype   Axis types
 c     maxnsl  Maximum number of slices to make
 c Output:
 c     redisp  Redisplay subplot and redo slices
@@ -937,8 +942,10 @@ c
 c-----------------------------------------------------------------------
       implicit none
 c
-      integer nx, ny, blc(2), maxnsl, nslice, slpos(6,maxnsl), 
-     +  ibin, jbin
+      integer nx, ny, blc(2), naxis, maxnsl, nslice,
+     +  slpos(6,maxnsl), ibin, jbin
+      double precision cdelt(naxis), crval(naxis), crpix(naxis)
+      character*(*) labtyp(2), ctype(naxis)
       logical redisp
 cc
       real wpos(2,2), xd, yd, cs, wldpos(2)
@@ -969,7 +976,8 @@ c
 c
 c Make cursor selection
 c
-        call curget (ibin, jbin, blc, nx, ny, ip, simpos, wldpos, cch)
+        call curget (ibin, jbin, blc, nx, ny, naxis, crval, 
+     +     cdelt, crpix, ctype, labtyp, ip, simpos, wldpos, cch)
         if (cch.eq.'A') then
           if (ip.eq.0) then
             ip = ip + 1 
@@ -1071,7 +1079,7 @@ c
 c
 c
       subroutine decopt  (do3val, do3pix, eqscale, doerase, accum,
-     +   noimage, dofit, dobase, doxrng, dofid, dowedge, grid)
+     +   noimage, dofit, dobase, doxrng, dofid, dowedge)
 c----------------------------------------------------------------------
 c     Decode options array into named variables.
 c
@@ -1088,21 +1096,20 @@ c     dobase    Fit basline too
 c     doxrng    Use cursor to define x range when fitting Gaussian
 c     dofid     FIddle lookup table
 c     dowedge   Draw pixel map wedge
-c     grid      Overlay coordinate grid
 c-----------------------------------------------------------------------
       implicit none
 c
       logical do3val, do3pix, eqscale, doerase, accum, noimage, dofit,
-     +  dobase, doxrng, dofid, dowedge, grid
+     +  dobase, doxrng, dofid, dowedge
 cc
       integer maxopt
-      parameter (maxopt = 12)
+      parameter (maxopt = 11)
 c
       character opshuns(maxopt)*10
       logical present(maxopt)
       data opshuns /'3value',     '3pixel  ', 'unequal ', 'noerase',
      +              'accumulate', 'noimage',  'fit',      'baseline',
-     +              'xrange',     'fiddle',   'wedge',    'grid'/
+     +              'xrange',     'fiddle',   'wedge'/
 c-----------------------------------------------------------------------
       call optcg ('options', opshuns, present, maxopt)
 c
@@ -1117,34 +1124,32 @@ c
       doxrng   =      present(9)
       dofid    =      present(10)
       dowedge  =      present(11)
-      grid     =      present(12)
 c
       end
 c
 c
-      subroutine drawbox (dobord, slbcol, vblc, vtrc, xrange, yrange, 
-     +   sxmin, sxmax, symin, symax, xlabel, ylabel, xdispl, ydispb)
+      subroutine drawbox (dobord, vblc, vtrc, xrange, yrange, sxmin,
+     +   sxmax, symin, symax, xlabel, ylabel, xdispl, ydispb, hard)
 c-----------------------------------------------------------------------
 c     Set the viewport and draw the box for the slice display
 c
 c  Input:
 c   dobord       Draw the border and label as well as setting 
 c                viewport and window
-c   slbcol       Colour index to draw frame with
 c   vblc,trc     Viewport
 c   x,yrange     User given plot extrema
 c   sx,ymin,max  Auto plot extrema
 c   x,ylabel     x- and y-axis labels
 c   xdispl,ydispb
 c                Y and x axis label offsets
+c   hard         'YES' for hardcopy device
 c
 c-----------------------------------------------------------------------
       implicit none
       real vblc(2), vtrc(2), xrange(2), yrange(2), sxmin, sxmax, symin,
      +  symax, ydispb, xdispl
-      integer slbcol
       logical dobord
-      character*(*) xlabel, ylabel
+      character*(*) xlabel, ylabel, hard*3
 cc
       real lim(4)
 c-----------------------------------------------------------------------
@@ -1154,7 +1159,8 @@ c-----------------------------------------------------------------------
       call pgswin (lim(1), lim(3), lim(2), lim(4))
 c
       if (dobord) then
-        call pgsci (slbcol)
+        call pgsci (7)
+        if (hard.eq.'YES') call pgsci (1)
         call pgtbox ('BCNST', 0.0, 0, 'BCNST', 0.0, 0)
         call pgmtxt ('B', ydispb, 0.5, 0.5, xlabel)
         call pgmtxt ('L', xdispl, 0.5, 0.5, ylabel)
@@ -1355,7 +1361,7 @@ c
 c
 c
       subroutine gaufit (lmod, dobase, doxrng, islice, n, nseg, ipslx,
-     +   ipsly, ipsls, ipsle, xdispl, ydispb, xlabel, ylabel, slbcol)
+     +   ipsly, ipsls, ipsle, xdispl, ydispb, xlabel, ylabel, hard)
 c-----------------------------------------------------------------------
 c     Fit a Gaussian to the slice
 c
@@ -1376,12 +1382,12 @@ c   x,ydispb,l
 c          Label displacements from axes
 c   x,ylabel
 c          labels
-c   slbcol    Colour index for slice plot frame
+c   hard      'YES' for hard copy device
 c-----------------------------------------------------------------------
       implicit none
       real xdispl, ydispb
-      integer n, ipslx, ipsly, ipsls, ipsle, nseg, islice, lmod, slbcol
-      character*(*) xlabel, ylabel
+      integer n, ipslx, ipsly, ipsls, ipsle, nseg, islice, lmod
+      character*(*) xlabel, ylabel, hard*3
       logical dobase, doxrng
 cc
       include 'maxdim.h'
@@ -1479,7 +1485,7 @@ c Plot model and residual
 c
         if (ifail.ne.1)
      +    call plotm (dobase, islice, n, nseg, ipslx, ipsly, ipsls, 
-     +      ipsle, xsol, xdispl, ydispb, xlabel, ylabel, slbcol)
+     +      ipsle, xsol, xdispl, ydispb, xlabel, ylabel, hard)
 c
 c Tell user result; inside redo loop because they may fit multiple
 c peaks in the one slice.
@@ -1505,8 +1511,7 @@ c Redraw data if redo
 c
         call redo (more)
         if (more) call slerdraw (ydispb, xdispl, xlabel, ylabel, islice,
-     +                           n, nseg, ipslx, ipsly, ipsls, ipsle, 
-     +                           .true., wy1s, wy2s, slbcol)
+     +    n, nseg, ipslx, ipsly, ipsls, ipsle, .true., wy1s, wy2s, hard)
       end do
 c
 c Save model in text file
@@ -1814,7 +1819,7 @@ c
      +   levtyp, slev, levs, nlevs, pixr, trfun, coltab, pdev, labtyp,
      +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase, accum, 
      +   noimage,dofit, dobase, fslval, fslposi, fslposo, fslmod, 
-     +   xrange, yrange, doxrng, dofid, dowedge, grid, val3form)
+     +   xrange, yrange, doxrng, dofid, dowedge) 
 c-----------------------------------------------------------------------
 c     Get the unfortunate user's long list of inputs
 c
@@ -1857,8 +1862,6 @@ c   fslposi    File to get slice positions from
 c   fslposo    File to put slice positions into
 c   fslmod     File to put the slice models into
 c   x,yrange   SLice display extrema
-c   grid       Overlay coordinate grid
-c   val3form   3value format
 c-----------------------------------------------------------------------
       implicit none
 c
@@ -1866,15 +1869,14 @@ c
      +  coltab
       real levs(maxlev), pixr(2), cs(3), slev, xrange(2), yrange(2)
       character*(*) labtyp(2), in, pdev, trfun, levtyp, fslval, fslposi,
-     +  fslposo, fslmod, ltype(nltype), val3form
+     +  fslposo, fslmod, ltype(nltype)
       logical do3val, do3pix, eqscale, dopixel, doerase, accum, noimage,
-     +  dofit, dobase, doxrng, dofid, dowedge, grid, dunw
+     +  dofit, dobase, doxrng, dofid, dowedge
 cc
       integer nlab, ntype2, nimtype, nval
       parameter (ntype2 = 3)
       character imtype*7, type2(ntype2)*7
       data type2 /'contour', 'pixel', 'grey'/
-      data dunw /.false./
 c-----------------------------------------------------------------------
       call keyini
       call keyf ('in', in, ' ')
@@ -1902,6 +1904,7 @@ c
       call keyi ('chan', kbin(2), 1) 
       kbin(1) = max(kbin(1), 1)
       kbin(2) = max(kbin(2), 1)
+      if (kbin(2).gt.kbin(1)) kbin(2) = kbin(1)
 c
       call keya ('slev', levtyp, 'a')
       call keyr ('slev', slev, 0.0)
@@ -1919,6 +1922,10 @@ c
       if (dopixel .and. trfun.ne.'lin' .and. trfun.ne.'log' .and. 
      +    trfun.ne.'sqr' .and. trfun.ne.'heq') call bug ('f',
      +    'Unrecognized pixel map transfer function type')
+      if (coltab.lt.-8 .or. coltab.gt.8 .or. coltab.eq.0) then
+        coltab = 1
+        call bug ('w', 'Unrecognized lookup table, setting b&w')
+      end if
 c
       call mkeyr ('xrange', xrange, 2, nval)
       if (nval.ne.0 .and. nval.ne.2) call bug ('f',
@@ -1939,7 +1946,7 @@ c
       end if
 c
       call decopt (do3val, do3pix, eqscale, doerase, accum, noimage,
-     +             dofit, dobase, doxrng, dofid, dowedge, grid)
+     +             dofit, dobase, doxrng, dofid, dowedge)
       if (dobase .and. .not.dofit) dofit = .true.
       if (accum .and. dofit) accum = .false.
       if (.not.dopixel .or. noimage) then
@@ -1953,27 +1960,14 @@ c
         labtyp(2) = labtyp(1)
         if (labtyp(1).eq.'hms') labtyp(2) = 'dms'
       end if
-      if (labtyp(1)(4:6).eq.'lin') then
-        labtyp(1)(4:6) = 'nat'
-        call bug ('w', 'Axis label types abslin and rellin are ')
-        call bug ('w', 'deprecated in favour of absnat and relnat')
-        dunw = .true. 
-      end if
-      if (labtyp(2)(4:6).eq.'lin') then
-        labtyp(2)(4:6) = 'nat'
-        if (.not.dunw) then
-          call bug ('w', 'Axis label types abslin and rellin are ')
-          call bug ('w', 'deprecated in favour of absnat and relnat')
-        end if
-      end if  
 c
-      if ( (index(labtyp(1),'nat').ne.0  .and. 
-     +      index(labtyp(2),'nat').eq.0)) then
+      if ( (index(labtyp(1),'lin').ne.0  .and. 
+     +      index(labtyp(2),'lin').eq.0) .or.
+     +     (index(labtyp(2),'lin').ne.0  .and. 
+     +      index(labtyp(1),'lin').eq.0) ) then
         if (eqscale) call bug ('i', 
      +  'You might consider options=unequal with these axis types')
       end if
-c
-      call keya ('3format', val3form, ' ')
 c
       call keyi ('nxy', nx, 0)
       call keyi ('nxy', ny, nx)
@@ -2255,12 +2249,22 @@ c
 c Write header
 c
         if (.not.exist) then
-          aline = '# XTYPE  YTYPE     BLCX           BLCY         TRCX'
+          aline = 'NSL     BLCX           BLCY         TRCX'
      +       //'          TRCY       CHANNEL RANGE'
           call txtwrite (lposo, aline, len1(aline), iostat)
           if (iostat.ne.0) call bug ('f' ,
      +      'Error writing header to slice positions file')
 c
+          if (radians) then
+            aline = '       arcsec         arcsec       arcsec'
+     +       //'         arcsec'
+          else
+            aline = '      rel pix        rel pix      rel pix'
+     +       //'        rel pix'
+          end if
+          call txtwrite (lposo, aline, len1(aline), iostat)
+          if (iostat.ne.0) call bug ('f' ,
+     +      'Error writing header to slice positions file')
         end if
       end if
 c
@@ -2297,7 +2301,7 @@ c
 c
 c
       subroutine plotm (dobase, islice, n, nseg, ipslx, ipsly, ipsls, 
-     +  ipsle, xsol, xdispl, ydispb, xlabel, ylabel, slbcol)
+     +  ipsle, xsol, xdispl, ydispb, xlabel, ylabel, hard)
 c-----------------------------------------------------------------------
 c     Plot data, model and residual
 c
@@ -2315,13 +2319,13 @@ c              first segment
 c   xsol       Solution vector: peak, pos, fwhm, offset, slope
 c   x,ydispl,b Label displacements
 c   x,ylabel   Labels
-c   slbcol     Colour index for slice plot frame
+c   hard       'YES' for hard copy device
 c
 c-----------------------------------------------------------------------
       implicit none
       real xdispl, ydispb, xsol(5)
-      integer n, ipslx, ipsly, ipsls, ipsle, nseg, islice, slbcol
-      character*(*) xlabel, ylabel
+      integer n, ipslx, ipsly, ipsls, ipsle, nseg, islice
+      character*(*) xlabel, ylabel, hard*3
       logical dobase
 cc
       include 'maxdim.h'
@@ -2360,7 +2364,7 @@ c
 c Erase slice display and redraw slice
 c
       call slerdraw (ydispb, xdispl, xlabel, ylabel, islice, n, nseg,
-     +  ipslx, ipsly, ipsls, ipsle, .true., ymin, ymax, slbcol)
+     +  ipslx, ipsly, ipsls, ipsle, .true., ymin, ymax, hard)
 c
 c Write title
 c
@@ -2462,6 +2466,7 @@ c
       nslice = 0
       iostat = 0
       pix3 = dble(2*krng(1)+krng(2)-1)/2.0
+      call initco (lun)
 c
       do while (iostat.ne.-1)
         aline = ' '
@@ -2545,6 +2550,7 @@ c
       end do
       if (nslice.eq.0) call bug ('f', 
      +  'The input slice positions file had no valid locations')
+      call finco (lun)
 c
       end
 c
@@ -2648,13 +2654,15 @@ c
 c
 c Now convert the BLC and TRC in whatever units to image pixels
 c
+c Now convert the overlay locations in whatever unit to pixels
+c
       off(1) = 0.0d0
       off(2) = 0.0d0
       npt = 1
-      call ol2pixcg (lun, pix3, otype, off, dsign, nums(npt),
+      call ol2pixcg (lun, pix3, ' ', otype, off, dsign, nums(npt),
      +               pos, nuse)
       npt = nuse + 1
-      call ol2pixcg (lun, pix3, otype, off, dsign, nums(npt), 
+      call ol2pixcg (lun, pix3, ' ', otype, off, dsign, nums(npt), 
      +               pos(3), nuse)
       npt = npt + nuse
 c
@@ -2704,7 +2712,7 @@ c
 c
 c
       subroutine region (in, naxis, size, ibin, jbin, kbin, blc, trc,
-     +                   win, ngrps, grpbeg, ngrp)
+     +                   win, maxgrp, grpbeg, ngrp, ngrps)
 c----------------------------------------------------------------------
 c     Finish key routine inputs for region of interest now.
 c
@@ -2713,6 +2721,7 @@ c    in            Image file name
 c    naxis         Number of dimensions of image
 c    size          Dimensions of image
 c    i,j,kbin      Pixel increments and binning sizes
+c    maxgrp        Maximum nuber of groups of channels
 c  Output:
 c    grgbeg        List of start planes for each group of channels
 c                  that are to be avearged together for each sub-plot
@@ -2728,8 +2737,8 @@ c
 c----------------------------------------------------------------------
       implicit none
 c
-      integer naxis, size(naxis), blc(*), trc(*), win(*), 
-     +  ngrp(*), grpbeg(*), ngrps, ibin(2), jbin(2), kbin(2)
+      integer naxis, size(naxis), blc(*), trc(*), win(*), maxgrp,
+     +  ngrp(maxgrp), grpbeg(maxgrp), ngrps, ibin(2), jbin(2), kbin(2)
       character in*(*)
 cc
       include 'maxdim.h'
@@ -2745,7 +2754,7 @@ c
 c Find hyper-rectangle surrounding region of interest
 c
       call boxinfo (boxes, 3, blc, trc)
-      do i = 1, min(3,naxis)
+      do i = 1, naxis
         blc(i) = max(1,blc(i))
         trc(i) = min(size(i),trc(i))
       end do
@@ -2755,18 +2764,20 @@ c find size of binned window
 c
       call winfidcg (size(1), 1, ibin, blc(1), trc(1), win(1))
       call winfidcg (size(2), 2, jbin, blc(2), trc(2), win(2))
+      if (win(1).le.1 .or. win(2).le.1) call bug ('f',
+     +   'Cannot display just one spatial pixel')
 c
 c Find list of start channels and number of channels for each group
 c of channels selected.
 c
-      call chnselcg (blc, trc, kbin, maxbox, boxes, ngrps, grpbeg, ngrp)
+      call chnselcg (blc, trc, kbin,  maxbox, boxes, maxgrp,
+     +               grpbeg, ngrp, ngrps)
 c
       end
 c
 c
       subroutine slerdraw (ydispb, xdispl, xlabel, ylabel, islice,
-     +   n, nseg, ipslx, ipsly, ipsls, ipsle, usenew, ymin, ymax, 
-     +   slbcol)
+     +   n, nseg, ipslx, ipsly, ipsls, ipsle, usenew, ymin, ymax, hard)
 c-----------------------------------------------------------------------
 c     Erase old slice display, redraw box and redraw slice
 c
@@ -2786,13 +2797,13 @@ c              first segment
 c   usenew     Use the given ymin and ymax else use what it was before
 c              These will be stretched 5% as usual
 c   ymin,ymax  Optionally used Y extrema
-c   slbcol     COlour index for frame
+c   hard       'YES' for hard copy device
 c-----------------------------------------------------------------------
       implicit none
       real ydispb, xdispl, ymin, ymax
-      integer islice, nseg, ipslx, ipsly, ipsls, ipsle, n, slbcol
+      integer islice, nseg, ipslx, ipsly, ipsls, ipsle, n
       logical usenew
-      character*(*) xlabel, ylabel
+      character*(*) xlabel, ylabel, hard*3
 cc
       include 'maxdim.h'
       include 'mem.h'
@@ -2822,9 +2833,9 @@ c
 c
 c Redraw box and labels
 c
-      call drawbox (.true., slbcol, vblc, vtrc, xrange, yrange,
+      call drawbox (.true., vblc, vtrc, xrange, yrange,
      +   wblc(1), wtrc(1), ymin, ymax, xlabel, ylabel,
-     +   xdispl, ydispb)
+     +   xdispl, ydispb, hard)
 c
 c Plot slice
 c
@@ -2834,19 +2845,20 @@ c
       end
 c
 c
-      subroutine slice (lin, ibin, jbin, slpos, grid, nx, ny, im, nim, 
-     +   radians, slsize, slx, sly, ip, bound, nseg, seg)
+      subroutine slice (ibin, jbin, slpos, grid, nx, ny, im, nim, 
+     +   radians, naxis, cdelt, slsize, slx, sly, ip, bound, nseg, seg)
 c-----------------------------------------------------------------------
 c     Generate the slice
 c
 c  Input:
-c    lin      Image handle
 c    i,jbin   Pixel increments to step throught image
 c    slpos    Pixels of slice ends.  BLC and TRC
 c    grid     Increment along slice in pixels
 c    nx,ny    Size of image
 c    im,nim   Image and normalization image (0 -> blanked)
 c    radians  Axis increments both in radians
+c    naxis    Number of axes in image
+c    c*       Axis descriptors
 c    slsize   Memory allocated for slice 
 c Output:
 c    slx      Slice abcissa values
@@ -2860,8 +2872,9 @@ c-----------------------------------------------------------------------
       implicit none
 c
       include 'maxdim.h'
-      integer nx, ny, ip, slsize, nseg, seg(2,maxdim),
-     +  nim(nx,ny), slpos(6), ibin, jbin, lin
+      integer nx, ny, naxis, ip, slsize, nseg, seg(2,maxdim),
+     +  nim(nx,ny), slpos(6), ibin, jbin
+      double precision cdelt(naxis)
       real grid, im(nx,ny), slx(slsize), sly(slsize), bound(4)
       logical radians
 cc
@@ -2870,7 +2883,7 @@ cc
       parameter (rtoa = 3600.0d0 * 180.0d0 / dpi)
       
       double precision theta, delx, dely, x, y, deld, d, facx, facy,
-     +  dx, dy, cdelt(2)
+     +  dx, dy
       real wx(4), wy(4), out
       integer i1, j1, i
       logical bl, oldbl
@@ -2889,8 +2902,6 @@ c
 c See if we have radian axes
 c
       if (radians) then
-        call rdhdd (lin, 'cdelt1', cdelt(1), 0.0d0)
-        call rdhdd (lin, 'cdelt2', cdelt(2), 0.0d0)
         facx = cdelt(1) * rtoa * ibin
         facy = cdelt(2) * rtoa * jbin
       else
@@ -2972,35 +2983,46 @@ c
       end
 c
 c
-      subroutine slmark (blc, ibin, jbin, slpos)
+      subroutine slmark (blc, ibin, jbin, labtyp, slpos, naxis, 
+     +                   crval, cdelt, crpix, ctype)
 c-----------------------------------------------------------------------
 c     Mark slice in input text file on image
-c
-c  Input
-c    slpos    SLice ends in absolute binned subimage pixels
 c-----------------------------------------------------------------------
       implicit none
-      integer slpos(6), blc(2), ibin, jbin
+      integer slpos(6), naxis, blc(2), ibin, jbin
+      double precision crval(naxis), cdelt(naxis), crpix(naxis)
+      character*(*) ctype(naxis), labtyp(2)
 cc
-      double precision dp
+      double precision world, pix
       real wblc(2), wtrc(2)
+      logical ok
 c-----------------------------------------------------------------------
 c
-c COnvert to unbinned full image pixels
+c Convert to full image unbinned pixels and then to world coordinates
 c
-      dp = slpos(1)
-      call ppconcg (2, blc(1), ibin, dp)
-      wblc(1) = dp
-      dp = slpos(2)
-      call ppconcg (2, blc(2), jbin, dp)
-      wblc(2) = dp
+      pix = slpos(1)
+      call ppconcg (2, blc(1), ibin, pix)
+      call pix2wcg (.false., pix, 1, labtyp(1), naxis, crval, 
+     +              crpix, cdelt, ctype, world, ok)
+      wblc(1) = world
 c
-      dp = slpos(4)
-      call ppconcg (2, blc(1), ibin, dp)
-      wtrc(1) = dp
-      dp = slpos(5)
-      call ppconcg (2, blc(2), jbin, dp)
-      wtrc(2) = dp
+      pix = slpos(2)
+      call ppconcg (2, blc(2), jbin, pix)
+      call pix2wcg (.false., pix, 2, labtyp(2), naxis, crval, 
+     +              crpix, cdelt, ctype, world, ok)
+      wblc(2) = world
+c
+      pix = slpos(4)
+      call ppconcg (2, blc(1), ibin, pix)
+      call pix2wcg (.false., pix, 1, labtyp(1), naxis, crval, 
+     +              crpix, cdelt, ctype, world, ok)
+      wtrc(1) = world
+c
+      pix = slpos(5)
+      call ppconcg (2, blc(2), jbin, pix)
+      call pix2wcg (.false., pix, 2, labtyp(2), naxis, crval, 
+     +              crpix, cdelt, ctype, world, ok)
+      wtrc(2) = world
 c
       call pgsch (0.7)
       call pgarro (wblc(1), wblc(2), wtrc(1), wtrc(2))
@@ -3058,18 +3080,16 @@ c
       subroutine slposw (lin, lpos, krng, radians, blc, ibin, jbin, 
      +                   maxnsl, nslice, slpos)
 c-----------------------------------------------------------------------
-c     Save the slice locations in a text file.  Coordinates
+c     Save the slice locations in a text file.  Coordiantes
 c     are converted to true world coordinates
 c
-c  Input
-c    slpos    SLice ends in absolute full image unbinned pixels
 c-----------------------------------------------------------------------
       implicit none
       integer lin, lpos, krng(2), blc(2), maxnsl, nslice, ibin, jbin,
      +  slpos(6,maxnsl)
       logical radians
 cc
-      integer i, ilen, iostat, naxis
+      integer i, ilen, iostat
       double precision win(3), wout(3), blcx, blcy, trcx, trcy
       character aline*130, typei(3)*6, typeo(3)*6
 c
@@ -3086,19 +3106,18 @@ c-----------------------------------------------------------------------
         typeo(2) = 'abspix'
       end if
       typeo(3) = 'abspix'
-      win(3) = dble(2*krng(1)+krng(2)-1)/2.0 
-      call rdhdi (lin, 'naxis', naxis, 0)
-      naxis = min(3,naxis)
+      win(3) = dble(2*krng(1)+krng(2)-1)/2.0
+      call initco (lin)
 c
       do i = 1, nslice
 c
-c Convert absolute pixels to output offset units (arcsec or pixels)
+c Convert absolute pixels to unbinned full image true arcsecond offsets
 c
         win(1) = slpos(1,i)
         call ppconcg (2, blc(1), ibin, win(1))
         win(2) = slpos(2,i)
         call ppconcg (2, blc(2), jbin, win(2))
-        call w2wco (lin, naxis, typei, ' ', win, typeo, ' ', wout)
+        call w2wco (lin, 3, typei, ' ', win, typeo, ' ', wout)
         blcx = wout(1)
         blcy = wout(2)
 c
@@ -3106,18 +3125,19 @@ c
         call ppconcg (2, blc(1), ibin, win(1))
         win(2) = slpos(5,i)
         call ppconcg (2, blc(2), jbin, win(2))
-        call w2wco (lin, naxis, typei, ' ', win, typeo, ' ', wout)
+        call w2wco (lin, 3, typei, ' ', win, typeo, ' ', wout)
         trcx = wout(1)
         trcy = wout(2)
 c
-        write (aline,100) typeo(1), typeo(2), blcx, blcy, trcx, trcy, 
-     +    krng(1), krng(1)+krng(2)-1
-100     format (a6, 1x, a6, 1x, 4(1pe13.6, 1x), i4, 1x, i4)
+        write (aline,100) i, blcx, blcy, trcx, trcy, krng(1), 
+     +                    krng(1)+krng(2)-1
+100     format (i3, 1x, 4(1pe13.6, 1x), i4, 1x, i4)
         ilen = len1(aline)
         call txtwrite (lpos, aline, ilen, iostat)
         if (iostat.ne.0) call bug ('f', 
      +     'Error writing slice positions file')
       end do
+      call finco (lin)
 c
       end
 c
@@ -3151,7 +3171,8 @@ c
 c
       subroutine slsave (lval, islice, nseg, x, y, segs, sege)
 c-----------------------------------------------------------------------
-c     Save the segments of the slice that are unblanked.  
+c     Save the segments of the slice that are unblanked.  COnvert here
+c     from linear offsets to true offsets
 c
 c  Input
 c   lval       Handle for text file
@@ -3264,8 +3285,8 @@ c
 c
 c
       subroutine vpsiz (noimage, dofid, nx, ny, pcs, xdispl, ydispb, 
-     +  xdispls, ydispbs, wedcod, wedwid, tfdisp, vblc, vtrc, vxsize,
-     +  vysize, vxgap, vygap, tfvp, wdgvp)
+     +  xdispls, ydispbs, wedcod, wedisp, wedwid, tfdisp, vblc, vtrc, 
+     +  vxsize, vysize, tfvp, wdgvp)
 c---------------------------------------------------------------------------
 c     Work out viewports for image and slice display for unequal scales 
 c     in x and y here. If user wants equal scales, adjust later.
@@ -3289,6 +3310,7 @@ c                 2 -> one wedge to right per subplot
 c                 3 -> one wedge per subplot inside subplot
 c     wedwid      Width of wedge as a fraction of the full x viewport
 c	          for wedcod = 1
+c     wedisp      Displacement of wedge from right axis in char heights
 c     tfdisp      Displacement of transfer function plot from right axis 
 c                 in char heights
 c   Output
@@ -3296,7 +3318,6 @@ c     vblc        BLC of viewports; 1 is slice, 2 is image in ndc
 c     vtrc        TRC of viewports; 1 is slice, 2 is image in ndc
 c                 The image view port encompasses all subplots
 c     vx,ysize    Size of viewport of each sub-plot in n.d.c.s in x & y
-c     vx,ygap     Leave a gap between sub-plots in ndc in x and y
 c     tfvp        Viewport coords in which to draw interactive fiddle plot
 c     wdgvp       Viewport for wedge if wedcod = 1.  Other wedge type 
 c                 viewports are worked out when the wedge is drawn in 
@@ -3304,8 +3325,7 @@ c---------------------------------------------------------------------------
       implicit none
 c
       real vblc(2,2), vtrc(2,2), vxsize, vysize, pcs(3), ydispb, xdispl,
-     +  tfvp(4), wdgvp(4), wedwid, tfdisp, xdispls, ydispbs,
-     +  vxgap, vygap
+     +  tfvp(4), wdgvp(4), wedisp, wedwid, tfdisp, xdispls, ydispbs
       integer nx, ny, wedcod
       logical noimage, dofid
 cc
@@ -3387,7 +3407,7 @@ c
         if (dowedge) then        
           dvww = wedwid
           dvwl = 2.0 * xhti
-          dvwd = xhti
+          dvwd = wedisp * xhti
 c
           dvwtot = dvwd + dvww + dvwl 
         else
@@ -3399,7 +3419,7 @@ c
 c
 c x-displacement and width of transfer function plot
 c
-        if (dofid) then
+      if (dofid) then
           dvtd = tfdisp * xhti
 c
 c We want the transfer function fiddle plot to be square on the 
@@ -3437,7 +3457,7 @@ c
 c
 c If we are only drawing one image subplot per page, the slice 
 c display region will always overwrite the fiddle plot region 
-c and we don't need to waste Y space on the fiddle plot
+c and we don't need to wastes Y space on the fiddle plot
 c
         if (nx*ny.gt.1) then
           if (dofid) then
@@ -3489,68 +3509,10 @@ c
 c
 c Work out size of sub-plots
 c
-        if (nx.gt.1) then
-          vxgap = xhti/3
-          vxsize = ((vtrc(1,2) - vblc(1,2)) - ((nx - 1) * vxgap)) / nx
-        else
-          vxgap = 0.0  
-          vxsize = vtrc(1,2) - vblc(1,2)
-        end if
-c
-        if (ny.gt.1) then
-          vygap = yhti/3
-          vysize = ((vtrc(2,2) - vblc(2,2)) - ((ny - 1) * vygap)) / ny
-        else
-          vygap = 0.0
-          vysize = vtrc(2,2) - vblc(2,2)
-        end if
-      end if
-
-c
-      end
-c
-c
-      subroutine setlgc (bgcol, labcol, concol, slbcol)
-c-----------------------------------------------------------------------
-c     Set line graphics colours
-c
-c  Input
-c    bgcol  background colour. 0 -> black
-c			       1 -> white
-c			      -1 -> something else
-c  OUtput
-c    labcol labels
-c    concol contours
-c    slbcol slice plot borders
-c-----------------------------------------------------------------------
-      implicit none
-      integer labcol, concol, slbcol, bgcol
-c-----------------------------------------------------------------------
-c
-c Labels first
-c
-      if (bgcol.eq.1) then
-c
-c White background
-c
-        labcol = 2
-        slbcol = 2
-
-      else if (bgcol.eq.0) then
-c
-c Black background
-c
-        labcol = 7
-        slbcol = 7
-      else
-        call bug ('w', 'Non black/white background colour on device')
-        labcol = 7
-        slbcol = 2
+        vxsize = (vtrc(1,2) - vblc(1,2)) / nx
+        vysize = (vtrc(2,2) - vblc(2,2)) / ny
       end if
 c
-c Now contours
-c
-      concol = 7
-      if (bgcol.eq.1) concol = 2
-c
       end
+
+
