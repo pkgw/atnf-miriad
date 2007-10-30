@@ -3269,3 +3269,14 @@ and in a way to be consistent with all the other changes happening.
 31mar98 rjs	cgdisp.for -- Honour the cols1 parameter.
 02apr98 rjs	avmaths.for -- Increase maxruns.
 02apr98 rjs	medfit.for -- New subroutines.
+*********************************** 02apr98 Sent changes to Doug Roberts
+06apr98 rjs	atlod.for -- Increase the max size of an integration.
+21apr98 rjs	fits.for -- Increased max number of antenna configurations.
+20apr98 amh	sfind.for -- Various changes to the log file.
+23apr98 rjs	cgcurs.for -- Increase size of "bunit" variable.
+21apr98 mchw	imfit.for -- more precise Offset position.
+27apr98 rjs	imfit.for -- Merged above two sets of changes.
+01may98 pjt	log.for -- Check that logopen gets called.
+07may98 rjs	atlod.for -- New way of handling jstat.eq.5 returned by rpfitsin.
+07may98 rjs	log.for -- Fix to PJT's change.
+07may98 rjs	cgslice.for -- Increase size of "bunit" variable.
