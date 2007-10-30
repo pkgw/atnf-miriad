@@ -1,5 +1,5 @@
 c= hanning - hanning smoothing
-c& bpw
+c& rjs
 c: map combination
 c+
 c Hanning does a hanning smooth on the velocity axis of miriad
