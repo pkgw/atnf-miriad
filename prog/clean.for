@@ -62,8 +62,8 @@ c	a negative component was found, or if options=positive was given,
 c	and no more positive components could be found.
 c@ region
 c	This specifies the region to be Cleaned. See the Users Manual for
-c	instructions on how to specify this. The default is the largest
-c	region that can be deconvolved safely.
+c	instructions on how to specify this. The default is the inner
+c	quarter of all planes.
 c@ phat
 c	Cornwells prussian hat parameter. When cleaning extended sources,
 c	CLEAN may produce a badly corrugated image. This can be suppressed
@@ -125,19 +125,7 @@ c   nebk 25nov92 - Copy btype to model from input
 c   mjs  17feb93 - minor doc mod only (RESTORE -> RESTOR).
 c   rjs  26feb93 - add positive option, and get negstop parameter via
 c		   an option.
-c   rjs  31jan95 - Copy across mosaic table. Eliminate scratch common.
-c   rjs  14feb95 - Changes to the area of the way "model" is handled.
-c   rjs   2jun95 - Fix spurious warning message resulting from the above
-c		   change.
-c   rjs  12oct95 - Tidy up above changes.
-c   rjs  27nov95 - Increase max complexity of clean region.
-c   rjs  05aug96 - Better check for psf not 1.
-c   rjs  29jan97 - Better default region.
-c   rjs  10mar97 - Default region is all channels.
-c   rjs  25mar97 - Checks when plane is constant and when a plane is not
-c		   selected.
-c   rjs  24jun97 - Correct call to Alignini.
-c   rjs  02jul97 - cellscal change.
+c
 c  Important Constants:
 c    MaxDim	The max linear dimension of an input (or output) image.
 c
@@ -154,11 +142,11 @@ c		to write.
 c
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Clean: version 1.0 24-Jun-97')
+	parameter(version='Clean: version 1.0 26-Feb-93')
 	include 'maxdim.h'
 	integer MaxBeam,maxCmp1,maxCmp2,MaxBox,MaxRun,MaxP
 	parameter(maxCmp1=66000,MaxCmp2=32000,MaxP=257)
-	parameter(MaxBeam=MaxP*MaxP,MaxBox=2048,MaxRun=3*maxdim)
+	parameter(MaxBeam=MaxP*MaxP,MaxBox=1024,MaxRun=3*maxdim)
 c
 	real Data(MaxBuf)
 	integer Boxes(MaxBox),Run(3,MaxRun),MaxMap
@@ -173,7 +161,7 @@ c
 	integer MaxNiter,oNiter,Niter,totNiter,minPatch,maxPatch
 	integer naxis,n1,n2,icentre,jcentre,nx,ny
 	integer blc(3),trc(3),xmin,xmax,ymin,ymax
-	integer k,nRun,nPoint,xoff,yoff,zoff
+	integer k,nRun,nPoint
 	character MapNam*64,BeamNam*64,ModelNam*64,OutNam*64,line*72
 	integer lMap,lBeam,lModel,lOut
 	integer nMap(3),nBeam(3),nModel(3),nOut(4)
@@ -232,9 +220,8 @@ c
 	call xyopen(lMap,MapNam,'old',3,nMap)
 	call rdhdi(lMap,'naxis',naxis,3)
 	naxis = min(naxis,4)
-	call defregio(boxes,nMap,nBeam,icentre,jcentre)
 	call BoxMask(lMap,boxes,maxbox)
-	call BoxSet(boxes,3,nMap,' ')
+	call BoxSet(boxes,3,nMap,'q')
 	call BoxInfo(boxes,3,blc,trc)
 	nOut(1) = trc(1) - blc(1) + 1
 	nOut(2) = trc(2) - blc(2) + 1
@@ -257,9 +244,10 @@ c  exactly in size with the output map (an unfortunate restriction.
 c
 	if(ModelNam.ne.' ')then
 	  call xyopen(lModel,ModelNam,'old',3,nModel)
+	  if(nOut(1).ne.nModel(1).or.nOut(2).ne.nModel(2).or.
+     *	     nout(3).ne.nModel(3))
+     *	     call bug('f','Model and output size do not agree')
 	  call rdhdi(lModel,'niters',totNiter,0)
-	  call AlignIni(lModel,lMap,nMap(1),nMap(2),nMap(3),
-     *						xoff,yoff,zoff)
 	else
 	  totNiter = 0
 	endif
@@ -287,58 +275,52 @@ c
 c
 c  Determine the CLEAN algorithm that is to be used.
 c
-	  if(nPoint.gt.0)then
+	  moded = mode
+	  if((mode.eq.'any'.or.mode.eq.'hogbom').and.
+     *	    nPoint.le.maxCmp1.and.
+     *	    (2*nx-1).le.maxPatch.and.(2*ny-1).le.maxPatch)then
+	    moded = 'hogbom'
+	  else if(mode.eq.'hogbom')then
+	    call bug('w','Cannot use Hogbom algorithm -- using Clark')
+	    moded = 'clark'
+	  else
 	    moded = mode
-	    if((mode.eq.'any'.or.mode.eq.'hogbom').and.
-     *	      nPoint.le.maxCmp1.and.
-     *	      (2*nx-1).le.maxPatch.and.(2*ny-1).le.maxPatch)then
-	      moded = 'hogbom'
-	    else if(mode.eq.'hogbom')then
-	      call bug('w','Cannot use Hogbom algorithm -- using Clark')
-	      moded = 'clark'
-	    else
-	      moded = mode
-	    endif
+	  endif
 c
 c  Initialise the FFT of the beam if needed.
 c
-	    if((moded.ne.'hogbom'.or.ModelNam.ne.' ')
-     *					.and..not.FFTIni)then
-	      FFTIni = .true.
-	      flags(1:1) = 'p'
-	      if(.not.asym) flags(2:2) = 's'
-	      if(pad)       flags(3:3) = 'e'
-	      call CnvlIniF(pBem,lBeam,n1,n2,icentre,jcentre,PHat,flags)
-	    endif
+	  if((moded.ne.'hogbom'.or.ModelNam.ne.' ').and..not.FFTIni)then
+	    FFTIni = .true.
+	    flags(1:1) = 'p'
+	    if(.not.asym) flags(2:2) = 's'
+	    if(pad)       flags(3:3) = 'e'
+	    call CnvlIniF(pBem,lBeam,n1,n2,icentre,jcentre,PHat,flags)
+	  endif
 c
 c  Initialise the estimate, and determine the residuals if the the user
 c  gave an estimate. Determine statistics about the estimate and the
 c  residuals.
 c
-	    if(ModelNam.eq.' ')then
-	      EstASum = 0
-	      call NoModel(Data(pMap),Data(pEst),Data(pRes),nPoint)
-	    else
-              call output ('Subtracting initial model ...')
-	      call AlignGet(lModel,Run,nRun,k,xmin+xoff-1,ymin+yoff-1,
-     *		zoff,nModel(1),nModel(2),nModel(3),
-     *		Data(pEst),MaxMap,nPoint)
-	      call Diff(pBem,Data(pEst),Data(pMap),Data(pRes),
-     *		nPoint,nx,ny,Run,nRun)
-	      call SumAbs(EstASum,Data(pEst),nPoint)
-	    endif
-	    call Stats(Data(pRes),nPoint,ResMin,ResMax,ResAMax,ResRms)
-            call output ('Begin iterating')
+	  if(ModelNam.eq.' ')then
+	    EstASum = 0
+	    call NoModel(Data(pMap),Data(pEst),Data(pRes),nPoint)
 	  else
-	    ResMin = 0
-	    ResMax = 1
+            call output ('Subtracting initial model ...')
+	    call xysetpl(lModel,1,k-blc(3)+1)
+	    call GetPlane(lModel,Run,nRun,xmin-blc(1),ymin-blc(2),
+     *		nModel(1),nModel(2),Data(pEst),MaxMap,nPoint)
+	    call Diff(pBem,Data(pEst),Data(pMap),Data(pRes),
+     *		nPoint,nx,ny,Run,nRun)
+	    call SumAbs(EstASum,Data(pEst),nPoint)
 	  endif
+	  call Stats(Data(pRes),nPoint,ResMin,ResMax,ResAMax,ResRms)
 c
 c  Perform the appropriate iteration until no more.
 c
+          call output ('Begin iterating')
 	  Niter = 0
 	  negFound = .false.
-	  More = nPoint.gt.0.and.ResMin.ne.ResMax
+	  More = nPoint.gt.0
 	  Limit = 0
 	  dowhile(More)
 	    oNiter = Niter
@@ -401,12 +383,8 @@ c
 c
 c  Give a message about what terminated the iterations.
 c
-	  if(ResMin.eq.ResMax)then
-	    call bug('w','All pixels for this plane are identical')
-	    call bug('w','No cleaning performed')
-	    nPoint = 0
-	  else if(nPoint.eq.0)then
-	    call output('No region selected in this plane')
+	  if(nPoint.eq.0)then
+	    call output(' No region selected in this plane')
 	  else if(ResAMax.le.Cutoff)then
 	    call output(' Stopping -- Clean cutoff limit reached')
 	  else if(Niter.ge.MaxNiter)then
@@ -507,6 +485,7 @@ c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer imin,imax,jmin,jmax,i,j
 	real Data(maxdim)
+	common/CleanCom/Data
 c
 	imin = ic - maxPatch/2
 	imax = imin + maxPatch - 1
@@ -655,9 +634,9 @@ c
 	data keyw/   'cdelt1  ','cdelt2  ','cdelt3  ','cdelt4  ',
      *	  'crpix4  ','crval1  ','crval2  ','crval3  ','crval4  ',
      *		     'ctype1  ','ctype2  ','ctype3  ','ctype4  ',
-     *    'obstime ','epoch   ','history ','instrume','lstart  ',
-     *	  'lstep   ','ltype   ','lwidth  ','object  ','mostab  ',
-     *	  'observer','telescop','obsra   ','cellscal',
+     *    'date-obs','epoch   ','history ','instrume','lstart  ',
+     *	  'lstep   ','ltype   ','lwidth  ','object  ',
+     *	  'observer','telescop','xshift  ','yshift  ','obsra   ',
      *	  'obsdec  ','restfreq','vobs    ','pbfwhm  ','btype   '/
 c
 c  Fill in some parameters that will have changed between the input
@@ -727,6 +706,7 @@ c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer i,j,k,imin,imax,jmin,jmax,nHisto
 	real Data(maxdim),bmax
+	common/CleanCom/Data
 c
 c  External.
 c
@@ -754,10 +734,8 @@ c
 	  endif
 	enddo
 c
-	if(abs(bmax-1.0).gt.0.001.and.abs(bmax-1.0).le.0.01)
-     *	  call bug('w','Beam peak value is not 1')
-	if(abs(bmax-1.0).gt.0.01)
-     *	  call bug('f','Beam peak value differs from 1 by more than 1%')
+	if(abs(bmax-1.0).gt.0.001)
+     *	  call bug('f','Beam peak value is not 1')
 c
 c  Initialise the "histo" array.
 c
@@ -988,6 +966,7 @@ c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer i,j,Ncmpd,x0,y0,n0,itemp
 	integer YMap(maxdim+1)
+	common/CleanCom/YMap
 c
 c  Clear out YMap.
 c
@@ -1169,6 +1148,7 @@ c------------------------------------------------------------------------
 	real TermRes,ResMax,Wts,alpha
 	integer Temp(maxrun),Indx(maxrun)
 	logical more,ZeroCmp
+	common/CleanCom/Temp,Indx
 c
 c  Initialise.
 c
@@ -1325,15 +1305,13 @@ c
 c  Initialise the histogram array, as well as other stuff.
 c
 	ResAMin = ResAMax * Histo(maxPatch/2+1)
-	if(ResAmin.eq.ResAmax)
-     *	  call bug('f','All pixel values are identical')
 	a = (HistSize-2)/(ResAMax-ResAMin)
 	b = 2 - a * ResAMin
 	do i=1,HistSize
 	  ResHis(i) = 0
 	enddo
 c
-c  Now get the histogram while taking account of the boxes.
+c  Now get the histogram while taking accound of the boxes.
 c
 	do i=1,nPoint
 	  m = max(int(a * abs(Residual(i)) + b),1)
@@ -1398,6 +1376,7 @@ c------------------------------------------------------------------------
 	integer i,j,k,l,Ncmpd,x0,y0,n0,itemp
 	real Temp(maxdim)
 	integer Indx(maxdim)
+	common/CleanCom/Indx,Temp
 c
 c  Clear the mapping array.
 c
@@ -1506,30 +1485,5 @@ c
 	do i=1,nPoint
 	  Residual(i) = Map(i) - Residual(i)
 	enddo
-c
-	end
-c************************************************************************
-	subroutine defregio(boxes,nMap,nBeam,icentre,jcentre)
-c
-	implicit none
-	integer boxes(*),nMap(3),nBeam(2),icentre,jcentre
-c
-c  Set the region of interest to the lastest area that can be safely
-c  deconvolved.
-c------------------------------------------------------------------------
-	integer blc(3),trc(3),width
-c
-	width = min(icentre-1,nBeam(1)-icentre) + 1
-	blc(1) = max(1,(nMap(1)-width)/2)
-	trc(1) = min(nMap(1),blc(1)+width-1)
-c
-	width = min(jcentre-1,nBeam(2)-jcentre) + 1
-	blc(2) = max(1,(nMap(2)-width)/2)
-	trc(2) = min(nMap(2),blc(2)+width-1)
-c
-	blc(3) = 1
-	trc(3) = nMap(3)
-c
-	call BoxDef(boxes,3,blc,trc)
 c
 	end
