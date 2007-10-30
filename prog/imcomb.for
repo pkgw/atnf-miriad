@@ -39,22 +39,25 @@ c	               is normalised to account for overlap regions.
 c--
 c  History:
 c    rjs  29nov94 Original version.
-c    rjs  12jan95 COrrect alignment code on axis 3. Write mask file.
-c    rjs   3aug95 Mask file was not correctly set for options=nonorm.
-c    rjs  15mar97 Handle processing multiple more than MAXOPEN files.
-c    rjs  02jul97 cellscal change.
-c    rjs  21jul97 Handle image alignment better. Fix bug related to
-c		  incorrect flagging checks.
-c    rjs  23jul97 Added pbtype.
-c    rjs  13nov98 Increase MAXIN.
+c
+c
+c	  mosaic       Weight the data to account for the primary beam
+c	               of a synthesis telescope. This option causes
+c	               IMCOMB to perform a primary beam correction or
+c	               linear mosaicing operation
+c@ tin
+c	The name of of a input dataset used for determining the
+c	coordinate system and gridsize used for the output. The default
+c	is to use the same coordinate system as the first input, and
+c	a grid size large enough to include all the input images.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
 	character version*(*)
-	parameter(version='ImComb: version 1.0 21-Jul-97')
+	parameter(version='ImComb: version 1.0 28-Nov-94')
 	integer MAXIN,MAXOPEN
-	parameter(MAXIN=500,MAXOPEN=6)
+	parameter(MAXIN=350,MAXOPEN=6)
 c
 	character in(MAXIN)*64,tin*64,out*64
 	integer nrms,nin,tno(MAXIN),tOut,nsize(3,MAXIN),nOpen
@@ -62,6 +65,8 @@ c
 	integer pData,pWts
 	logical mosaic,nonorm,interp,equal
 	real rms(MAXIN),rms0,blctrc(6,MAXIN)
+	character ctype(3)*16
+	double precision crval(3),cdelt(3),crpix(3)
 c
 c  Get the inputs.
 c
@@ -86,21 +91,23 @@ c
 	  nOpen = nIn
 	else
 	  nOpen = maxOpen - 1
+	  call bug('f','Too many input datasets')
 	endif
 c
 	equal  = .false.
 	do i=1,nIn
 	  call xyopen(tno(i),In(i),'old',3,nsize(1,i))
-	  call coInit(tno(i))
 	  if(max(nsize(1,i),nsize(2,i)).gt.maxdim)
      *	    call bug('f','Input map is too big')
 
 	  if(i.eq.1)then
-	    call ThingIni(nsize(1,i),blctrc(1,i))
+	    call ThingIni(tno(i),nsize(1,i),ctype,crpix,crval,cdelt,
+     *					blctrc(1,i))
 	    call rdhdi(tno(i),'naxis',naxis,3)
 	    naxis = min(naxis,MAXNAX)
 	  else
-	    call ThingChk(tno(1),tno(i),nsize(1,i),interp,blctrc(1,i))
+	    call ThingChk(tno(i),nsize(1,i),ctype,crpix,crval,cdelt,
+     *				  interp,blctrc(1,i))
 	    if(interp)call bug('f','Cannot interpolate')
 	  endif
 c
@@ -121,10 +128,7 @@ c
 	  endif
 	  if(rms(i).le.0)call bug('f','Invalid rms value')
 c
-	  if(i.gt.nOpen)then
-	    call coFin(tno(i))
-	    call xyclose(tno(i))
-	  endif
+	  if(i.gt.nOpen) call xyclose(tno(i))
 	enddo
 c
 c  Determine the size of the output.
@@ -163,10 +167,8 @@ c
 	do k=1,nOut(3)
 	  call CombIni(memr(pData),memr(pWts),nOut(1),nOut(2))
 	  do i=1,nIn
-	    if(i.gt.nOpen)call xyopen(tno(i),In(i),'old',3,nsize(1,i))
 	    call Combo(k,tno(i),blctrc(1,i),nsize(1,i),1/rms(i)**2,
      *		       memr(pData),memr(pWts),nOut(1),nOut(2))
-	    if(i.gt.nOpen)call xyclose(tno(i))
 	  enddo
 	  call CombFin(k,tOut,nonorm,
      *		       memr(pData),memr(pWts),nOut(1),nOut(2))
@@ -179,7 +181,7 @@ c
 c
 c  Close up.
 c
-	do i=1,nOpen
+	do i=1,nIn
 	  call xyclose(tno(i))
 	enddo
 	call xyclose(tOut)
@@ -229,7 +231,7 @@ c------------------------------------------------------------------------
 	character line*80,num*2
 c
 	integer nkeys
-	parameter(nkeys=39)
+	parameter(nkeys=37)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -243,8 +245,7 @@ c
      *	  'ctype5  ','obstime ','epoch   ','bmaj    ','bmin    ',
      *	  'bpa     ','niters  ','object  ','telescop','observer',
      *	  'restfreq','vobs    ','obsra   ','obsdec  ','lstart  ',
-     *	  'lstep   ','ltype   ','lwidth  ','btype   ','pbfwhm  ',
-     *	  'cellscal','pbtype  '/
+     *	  'lstep   ','ltype   ','lwidth  ','btype   ','pbfwhm  '/
 c
 c  Write out coordinate information.
 c
@@ -272,13 +273,32 @@ c
 	call hisclose(tout)
 	end
 ************************************************************************
-	subroutine ThingIni(nsize,blctrc)
+	subroutine ThingIni(tno,nsize,ctype,crpix,crval,cdelt,blctrc)
 c
 	implicit none
-	integer nsize(3)
+	integer tno,nsize(3)
+	character ctype(3)*(*)
+	double precision crpix(3),crval(3),cdelt(3)
 	real blctrc(6)
 c
 c------------------------------------------------------------------------
+	character num*2
+	integer i
+c
+c  Externals.
+c
+	character itoaf*2
+c
+c  Read the axis descriptors.
+c
+	do i=1,3
+	  num = itoaf(i)
+	  call rdhda(tno,'ctype'//num,ctype(i),' ')
+	  call rdhdd(tno,'crpix'//num,crpix(i),1.d0)
+	  call rdhdd(tno,'crval'//num,crval(i),1.d0)
+	  call rdhdd(tno,'cdelt'//num,cdelt(i),1.d0)
+	enddo
+c
 	blctrc(1) = 1
 	blctrc(2) = 1
 	blctrc(3) = 1
@@ -288,41 +308,67 @@ c------------------------------------------------------------------------
 c
 	end
 c************************************************************************
-	subroutine ThingChk(tIn,tOut,nsize,interp,blctrc)
+	subroutine ThingChk(tno,nsize,ctype,crpix,crval,cdelt,
+     *		interp,blctrc)
 c
 	implicit none
-	integer tIn,tOut,nsize(3)
+	integer tno,nsize(3)
 	logical interp
+	character ctype(3)*(*)
+	double precision crpix(3),crval(3),cdelt(3)
 	real blctrc(6)
 c
 c------------------------------------------------------------------------
-	double precision In(3),Out(3)
+	double precision crvalx(3),crpixx(3),cdeltx(3)
+	double precision x1,x1x,y1,y1x,z1,z1x,dx,dy,dz,cosdec,cosdecx
+	double precision cdelt1,cdelt1x
+	character ctypex(3)*16,num*2
 	integer i
 c
-	call pcvtinit(tOut,tIn)
-	In(1) = 1
-	In(2) = 1
-	In(3) = 1
-	call pcvt(In,Out,3)
-	blctrc(1) = Out(1)
-	blctrc(2) = Out(2)
-	blctrc(3) = Out(3)
+c  Externals.
 c
-	In(1) = nsize(1)
-	In(2) = nsize(2)
-	In(3) = nsize(3)
-	call pcvt(In,Out,3)
-	blctrc(4) = Out(1)
-	blctrc(5) = Out(2)
-	blctrc(6) = Out(3)
+	character itoaf*2
 c
-	interp = .false.
+c  Read the axis descriptors.
+c
 	do i=1,3
-	  interp = interp.or.
-     *		   nint(blctrc(i+3))-nint(blctrc(i))+1.ne.nsize(i).or.
-     *		   abs(nint(blctrc(i))-blctrc(i)).gt.0.05.or.
-     *		   abs(nint(blctrc(i+3))-blctrc(i+3)).gt.0.05
+	  num = itoaf(i)
+	  call rdhda(tno,'ctype'//num,ctypex(i),' ')
+	  call rdhdd(tno,'crpix'//num,crpixx(i),1.d0)
+	  call rdhdd(tno,'crval'//num,crvalx(i),1.d0)
+	  call rdhdd(tno,'cdelt'//num,cdeltx(i),1.d0)
 	enddo
+c
+	cosdec  = cos(crval(2))
+	cosdecx = cos(crvalx(2))
+c
+	cdelt1 = cdelt(1)/cosdec
+	cdelt1x = cdeltx(1)/cosdecx
+c
+	x1  = (1-crpix(1) )*cdelt1   + crval(1)
+	x1x = (1-crpixx(1))*cdelt1x  + crvalx(1)
+	y1  = (1-crpix(2) )*cdelt(2) + crval(2)
+	y1x = (1-crpixx(2))*cdeltx(2)+ crvalx(2)
+	z1  = (1-crpix(3) )*cdelt(3) + crval(3)
+	z1x = (1-crpixx(3))*cdeltx(3)+ crvalx(3)
+	dx = cdelt1x/cdelt1
+	dy = cdeltx(2)/cdelt(2)
+	dz = cdeltx(3)/cdelt(3)
+c
+	blctrc(1) = (x1x - x1)/cdelt1 + 1
+	blctrc(2) = (y1x - y1)/cdelt(2) + 1
+	blctrc(3) = (z1x - z1)/cdelt(3) + 1
+	blctrc(4) = blctrc(1) + (nsize(1)-1) * dx
+	blctrc(5) = blctrc(2) + (nsize(2)-1) * dy
+	blctrc(6) = blctrc(3) + (nsize(3)-1) * dz
+	if(blctrc(4).lt.blctrc(1).or.
+     *	   blctrc(5).lt.blctrc(2).or.
+     *	   blctrc(6).lt.blctrc(3))
+     *    call bug('f','Signs of cdelt of the inputs are not identical') 
+c
+	interp = nint(blctrc(4))-nint(blctrc(1))+1.ne.nsize(1).or.
+     *		 nint(blctrc(5))-nint(blctrc(2))+1.ne.nsize(2).or.
+     *		 nint(blctrc(6))-nint(blctrc(3))+1.ne.nsize(3)
 c
 	end
 c************************************************************************
@@ -362,18 +408,18 @@ c
 	joff = 1 - nint(blctrc(2))
 	koff = 1 - nint(blctrc(3))
 c
-	if(k+koff.lt.1.or.k+koff.gt.nsize(3))return
+	if(k.lt.1-koff.or.k.gt.nsize(3)-koff)return
 	jlo = max(1,1-joff)
 	jhi = min(ny,nsize(2)-joff)
 	ilo = max(1,1-ioff)
 	ihi = min(nx,nsize(1)-ioff)
 c
-	if(k+koff.gt.1)call xysetpl(tIn,1,k+koff)
+	if(k-koff.gt.1)call xysetpl(tIn,1,k-koff)
 	do j=jlo,jhi
 	  call xyread(tIn,j+joff,line)
 	  call xyflgrd(tIn,j+joff,flags)
 	  do i=ilo,ihi
-	    if(flags(i+ioff))then
+	    if(flags(i))then
 	      Data(i,j) = Data(i,j) + Wt*Line(i+ioff)
 	      Wts(i,j)  = Wts(i,j)  + Wt
 	    endif
@@ -391,9 +437,7 @@ c
 c
 c  Normalise and write out the images.
 c------------------------------------------------------------------------
-	include 'maxdim.h'
 	integer i,j
-	logical flags(MAXDIM)
 c
 	if(k.gt.1)call xysetpl(tOut,1,k)
 c
@@ -401,15 +445,9 @@ c
 	  if(.not.nonorm)then
 	    do i=1,nx
 	      if(Wts(i,j).gt.0)Data(i,j) = Data(i,j) / Wts(i,j)
-	      flags(i) = Wts(i,j).gt.0
-	    enddo
-	  else
-	    do i=1,nx
-	      flags(i) = Wts(i,j).gt.0
 	    enddo
 	  endif
 	  call xywrite(tOut,j,Data(1,j))
-	  call xyflgwr(tOut,j,flags)
 	enddo
 c
 	end
