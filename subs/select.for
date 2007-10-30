@@ -31,11 +31,6 @@ c    rjs   2nov92 Documentation changes only.
 c    rjs  23sep93 improve misleading error messages.
 c    rjs  22jul94 Added ra and dec selection.
 c    rjs   4sep94 Remove char*(*) from subroutine call.
-c    rjs  13jan95 Added pulsar bin selection.
-c    rjs  22oct97 Change format of "on" selection.
-c    rjs  16jun00 Check for bad antenna numbers.
-c    rjs  28jul00 Correct bug introduced in the above.
-c    rjs  27oct00 Handle change in baseline numbering convention.
 c
 c  Routines are:
 c    subroutine SelInput(key,sels,maxsels)
@@ -69,7 +64,7 @@ c			limits. Both limits must be given.
 c    ddec(p1,p2)	Data with "ddec" parameter (in arcsec) between two
 c			limits. Both limits must be given.
 c    increment(n)	Every nth visibility is selected.
-c    on(n)		Those records when the appropriate value of "on"
+c    on			Those records when the variable "on" == 1.
 c    polarization(x)	Select records of a particular polarisation,
 c			where "x" is one of:
 c			 i,q,u,v,rr,ll,rl,lr,xx,yy,xy,yx
@@ -81,7 +76,6 @@ c			first channel.
 c    source(src1,src2...) Select by source.
 c    ra(hh:mm:ss,hh:mm:ss) Select by RA.
 c    dec(dd:mm:ss,dd:mm:ss) Select by DEC.
-c    bin(lo,hi)		Select pulsar bin
 c
 c  The input command would look something like:
 c    select=time(t1,t2),uv(uv1,uv2),...
@@ -119,7 +113,7 @@ c		by SelInput.
 c    object	The type of value to check. Possible values are:
 c		  Object:		Units of Value:
 c		  'time'		Julian day.
-c		  'antennae'		Baseline number.
+c		  'antennae'		Baseline number = 256*ant1 + ant2.
 c					One of ant1 or ant2 can be zero.
 c		  'uvrange'		Wavelengths.
 c		  'uvnrange'		Nanoseconds.
@@ -217,14 +211,8 @@ c  TIME	     Julian day	    Offset Julian day (val1) or day-fraction (val2).
 c
 	if(seltype1.eq.ANTS)then
 	  t1 = nint(value)
-	  if(t1.gt.65536)then
-	    t1 = t1 - 65536
-	    t2 = t1 / 2048
-	    t1 = t1 - 2048*t2
-	  else
-	    t2 = t1/256
-	    t1 = t1 - 256*t2
-	  endif
+	  t2 = t1/256
+	  t1 = t1 - 256*t2
 	  ant1 = min(t1,t2)
 	  ant2 = max(t1,t2)
 	else if(Seltype1.eq.TIME)then
@@ -251,9 +239,9 @@ c
 	    if(t1.eq.DAYTIME)then
 	      match = sels(offset+LOVAL).le.val2.and.
      *		      val2.le.sels(offset+HIVAL)
-	    else if(t1.eq.AUTO)then
+	    else if(t1.eq.AUTO.or.t1.eq.ON)then
 	      match = .true.
-	    else if(t1.eq.WINDOW.or.t1.eq.POL.or.t1.eq.ON)then
+	    else if(t1.eq.WINDOW.or.t1.eq.POL)then
 	      match = .false.
 	      n = nint(sels(offset+NSIZE)) - 2
 	      do j=1,n
@@ -363,7 +351,6 @@ c  Process each subcommand.
 c  Handle fairly normal loval/hival type selection.
 c
 	  if(   seltype.eq.VISNO.or.seltype.eq.INC.or.
-     *		seltype.eq.BIN.or.
      *		seltype.eq.UV.or.seltype.eq.POINT.or.
      *		seltype.eq.AMP.or.seltype.eq.UVN.or.
      *		seltype.eq.DRA.or.seltype.eq.DDEC.or.
@@ -380,8 +367,7 @@ c
 	      else if(seltype.eq.FREQ)then
 		vals(2) = 1.01 * vals(2)
 		vals(1) = 0.99 * vals(1)
-	      else if(seltype.ne.VISNO.and.seltype.ne.INC.and.
-     *		      seltype.ne.BIN)then
+	      else if(seltype.ne.VISNO.and.seltype.ne.INC)then
 		vals(1) = 0
 		if(seltype.eq.AMP) sgn = -sgn
 	      endif
@@ -456,10 +442,10 @@ c
 	      endif
 	    enddo
 c
-c  Handle "OR" or "AUTO" selection. No parameters associated with
+c  Handle "OR", "ON", or "AUTO" selection. No parameters associated with
 c  these.
 c
-	  else if(seltype.eq.AUTO.or.seltype.eq.OR)then
+	  else if(seltype.eq.ON.or.seltype.eq.AUTO.or.seltype.eq.OR)then
 	    sels(offset+ITYPE) = sgn*seltype
 	    sels(offset+NSIZE) = 2
 	    offset = offset + 2
@@ -513,19 +499,11 @@ c  Handle antennae.
 c
 	  else if(seltype.eq.ANTS)then
 	    call SelDcde(spec,k1,k2,ant1,n1,MAXANT,'real')
-	    do i=1,n1
-	      if(ant1(i).lt.0.5)
-     *		call bug('f','Bad antenna number in selection')
-	    enddo
 	    if(k1.gt.k2)then
 	      n2 = 1
 	      ant2(1) = 0
 	    else
 	      call SelDcde(spec,k1,k2,ant2,n2,MAXANT,'real')
-	      do i=1,n2
-		if(ant2(i).lt.0.5)
-     *		  call bug('f','Bad antenna number in selection')
-	      enddo
 	    endif
 c
 	    do i1=1,n1
@@ -543,10 +521,9 @@ c
 c
 c  Handle windows and polarisation.
 c
-	  else if(seltype.eq.WINDOW.or.seltype.eq.POL.or.
-     *	      seltype.eq.ON)then
-	    if(seltype.eq.WINDOW.or.seltype.eq.ON)
-     *          call SelDcde(spec,k1,k2,vals,n,MAXVALS,'real')
+	  else if(seltype.eq.WINDOW.or.seltype.eq.POL)then
+	    if(seltype.eq.WINDOW)
+     *    		call SelDcde(spec,k1,k2,vals,n,MAXVALS,'real')
 	    if(seltype.eq.POL)
      *		call SelDcde(spec,k1,k2,vals,n,MAXVALS,'pol')
 	    if(offset+n+1.gt.maxsels)
@@ -749,7 +726,7 @@ c
 c
 c  Windows and polarisation.
 c
-	  else if(type.eq.POL.or.type.eq.WINDOW.or.type.eq.ON)then
+	  else if(type.eq.POL.or.type.eq.WINDOW)then
 	    do j=1,n
 	      call uvselect(tno,types(type),dble(sels(offset+j+1)),
      *		0.0d0,flag)
