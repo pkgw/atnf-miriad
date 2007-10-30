@@ -40,10 +40,6 @@ c	  uvangle                  [uv pos'n angle clockwise from v axis]
 c	  hangle                   [hour angle in HH MM SS.S]
 c	  dhangle                  [hour angle in decimal hours]
 c	  parang                   [parallactic angle in degrees]
-c         lst                      [local sidereal time in decimal hours]
-c         az                       [azimuth in degrees]
-c         el                       [elevation in degrees]
-c         airmass                  [airmass=1/sin(el)]
 c	NOTE: parang is the true parallactic angle of the source, which can
 c	be quite different from the angle between source and antenna feed
 c	(Miriad variable chi).
@@ -61,9 +57,6 @@ c	  If axis = phase                 [degrees;       2 values]
 c	  If axis = hangle                [hh,mm,ss.s;    6 values]
 c         If axis = dhangle               [decimal hours; 2 values]
 c	  If axis = parang                [degrees;       2 values]
-c         If axis = az or el              [degrees;       2 values]
-c         If axis = airmass               [natural units; 2 values]
-c         If axis = lst                   [decimal hours; 2 values]
 c
 c	Default is to self-scale (see also OPTIONS=XIND).
 c@ yrange
@@ -320,11 +313,6 @@ c    rjs  28mar00  Fix colour indices when there are more than NCOL
 c		   inputs.
 c    rjs  04may00  Tidy up requirement for lat,long,lst and more.
 c    rjs  26sep00  Correct uvangle code.
-c    rjs  10jan01  Added az,el,lst to possible axes.
-c    rjs  20jan01  Change definition of nbases in uvfish to allow for
-c		   possible presence of autocorrelations.
-c    rjs  02mar01  Added airmass to possible axes.
-c    rjs  04may03  getlst could return the wrong value in some circumstances.
 c
 c To do:
 c
@@ -424,7 +412,7 @@ c
      +  plpts(maxbase,maxpol,maxfile), a1a2(maxbase,2)
 c
       double precision preamble(4), fday, dayav, baseday, day, 
-     +  ha, ra, dec, lst, lat, az, el, dtemp
+     +  ha, ra, dec, lst, lat, dtemp
       real size(2), xmin, xmax, ymin, ymax, u, v, uvdist, uvpa, xvalr,
      +  yvalr, paran
       integer lin, ivis, nread, dayoff, j,  nx, ny, inc, hann, tunit,
@@ -455,7 +443,7 @@ c
       data npts, plpts, basmsk /ifac1*0, ifac1*0, ifac2*0/
       data polmsk /13*0/
 c-----------------------------------------------------------------------
-      call output ('UvPlt: version 1.0 20-Jan-01')
+      call output ('UvPlt: version 4-May-00')
 c
 c  Get the parameters given by the user and check them for blunders
 c
@@ -594,12 +582,6 @@ c
             call uvinfo (lin, 'sfreq', freq)
           endif
 c
-c Fish out the lst if required.
-c
-	  if (xaxis.eq.'lst'.or.yaxis.eq.'lst')then
-	    call getlst(lin,lst)
-	  endif
-c
 c Fish out hour angle if required.
 c
           if (xaxis.eq.'hangle' .or. xaxis.eq.'dhangle' .or.
@@ -616,25 +598,17 @@ c
             ha = ha * 12.0d0*3600.0d0/dpi
           endif
 c
-c  Fish out the parallactic angle,azimuth or elevation
-c  if required.
+c  Fish out the parallactic angle if required.
 c
-	  if(xaxis.eq.'parang'.or.yaxis.eq.'parang'.or.
-     +       xaxis.eq.'az'.or.yaxis.eq.'az'.or. 
-     +       xaxis.eq.'el'.or.yaxis.eq.'el'.or.
-     +	     xaxis.eq.'airmass'.or.yaxis.eq.'airmass')then
+	  if(xaxis.eq.'parang'.or.yaxis.eq.'parang')then
 	    call uvrdvrd(lin,'ra',dtemp,0.d0)
             call uvrdvrd (lin, 'obsra', ra, dtemp)
 	    call uvrdvrd(lin,'dec',dtemp,0.d0)
 	    call uvrdvrd(lin, 'obsdec',dec,dtemp)
 	    call getlst(lin, lst)
 	    call getlat(lin, lat)
-	    if(xaxis.eq.'parang'.or.yaxis.eq.'parang')
-     +	      call parang(ra,dec,lst,lat,paran)
-	    if(xaxis.eq.'az'.or.yaxis.eq.'az'.or.
-     +	       xaxis.eq.'el'.or.yaxis.eq.'el'.or.
-     +	       xaxis.eq.'airmass'.or.yaxis.eq.'airmass')
-     +	      call azel(ra,dec,lst,lat,az,el)
+	    call parang(ra,dec,lst,lat,paran)
+            paran = paran * 180.0 / dpi
 	  endif
 c
           fday = day - dayoff
@@ -650,11 +624,9 @@ c
 c Set x and y values
 c
               call setval (xaxis, ha, u, v, uvdist, uvpa, fday,
-     +                     paran, lst, az, el,
-     +			   data(j), j, freq, xvalr, xgood)
+     +                     paran, data(j), j, freq, xvalr, xgood)
               call setval (yaxis, ha, u, v, uvdist, uvpa, fday, 
-     +                     paran, lst, az, el,
-     +                     data(j), j, freq, yvalr, ygood)
+     +                     paran, data(j), j, freq, yvalr, ygood)
               if (xgood .and. ygood) then
                 if (doave) then
 c
@@ -1914,7 +1886,6 @@ c
 	call uvrdvrd (lin, 'ra', dtemp, 0.d0)
 	call uvrdvrd (lin, 'obsra', ra, dtemp)
 	call getlong(lin,long)
-	call uvrdvrd(lin,'time',time,0.d0)
         call jullst (time, long, lst)
 	lst = lst + eqeq(time)
       else
@@ -2552,12 +2523,11 @@ c
 c Types of axes allowed
 c
       integer naxmax, nax
-      parameter (naxmax = 19)
+      parameter (naxmax = 15)
       character axtyp(naxmax)*10
-      data axtyp /  'time      ','dtime     ','uvdistance','uu        ',
-     + 'vv        ','uc        ','vc        ','uvangle   ','amplitude ',
-     + 'phase     ','real      ','imag      ','hangle    ','dhangle   ',
-     + 'parang    ','lst       ','az        ','el        ','airmass   '/
+      data axtyp /'time', 'dtime', 'uvdistance', 'uu', 'vv', 'uc', 
+     +  'vc', 'uvangle', 'amplitude', 'phase', 'real', 'imag',
+     +  'hangle', 'dhangle', 'parang'/
 c-----------------------------------------------------------------------
       call keyini
 c
@@ -3463,14 +3433,6 @@ c-----------------------------------------------------------------------
         label = 'Hour Angle (hours)'
       else if (axis.eq.'parang') then
         label = 'Parallactic Angle (degrees)'
-      else if (axis.eq.'lst') then
-        label = 'Local Sidereal Time (hours)'
-      else if (axis.eq.'az') then
-        label = 'Azimuth (degrees)'
-      else if (axis.eq.'el') then
-        label = 'Elevation (degrees)'
-      else if (axis.eq.'airmass')then
-	label = 'Airmass [1/sin(el)]'
       else if (axis.eq.'uvdistance') then
         label = '(u\u2\d + v\u2\d)\u1/2\d'//units
       else if (axis.eq.'uu' .or. axis.eq.'uc') then
@@ -3503,19 +3465,10 @@ c
 c
       end
 c
-c************************************************************************
+c
       subroutine setval (axis, ha, u, v, uvdist, uvpa, fday, 
-     +                   parang, lst, az, el,
-     +			 data, ichan, freq, val, ok)
-c
-      implicit none
-      complex data
-      double precision fday, freq(*), ha, lst, az, el
-      real val, u, v, uvdist, uvpa, parang
-      character axis*(*)
-      integer ichan
-      logical ok
-c
+     +                   parang, data, ichan, freq, val, ok)
+c-----------------------------------------------------------------------
 c     Set the value of the desired quantity
 c
 c  Input:
@@ -3527,9 +3480,6 @@ c    uvdist   sqrt(u**2 + v**2) in Klambda
 c    uvpa     uv position angle (999 if coudn't evaluate)
 c    fday     Fractional day since begining of observation
 c    parang   Parallactic Angle
-c    lst      LST in radians.
-c    az       Azimuth in radians.
-c    el       Elevation in radians.
 c    data     Complex visibility
 c    ichan    CHannel number
 c    freq     Array of frequencies for each channel
@@ -3538,7 +3488,15 @@ c    val      Value
 c    ok       True if value is a valid number to plot
 c
 c-----------------------------------------------------------------------
-      include 'mirconst.h'
+      implicit none
+c
+      complex data
+      double precision fday, freq(*), ha
+      real val, u, v, uvdist, uvpa, parang
+      character axis*(*)
+      integer ichan
+      logical ok
+c-----------------------------------------------------------------------
       ok = .true.
       if(axis.eq.'uvdistance') then
         val = uvdist * freq(ichan) / freq(1)
@@ -3550,15 +3508,7 @@ c-----------------------------------------------------------------------
         val = uvpa
         if (uvpa.eq.999.0) ok = .false.
       else if (axis.eq.'parang') then
-        val = 180./DPI * parang
-      else if (axis.eq.'lst') then
-	val = 12/PI * lst
-      else if (axis.eq.'az') then
-        val = 180./PI * az
-      else if (axis.eq.'el') then
-        val = 180./PI * el
-      else if (axis.eq.'airmass') then
-	val = 1/sin(el)
+        val = parang
       else if (axis.eq.'dtime') then
 c
 c Fractional days
@@ -4164,7 +4114,7 @@ c programs such as UVCAT just copy NANTS over, even if you select
 c a subset of baseline.  RJS very stubborn (what's new) on this issue.  
 c
       call uvrdvri (lin, 'nants', nants, 0)
-      nbases = nants * (nants+1) / 2
+      nbases = nants * (nants-1) / 2
 c
 c Close uv file and reinitialize UVDAT routines
 c
