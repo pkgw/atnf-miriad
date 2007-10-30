@@ -38,6 +38,7 @@ c	each separated by commas. They may be abbreviated to the minimum
 c	needed to avoid ambiguity. Possible options are:
 c	   'velocity'    Recompute velocity information.
 c	   'chi'         Recompute parallactic angle information.
+c	   'jupaxis'     Set planet parameters for Jupiter.
 c	The following options can be used to turn off calibration corrections.
 c	The default is to apply any calibration present.
 c	   'nocal'       Do not apply the gains table.
@@ -65,24 +66,21 @@ c  History:
 c    rjs  31aug93 Original version.
 c    mjs  23sep93 bsrcha -> binsrcha, per miriad-wide change.
 c    rjs  28nov93 Parallactic recomputation.
-c    rjs  15jul95 Why doesn't options=jupaxis get mentioned in this
-c		  history. I have improved it a bit.
-c    rjs  19jun97 Eliminate jupaxis business (now in uvjup).
-c    dpr  22may01 Marginal XY-EW support
-c
 c  Bugs:
 c    * Much more needs to be added.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mirconst.h'
+	integer MAXSCAN
+	parameter(MAXSCAN=1024)
 	character version*(*)
-	parameter(version='UvRedo: version 1.0 19-Jun-97')
+	parameter(version='UvRedo: version 1.0 28-Nov-93')
 	integer OBS,HEL,LSR
 	parameter(OBS=1,HEL=2,LSR=3)
 c
 	character out*64,ltype*16,uvflags*16
 	integer frame,lIn,lOut
-	logical dovel,dochi
+	logical dovel,dochi,dojaxis
 c
 c  Externals.
 c
@@ -92,7 +90,7 @@ c  Get the input parameters.
 c
 	call output(version)
 	call keyini
-	call GetOpt(dovel,dochi,uvflags)
+	call GetOpt(dovel,dochi,dojaxis,uvflags)
 	frame = 0
 	if(dovel)call GetRest(frame)
 	call uvDatInp('vis',uvflags)
@@ -103,7 +101,7 @@ c
 c  Check the inputs.
 c
 	if(out.eq.' ')call bug('f','An output must be given')
-	if(.not.dovel.and..not.dochi)
+	if(.not.dovel.and..not.dochi.and..not.dojaxis)
      *	  call bug('f','Nothing to recompute!')
 c
 c  Open the inputs and the outputs.
@@ -123,7 +121,7 @@ c
 c
 c  Do the work.
 c
-	call Process(lIn,lOut,dovel,frame,dochi)
+	call Process(lIn,lOut,dovel,frame,dochi,dojaxis)
 c
 c  All said and done. Close up shop.
 c
@@ -154,10 +152,10 @@ c
 	if(nout.ne.0)frame = binsrcha(rframe,rframes,nframes)
 	end
 c************************************************************************
-	subroutine GetOpt(dovel,dochi,uvflags)
+	subroutine GetOpt(dovel,dochi,dojaxis,uvflags)
 c
 	implicit none
-	logical dovel,dochi
+	logical dovel,dochi,dojaxis
 	character uvflags*(*)
 c
 c  Determine extra processing options.
@@ -168,16 +166,17 @@ c    dochi
 c    uvflags
 c------------------------------------------------------------------------
 	integer NOPTS
-	parameter(NOPTS=5)
+	parameter(NOPTS=6)
 	logical present(NOPTS)
 	character opts(NOPTS)*8
 c
-	data opts/'velocity','chi     ',
+	data opts/'velocity','chi     ','jupaxis ',
      *		  'nocal   ','nopol   ','nopass  '/
 c
 	call options('options',opts,present,NOPTS)
 	dovel = present(1)
 	dochi = present(2)
+	dojaxis = present(3)
 c
 c  Determine the flags to pass to the uvDat routines.
 c    d - Data selection.
@@ -189,17 +188,17 @@ c    e - Apply leakage correction.
 c    f - Apply bandpass correction.
 c
 	uvflags = 'dlsb'
-	if(.not.present(3))uvflags(5:5) = 'c'
-	if(.not.present(4))uvflags(6:6) = 'e'
-	if(.not.present(5))uvflags(7:7) = 'f'
+	if(.not.present(4))uvflags(5:5) = 'c'
+	if(.not.present(5))uvflags(6:6) = 'e'
+	if(.not.present(6))uvflags(7:7) = 'f'
 c
 	end
 c************************************************************************
-	subroutine Process(lIn,lOut,dovel,frame,dochi)
+	subroutine Process(lIn,lOut,dovel,frame,dochi,dojaxis)
 c
 	implicit none
 	integer lIn,lOut
-	logical dovel,dochi
+	logical dovel,dochi,dojaxis
 	integer frame
 
 c  Do all the real work.
@@ -221,6 +220,7 @@ c------------------------------------------------------------------------
 c
 c  Externals.
 c
+	real jupangle
 	logical uvVarUpd
 c
 c  Determine what we need.
@@ -234,6 +234,11 @@ c  Initialise for the various recomputations.
 c
 	if(dochi)call ChiInit(lIn,chiupd)
 	if(dovel)call VelInit(lIn,velupd)
+	if(dojaxis)then
+	  call uvputvrr(lOut,'plmaj',5.,1)
+	  call uvputvrr(lOut,'plmin',5.,1)
+	  call uvputvrr(lOut,'pltb',5.,1)
+	endif
 c
 c  Read the first record.
 c
@@ -264,6 +269,11 @@ c
 	    call uvrdvrd(lIn,'obsdec',dapp,dec)
 	  endif
 c
+c  Write the planet information.
+c
+	  if(dojaxis)call uvputvrr(lOut,'plangle',
+     *				jupangle(preamble(3)),1)
+c
 c  Recompute parallactic angle.
 c
 	  if(dochi)then
@@ -284,6 +294,32 @@ c
 	  call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
 	enddo
 c
+	end
+c************************************************************************
+	real function jupangle(time)
+c
+	implicit none
+	double precision time
+c
+c  Determine the position angle of Jupiter's magnetosphere at a
+c  particular time.
+c------------------------------------------------------------------------
+	include 'mirconst.h'
+	double precision period,t200
+c
+c  Period of the magnetospehere in days, and a reference time in Julian
+c    9:55:29.37 times fudge factor.
+c
+	parameter(period=((29.37/60.d0+55)/60.d0+9)/24.d0*(1+1.46e-4))
+c
+c  The reference time -- 94jul9:12:50
+c
+	parameter(t200=2449543.0347222d0)
+c
+	real psi
+c
+	psi = 2*pi*(time-t200)/period
+	jupangle = 20.6 - 10*sin(psi)
 	end
 c************************************************************************
 	subroutine ChiInit(lIn,chiupd)
@@ -343,8 +379,8 @@ c------------------------------------------------------------------------
 	logical ok
 	character telescop*32
 c
-	integer EQUATOR,ALTAZ,XYEW
-	parameter(EQUATOR=1,ALTAZ=0,XYEW=3)
+	integer EQUATOR,ALTAZ
+	parameter(EQUATOR=1,ALTAZ=0)
 c
 c  Externals.
 c
