@@ -3699,3 +3699,13 @@ and in a way to be consistent with all the other changes happening.
 29may01 dpr     gpcomb - first version
 29may01 dpr     gpdof  - first version
 07jun01 dpr     gpdof  - finesse output
+18jun01 dpr     cgdisp - added blacklab option
+19jun01 dpr     smooth - lenghten in and out keys
+20jun01 dpr     elevcor - new task
+21jun01 dpr     convol - doc change only
+21jun01 dpr     smooth - added options=force
+26jun01 dpr     fits - relax antenna table input format restrictions
+28jun01 rjs	restor.for - Doc change only.
+29jun01 dpr     Install - accept version suffixes for dynamic libraries
+02jul01 dpr     fits - relax AN table restrictions properly
+05jul01 dpr     opcal - re-allow orig met format
