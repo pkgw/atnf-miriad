@@ -21,6 +21,11 @@ c    rjs  14mar96 Fixed bug I introduced on 11mar96.
 c    rjs  11aug96 Added mopra, plus miscellaneous other parameters.
 c    mchw 18sep96 Added iram15m array on PdB.
 c    rjs  17dec96 More accurate positions for ATNF telescopes.
+c    mchw 20may97 Added CSO and JCMT. Updated HATCREEK.
+c    mchw 09jun97 Added evector to hatcreek
+c    rjs  24jun97 Correct height of ATCA.
+c    rjs/jm 11jul97 Correct longitude sign for IRAM15M, JCMT and CSO.
+c    mchw 05aug98 Added mount and nants to ovro.
 c************************************************************************
 c* ObsPrint -- Print list of known observatories.
 c: utility
@@ -62,12 +67,12 @@ c
 	double precision value
 	logical ok
 c
-c  THis returns some known characteristics of various observervatories.
+c  This returns some known characteristics of various observervatories.
 c
 c  Input:
 c    observ	Name of the observatory. Current list is :
-c                 'ATCA', 'GMRT', 'HATCREEK', 'IRAM15M', 'KITTPEAK',
-c	   	  'NOBEYAMA', 'NOBEYAMA45', 'ONSALA', 'OVRO'
+c                 'ATCA', 'CSO', 'GMRT', 'HATCREEK', 'IRAM15M', 'JCMT',
+c                 'KITTPEAK', 'NOBEYAMA', 'NOBEYAMA45', 'ONSALA', 'OVRO',
 c		  'PARKES', 'PENTICTON', 'QUABBIN', 'VLA', 'WSRT'
 c    object	The parameter of the observatory of interest. Possible
 c		values are:
@@ -145,35 +150,49 @@ c
 c
 c  The Australia Telescope Compact Array (ATNF).
 c  Latitude, longitude and height refer to station 35. Info from
-c  John Reynolds (IAU 1976 spheroid).
+c  John Reynolds. Geodetic coordinates on WGS84
 c
 	call obsad('atca/antdiam',	22.d0)
 	call obsad('atca/ellimit',	12.0*dpi/180.d0)
 	call obsad('atca/evector',	0.25*dpi)
 	call obsad('atca/ew',		1.d0)
-	call obsad('atca/height',	2133.869d0)
+	call obsad('atca/height',	236.87d0)
 	call obsad('atca/jyperk',	13.d0)
 	call obsad('atca/latitude',	obsdms(-1, 30,18,46.3849))
-	call obsad('atca/longitude',	obsdms( 1,149,34, 0.4997))
+	call obsad('atca/longitude',	obsdms( 1,149,33, 0.4997))
 	call obsad('atca/mount',	ALTAZ)
 	call obsad('atca/nants',	6.d0)
 	call obsad('atca/subdiam',	2.8d0)
 	call obsad('atca/systemp',	50.d0)
 c
+c  CSO (from Oliver Lay -> MCHW 20may1997 - some values need confirmation)
+c
+	call obsad('cso/antdiam',	10.4d0)
+	call obsad('cso/ellimit',	5.0*dpi/180.d0)
+	call obsad('cso/evector',	0.5*dpi)
+	call obsad('cso/height',	4080.0d0)
+	call obsad('cso/jyperk',	60.d0)
+	call obsad('cso/latitude',	obsdms( 1, 19,49,33.8))
+	call obsad('cso/longitude',	obsdms(-1,155,28,46.4))
+	call obsad('cso/mount',	ALTAZ)
+	call obsad('cso/nants',	2.d0)
+	call obsad('cso/systemp',	500.d0)
+c
 c  GMRT.
 c
 	call obsad('gmrt/antdiam',	45.d0)
 c
-c  The Hat Ck mm array (BIMA).
+c  The HATCREEK mm array (BIMA).
 c  Jyperk and systemp given by Wright, from 3mm vlbi.
 c
 	call obsad('hatcreek/antdiam',	6.1d0)
+	call obsad('hatcreek/evector',	0.0d0)
 	call obsad('hatcreek/height',	1043.d0)
-	call obsad('hatcreek/jyperk',	160.d0)
+	call obsad('hatcreek/jyperk',	120.d0)
 	call obsad('hatcreek/latitude', obsdms( 1, 40,49, 2.50))
 	call obsad('hatcreek/longitude',obsdms(-1,121,28,18.49))
 	call obsad('hatcreek/mount',	ALTAZ)
-	call obsad('hatcreek/nants',   12.d0)
+	call obsad('hatcreek/nants',   10.d0)
 	call obsad('hatcreek/subdiam',	0.61d0)
 	call obsad('hatcreek/systemp',	300.d0)
 c
@@ -184,10 +203,24 @@ c
         call obsad('iram15m/height',    2650.d0)
         call obsad('iram15m/jyperk',    24.d0)
         call obsad('iram15m/latitude',  obsdms( 1, 44,38,02.00))
-        call obsad('iram15m/longitude',obsdms(-1,5,54,28.40))
+        call obsad('iram15m/longitude', obsdms( 1,5,54,28.40))
         call obsad('iram15m/mount',     ALTAZ)
         call obsad('iram15m/nants',     6.d0)
         call obsad('iram15m/systemp',   300.d0)
+c
+c  JCMT (from Oliver Lay -> MCHW 20may1997)
+c
+	call obsad('jcmt/antdiam',	15.0d0)
+	call obsad('jcmt/ellimit',	5.0*dpi/180.d0)
+	call obsad('jcmt/evector',	0.5*dpi)
+	call obsad('jcmt/height',	4092.0d0)
+	call obsad('jcmt/jyperk',	40.d0)
+	call obsad('jcmt/latitude',	obsdms( 1, 19,49,33.8))
+	call obsad('jcmt/longitude',	obsdms(-1,155,28,46.4))
+	call obsad('jcmt/mount',	ALTAZ)
+	call obsad('jcmt/nants',	2.d0)
+	call obsad('jcmt/subdiam',	0.75d0)
+	call obsad('jcmt/systemp',	500.d0)
 c
 c  The Kitt Peak mm single dish (NRAO).
 c  Jyperk and systemp given by Wright, from 3mm vlbi.
@@ -203,9 +236,9 @@ c
 c  The Mopra dish.
 c
 	call obsad('mopra/antdiam',	22.d0)
-	call obsad('mopra/height',	866.047d0)
-	call obsad('mopra/latitude',	obsdms(-1, 31,16,04.3195))
-	call obsad('mopra/longitude',	obsdms( 1,149,05,58.7740))
+	call obsad('mopra/height',	866.44d0)
+	call obsad('mopra/latitude',	obsdms(-1, 31,16,04.127))
+	call obsad('mopra/longitude',	obsdms( 1,149,05,58.706))
 	call obsad('mopra/mount',	ALTAZ)
 	call obsad('mopra/nants',	1.d0)
 c
@@ -247,15 +280,17 @@ c
 	call obsad('ovro/jyperk',	74.d0)
 	call obsad('ovro/latitude',	obsdms( 1, 37,14, 0.00))
 	call obsad('ovro/longitude',	obsdms(-1,118,17, 0.00))
+	call obsad('ovro/mount',	ALTAZ)
+	call obsad('ovro/nants',	6.0d0)
 	call obsad('ovro/systemp',	300.d0)
 c
 c  Parkes.
 c
 	call obsad('parkes/antdiam',	64.d0)
 	call obsad('parkes/ellimit',	30.5d0*dpi/180.d0)
-	call obsad('parkes/height',	411.756d0)
-	call obsad('parkes/latitude',	obsdms(-1, 32,59,54.2552)) 
-	call obsad('parkes/longitude',	obsdms( 1,148,15,48.6393))
+	call obsad('parkes/height',	414.80d0)
+	call obsad('parkes/latitude',	obsdms(-1, 32,59,54.263)) 
+	call obsad('parkes/longitude',	obsdms( 1,148,15,48.636))
 	call obsad('parkes/mount',	ALTAZ)
 	call obsad('parkes/nants',	1.d0)
 	call obsad('parkes/subdiam',	3.0d0)
