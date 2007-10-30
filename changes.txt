@@ -3164,3 +3164,22 @@ and in a way to be consistent with all the other changes happening.
 21sep97 rjs	fits.for,fitsio.for -- Replace julfdate,fdatejul with julday,dayjul
 25sep97 rjs	refract.for -- Minor changes.
 25sep97 rjs	julday.for -- Added subroutine julcal.
+*********************************** 25sep97 Sent changes to Doug Roberts
+26sep97 rjs	model.for,uvmodel.for -- Re-added mhw's "zero" option.
+30sep97 rjs	hio.c,hio.h -- Correct initialisation of ntree and bump
+		up the max number of open files.
+09oct97 rjs	uvgen.for -- fix error in generating spectral datasets
+		(introduced 7 weeks ago).
+09oct97 rjs	uvaflag.for -- Do back to the drawing board and improve
+		program.
+09oct97 rjs	tvflag.for -- Handle width parameter which is not 1.
+09oct97 rjs	uvio.c -- Add check for restfreq==0 when converting to
+		velocity.
+10oct97 rjs	uvaver.for -- Eliminate bad call to uvvarcopy just before
+		final buffer flush (when time averaging).
+10oct97 rjs	blflag.for -- Added options=rms
+10oct97 rjs	uvstat.for -- General tidy up.
+13oct97 nebk    mfplan.for -- Add 210m array and colours
+15oct97 rjs	co.for,uvio.c -- Minor correction to the definition of "felocity"
+22oct97 rjs	uvio.c,select.for -- Change form of "on" selection.
+23oct97 rjs	uvaver.for -- Do not average across changes in the "on" variable.
