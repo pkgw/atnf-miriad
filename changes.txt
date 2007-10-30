@@ -3616,3 +3616,7 @@ and in a way to be consistent with all the other changes happening.
 14sep00 rjs	boxes.for - Make sure that coordinate file can only be an
 		image.
 21sep00 rjs	tvclip.for -- Added options=nosrc
+25sep00 rjs	tvclip.for -- Doc change only.
+25sep00 rjs	uvplt.for -- Correct code dealing with uvangle.
+03oct00 rjs	imcomb.for -- Output image can be arbitrarily large.
+04oct00 rjs	fits.for -- Output image can be abitrarily large.

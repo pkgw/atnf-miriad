@@ -310,9 +310,12 @@ c		     corrupted dates.
 c    rjs  20-jul-99  uvout writes AIPS SU tables.
 c    rjs  30-aug-99  Changed some "PI" to "DPI"
 c    rjs  11-nov-99  options=varwt
+c    rjs  11-apr-00  In uvout, multisource files were always being generated.
+c    rjs  10-may-00  In xyout, increase size of descr buffer.
+c    rjs  04-Oct-00  Make xyout work for arbitrarily large images.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Fits: version 1.1 11-Nov-99')
+	parameter(version='Fits: version 1.1 04-Oct-00')
 	character in*128,out*128,op*8,uvdatop*12
 	integer velsys
 	real altrpix,altrval
@@ -2651,7 +2654,7 @@ c
 	  dec = dec + ddec
 	  iSrc = 0
 	  i = 1
-	  dowhile(i.lt.nSrc.and.iSrc.eq.0)
+	  dowhile(i.le.nSrc.and.iSrc.eq.0)
 	    if(ras(i).eq.ra.and.decs(i).eq.dec.and.
      *	      sources(i).eq.source)iSrc = i
 	    i = i + 1
@@ -3861,10 +3864,11 @@ c
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
-	real array(maxdim)
+	include 'mem.h'
+	integer pArray,pFlags
 	integer naxis,tno,lu,j,nsize(MAXNAX),axes(MAXNAX)
 	character string*64
-	logical doflag,flags(MAXDIM)
+	logical doflag
 c
 c  Externals.
 c
@@ -3894,6 +3898,8 @@ c
 c
 c  Copy the data.
 c
+	call memAlloc(pArray,nsize(1),'r')
+	if(doflag)call memAlloc(pFlags,nsize(1),'l')
 	call IncIni(naxis,nsize,axes)
 	dowhile(Inc3More(naxis,nsize,axes))
 	  if(naxis.gt.2)then
@@ -3901,14 +3907,16 @@ c
 	    call fxysetpl(lu,naxis-2,axes(3))
 	  endif
 	  do j=1,nsize(2)
-	    call xyread(tno,j,array)
-	    call fxywrite(lu,j,array)
+	    call xyread(tno,j,memr(pArray))
+	    call fxywrite(lu,j,memr(pArray))
 	    if(doflag)then
-	      call xyflgrd(tno,j,flags)
-	      call fxyflgwr(lu,j,flags)
+	      call xyflgrd(tno,j,meml(pFlags))
+	      call fxyflgwr(lu,j,meml(pFlags))
 	    endif
 	  enddo
 	enddo
+	call memFree(pArray,nsize(1),'r')
+	if(doflag)call memFree(pFlags,nsize(1),'l')
 c
 c  All said and done. Go to sleep.
 c
@@ -4093,7 +4101,7 @@ c------------------------------------------------------------------------
 	integer iostat,item,n,ival
 	real rval
 	double precision dval
-	character key*12,line*80,descr*32,type*16,ukey*12
+	character key*12,line*80,descr*80,type*16,ukey*12
 	logical discard
 c
 c  Externals.
