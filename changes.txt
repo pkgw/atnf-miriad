@@ -3456,3 +3456,19 @@ and in a way to be consistent with all the other changes happening.
 19mar99 mchw    imgen.for -- Add model isothermal 2D projection for cluster gas.
 18may99 rjs	regrid.for -- Handle wrap arounds in the offsets.
 27may99 rjs	model.for -- Better check for no visibility data.
+*********************************** 04jun99 Sent changes to Doug Roberts
+11jun99 nebk    cgcurs.for - some hacks to handle /BEAM or /B and following strings
+11jun99 nebk    cgrego.for - handle planes
+21jun99 rjs	uvplanet.for -- Added options=replace.
+22jun99 rjs	atmos.for -- Tidy up, and change RA/DEC format to standard
+		hms/dms format.
+24jun99 rjs	uvflux.for -- More sources and cope with longer source names.
+30jun99 rjs	imfit.for -- Improved format statement.
+*********************************** 02jul99 Sent changes to Doug Roberts
+01jul99 rjs	hdtab.for,hdtab.h,invert.for -- Slightly better output
+		headers for created images.
+07jul99 lss	imgen.for -- Add 3D gaussian model for cubes.
+19jul99 rjs	fitsio.for -- Write out EXTVER card in extension tables.
+19jul99 rjs	doc2html.csh -- Minor improvements.
+22jul99 rjs	mirhelp.csh -- Minor improvements -- direct output to netscape.
+28jul99 rjs	hdtab.for -- Always initialise pbtype parameter.
