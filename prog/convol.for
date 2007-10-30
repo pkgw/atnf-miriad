@@ -87,6 +87,8 @@ c    mchw  06sep94 Set default bmin to be bmaj, and fix log line in doc.
 c    rjs   15mar95 Add options=final.
 c    rjs   06jan97 Improve output headers.
 c    rjs   02jul97 cellscal change.
+c    rjs   05dec97 Change order of boxmask and boxinfo calls.
+c    bpw   12mar99 Increase size of map/beam/out to 512 to allow directories
 c  Bugs:
 c------------------------------------------------------------------------
 	include 'maxdim.h'
@@ -94,10 +96,10 @@ c------------------------------------------------------------------------
 	include 'mirconst.h'
 	integer maxbox,maxruns
 	character version*(*)
-	parameter(version='Convol: version 1.0 06-Jan-97' )
+	parameter(version='Convol: version 1.0 12-mar-99' )
 	parameter(maxruns=3*maxdim)
 	parameter(maxbox=1024)
-	character map*32,beam*32,out*32
+	character map*512,beam*512,out*512
 	integer nsize(MAXNAX),naxis,ifail
 	integer lMap,lBeam,lOut,iref,jref,blc(3),trc(3)
 	integer xmin,xmax,ymin,ymax,nx,ny,n1,n2,xoff,yoff
@@ -164,9 +166,9 @@ c
 	call rdhdd(lMap,'cdelt2',cdelt2,1.d0)
 	naxis = min(naxis,MAXNAX)
 c
-	call BoxMask(lMap,box,maxbox)
 	call BoxSet(box,3,nsize,' ')
 	call BoxInfo(box,3,blc,trc)
+	call BoxMask(lMap,box,maxbox)
 	rect = BoxRect(box)
 c
 c  Fiddle the gaussian parameters.
@@ -427,7 +429,7 @@ c------------------------------------------------------------------------
 	character line*72,num*1
 	real crpix
 	integer nkeys
-	parameter(nkeys=36)
+	parameter(nkeys=37)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -440,7 +442,7 @@ c
      *	  'ctype1  ','ctype2  ','ctype3  ','ctype4  ','ctype5  ',
      *				           'crpix4  ','crpix5  ',
      *	  'epoch   ','niters  ','object  ','obstime ','cellscal',
-     *	  'telescop','history ','restfreq','mostable',
+     *	  'telescop','history ','restfreq','mostable','pbtype  ',
      *	  'vobs    ','observer','obsra   ','obsdec  ','pbfwhm  ',
      *    'btype   ','ltype   ','lstart  ','lstep   ','lwidth  '/
 c
