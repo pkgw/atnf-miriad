@@ -1,7 +1,6 @@
 c**********************************************************************
 c     A collection of subroutines shared by the programs CGDISP,
-c     CGSPEC, CGCURS, CGSLICE, IMPOS, MAXFIT, REGRID and UVSUB. All 
-c     new additions should end in "cg" 
+c     CGSPEC, CGCURS, CGSLICE, REGRID, IMBIN and UVSUB. 
 c
 c
 c  apptrfcg :  Apply transfer function to image
@@ -25,7 +24,7 @@ c  matchcg  :  Match string with allowed types
 c  nxnycg   :  Work out number of sub-plots per page
 c  opimcg   :  Open an image and return axis descriptors
 c  optcg    :  Version of BobS options, but without the fatalities
-c  otopixcg :  Convert overlay location in specified coords to pixels
+c  ol2pixcg :  Convert overlay location in specified coords to pixels
 c  pix2wcg  :  Convert from image pixels to world coord of requested type
 c  pix2wfcg :  Convert from image pixels to world coord of requested type
 c              and format in string
@@ -34,6 +33,7 @@ c  ppconcg  :  Convert between unbinned full image pixels and binned
 c              subimage pixels
 c  readbcg  :  Read blanking mask form mask image
 c  readimcg :  Read in image dealing with averaging and blanking
+c  savdescg :  Make a copy of the axis descriptors
 c  setcolcg :  Set a PGPLOT colour for multiple line graphics on 1 plot
 c  setdescg :  Set axis descriptors for an image by copying from another
 c  strprpcg :  Prepare string by stripping extra white space and
@@ -60,13 +60,13 @@ c     nebk   14may92     Add  LIMTRCG. Add a couple more
 c                        parameters to HEDINFCG
 c     nebk   18may92     Add AXFNDCG
 c     nebk   04jul92     Don't modify variable (PLAV) in READIMCG. Add
-c                        OTOPIXCG, SETTRCG, CONLINCG, STRERSCG, DEGHSMCG,
+c                        O2PIXCG, SETTRCG, CONLINCG, STRERSCG, DEGHSMCG,
 c			 ANN*CG, CHKDESCG, CHKDIMCG,  add argument 
 c			 MIRROR to CONLEVCG 
 c     nebk   08jul82     Add OPTCG and INIT/NORM to READIMCG call. FIx 
 c                        bug in CHNSELCG causing groups to be redundantly
 c                        specified under some circumstances
-c     nebk   14jul92     Add POSOFF to OTOPIXCG. Type CDELT and CRVAL
+c     nebk   14jul92     Add POSOFF to O2PIXCG. Type CDELT and CRVAL
 c			 as DOUBLE PRECISION
 c     nebk   07aug92     Try to instill some more modularity into all 
 c                        coordinate conversions with PIX2WCG and
@@ -117,6 +117,10 @@ c     nebk   09jun94     Recognize UU and VV image axes
 c     nebk   21jun94     Add OPIMCG 
 c     nebk   12jul94     Fix dimensioning bug in SETDESCG
 c     nebk   19jul94     Allow roundoff tolerance in CHKDESCG
+c     nebk   27aug94     Convert OL2PIXCG to use correct coordinate 
+c                        conversion routines via COSUBS.FOR
+c     nebk   15jan95     Add SAVDESCG
+c     nebk   14apr95     Add HARD and DOFID arguments to WEDGINCCG
 c***********************************************************************
 c
 c* apptrfCG -- Apply transfer function to image
@@ -1492,11 +1496,15 @@ c     ctype      Axis types
 c--
 c-----------------------------------------------------------------------
       integer len1
+      character msg*132
 c-----------------------------------------------------------------------
       call xyopen (lin, in, 'old', maxnax, size)
       call rdhdi (lin, 'naxis', naxis, 0)
-      if (naxis.eq.0) call bug ('f', in(1:len1(in))//
-     +    ' has zero dimensions !!')
+      if (naxis.eq.0) then
+        msg = in(1:len1(in))//' has zero dimensions !!'
+        call bug ('f', msg)
+      end if
+c
       call hedinfcg (lin, naxis, size, epoch, crpix, cdelt,
      +               crval, ctype, mask)
       call chkdimcg (maxnax, maxdim, naxis, size, in)
@@ -1573,57 +1581,104 @@ c
 c
       end
 c
-c* otopixCG -- Convert overlay location in given coordinates to pixels
+c* ol2pixCG -- Convert overlay location in given coordinates to pixels
 c& nebk
 c: plotting
 c+
-      subroutine otopixcg (otype, iax, dsign, naxis, crval, crpix,
-     +                     cdelt, ctype, nums, posoff, opos, nnum)
-c
+      subroutine ol2pixcg (lun, pix3, ofig, otype, off, dsign, nums, 
+     +                     opos, np)
       implicit none
-      integer nnum, dsign, iax, naxis
-      double precision nums(*), cdelt(naxis), crval(naxis), 
-     +  crpix(naxis), opos, posoff
-      character ctype(naxis)*(*), otype*(*)
 c
-c Convert overlay location from OTYPE units to pixels
+      double precision off(*), nums(*), opos(*), pix3
+      integer lun, dsign(2), np
+      character*(*) otype(2), ofig
+c
+c Convert overlay location from OTYPE units to pixels.  This is 
+c a conversion from true world coordinates to image pixels
 c
 c Input
-c   otype     Overlay type
-c   iax       The axis number of interest
+c   lun       Handle of image
+c   pix3       Third axis pixel (channel) that we are displaying 
+c             this overlay on
+c   ofig      Overlay figure type
+c   otype     Overlay units  for each axis ('arcsec' etc)
 c   dsign     SIgn for dms axes. +/-1  
-c   c*        Axis descriptors
 c   nums      The array of numbers read from the overlay file
-c             starting with the first one to use here
-c   posoff    Offset to be added to the locations decoded from
+c             starting with the first one to use here.  These
+c             are in true coordinates such as those given by IMPOS
+c   off       Offset to be added to the locations decoded from
 c	      the text file and held in NUMS.  These are in the same
 c             units as OTYPE so no conversion is done.  Is ignored
 c             for RA and DEC because I am too lazy.
 c Output
-c   opos      Output location in pixels
-c   nnum      The number of numbers used from the NUMS array for
-c             this overlay location.  3 for HMS and DMS else 1
+c   opos      Output location in pixels for x and y
+c   np        This is the number of locations of the NUMS array used
+c             
 c--
 c-----------------------------------------------------------------------
-      double precision world
-      logical ok
+      include 'mirconst.h'
+      double precision win(3), wout(3)
+      character*6 typei(3), typeo(3)
+      integer ip, i
 c-----------------------------------------------------------------------
-      if (otype.eq.'hms') then
-        world = nums(1)*3600.0d0 + nums(2)*60.0d0 + nums(3)
-        nnum = 3
-      else if (otype.eq.'dms') then
-        if (dsign.eq.-1) then
-          world = -(abs(nums(1))*3600.d0 + nums(2)*60.d0 + nums(3))
+c
+c Prepare coordinates for conversion
+c
+      ip = 1
+      do i = 1, 2
+        if (otype(i).eq.'hms') then
+          win(i) = nums(ip) + nums(ip+1)/60.0d0 + nums(ip+2)/3600.0d0
+          win(i) = win(i) * dpi / 12.0d0
+          ip = ip + 3
+        else if (otype(i).eq.'dms') then
+          win(i) = abs(nums(ip)) + nums(ip+1)/60.d0 + 
+     +             nums(ip+2)/3600.0d0
+          win(i) = dsign(i) * abs(win(i)) * dpi / 180.0d0
+          ip = ip + 3
         else
-          world = nums(1)*3600.d0 + nums(2)*60.d0 + nums(3)
+          win(i) = nums(ip) + off(i)
+          ip = ip + 1
         end if
-        nnum = 3
-      else
-        world = nums(1) + posoff
-        nnum = 1
+c
+        typei(i) = otype(i)
+        typeo(i) = 'abspix'
+      end do
+      typei(3) = 'abspix'
+      typeo(3) = 'abspix'
+      win(3) = pix3
+c
+c Convert location to absolute pixels
+c
+      call w2wco (lun, 3, typei, ' ', win, typeo, ' ', wout)
+      opos(1) = wout(1)
+      opos(2) = wout(2)
+c
+c If this overlay is a 'line' type, there is another location to do
+c 
+      if (ofig.eq.'line') then
+        do i = 1, 2
+          if (typei(i).eq.'hms') then
+            win(i) = nums(ip) + nums(ip+1)/60.0d0 + nums(ip+2)/3600.0d0
+            win(i) = win(i) * dpi / 12.0d0
+            ip = ip + 3
+          else if (typei(i).eq.'dms') then
+            win(i) = abs(nums(ip)) + nums(ip+1)/60.d0 + 
+     +               nums(ip+2)/3600.0d0
+            win(i) = dsign(i) * abs(win(i)) * dpi / 180.0d0
+            ip = ip + 3
+          else
+            win(i) = nums(ip) + off(i)
+            ip = ip + 1
+          end if
+        end do
+c
+c Convert location to absolute pixels
+c
+        call w2wco (lun, 3, typei, ' ', win, typeo, ' ', wout)
+        opos(3) = wout(1)
+        opos(4) = wout(2)
       end if
-      call w2pixcg (world, iax, otype, naxis, crval, crpix, 
-     +              cdelt, ctype, opos, ok)
+      np = ip - 1
 c
       end
 c
@@ -2108,12 +2163,12 @@ c
 c
 c Convert to binned subimage pixel
 c
-        p = (p-0.5d0)/dble(bin) + 0.5d0
+        if (bin.ne.1) p = (p-0.5d0)/dble(bin) + 0.5d0
       else if (id.eq.2) then
 c
 c Convert to unbinned subimage pixel
 c
-        p = dble(bin)*(p-0.5d0) + 0.5d0
+        if (bin.ne.1) p = dble(bin)*(p-0.5d0) + 0.5d0
 c
 c Convert to full image unbinned pixel
 c
@@ -2248,10 +2303,10 @@ c& nebk
 c: plotting
 c+
       subroutine readimcg (init, mask, blank, lun, ibin, jbin, krng, 
-     +                     blc, trc, norm, nimage, image, blanks)
+     +                     blc, trc, norm, nimage, image, blanks, dmm)
 c
       implicit none
-      real blank, image(*)
+      real blank, image(*), dmm(2)
       integer nimage(*), lun, ibin(2), jbin(2), krng(2), blc(3),
      +  trc(3)
       logical blanks, mask, init, norm
@@ -2279,6 +2334,8 @@ c                that were averaged together at each output pixel
 c                location.  Will be zero for blanked pixels
 c    image       Output image (binned, normalized)
 c    blanks      True if blanks in output image
+c  Input/output
+c    dmm         Data min and max so far
 c
 c--
 c------------------------------------------------------------------------
@@ -2388,10 +2445,45 @@ c
       do i = 1, no
         if (nimage(i).ne.0) then
           if (norm) image(i) = image(i) / real(nimage(i))
+          dmm(1) = min(dmm(1),image(i))
+          dmm(2) = max(dmm(2),image(i))
         else
           blanks = .true.
           image(i) = blank
         end if
+      end do
+c
+      end
+c
+c* savdesCG --  Save a copy of the axis descriptors
+c& nebk
+c: plotting
+c+
+      subroutine savdescg (naxis, ctype, crval, crpix, cdelt, sctype,
+     +                   scrval, scrpix, scdelt)
+c
+      implicit none
+      integer naxis
+      double precision crval(naxis), cdelt(naxis), crpix(naxis),
+     +  scrval(naxis), scdelt(naxis), scrpix(naxis)
+      character*(*) ctype(naxis), sctype(naxis)
+c
+c  Make a copy of the axis descriptors 
+c
+c  Input
+c    naxis     Number of axes
+c    c*        Axis descriptors
+c  Output
+c    cs*       Copy of axis descriptors
+c--
+c-----------------------------------------------------------------------
+      integer i
+c-----------------------------------------------------------------------
+      do i = 1, naxis
+        sctype(i) = ctype(i)
+        scrval(i) = crval(i)
+        scdelt(i) = cdelt(i)
+        scrpix(i) = crpix(i)
       end do
 c
       end
@@ -2666,38 +2758,61 @@ c* wedginCG -- See if grey scale wedges are inside or outside subplots
 c& nebk
 c: plotting
 c+
-      subroutine wedgincg (dowedge, nx, ny, npixr, trfun, wedcod)
+      subroutine wedgincg (hard, dofid, dowedge, nx, ny, npixr, 
+     +                     trfun, wedcod)
 c
       implicit none
-      logical dowedge
+      logical dowedge, dofid
       integer nx, ny, npixr, wedcod
-      character trfun*3
+      character trfun*3, hard*3
 c
 c Work out whether the grey scale wedges are to be drawn inside
 c or outside the subplots, and whether there will be one or many
 c  
 c Input
+c  hard      'YES' if writing to hardcopy PGPLOT device
+c  dofid     True if user has requested OFM fiddle option
 c  dowedge   True if user requests wedge
 c  nx,ny     Number of subplots in x and y directions
 c  npixr     NUmber of grey scale "range" groups given by user
 c  trfun     Transfer function type of first "range" group
 c Output
-c wedcod     1 -> one wedge to right of all subplots
+c wedcod     0 -> No wedges
+c            1 -> one wedge to right of all subplots
 c            2 -> one wedge to right per subplot
 c            3 -> one wedge per subplot inside subplot
 c--
 c-----------------------------------------------------------------------
-      if (dowedge) then
-        if (nx*ny.eq.1 .or. (npixr.eq.1 .and. trfun.ne.'heq')) then
-          wedcod = 1
-        else if (ny.gt.1.and.nx.eq.1 .and. ((npixr.eq.1 .and. 
-     +           trfun.eq.'heq') .or. npixr.gt.1)) then
-          wedcod = 2
-        else 
-          wedcod = 3
-        end if
-      else    
+      if (.not.dowedge) then
         wedcod = 0
+      else      
+        if (hard.eq.'YES') then
+          if (nx*ny.eq.1) then
+            wedcod = 1   
+          else
+            if (dofid) then
+              wedcod = 3
+            else
+              if (npixr.eq.1 .and. trfun.ne.'heq') then
+                wedcod = 1
+              else if (ny.gt.1.and.nx.eq.1 .and. ((npixr.eq.1 .and. 
+     +                 trfun.eq.'heq') .or. npixr.gt.1)) then
+                wedcod = 2
+              else
+                wedcod = 3
+              end if
+            end if
+          end if
+        else
+          if (nx*ny.eq.1 .or. (npixr.eq.1 .and. trfun.ne.'heq')) then
+              wedcod = 1
+          else if (ny.gt.1.and.nx.eq.1 .and. ((npixr.eq.1 .and. 
+     +             trfun.eq.'heq') .or. npixr.gt.1)) then
+            wedcod = 2
+          else 
+            wedcod = 3
+          end if
+        end if
       end if
 c
       end
@@ -2802,8 +2917,10 @@ c
 c Tell user what happened
 c
       if (fail) then
-        call bug ('f', 'Can''t adjust spatial window to contain'//
-     +            ' an integral number of bins')
+        write (aline, 50) axis
+50      format ('Can''t adjust window to contain',
+     +          ' integral no. of bins on axis ', i1)
+        call bug ('f', aline)
       else if (new) then
         write (aline, 100) axis, lo, hi, blc, trc, bin(2)
 100     format ('Adjusted axis ', i1, ' window from ', i4, ',', i4,
