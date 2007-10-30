@@ -1,0 +1,29 @@
+31oct97 rjs	uvspec.for -- Use colours in the plot label.
+02nov97 rjs	tin.for,tin.h -- Added a few options, settable in the tinopen
+		call.
+02nov97	rjs	uvgen.for -- Change in call sequence to tinpoen.
+10nov97 rjs	impoly.for -- Handle 2d images correctly. Somewhat better
+		documentation.
+10nov97 rjs	cosubs.for -- Make ctypeco robust to lack of ctype value.
+10nov97 rjs	co.for -- The routines use pixel coordinates as the 
+		physical coordinates if there is nothing better already there.
+10nov97 rjs	cgpgsubs.for -- Make it more robust to things missing from
+		the header.
+12nov97 rjs	imhist.for -- Add 's' flag to boxset call.
+26nov97 bmg	psrplt.for -- Added log keyword.
+28nov97 rjs	hio.c -- Make it work for text files missing a final newline.
+28nov97 rjs	gpnorm.for -- Add more decimal points to the printout.
+28nov97 rjs	mosmem.for,mossdi.for -- Increase max number of boxes.
+03dec97 rjs	uvspec.for -- Put back labels that disappeared 5 weeks ago.
+05dec97 rjs	convol.for -- Make sure the output is always the same size as
+		the input.
+09dec97 rjs	uvflag.for -- Make buffer to give "antennas used" message
+		longer.
+10dec97 rjs	uvgn.for -- Check that the gain table size looks OK.
+11dec97 rjs	uvplanet.for -- New task. Perform fiddles on planetary
+		visibility data.
+11dec97 rjs	gaupar.for -- Support units of Kelvin.
+11dec97 rjs	imgen.for -- Make totflux option consistent when there
+		is an input image.
+ 
+See $MIR/changes.txt for a history of earlier changes.

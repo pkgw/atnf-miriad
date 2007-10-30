@@ -12,8 +12,8 @@ c	    the dataset. uvplanet recognises planets by their source name,
 c	    and knows their orientations as a function of time.
 c	  - Apply a time-varying phase shift to track the object.
 c	  - Subtract a thermal disk.
-c	  - Subtract background sources, accounting for a moving phase centre.
-c
+c	  - Subtract background sources (which will move relative to the phase
+c	    centre).
 c@ vis
 c	The name of the input uv datasets. Several can be given
 c	Wildcards are supported. No default.
@@ -22,22 +22,12 @@ c	The name of the output uv data-set. There is no default name.
 c@ select
 c	The normal uv selection commands. The default is to select everything.
 c@ pltb
-c	Parameters for planets only, which determine model for the planetary
-c	disk to be subtracted off. It consists of one or two values. The
-c	first is the blackbody temperature of the disk, in Kelvin.
-c	The second is the limb darkening parameter. The limb darkening
-c	parameter is a value between 0 and 1. The apparent brightness of
-c	the disk falls off as cos(theta)**limb.
-c	uvplanet has built-in ephemerides and models of the planets which
-c	gives their apparent sizes and shapes.
-c	The default is 0 for both parameters (i.e. do not subtract off a disk).
+c	For planets only: Blackbody temperature of the disk to subtract off.
+c	Default is 0 (i.e. do not subtract off a disk).
 c@ options
 c	This gives extra processing options. Several options can be given,
 c	each separated by commas. They may be abbreviated to the minimum
 c	needed to avoid ambiguity. Possible options are:
-c	   replace     Replace the data with the blackbody disk and point
-c	               sources (the normal behaviour is to subtract the
-c	               blackbody disk and point sources).
 c	   magnetic    For Jupiter only: The magnetic axis is used to 
 c	               set planet orientation parameters. This overrides the
 c	               normal behaviour of using the spin axis.
@@ -49,15 +39,14 @@ c	   nocal       Do not apply the gains table.
 c	   nopass      Do not apply bandpass corrections.
 c	   nopol       Do not apply polarization corrections.
 c@ sources
-c	This gives the position and flux of point sources to be subtracted
+c	This gives the position and flux of sources to be subtracted
 c	from the visibility dataset. Many sources can be given. Each
 c	source is specified by three numbers:
 c	  ra dec flux
 c	The RA and DEC are in normal Miriad format, and the flux is in Jy.
 c@ pmotion
 c	This parameter allows phase shifts to be applied to the data to
-c	make the phase centre track the object of interest. Assuming that
-c	the object has significant proper motion, this can
+c	make the phase centre track the object of interest. This can
 c	correct for phase tracking errors (e.g. wrong ephemeris) or perhaps 
 c	no tracking at all. One or two tracking files can be given. The first
 c	file gives the centre of the object (as a function of time). The second
@@ -87,20 +76,8 @@ c	a given time. The time, ra and dec are in the normal Miriad formats.
 c	The times should be in increasing order. Linear interpolation
 c	is used to estimate positions between the given times.
 c
-c	A convenient way to develop this file is through the JPL ``Horizons''
-c	service. This is accessed through
-c
-c	  telnet ssd.jpl.nasa.gov 6775
-c
-c	Using a text reformating tool (e.g. PERL), the output from Horizons
-c	is readily converted to the format required by uvplanet.
-c	Documentation on the Horizons system is available from
-c
-c	  http://ssd.jpl.nasa.gov/horizons.html
-c
-c	The other possible format is the ``arcane'' format, which will be 
-c	expected if "options=arcane" is given. This format is provided for
-c	obscure historical support. It consists of 6 values per line, being
+c	The other possible format -- the arcane format, which will be expected 
+c	if "options=arcane" is given -- consists of 6 values per line, being
 c
 c	  start_time time ra dec dra ddec
 c
@@ -111,23 +88,18 @@ c	are used to estimate positions between given times.
 c--
 c  History:
 c    10dec97 rjs  Created from uvjup, which this generalised and supercedes.
-c    21jun99 rjs  Added options=replace.
-c    16jan01 rjs  Recompute uv coordinates and handle large shifts
-c	          correctly when shifting the source. Handle limb
-c		  darkening model.
-c    21jan01 rjs  Protect limb darkening calculation from the zero spacing.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mirconst.h'
 	integer MAXSCAN,MAXSRC
 	parameter(MAXSCAN=1024,MAXSRC=200)
 	character version*(*)
-	parameter(version='uvPlanet: version 1.0 21-Jan-01')
+	parameter(version='uvPlanet: version 1.0 10-Dec-97')
 c
 	character out*64,ltype*16,uvflags*16
-	real pltb,limb
+	real pltb
 	integer lIn,lOut
-	logical dojaxis,arcane,first,dorep
+	logical dojaxis,arcane,first
 	integer jscan,tscan
 	double precision jdata(6,MAXSCAN),tdata(6,MAXSCAN)
 	integer nsrc
@@ -144,10 +116,9 @@ c  Get the input parameters.
 c
 	call output(version)
 	call keyini
-	call GetOpt(dorep,dojaxis,arcane,uvflags)
+	call GetOpt(dojaxis,arcane,uvflags)
 	call uvDatInp('vis',uvflags)
 	call keyr('pltb',pltb,0.)
-	call keyr('pltb',limb,0.)
 	call keya('pmotion',jpath,' ')
 	jscan = 0
 	if(jpath.ne.' ')call pathload(jpath,jdata,jscan,MAXSCAN,arcane)
@@ -191,8 +162,8 @@ c
 c
 c  Do the work.
 c
-	  call Process(lIn,lOut,pltb,limb,dorep,dojaxis,
-     *	    tscan,tdata,jscan,jdata,sra,sdec,flux,nsrc)
+	  call Process(lIn,lOut,pltb,dojaxis,tscan,tdata,jscan,jdata,
+     *	    sra,sdec,flux,nsrc)
 c
 c  All said and done. Close up shop.
 c
@@ -203,10 +174,10 @@ c
 	call uvclose(lOut)
 	end
 c************************************************************************
-	subroutine GetOpt(dorep,dojaxis,arcane,uvflags)
+	subroutine GetOpt(dojaxis,arcane,uvflags)
 c
 	implicit none
-	logical dojaxis,arcane,dorep
+	logical dojaxis,arcane
 	character uvflags*(*)
 c
 c  Determine extra processing options.
@@ -215,17 +186,16 @@ c  Output:
 c    uvflags
 c------------------------------------------------------------------------
 	integer NOPTS
-	parameter(NOPTS=6)
+	parameter(NOPTS=5)
 	logical present(NOPTS)
 	character opts(NOPTS)*8
 c
 	data opts/'magnetic','nocal   ','nopol   ','nopass  ',
-     *		  'arcane  ','replace '/
+     *		  'arcane  '/
 c
 	call options('options',opts,present,NOPTS)
 	dojaxis = present(1)
 	arcane  = present(5)
-	dorep   = present(6)
 c
 c  Determine the flags to pass to the uvDat routines.
 c    d - Data selection.
@@ -241,13 +211,13 @@ c
 c
 	end
 c************************************************************************
-	subroutine Process(lIn,lOut,pltb,limb,dorep,dojaxis,
+	subroutine Process(lIn,lOut,pltb,dojaxis,
      *			tscan,tdata,jscan,jdata,sra,sdec,flux,nsrc)
 c
 	implicit none
 	integer lIn,lOut
-	logical dojaxis,dorep
-	real pltb,limb
+	logical dojaxis
+	real pltb
 	integer tscan,jscan,nsrc
 	double precision tdata(6,*),jdata(6,*),sra(*),sdec(*)
 	real flux(*)
@@ -260,29 +230,28 @@ c    lOut
 c    dojaxis	Write out the position angle related to the magnetic
 c		axis (not spin axis).
 c    pltb	Planet brightness temperature to subtract off.
-c    limb	Limb darkening parameter.
+c
 c------------------------------------------------------------------------
 	integer JUPITER
 	parameter(JUPITER=5)
 	include 'maxdim.h'
 	include 'mirconst.h'
-	integer nchan,i,j,npol,pol,itscan,ijscan,iplanet,vupd,ifail
+	integer nchan,i,j,npol,pol,itscan,ijscan,iplanet,vupd
 	double precision preamble(5),sub(3)
 	double precision lamIII,latitude,utc,tdb,uu,vv
-	double precision tra,tdec,jra,jdec
-	real a,b,disk,bmaj,bmin,bpa,cospa,sinpa,temp
-	real z,q,y
+	double precision tra,tdec,jra,jdec,dra,ddec
+	real a,b,disk,bmaj,bmin,bpa,cospa,sinpa
 	logical flags(MAXCHAN)
 	double precision freq(MAXCHAN),dist
 	complex data(MAXCHAN)
-	double precision x(2),lmn(3),theta0,uvw(3),uc(3),vc(3),wc(3)
+	double precision x(2),lmn(3),theta0
 	real theta
 	complex w
 	integer coObj
 c
 c  Externals.
 c
-	real j1xbyx,gamma
+	real j1xbyx
 	logical polspara,uvVarUpd
 	double precision deltime
 c
@@ -296,18 +265,13 @@ c
 c
 c  Read the first record.
 c
+	
 	call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
 c
 c  the default rest frame, if we are doing velocity recomputation
 c  and a rest frame has not been given.
 c
 	dowhile(nchan.gt.0)
-c
-	  if(dorep)then
-	    do i=1,nchan
-	      data(i) = 0
-	    enddo
-	  endif
 c
 c  Get planet name.
 c
@@ -324,6 +288,8 @@ c
 	  call uvputvri(lOut,'pol',pol,1)
 	  call VarCopy(lIn,lOut)
 c
+	  uu = preamble(1)
+	  vv = preamble(2)
 	  utc = preamble(4)
 	  if(iplanet.ne.0)then
 	    tdb = utc + deltime(utc,'tdb')
@@ -340,22 +306,10 @@ c
 	      call uvrdvrd(lIn,'ra',tra,0.d0)
 	      call uvrdvrd(lIn,'dec',tdec,0.d0)
 	    endif
-	    if(abs(jra-tra)+abs(jdec-tdec).gt.0)then
-	      call coRaDec(coObj,'NCP',tra,tdec)
-	      x(1) = jra
-	      x(2) = jdec
-	      call coLMN(coObj,'aw/aw',x,lmn)
-	      call Jupfix(preamble,freq,data,nchan,lmn)
-c
-	      call coGeom(coObj,'aw/aw',x,uc,vc,wc)
-	      uvw(1) = preamble(1)
-	      uvw(2) = preamble(2)
-	      uvw(3) = preamble(3)
-	      preamble(1) = uc(1)*uvw(1) + uc(2)*uvw(2) + uc(3)*uvw(3)
-	      preamble(2) = vc(1)*uvw(1) + vc(2)*uvw(2) + vc(3)*uvw(3)
-	      preamble(3) = wc(1)*uvw(1) + wc(2)*uvw(2) + wc(3)*uvw(3)
-	      call coFin(coObj)
-	    endif
+	    dra  = (jra - tra ) * cos(jdec)
+	    ddec = jdec - tdec
+	    if(abs(dra)+abs(ddec).gt.0)
+     *		call Jupfix(preamble,freq,data,nchan,dra,ddec)
 	    call uvputvrd(lOut,'ra',jra,1)
 	    call uvputvrd(lOut,'dec',jdec,1)
 	  else
@@ -382,39 +336,24 @@ c
 	    enddo
 	    call coFin(coObj)
 	  endif
+	    
 c
 c  Subract the disk response if appropriate.
 c
 	  if(pltb.gt.0.and.polspara(pol).and.iplanet.ne.0)then
-	    uu = preamble(1)
-	    vv = preamble(2)
 	    cospa = cos(bpa)
 	    sinpa = sin(bpa)
 	    b = PI * sqrt((bmaj*(uu*cospa-vv*sinpa))**2
      *                  + (bmin*(uu*sinpa+vv*cospa))**2)
 	    a = 2 * pltb * (KMKS*1e18)/(CMKS*CMKS*1e-26)
      *	      * 2 * PI/4 * bmaj*bmin
-	    do i=1,nchan	
-	      if(limb.gt.0.and.b.ge.0)then
-                z=real(b*freq(i))
-                q=1+(limb/2.0)
-                call besj(z,q,1,y,ifail)
-	        temp = gamma(q+1.0)
-                disk = (a/2.0)*freq(i)*freq(i)*temp
-     *               * ((0.5*z)**(-1.0*q))*y
-	      else
-	        disk = a*freq(i)*freq(i)*j1xbyx(real(b*freq(i)))
-	      endif
+	    do i=1,nchan
+	      disk = a*freq(i)*freq(i)*j1xbyx(real(b*freq(i)))
 	      data(i) = data(i) - disk
 	    enddo
 	  endif
 	  if(pltb.ne.0.and.iplanet.ne.0)call uvputvrr(lOut,'pltb',0.,1)
-c
-	  if(dorep)then
-	    do i=1,nchan
-	      data(i) = -data(i)
-	    enddo
-	  endif
+	  
 c
 c  Compute the position angle of the magnetic axis.
 c
@@ -582,11 +521,11 @@ c
 c
 	end
 c************************************************************************
-	subroutine Jupfix(uvw,freq,data,nchan,lmn)
+	subroutine Jupfix(uv,freq,data,nchan,dra,ddec)
 c
 	implicit none
 	integer nchan
-	double precision uvw(3),lmn(3),freq(nchan)
+	double precision uv(2),dra,ddec,freq(nchan)
 	complex data(nchan)
 c
 c  Correct for a error in the phasing of the data. Use the small
@@ -597,8 +536,8 @@ c    lIn	Handle of the input data-set.
 c    nchan	Number of channels.
 c    uv		UV coordinates, in nanosec.
 c    freq	Sky frequency, in GHz.
-c    lmn	Direction cosines of Jupiter reletive to the telescope
-c		position.
+c    dra,ddec	Shift to apply in radians.
+c		True Position = Incorrect_Position + dra/ddec
 c  Input/Output:
 c    data	Visibility data.
 c------------------------------------------------------------------------
@@ -608,9 +547,7 @@ c
 	real theta,theta0
 	complex w
 c
-	theta0 = -2*dpi*( uvw(1)*lmn(1) + 
-     *			  uvw(2)*lmn(2) + 
-     *			  uvw(3)*(lmn(3)-1) )
+	theta0 = -2*dpi*( uv(1)*dra + uv(2)*ddec )
 c
 	do i=1,nchan
 	  theta = theta0 * freq(i)
