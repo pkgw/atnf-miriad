@@ -3340,3 +3340,5 @@ and in a way to be consistent with all the other changes happening.
 24sep98 rjs	obspar.for -- Added VLA elevation limit.
 25sep98 rjs	demos.for -- Less fussy about freq axis for single-plane datasets.
 25sep98 rjs	fits.for -- Correct handling of OBSRA and OBSDEC in op=xyin
+28sep98 rjs	calplot.for -- Print out flux at central freq.
+30sep98 rjs	tangle.for -- Allow plus signs in angles.
