@@ -53,7 +53,6 @@ c	Extra processing options. Several can be given, separated by commas.
 c	Only the minimum characters to avoid ambiguity is needed.
 c	  noscale   Produce a cube where the RA/DEC cell size does not scale
 c	            with frequency/velocity.
-c	  norotate  Produce an output without any sky/image rotation.
 c	  offset    The coordinate system described by the template or
 c	            descriptors is modified (shift and expansion/contraction)
 c	            by an integral number of pixels so that it completely
@@ -104,8 +103,6 @@ c		   axis conversion.
 c    23jul97 rjs   Add warning about blanked pixels. Add pbtype
 c    05aug97 rjs   Messages about equinox fiddles.
 c    20nov98 rjs   Handle and eliminate sky rotation.
-c    25nov98 rjs   Better handling of sky rotation parameter.
-c    18may99 rjs   Handle wrap arounds in the offsets.
 c
 c To do:
 c----------------------------------------------------------------------
@@ -114,15 +111,14 @@ c----------------------------------------------------------------------
 	include 'mem.h'
 c
 	character version*(*)
-	parameter(version='Regrid: version 1.0 18-May-99')
+	parameter(version='Regrid: version 1.0 20-Nov-98')
 c
 	character in*64,out*64,tin*64,ctype*16,cellscal*12,proj*3
 	character line*64
 	double precision desc(4,MAXNAX),crpix,crval,cdelt,epoch1,epoch2
-	double precision llrot
-	logical noscale,dooff,doepo,dogaleq,nearest,norot
+	logical noscale,dooff,doepo,dogaleq,nearest
 	integer ndesc,nax,naxis,nin(MAXNAX),nout(MAXNAX),ntin(MAXNAX)
-	integer i,k,n,lIn,lOut,lTmp,cOut,axes(MAXNAX),ilat
+	integer i,k,n,lIn,lOut,lTmp,cOut,axes(MAXNAX)
 	integer GridSize,gnx,gny,minv(3),maxv(3),order(3)
 	integer nBuf(3),off(3),minc(3),maxc(3),BufSize,rBuf,lBuf
 	integer offset,nxy,nblank
@@ -153,7 +149,7 @@ c
 	call keyr('tol',tol,0.05)
 	if(tol.le.0.or.tol.ge.0.5)
      *	  call bug('f','Invalid value for the tol parameter')
-	call getopt(noscale,dooff,doepo,dogaleq,nearest,norot)
+	call getopt(noscale,dooff,doepo,dogaleq,nearest)
 	call keymatch('project',NPROJS,projs,1,proj,nproj)
 	if(nproj.eq.0)proj = ' '
 	call keyfin
@@ -187,6 +183,7 @@ c
      *	  'Inconsistent number of axes descriptors given')
 	call coInit(lIn)
 	call coDup(lIn,cOut)
+	call coSetd(cOut,'llrot',0.d0)
 c
 c  Set up the output size/coordinate system given template or descriptors.
 c
@@ -195,17 +192,12 @@ c
 	  call rdhdi(lTmp,'naxis',n,0)
 	  n = min(n,MAXNAX)
 	  call coInit(lTmp)
-	  call coFindAx(lTmp,'latitude',ilat)
 	  do i=1,nax
 	    if(axes(i).gt.n)call bug('f',
      *		'Requested axis does not exist in the template')
 	    nout(axes(i)) = ntin(axes(i))
 	    call coAxGet(lTmp,axes(i),ctype,crpix,crval,cdelt)
 	    call coAxSet(cOut,axes(i),ctype,crpix,crval,cdelt)
-	    if(axes(i).eq.ilat)then
-	      call coGetd(lTmp,'llrot',llrot)
-	      call coSetd(cOut,'llrot',llrot)
-	    endif
 	  enddo
 	  call coGetd(lTmp,'epoch',epoch1)
 	  call coSetd(cOut,'epoch',epoch1)
@@ -228,7 +220,6 @@ c
 c  Set that it does not scale, if requested.
 c
 	if(noscale)call coSeta(cOut,'cellscal','CONSTANT')
-	if(norot)  call coSetd(cOut,'llrot',0.d0)
 	if(proj.ne.' ')call coPrjSet(cOut,proj)
 	call coReInit(cOut)
 c
@@ -240,7 +231,6 @@ c
 c
 c  Check that we can do this.
 c
-	if(nout(1).gt.MAXDIM)call bug('f','Output too big for me')
 	do k=4,naxis
 	  if(nOut(k).gt.1)call bug('f','Cannot handle hypercubes')
 	enddo
@@ -356,18 +346,18 @@ c
 c
 	end
 c************************************************************************
-	subroutine getopt(noscale,offset,doepo,dogaleq,nearest,norot)
+	subroutine getopt(noscale,offset,doepo,dogaleq,nearest)
 c
 	implicit none
-	logical noscale,offset,doepo,dogaleq,nearest,norot
+	logical noscale,offset,doepo,dogaleq,nearest
 c
 c------------------------------------------------------------------------
 	integer NOPTS
-	parameter(NOPTS=6)
+	parameter(NOPTS=5)
 	character opts(NOPTS)*8
 	logical present(NOPTS)
 	data opts/'noscale ','offset  ','equisw  ','galeqsw ',
-     *		  'nearest ','norotate'/
+     *		  'nearest '/
 c
 	call options('options',opts,present,NOPTS)
 	noscale = present(1)
@@ -375,7 +365,6 @@ c
 	doepo   = present(3)
 	dogaleq = present(4)
 	nearest = present(5)
-	norot   = present(6)
 	end
 c************************************************************************
 	subroutine CoordSw(lOut,doepo,dogaleq)
@@ -464,12 +453,11 @@ c
 	integer lIn,lOut,nIn(3),nOut(3)
 c
 c------------------------------------------------------------------------
-	include 'maxdim.h'
 	double precision tol
 	parameter(tol=0.49)
-	double precision In(3),Out(3,3,3,3),crpix
-	integer minv(3),maxv(3),i,j,k,l
-	logical weird(3),warned
+	double precision In(3),Out(3),crpix
+	integer minv(3),maxv(3),i,j,k
+	logical first
 c
 c  Externals.
 c
@@ -477,64 +465,36 @@ c
 c
 	call pcvtInit(lIn,lOut)
 c
-	do k=1,3
-	  do j=1,3
-	    do i=1,3
-	      In(1) = 1 + 0.5*(i-1)*(nIn(1)-1)
-	      In(2) = 1 + 0.5*(j-1)*(nIn(2)-1)
-	      In(3) = 1 + 0.5*(k-1)*(nIn(3)-1)
-	      call pcvt(in,out(1,i,j,k),3)
+	first = .true.
+	do k=1,nIn(3),max(nIn(3)-1,1)
+	  do j=1,nIn(2),max(nIn(2)-1,1)
+	    do i=1,nIn(1),max(nIn(1)-1,1)
+	      In(1) = i
+	      In(2) = j
+	      In(3) = k
+	      call pcvt(in,out,3)
+	      if(first)then
+		minv(1) = nint(out(1)-tol)
+		maxv(1) = nint(out(1)+tol)
+		minv(2) = nint(out(2)-tol)
+		maxv(2) = nint(out(2)+tol)
+		minv(3) = nint(out(3)-tol)
+		maxv(3) = nint(out(3)+tol)
+		first = .false.
+	      else
+		minv(1) = min(minv(1),nint(Out(1)-tol))
+		maxv(1) = max(maxv(1),nint(Out(1)+tol))
+		minv(2) = min(minv(2),nint(Out(2)-tol))
+		maxv(2) = max(maxv(2),nint(Out(2)+tol))
+		minv(3) = min(minv(3),nint(Out(3)-tol))
+		maxv(3) = max(maxv(3),nint(Out(3)+tol))
+	      endif
 	    enddo
 	  enddo
 	enddo
 c
 	do i=1,3
-	  weird(i) = .false.
-	  minv(i) = nint(Out(i,1,1,1)-0.49)
-	  maxv(i) = nint(Out(i,1,1,1)+0.49)
-	enddo
-c
-c  Determine the min and max pixels that we are interested in.
-c
-	do k=1,3
-	  do j=1,3
-	    do i=1,3
-	      do l=1,3
-		minv(l) = min(minv(l),nint(Out(l,i,j,k)-0.49))
-		maxv(l) = max(maxv(l),nint(Out(l,i,j,k)+0.49))
-	      enddo
-	    enddo
-	  enddo
-	enddo
-c
-c  Look for weird twists or wrap arounds.
-c
-	do j=1,3
-	 do i=1,3
-	   weird(1) = weird(1).or.
-     *	    (Out(1,3,i,j)-Out(1,2,i,j))*(Out(1,2,i,j)-Out(1,1,i,j)).lt.0
-	   weird(2) = weird(2).or.
-     *	    (Out(2,i,3,j)-Out(2,i,2,j))*(Out(2,i,2,j)-Out(2,i,1,j)).lt.0
-	   weird(3) = weird(3).or.
-     *	    (Out(3,i,j,3)-Out(3,i,j,2))*(Out(3,i,j,2)-Out(3,i,j,1)).lt.0
-	 enddo
-	enddo
-c
-c  Set the template ranges. If its weird, just go with the template range.
-c
-	warned = .false.
-	do i=1,3
-	  if(weird(i))then
-	    minv(i) = min(1,minv(i))
-	    maxv(i) = max(nOut(i),maxv(i))
-	  endif
 	  nOut(i) = maxv(i) - minv(i) + 1
-	  if(nout(i).gt.MAXDIM)then
-	    nout(i) = MAXDIM
-	    if(.not.warned)call bug('w',
-     *	      'Output image too large -- being truncated')
-	    warned = .true.
-	  endif
 	  call coGetd(lOut,'crpix'//itoaf(i),crpix)
 	  crpix = crpix - minv(i) + 1
 	  call coSetd(lOut,'crpix'//itoaf(i),crpix)

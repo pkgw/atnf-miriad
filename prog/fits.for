@@ -290,9 +290,12 @@ c    rjs  19-aug-98  Added options=lefty and made the uv writer check obspar
 c		     for observatory latitude/longitude if it was missing
 c		     from the vis dataset.
 c    pjt  15-sep-98  Recognise galactic and ecliptic coordinates the right way
+c    rjs  25-sep-98  Correct handling of OBSRA and OBSDEC in op=xyin.
+c    rjs  27-oct-98  Check in CD keyword for image pixel increment.
+c    rjs  20-nov-98  Better handling of some projections and rotation.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Fits: version 1.1 15-sep-98')
+	parameter(version='Fits: version 1.1 20-Nov-98')
 	character in*128,out*128,op*8,uvdatop*12
 	integer velsys
 	real altrpix,altrval
@@ -3115,12 +3118,15 @@ c------------------------------------------------------------------------
 	integer i,polcode,l,nx,ny
 	character num*2,ctype*32,bunit*32,types(5)*25,btype*32
 	character telescop*16,rdate*32,atemp*16,observer*16,cellscal*16
-	character object*32,pbtype*16
+	character object*32,pbtype*16,keyw*8
 	real bmaj,bmin,bpa,epoch,equinox,rms,vobs,pbfwhm
 	double precision cdelt,crota,crval,crpix,scale
-	double precision restfreq,obsra,obsdec,dtemp
-c	real xshift,yshift
-	logical differ,ok,ew,ewdone
+	double precision restfreq,obsra,obsdec,dtemp,cdelta,cdeltb
+	logical differ,ok,rotok,rotted
+c	logical ew,ewdone
+	double precision dec,dra
+	character nra*2
+	logical rra,fdec
 c
 c  Externals.
 c
@@ -3148,20 +3154,31 @@ c
 c
 	call fitrdhda(lu,'BUNIT',bunit,' ')
 	call fitrdhda(lu,'BTYPE',btype,' ')
+	rotted = .false.
 	differ = .false.
-	ewdone = .false.
+c	ewdone = .false.
+	rra = .false.
+	fdec = .false.
 	nx = 0
 	ny = 0
 	do i=1,naxis
 	  ok = .true.
 	  num = itoaf(i)
+c
+c  To cope with IRAF images, look in CDi_i, CDiiijjj and CDELTi for the
+c  increment.
+c
+	  keyw = 'CD'//num
+	  l = len1(keyw)
+	  keyw(l+1:) = '_'//num
+	  call fitrdhdd(lu,keyw,cdelta,1.d0)
+	  write(keyw,'(a,i3.3,i3.3)')'CD',i,i
+	  call fitrdhdd(lu,keyw,cdeltb,cdelta)
+	  call fitrdhdd(lu,'CDELT'//num,cdelt,cdeltb)
 	  call fitrdhda(lu,'CTYPE'//num,ctype,' ')
-	  call fitrdhdd(lu,'CDELT'//num,cdelt,1.d0)
 	  call fitrdhdd(lu,'CROTA'//num,crota,0.d0)
 	  call fitrdhdd(lu,'CRPIX'//num,crpix,1.d0)
 	  call fitrdhdd(lu,'CRVAL'//num,crval,0.d0)
-	  if(abs(crota).gt.0.001)call bug('w',
-     *	    'Coordinate axis rotations not supported')
 c
 	  l = len1(ctype)
 	  dowhile(l.gt.0.and.ctype(l:l).eq.'-')
@@ -3170,10 +3187,12 @@ c
 	  enddo
 	  if(ctype.eq.' ')then
 	    if(i.eq.1)then
-	      ctype = 'RA---SIN'
+	      ctype = 'RA---CAR'
 	    else if(i.eq.2)then
-	      ctype = 'DEC--SIN'
+	      ctype = 'DEC--CAR'
 	    endif
+	  else if (ctype.eq.'DEC')then
+	    ctype = 'DEC--CAR'
 	  else if (ctype.eq.'LL') then
             ctype= 'RA---SIN'
             call bug ('w', 'Converting LL to RA---SIN')
@@ -3182,16 +3201,36 @@ c
             call bug ('w', 'Converting MM to DEC--SIN')
           endif
 c
-	  if(ctype(1:2).eq.'RA')then
+	  rotok = .false.
+c
+c  Handle the RA axis.
+c
+	  if(ctype.eq.'RA'.or.ctype(1:3).eq.'RA-')then
 	    scale = pi/180d0
+	    rotok = .true.
 	    call fitrdhdd(lu,'OBSRA',obsra,crval)
 	    differ = differ.or.(abs(obsra-crval).gt.abs(cdelt))
 	    call fitrdhdi(lu,'NAXIS'//num,nx,0)
-	  else if(ctype(1:3).eq.'DEC')then
+c
+	    if(ctype.eq.'RA')then
+	      rra = .true.
+	      dra = scale*cdelt
+	      nra = num
+	    endif
+c
+c  Handle the DEC axis.
+c
+	  else if(ctype.eq.'DEC'.or.ctype(1:4).eq.'DEC-')then
 	    scale = pi/180d0
+	    rotok = .true.
 	    call fitrdhdd(lu,'OBSDEC',obsdec,crval) 
 	    differ = differ.or.(abs(obsdec-crval).gt.abs(cdelt))
 	    call fitrdhdi(lu,'NAXIS'//num,ny,0)
+	    fdec = .true.
+	    dec = scale*crval
+c
+c  Handle other angular axes.
+c
 	  else if(ctype.eq.'ANGLE')then
 	    scale = pi/180d0
 	  else if(ctype(1:4).eq.'GLON'.or.
@@ -3199,6 +3238,10 @@ c
      *		  ctype(1:4).eq.'ELON'.or.
      *		  ctype(1:4).eq.'ELAT')then
 	    scale = pi/180.
+	    rotok = .true.
+c
+c  Handle velocity and frequency axes.
+c
 	  else if(ctype(1:4).eq.'VELO'.or.ctype(1:4).eq.'FELO')then
 	    scale = 1d-3
 	  else if(ctype(1:4).eq.'FREQ')then
@@ -3219,24 +3262,44 @@ c
 c  If there is a "SIN" projection code, and the telescope is an
 c  EW one, convert the projection to NCP (after giving a message).
 c
-	  if(ctype(5:8).eq.'-SIN')then
-	    if(.not.ewdone)then
-	      ewdone = .true.
-	      ew = telescop.ne.' '
-	      if(ew)call obspar(telescop,'ew',dtemp,ew)
-	      if(ew) ew = dtemp.gt.0
-	      if(ew)call bug('w',
-     *		'Changing projections to NCP for east-west telescope')
-	    endif
-	    if(ew)ctype(5:8) = '-NCP'
-	  endif
+c	  if(ctype.eq.'RA---SIN'.or.ctype.eq.'DEC--SIN')then
+c	    if(.not.ewdone)then
+c	      ewdone = .true.
+c	      ew = telescop.ne.' '
+c	      if(ew)call obspar(telescop,'ew',dtemp,ew)
+c	      if(ew) ew = dtemp.gt.0
+c	      if(ew)call bug('w',
+c     *		'Changing projections to NCP for east-west telescope')
+c	    endif
+c	    if(ew)ctype(5:8) = '-NCP'
+c	  endif
 	  if(ok)then
 	    call wrhdd(tno,'cdelt'//num,scale*cdelt)
 	    call wrhdd(tno,'crpix'//num,crpix)
 	    call wrhdd(tno,'crval'//num,scale*crval)
 	    if(ctype.ne.' ') call wrhda(tno,'ctype'//num,ctype)
+c
+c  Store rotation.
+c
+	    if(abs(crota).gt.0.001)then
+	      if(rotok.and..not.rotted)then
+	        call wrhdd(tno,'llrot',DPI/180.d0*crota)
+		call bug('w','This image has a sky rotation')
+		call bug('w',
+     *		  'Sky rotations are poorly supported by Miriad')
+		rotted = .true.
+	      else
+	        call bug('w','Rotation not supported for axis '//ctype)
+	      endif
+	    endif
 	  endif
 	enddo
+c
+	if(rra.and.fdec)then
+	  dra = dra*cos(dec)
+	  call wrhda(tno,'ctype'//nra,'RA---CAR')
+	  call wrhdd(tno,'cdelt'//nra,dra)
+	endif
 c
 	call fitrdhdr(lu,'rms',rms,0.)
 	if(rms.gt.0)call wrhdr(tno,'rms',rms)
@@ -3244,14 +3307,14 @@ c
 	atemp = telescop
 	if(pbfwhm.ne.0)call pbEncode(atemp,'gaus',PI/180/3600*pbfwhm)
 	call fitrdhda(lu,'pbtype',pbtype,atemp)
-	if(atemp.ne.telescop)call wrhda(tno,'pbtype',pbtype)
+	if(pbtype.ne.telescop)call wrhda(tno,'pbtype',pbtype)
 c
 	if(differ.and.nx.gt.0.and.ny.gt.0)then
           call output('Phase and pointing centers differ ...'//
      *          ' saving pointing information')
           call mosInit(nx,ny)
 	  if(rms.le.0)rms = 1
-          call mosSet(1,obsra,obsdec,rms,pbtype)
+          call mosSet(1,PI/180*obsra,PI/180*obsdec,rms,pbtype)
           call mosSave(tno)
   	endif
 c
@@ -3555,23 +3618,22 @@ c
 	  num = itoaf(i)
 	  call rdhda(tno,'ctype'//num,ctype,' ')
 	  call rdhdr(tno,'cdelt'//num,cdelt,1.)
-	  call rdhdr(tno,'crota'//num,crota,0.)
 	  call rdhdr(tno,'crpix'//num,crpix,1.)
 	  call rdhdd(tno,'crval'//num,crval,0.d0)
 c
 c  Determine scale factor.
 c
-	  if(ctype(1:5).eq.'RA---')then
+	  if(ctype(1:5).eq.'RA---'.or.
+     *	     ctype(1:5).eq.'DEC--'.or.
+     *	     ctype(1:5).eq.'GLON-'.or.
+     *	     ctype(1:5).eq.'GLAT-'.or.
+     *	     ctype(1:5).eq.'ELON-'.or.
+     *	     ctype(1:5).eq.'ELAT-')then
 	    scale = 180.d0/DPI
-	  else if(ctype(1:5).eq.'DEC--')then
-	    scale = 180.d0/DPI
+	    call rdhdr(tno,'llrot',crota,0.0)
+	    if(crota.ne.0)call fitwrhdr(lu,'CROTA'//num,180.0/PI*crota)
 	  else if(ctype.eq.'ANGLE')then
 	    scale =180.d0/DPI
-	  else if(ctype(1:5).eq.'GLON-'.or.
-     *		  ctype(1:5).eq.'GLAT-'.or.
-     *		  ctype(1:5).eq.'ELON-'.or.
-     *		  ctype(1:5).eq.'ELAT-')then
-	    scale = 180.d0/DPI
 	  else if(ctype(1:4).eq.'FREQ')then
 	    scale = 1d9
 	  else if(ctype(1:4).eq.'VELO'.or.ctype(1:4).eq.'FELO')then
@@ -3580,7 +3642,6 @@ c
 	    scale = 1.
 	  endif
 	  call fitwrhdd(lu,'CDELT'//num,scale*cdelt)
-	  call fitwrhdr(lu,'CROTA'//num,crota)
 	  call fitwrhdr(lu,'CRPIX'//num,crpix)
 	  call fitwrhdd(lu,'CRVAL'//num,scale*crval)
 	  if(ctype.ne.' ')call fitwrhda(lu,'CTYPE'//num,ctype)
