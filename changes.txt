@@ -3601,3 +3601,12 @@ and in a way to be consistent with all the other changes happening.
             	             place.  grrr.
 28jul00 rjs	select.for -- Change on 16-Jul was buggy and could give spurious
 		error messages ... correct it.
+*********************************** 4aug00 Sent changes to BIMA
+07aug00 rjs	zapchan.for,vblank.for,uvputhd.for -- Updated from BIMA.
+14aug00 rjs	mfclean.for -- Added output log file.
+14aug00 rjs	model.for -- Re-include external sources.
+25aug00 nebk    imrm.for -- bump to 20 images.  subroutine chkdes should not
+                  be checking cdelt/crpix on frequency axis
+28aug00 rjs	clean.for - Increase max complexity of region-of-interest.
+05sep00 rjs	uvedit.for -- Change some code to double precision to avoid
+		rounding problem.
