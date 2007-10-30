@@ -14,26 +14,20 @@ c@ interval
 c	The time averaging interval, in minutes. The default is 10 minutes.
 c@ options
 c	  vector  Do vector averaging of the gain amplitudes and
-c		  phases. This is the default.
+c	          phases. This is the default.
 c	  scalar  Do scalar averaging of the gain amplitudes and vector
-c		  averaging of the gain phases
+c	          averaging of the gain phases.
 c--
 c  History:
 c    rjs     12oct93 Original version.
 c    nebk    23nov93 Doc change to give rjs the grumps.
-c    mchw    04jan95 write out new interval.
-c    rjs     06jan95 Make interval the max of the old and new.
-c    rjs     10jan95 Fixed a serious bug I introduced on 6jan.
-c    rjs     28aug96 Minor change to get around gcc-related bug. Change
-c		     care Dave Rayner.
-c    pjt     20oct99 FIxed bug (at least on linux) of not initializing nnsols
 c
 c  Bugs and Shortcomings:
 c    ? Perfect ?
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)
-	parameter(version='GpAver: version 1.0 20-oct-99')
+	parameter(version='GpAver: version 1.0 12-Oct-93')
 	logical dovec
 	double precision interval
 	character vis*64
@@ -134,7 +128,7 @@ c------------------------------------------------------------------------
 	integer MAXSOLS,MAXGAINS
 	parameter(MAXSOLS=10000,MAXGAINS=3*MAXSOLS*MAXANT)
 	complex Gains(MAXGAINS)
-	double precision time(MAXSOLS),int1,dtemp
+	double precision time(MAXSOLS)
 	integer nsols,offset,pnt,i,tGains,iostat,nnsols,ngains
 c
 c  Externals.
@@ -175,9 +169,6 @@ c
 c  Now write out the new gain solutions.
 c
 	call wrhdi(tVis,'nsols',nnsols)
-	call rdhdd(tVis,'interval',int1,0.d0)
-	dtemp = max(int1,interval)
-	call wrhdd(tVis,'interval',dtemp)
 	call haccess(tVis,tGains,'gains','write',iostat)
 	if(iostat.ne.0)call AverBug(iostat,'Error reopening gain table')
 c
@@ -240,7 +231,6 @@ c
 c  Loop over all the gains, accumulating while we go.
 c
 	totgood = 0
-	nnsols = 0
 	Tend = time(1) - 1
 	do j=1,nsols
 c
