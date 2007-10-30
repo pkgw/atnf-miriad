@@ -3637,3 +3637,7 @@ and in a way to be consistent with all the other changes happening.
 09nov00 dpr     psrfix -- handle (+n,-n) in binsl
 15nov00 dpr     gaufit -- keyf bugfix
 27nov00 dpr     fits --  fix stokes convention for xyin
+08dec00 dpr     immask -- doc only
+14dec00 dpr     imhist -- added xrange key
+03jan01 dpr     mirexport.pl -- users can generate their own updates
+03jan01 dpr     ellint -- allow radii with non-integral number of steps
