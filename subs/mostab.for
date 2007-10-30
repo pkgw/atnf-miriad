@@ -14,6 +14,8 @@ c
 c   subroutine MosInit
 c   subroutine MosSet
 c   subroutine MosGet
+c   subroutine MosGetn
+c   subroutine MosSetn
 c   subroutine MosSave
 c   subroutine MosLoad
 c   subroutine MosPrint
@@ -23,6 +25,7 @@ c   subroutine Mosaicer
 c   subroutine MosMFin
 c
 c   subroutine MosPnt
+c   subroutine MosVal
 c
 c  History:
 c    rjs  26oct94 Original version
@@ -37,6 +40,7 @@ c    rjs  15oct96 Modify call sequence to coGeom.
 c    rjs  26mar97 Better support for "pbtype" parameter in vis datasets.
 c    rjs  30apr97 Comments only.
 c    rjs  07jul97 Change coaxdesc to coaxget.
+c    rjs  27oct98 Added mosval.
 c************************************************************************
 	subroutine MosCIni
 c
@@ -818,6 +822,34 @@ c------------------------------------------------------------------------
 	telescop(i) = pbtype1
 	end
 c************************************************************************
+	subroutine mosGetn(nx2d,ny2d,npnt1)
+c
+	implicit none
+	integer nx2d,ny2d,npnt1
+c
+c  Return information about the mosaicing setup.
+c------------------------------------------------------------------------
+	include 'mostab.h'
+c
+	nx2d = nx2
+	ny2d = ny2
+	npnt1 = npnt
+	end
+c************************************************************************
+	subroutine mosSetn(nx2d,ny2d)
+c
+	implicit none
+	integer nx2d,ny2d
+c    
+c  Set info about the image size.
+c------------------------------------------------------------------------
+        include 'mostab.h'
+c
+        nx2 = nx2d
+        ny2 = ny2d
+c
+        end
+c************************************************************************
 	subroutine MosSave(tno)
 c
 	implicit none
@@ -1201,6 +1233,48 @@ c
 c
 	end
 c************************************************************************
+	subroutine MosVal(coObj,in,x,gain,rms)
+c
+	implicit none
+	integer coObj
+	character in*(*)
+	double precision x(*)
+	real gain,rms
+c
+c  Determine the gain and rms response at a particular position.
+c
+c  Input:
+c    coObj	Coordinate object.
+c    in,x	These are the normal arguments to coCvr, giving the
+c		location (in RA,DEC,freq) of interest.
+c  Output:
+c    gain	The gain response at the position.
+c    rms	The rms at the position.
+c------------------------------------------------------------------------
+	include 'maxdim.h'
+	include 'mostab.h'
+	integer runs(3)
+	double precision xref(3)
+c
+c  Determine the location of the reference position, in grid units.
+c
+	call coCvt(coObj,in,x,'ap/ap/ap',xref)
+c
+c  Initialise, mosaic, tidy up.
+c
+	call mosMini(coObj,real(xref(3)))
+	Runs(1) = nint(xref(2))
+	Runs(2) = nint(xref(1))
+	Runs(3) = Runs(2)
+	call mosWtsr(Runs,1,Gain,Rms,1)
+	if(Gain.gt.0)then
+	  Gain = 1/Gain
+	  Rms = sqrt(Rms*Gain)
+	endif
+	call mosMFin
+c
+	end
+c************************************************************************
 	subroutine MosPnt(coObj,in,x,beams,psf,nx,ny,npnt1)
 c
 	implicit none
@@ -1315,42 +1389,6 @@ c
 c
 	end
 c************************************************************************
-	subroutine mosRaDec(k,ra,dec)
-c
-	implicit none
-	integer k
-	double precision ra,dec
-c
-c  Return the RA and DEC of the k'th pointing.
-c
-c  Input:
-c    k		Pointing number
-c  Output:
-c    ra,dec	RA and DEC (radians) of the pointing.
-c------------------------------------------------------------------------
-	include 'mostab.h'
-c
-	if(k.lt.1.or.k.gt.npnt)call bug('f',
-     *		'Invalid pointing number if mosRaDec')
-c
-	ra = radec(1,k)
-	dec = radec(2,k)
-	end
-c************************************************************************
-	subroutine mosInfo(nx2d,ny2d,npnt1)
-c
-	implicit none
-	integer nx2d,ny2d,npnt1
-c
-c  Return information about the mosaicing setup.
-c------------------------------------------------------------------------
-	include 'mostab.h'
-c
-	nx2d = nx2
-	ny2d = ny2
-	npnt1 = npnt
-	end
-c************************************************************************
 	real function mosWt3(k)
 c
 	implicit none
@@ -1431,7 +1469,7 @@ c
 c
 c  Deternime some things.
 c
-	call mosInfo(nx2,ny2,npnt)
+	call mosGetn(nx2,ny2,npnt)
 c
 	do k=1,npnt
 	  pbObj = mosPb(k)
@@ -1482,7 +1520,7 @@ c
 c
 c  Deternime some things.
 c
-	call mosInfo(nx2,ny2,npnt)
+	call mosGetn(nx2,ny2,npnt)
 c
 	do k=1,npnt
 	  pbObj = mosPb(k)
@@ -1548,3 +1586,43 @@ c
 	enddo
 c
 	end
+c************************************************************************
+	subroutine mosRaDec(k,ra,dec)
+c
+	implicit none
+	integer k
+	double precision ra,dec
+c
+c  Return the RA and DEC of the k'th pointing.
+c
+c  Input:
+c    k		Pointing number
+c  Output:
+c    ra,dec	RA and DEC (radians) of the pointing.
+c
+c OBSOLETE: Use mosGet
+c------------------------------------------------------------------------
+	include 'mostab.h'
+c
+	if(k.lt.1.or.k.gt.npnt)call bug('f',
+     *		'Invalid pointing number if mosRaDec')
+c
+	ra = radec(1,k)
+	dec = radec(2,k)
+	end
+c************************************************************************
+	subroutine mosInfo(nx2d,ny2d,npnt1)
+c
+	implicit none
+	integer nx2d,ny2d,npnt1
+c
+c  Return information about the mosaicing setup.
+c  OBSOLETE: Use mosGetn
+c------------------------------------------------------------------------
+	include 'mostab.h'
+c
+	nx2d = nx2
+	ny2d = ny2
+	npnt1 = npnt
+	end
+
