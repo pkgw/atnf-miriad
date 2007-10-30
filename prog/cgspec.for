@@ -119,6 +119,7 @@ c
 c	"hms"     the label is in H M S.S (e.g. for RA)
 c	"dms"     the label is in D M S.S (e.g. for DEC)
 c	"arcsec"  the label is in arcsecond offsets
+c	"arcmin"  the label is in arcminute offsets
 c	"absdeg"  the label is in degrees
 c	"reldeg"  the label is in degree offsets
 c		  The above assume the pixel increment is in radians
@@ -309,8 +310,8 @@ c	contained in the file for the x- and y-directions, respectively.
 c	Choose from
 c
 c	 "hms", "dms", "hms", "dms", "abspix", "relpix", "arcsec", 
-c	 "absdeg", "reldeg", "abslin", and "rellin"  as described 
-c	  in the keyword LABTYP.  
+c	 "arcmin", "absdeg", "reldeg", "abslin", and "rellin"  as 
+c	  described in the keyword LABTYP.  
 c
 c	Note that %OTYPE does not depend upon what you specified for LABTYP.
 c
@@ -320,8 +321,8 @@ c	that for coordinate systems other than "hms" and "dms", the
 c	coordinates are with respect to the pixel map  & contour images
 c	axis descriptors,  not those from the spectrum images.
 c
-c	For %OTYPE = "abspix ", "relpix", "arcsec", "abslin", "rellin",
-c	             "absdeg", and "reldeg"  X & Y are single numbers.
+c	For %OTYPE = "abspix ", "relpix", "arcsec", "arcmin",  "abslin", 
+c	             "rellin", "absdeg", and "reldeg"  X & Y are single numbers.
 c
 c	For %OTYPE = "hms" or "dms", the X and/or Y location is/are replaced
 c	by three numbers such as  HH MM SS.S or DD MM SS.S.  Thus if
@@ -394,6 +395,7 @@ c		   Ammend for new wedge call sequences.  Add lookuptable
 c	           to "grange" keyword. Move to image type "pixel"
 c		   instead of "grey"
 c    nebk 10apr95  Add doc for new absolute b&w lookup table
+c    nebk 11aug95  Add labtyp=arcmin 
 c
 c Ideas:
 c  * Be cleverer for sub-cubes which have spectra partly all zero
@@ -411,7 +413,7 @@ c
       include 'mem.h'
       real wedisp, wedwid, tfdisp
       integer maxlev, maxpos, maxcon, maxspec, maxtyp, nbins
-      parameter (maxlev = 50, maxpos = 256*256, maxtyp = 10,
+      parameter (maxlev = 50, maxpos = 256*256, maxtyp = 11,
      +   maxcon = 3, maxspec = 5, wedisp = 1.0, 
      +   wedwid = 0.05, tfdisp = 0.5, nbins = 128)
 c
@@ -450,7 +452,7 @@ c
      +  slines(2,maxspec), blines(2), srtlev(maxlev,maxcon),
      +  nlevs(maxcon), sblc(maxnax), strc(maxnax), nblnkc(3), 
      +  his(nbins)
-      integer nofile, npos, ierr, pgbeg, ilen, ncon, i, j, nspec, iofm,
+      integer nofile, npos, ierr, pgbeg, ilen, ncon, i, j, nspec,
      +  sizespec, ngrps, defwid, npts, iblc, nblnkg, nblnkcs, coltab
       integer axisnum, virsiz(maxnax), vircsiz(maxnax)
       integer len1, tflen(0:2)
@@ -463,7 +465,7 @@ c
       logical dofull, eqscale, doblnkc, doblnkg, doblnkb, relax, doaxes, 
      +  doframe, fits(2), mark, spnorm, naked, number, mirror, init, 
      +  imnorm, colour, skip, blconly, doerase, doepoch, igblank,
-     +  allgood, allblnk, dofid, dowedge, reverse
+     +  allgood, allblnk, dofid, dowedge
 c
       data blankc /-99999999.00/
       data cin, gin, bin /maxcon*' ', ' ', ' '/
@@ -471,17 +473,15 @@ c
       data scale /2*0.0/
       data lgn, lcn /0, maxcon*0/
       data vmin, vmax, imin, imax /1.0e30, -1.0e30, 1.0e30, -1.0e30/
-      data ltypes /'hms   ', 'dms   ', 'arcsec', 'absdeg', 'reldeg',
-     +             'abspix', 'relpix', 'abslin', 'rellin', 'none'/
+      data ltypes /'hms   ', 'dms   ', 'arcsec', 'arcmin', 'absdeg', 
+     +             'reldeg', 'abspix', 'relpix', 'abslin', 'rellin',
+     +             'none'/
       data txtfill, tflen /'spectrum', 'derivative spectrum', 
      +                     'derivative spectrum', 8, 19, 19/
 c-----------------------------------------------------------------------
-      call output ('CgSpec: version 10-Apr-95')
+      call output ('CgSpec: version 11-Aug-95')
       call output ('Keyword "grange" can now be used to specify the')
       call output ('colour lookup table as well the transfer function')
-      call output (' ')
-      call output ('Options=fiddle is now keyboard driven for '//
-     +             'hard-copy devices')
       call output (' ')
 c
 c Get user inputs
@@ -622,7 +622,7 @@ c
 c       
 c Init OFM routines
 c       
-      call ofmini
+      if (gin.ne.' ') call ofmini
 c
 c Set label displacements from axes and set PGTBOX labelling 
 c option strings
@@ -692,42 +692,41 @@ c
      +    win(1)*win(2), memi(ipnim), memr(ipim), nbins, 
      +    his, cumhis)
 c
-c Apply user specified OFM or b&w OFM as default
+c Deal with OFM modifications for harcdopy device before calling PGIMAG
 c
-        call ofmcol (coltab, pixr2(1), pixr2(2))
-c
-c Modify OFM for hard copy devices before calling PGIMAG
-c
-        if (dofid .and. hard.eq.'YES') 
-     +    call ofmmod (tfvp, win(1)*win(2), memr(ipim), 
-     +                 memi(ipnim), pixr2(1), pixr2(2))
-c
-c Draw image.  Note that for hardcopy devices we generally want
-c black on white, not white on black.  So if no colour table has
-c been applied, make it so.  
-c
-        reverse = .false.
         if (hard.eq.'YES') then
-          call ofminq (iofm)
-          if (iofm.eq.1) reverse = .true.
-          if (iofm.eq.9) call ofmfudge
+c
+c Apply user given OFM or b&w as default
+c
+          call ofmcol (coltab, pixr2(1), pixr2(2))
+c
+c Interactive fiddle of OFM
+c
+          if (dofid) call ofmmod (tfvp, win(1)*win(2), memr(ipim), 
+     +                            memi(ipnim), pixr2(1), pixr2(2))
+c
+c Take complement of b&w lookup tables
+c
+          call ofmcmp
         end if
 c
-        if (reverse) then
-          call pgimag (memr(ipim), win(1), win(2), 1, win(1),
-     +                 1, win(2), pixr2(2), pixr2(1), tr)
-        else
-          call pgimag (memr(ipim), win(1), win(2), 1, win(1),
-     +                 1, win(2), pixr2(1), pixr2(2), tr)
-        end if
+c Draw image and apply user given OFM to interactive PGPLOT devices
+c
+        call pgimag (memr(ipim), win(1), win(2), 1, win(1),
+     +               1, win(2), pixr2(1), pixr2(2), tr)
+        if (hard.eq.'NO') call ofmcol (coltab, pixr2(1), pixr2(2))
 c
 c Draw optional wedge
 c
         call pgslw (1)
         call pgsci (7)
         if (hard.eq.'YES') call pgsci (2)
-        if (dowedge) call wedgecg (reverse, 1, wedwid, 1, trfun, groff, 
-     +                  nbins, cumhis, wdgvp, pixr(1), pixr(2))
+        if (dowedge) call wedgecg (1, wedwid, 1, trfun, groff, nbins,
+     +                             cumhis, wdgvp, pixr(1), pixr(2))
+c
+c Retake OFM b&w complement for hardcopy devices
+c
+        if (hard.eq.'YES') call ofmcmp
 c
 c Save normalization image if there are some blanks
 c
@@ -743,8 +742,9 @@ c
       call pgsch (cs(1))
       call pgsci (7)
       if (hard.eq.'YES') call pgsci (2)
-      call axlabcg (.true., 1, 1, 1, 1, 1, xopts, yopts, xdispl,
-     +               ydispb, labtyp, xlabel, ylabel, xxopts, yyopts)
+      call axlabcg (.false., .true., 1, 1, 1, 1, 1, xopts, yopts, 
+     +              xdispl, ydispb, labtyp, xlabel, ylabel, 
+     +              xxopts, yyopts)
       call pgtbox (xxopts, 0.0, 0, yyopts, 0.0, 0)
 c
 c Modify OFM for interactive devices here
@@ -1644,7 +1644,7 @@ c              by SLEV for contouring
 c   nlevs      Number of contour levels for each contour image
 c   pixr       Pixel map intensity range
 c   trfun      Type of pixel map transfer function: log,lin,sqr,or heq
-c   coltab     Colour table to apply to device.  1 -> 8 (negate to reverse)
+c   coltab     Colour table to apply to device.  
 c   pdev       PGPLOT plot device/type
 c   labtyp     Type of labels for x and y axes
 c   dofull     True means do full annotaiton of plot
@@ -2913,7 +2913,7 @@ c Find hyper-rectangle surrounding region of interest from highest
 c dimension image involved (i.e., 2-D/3-D).
 c
       call boxinfo (boxes, 3, blc, trc)
-      do i = 1, naxis
+      do i = 1, min(3,naxis)
         blc(i) = max(1,blc(i))
         trc(i) = min(size(i),trc(i))
       end do        
