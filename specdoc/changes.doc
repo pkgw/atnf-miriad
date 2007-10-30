@@ -1,29 +1,29 @@
-25sep00 rjs	tvclip.for -- Doc change only.
-25sep00 rjs	uvplt.for -- Correct code dealing with uvangle.
-03oct00 rjs	imcomb.for -- Output image can be arbitrarily large.
-04oct00 rjs	fits.for -- Output image can be abitrarily large.
-10oct00 rjs	boxes.for - Fix bungle in the above.
-17oct00 rjs	maths.for -- Added options=unmask
-18oct00 rjs	noise.for -- Setting the seed was not working on "vms-style"
-		machines (e.g. LINUX).
-20oct00 rjs	closure.for -- Print out number of points.
-27oct00 rjs	basant.for,uvio.c,select.for - Generalisation in baseline
-		numbering convention to allow Miriad to support up to 2047
-		antennas.
-27oct00 rjs	uvgen.for -- Call antbas subroutine to compute baseline
-		number for a particular antenna pair.
-01nov00 dpr     fits.for -- Change CROTAn to AIPS convention for xyout
-08nov00 dpr     imbin.for -- Make 3-axis bin specs unnecessary for 2-D 
-                images.
-09nov00 dpr     psrfix -- handle (+n,-n) in binsl
-15nov00 dpr     gaufit -- keyf bugfix
-27nov00 dpr     fits --  fix stokes convention for xyin
-08dec00 dpr     immask -- doc only
-14dec00 dpr     imhist -- added xrange key
-03jan01 dpr     mirexport.pl -- users can generate their own updates
-03jan01 dpr     ellint -- allow radii with non-integral number of steps
-08jan01 rjs	gpscal.for - Fix buggy error message.
-08jan01 dpr     tidy up scripts
-10jan01 rjs	uvplt.for - Plot axes of az, el and lst.
+                and mosVal routines written by rjs.
+09nov98 rjs	blflag.for -- Added axis type hangle.
+09nov98 rjs	selfcal.for -- Made the rTime variable double precision to
+		stop loss of precision in time tags.
+11nov98 rjs	gpscal.for -- Made the "Time" variable double precision to
+		stop loss of precision in time tags.
+19nov98 rjs     uvplt.for -- Minor correction to computation of LST, and
+		recompute from scratch the parallactic angle.
+19nov98 rjs	doc.c -- Complete rewrite.
+20nov98 heb/rjs uvflux.for -- Added options=uvpol to print out linear polarization
+		parameters.
+20nov98 rjs	fits.for -- Better handling of some projections and also
+		handle sky rotation.
+20nov98 rjs	co.for,co.h,regrid.for,headcopy.for -- Handling of sky rotation.
+25nov98 rjs	regrid.for -- Better handling of sky rotation.
+25nov98 rjs	prthd.for,imsub.for -- Handling of sky rotation.
+18nov98 mchw	gpedit.for -- Added options=scale.
+25nov98 rjs	cgcurs.for -- Fix compaction algorithm again!
+25nov98 rjs	fits.for -- Lots of fiddles regarding reading/writing image
+		coordinate systems.
+30nov98 rjs	maths.for -- Added options=grow, which "grows" of dummy axes
+		to the size of other non-dummy axes.
+30nov98 nebk    cgsubs.for -- Finally invent a decent algorithm for razerocg
+01dec98 rjs	selfcal.for,gpscal.for,uvmodel.for -- More warning messages.
+01dec98 rjs	gpedit.for -- Added options=dup.
+02dec98 rjs	maths.for,ari.for -- Quadrupled the size of a stack buffer.
+04dec98 rjs	tin.for,tin.h -- Better error messages.
  
 See $MIR/changes.txt for a history of earlier changes.
