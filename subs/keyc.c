@@ -24,8 +24,15 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include "miriad.h"
 #include "sysdep.h"
+
+extern void bug_c();
+extern void buglabel_c();
+extern int dexpand_c();
+
+#ifndef Null
+#define Null '\0'
+#endif
 
 #define KEYTRUE        1
 #define KEYFALSE       0
@@ -46,7 +53,12 @@ static KEYS *KeyHead = (KEYS *)NULL;
 static int iniCalled = KEYFALSE;
 
 /***********************************************************************/
-private char *skipLeading(Const char *string)
+#ifdef PROTOTYPE
+static char *skipLeading(Const char *string)
+#else
+static char *skipLeading(string)
+Const char *string;
+#endif /* PROTOTYPE */
 {
     char *ptr;
 
@@ -60,7 +72,12 @@ private char *skipLeading(Const char *string)
 }
 
 /***********************************************************************/
-private KEYS *getKey(Const char *key)
+#ifdef PROTOTYPE
+static KEYS *getKey(Const char *key)
+#else
+static KEYS *getKey(key)
+Const char *key;
+#endif /* PROTOTYPE */
 {
     char *ptr;
     KEYS *t;
@@ -85,7 +102,13 @@ private KEYS *getKey(Const char *key)
 }
 
 /***********************************************************************/
-private char *getKeyValue(Const char *key, int doexpand)
+#ifdef PROTOTYPE
+static char *getKeyValue(Const char *key, int doexpand)
+#else
+static char *getKeyValue(key, doexpand)
+Const char *key;
+int doexpand;
+#endif /* PROTOTYPE */
 {
     char *r, *s;
     char quoted;
@@ -218,14 +241,25 @@ private char *getKeyValue(Const char *key, int doexpand)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyinit_c(Const char *task)
+#else
+void keyinit_c(task)
+Const char *task;
+#endif /* PROTOTYPE */
 {
     buglabel_c(task);      /* Let the bug routines know the task name. */
     iniCalled = KEYTRUE;  /* Is True only when keyini[_c]() is called. */
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyput_c(Const char *task, char *string)
+#else
+void keyput_c(task, string)
+Const char *task;
+char *string;
+#endif /* PROTOTYPE */
 /** KeyPut -- Store a keyword for later retrieval. */
 /*& pjt */
 /*: user-input,command-line */
@@ -356,7 +390,13 @@ void keyput_c(Const char *task, char *string)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyini_c(int argc, char *argv[])
+#else
+void keyini_c(argc, argv)
+int argc;
+char *argv[];
+#endif /* PROTOTYPE */
 /** KeyIni_c -- Initialise the `key' routines (C version). */
 /*& pjt */
 /*: user-input, command-line */
@@ -426,7 +466,11 @@ void keyini_c(int argc, char *argv[])
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyfin_c(void)
+#else
+void keyfin_c()
+#endif /* PROTOTYPE */
 /** KeyFin -- Finish access to the 'key' routines. */
 /*& pjt */
 /*: user-input,command-line */
@@ -472,7 +516,12 @@ void keyfin_c(void)
 
 /***********************************************************************/
 /*  Returns FORT_TRUE if keyword is present; FORT_FALSE otherwise. */
+#ifdef PROTOTYPE
 int keyprsnt_c(Const char *keyword)
+#else
+int keyprsnt_c(keyword)
+Const char *keyword;
+#endif /* PROTOTYPE */
 /** KeyPrsnt -- Determine if a keyword is present on the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -504,7 +553,14 @@ int keyprsnt_c(Const char *keyword)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keya_c(Const char *keyword, char *value, Const char *keydef)
+#else
+void keya_c(keyword, value, keydef)
+Const char *keyword;
+char *value;
+Const char *keydef;
+#endif /* PROTOTYPE */
 /** Keya -- Retrieve a character string from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -535,7 +591,14 @@ void keya_c(Const char *keyword, char *value, Const char *keydef)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyf_c(Const char *keyword, char *value, Const char *keydef)
+#else
+void keyf_c(keyword, value, keydef)
+Const char *keyword;
+char *value;
+Const char *keydef;
+#endif /* PROTOTYPE */
 /** Keyf -- Retrieve a file name (with wildcards) from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -567,7 +630,14 @@ void keyf_c(Const char *keyword, char *value, Const char *keydef)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyd_c(Const char *keyword, double *value, double keydef)
+#else
+void keyd_c(keyword, value, keydef)
+Const char *keyword;
+double *value;
+double keydef;
+#endif /* PROTOTYPE */
 /** Keyd -- Retrieve a double precision from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -609,7 +679,14 @@ void keyd_c(Const char *keyword, double *value, double keydef)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyr_c(Const char *keyword, float *value, float keydef)
+#else
+void keyr_c(keyword, value, keydef)
+Const char *keyword;
+float *value;
+float keydef;
+#endif /* PROTOTYPE */
 /** Keyr -- Retrieve a real value from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -641,7 +718,14 @@ void keyr_c(Const char *keyword, float *value, float keydef)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyi_c(Const char *keyword, int *value, int keydef)
+#else
+void keyi_c(keyword, value, keydef)
+Const char *keyword;
+int *value;
+int keydef;
+#endif /* PROTOTYPE */
 /** Keyi -- Retrieve an integer from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -698,7 +782,14 @@ void keyi_c(Const char *keyword, int *value, int keydef)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void keyl_c(Const char *keyword, int *value, int keydef)
+#else
+void keyl_c(keyword, value, keydef)
+Const char *keyword;
+int *value;
+int keydef;
+#endif /* PROTOTYPE */
 /** keyl -- Retrieve a logical value from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -805,7 +896,15 @@ void keyl_c(Const char *keyword, int *value, int keydef)
     } while (1==0)
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void mkeyd_c(Const char *keyword, double value[], int nmax, int *n)
+#else
+void mkeyd_c(keyword, value, nmax, n)
+Const char *keyword;
+double value[];
+int nmax;
+int *n;
+#endif /* PROTOTYPE */
 /** MKeyd -- Retrieve multiple double values from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -835,7 +934,15 @@ void mkeyd_c(Const char *keyword, double value[], int nmax, int *n)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void mkeyr_c(Const char *keyword, float value[], int nmax, int *n)
+#else
+void mkeyr_c(keyword, value, nmax, n)
+Const char *keyword;
+float value[];
+int nmax;
+int *n;
+#endif /* PROTOTYPE */
 /** MKeyr -- Retrieve multiple real values from the command line. */
 /*& pjt */
 /*: user-input,command-line */
@@ -865,7 +972,15 @@ void mkeyr_c(Const char *keyword, float value[], int nmax, int *n)
 }
 
 /***********************************************************************/
+#ifdef PROTOTYPE
 void mkeyi_c(Const char *keyword, int value[], int nmax, int *n)
+#else
+void mkeyi_c(keyword, value, nmax, n)
+Const char *keyword;
+int value[];
+int nmax;
+int *n;
+#endif /* PROTOTYPE */
 /** MKeyi -- Retrieve multiple integer values from the command line. */
 /*& pjt */
 /*: user-input,command-line */
