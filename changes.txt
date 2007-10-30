@@ -3389,3 +3389,6 @@ and in a way to be consistent with all the other changes happening.
 01dec98 rjs	selfcal.for,gpscal.for,uvmodel.for -- More warning messages.
 01dec98 rjs	gpedit.for -- Added options=dup.
 02dec98 rjs	maths.for,ari.for -- Quadrupled the size of a stack buffer.
+*********************************** 03dec98 Sent changes to Doug Roberts
+04dec98 rjs	tin.for,tin.h -- Better error messages.
+15dec98 rjs	cgsubs.for -- Some tidying.
