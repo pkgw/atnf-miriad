@@ -116,14 +116,13 @@ c    smw  15feb98 added one extra digit in printout: rangle->rangleh, etc
 c    mchw 21apr98 more precise Offset position.
 c    rjs  27apr98 Merge above two sets of changes.
 c    rjs  27oct98 Improved format statements.
-c    rjs  30jun99 Ditto.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mem.h'
 c
 	character version*(*)
-	parameter(version='version 1.0 30-Jun-99')
+	parameter(version='version 1.0 27-Oct-98')
 	integer MAXBOX,MAXVAR
 	parameter(MAXBOX=1024,MAXVAR=30)
 c
@@ -1008,13 +1007,8 @@ c
   35	        format('  Total integrated flux:',1pg16.4)
 	        call output(line)
 	      endif
-	      if(3600.*180./pi*max(abs(l0(i)),abs(m0(i))).gt.9999.5)then
-	        write(line,40)3600*180/pi*l0(i),3600*180/pi*m0(i)
-	      else
-	        write(line,41)3600*180/pi*l0(i),3600*180/pi*m0(i)
-	      endif
-  40	      format('  Offset Position (arcsec):  ',2f10.0)
-  41	      format('  Offset Position (arcsec):  ',2f10.3)
+	      write(line,40)3600*180/pi*l0(i),3600*180/pi*m0(i)
+  40	      format('  Offset Position (arcsec):  ',2f10.3)
 	      call output(line)
 	      if(sl0(i)+sm0(i).gt.0)then
 	        write(line,45)3600*180/pi*sfac*sl0(i),

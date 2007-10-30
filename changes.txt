@@ -3342,3 +3342,21 @@ and in a way to be consistent with all the other changes happening.
 25sep98 rjs	fits.for -- Correct handling of OBSRA and OBSDEC in op=xyin
 28sep98 rjs	calplot.for -- Print out flux at central freq.
 30sep98 rjs	tangle.for -- Allow plus signs in angles.
+*********************************** 01oct98 Sent changes to Doug Roberts
+04oct98 rjs	atlod.for -- Extra check for validity of a record.
+05oct98 rjs	keyc.c -- Added Jim Morgan's key routines to the ATNF collection.
+05oct98 rjs	miriad.h -- Added the key routines to this include file.
+12oct98 rjs	uvflux.for -- Changed print format somewhat.
+12oct98 pjt	var.for -- Added copying of some BIMA-specific variables.
+14oct98 rjs	paraplot.for -- Plot sin(2*chi) as well as cos(2*chi).
+16oct98 rjs	var.for --Reduce the number of continuation lines in above
+                change to bring it in line with FORTRAN standard.  
+20oct98 rjs	gaufit.for -- Change to avoid floating underflow in exp() function.
+21oct98 rjs	sfunc.for -- 
+07nov97 rjs	uvaflag.for -- Handle multiple templates [A long lost update
+		that was accidently never propogated from Narrabri].
+21oct98 rjs	sfunc.for -- Significantly enhanced.
+22oct98 rjs	uvaflag.for -- noapply option.
+27oct98 rjs	imfit.for -- Better format statements.
+27oct98 rjs	mostab.for -- Added subroutine mosval.
+27oct98 rjs	fits.for -- Look in CD keyword for pixel increment.
