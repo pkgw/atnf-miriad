@@ -3579,3 +3579,12 @@ and in a way to be consistent with all the other changes happening.
 17may00 mchw	uvgen.for -- allow for saturated spectral absorption model.
 18may00 rjs	uvgen.for -- Merge mchw and rjs versions of uvgen.for
 19may00 rjs	impos.for -- Make default "type" abspix.
+*********************************** 1jun00 Sent changes to BIMA
+11jun00 rjs     atlod.for -- Include pmps switch. More robust to bad number
+		of channels etc in RPFITS file. Increase buffer space.
+14jun00 rjs	reorder.for -- Copy across llrot keyword.
+13jun00 rjs	uvindex.for -- Handle blank source names somewhat better.
+16jun00 rjs	uvio.c -- Handle bad antenna numbers somewhat better.
+16jun00 rjs	select.for -- Check for bad antenna numbers in selection.
+04jul00 rjs	noise.for -- Changes to be more robust to bad computer
+		rounding.
