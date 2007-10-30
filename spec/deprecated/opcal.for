@@ -58,26 +58,20 @@ c	            with 1 indicating a transparent atmosphere).
 c	  airtemp   Measured air temperature, in celsius.
 c	  pressmb   Measured air pressure, in millibars.
 c	  relhumid  Measured relative humidity, as a percent.
-c         antel     Antenna elevation, in degrees.
-c	  airmass   Airmass - cosec(antel)
 c@ mdata
 c	Input text file giving the ATCA meteorology data. No default.
 c@ mode
-c	This determines the calibration operations to perform. Possible
-c	values are ``opacity'', ``flux'' or ``both''. The default is to
-c	perform opacity correciton only.
+c	This determines the calibration operations to perform. Possiblec
+c	values are ``opacity'', ``flux'' or ``both''.
 c--
 c  History:
 c    02feb01 rjs  Original version.
-c    07feb01 rjs  Write out elevation variable.
-c    02mar01 rjs  Label some output better.
 c------------------------------------------------------------------------
 	integer MAXPOL
 	parameter(MAXPOL=2)
 	include 'maxdim.h'
-	include 'mirconst.h'
 	character version*(*)
-	parameter(version='opcal: version 1.0 02-Mar-01')
+	parameter(version='opcal: version 1.0 02-Feb-01')
 	integer PolXX,PolYY,PolXY,PolYX
 	parameter(PolXX=-5,PolYY=-6,PolXY=-7,PolYX=-8)
 c
@@ -92,12 +86,12 @@ c
 	double precision preamble(5),ptime
 	double precision sfreq(MAXWIN),sdf(MAXWIN)
 	double precision lst,lat,az,el,ra,dec,dtemp
-	real freq0(MAXWIN),t0,p0,h0,fac(MAXWIN),Tb(MAXWIN)
+	real freq0(MAXWIN),t0,p0,h0,fac(MAXWIN),jyperk,Tb(MAXWIN)
 	real dfac(MAXPOL,MAXWIN,MAXANT),doff(MAXPOL,MAXWIN,MAXANT)
 c
 	integer NMODES
-	parameter(NMODES=3)
-	character modes(NMODES)*8,mode*8
+	parameter(NMOEDS=3)
+	character modes(NMODES)*8,mode
 	integer nout
 c
 c  Externals.
@@ -145,17 +139,13 @@ c
 	    enddo
 	    write(line,'(a,i2)')'Frequency',i
 	    call output(line)
-	    write(line,'(a,10f8.2)')'  Pol X: Scale Factor',
-     *		(dfac(1,i,j),j=1,nants)
+	    write(line,'(a,10f8.2)')'  Pol X: ',(dfac(1,i,j),j=1,nants)
 	    call output(line)
-	    write(line,'(a,10f8.2)')'         Trec (K)    ',
-     *		(doff(1,i,j),j=1,nants)
+	    write(line,'(a,10f8.2)')'         ',(doff(1,i,j),j=1,nants)
 	    call output(line)
-	    write(line,'(a,10f8.2)')'  Pol Y: Scale Factor',
-     *		(dfac(2,i,j),j=1,nants)
+	    write(line,'(a,10f8.2)')'  Pol Y: ',(dfac(2,i,j),j=1,nants)
 	    call output(line)
-	    write(line,'(a,10f8.2)')'         Trec (K)    ',
-     *		(doff(2,i,j),j=1,nants)
+	    write(line,'(a,10f8.2)')'         ',(doff(2,i,j),j=1,nants)
 	    call output(line)
 	  enddo
 	endif
@@ -197,7 +187,6 @@ c
 	  call uvrdvri(lVis,'npol',npol,0)
 c
 	  if(uvvarUpd(vupd))then
-	    call uvrdvri(lVis,'nants',nants,0)
 	    call uvprobvr(lVis,'nschan',type,length,updated)
 	    nif = length
 	    if(type.ne.'i'.or.length.le.0.or.length.gt.MAXWIN)
@@ -224,13 +213,12 @@ c
 	    call azel(ra,dec,lst,lat,az,el)
 	    call metGet(ptime,t0,p0,h0)
 	    call opacGet(nif,freq0,real(el),t0,p0,h0,fac,Tb)
+	    call uvrdvrr(lVis,'jyperk',jyperk,0.0)
 	    call uvputvrr(lOut,'tsky',Tb,nif)
 	    call uvputvrr(lOut,'trans',fac,nif)
 	    call uvputvrr(lOut,'airtemp',t0-273.15,1)
 	    call uvputvrr(lOut,'pressmb',p0/100.0,1)
 	    call uvputvrr(lOut,'relhumid',100.0*h0,1)
-	    call uvputvrd(lOut,'antel',180.0d0/DPI*el,1)
-	    call uvputvrr(lOut,'airmass',1./sin(real(el)),1)
 c
 	    if(.not.dotrans)then
 	      do i=1,nif
@@ -589,7 +577,7 @@ c  Externals.
 c
 	integer uvscan
 c
-	call output('Getting data for flux scale calibration')
+	call output('Getting data for diode calibration')
 	npnts = 1
 	doinit = .true.
 	call metInit(mdata)
@@ -647,7 +635,7 @@ c
 c
 c  Now copy the data and fit it.
 c
-	call output('Doing the flux scale calibration step')
+	call output('Doing the diode calibration step')
 	n = npnts/(nifs*(1+2*nants))
 	do j=1,nifs
 	  k = nifs + 1 + (j-1)*nants
@@ -704,4 +692,21 @@ c
 	  out(i) = in(1,i)
 	enddo
 c
+	end
+c************************************************************************
+	subroutine getopt(dodiode,dotrans)
+c
+	implicit none
+	logical dodiode,dotrans
+c
+c------------------------------------------------------------------------
+	integer NOPTS
+	parameter(NOPTS=2)
+	logical present(NOPTS)
+	character opts(NOPTS)*8
+	data opts/'dodiode ','dotrans '/
+c
+	call options('options',opts,present,NOPTS)
+	dodiode = present(1)
+	dotrans = present(2)
 	end
