@@ -8,8 +8,12 @@
 /*    rjs   7feb90   Added comments, ready to be stripped out by "doc". */
 /*    rjs  13jul92   Improved error messages in xyopen, to appease nebk.*/
 /*    rjs  23feb93   Include maxdimc.h, which contains maxnax.		*/
+/*    rjs   6nov94   Change item handle to an integer.			*/
+/*    rjs  27feb96   Added xyflush.					*/
+/*    rjs  15mar96   Inlcude an exrta include file.			*/
 /*----------------------------------------------------------------------*/
 
+#include <string.h>
 #include "maxdimc.h"
 #include "io.h"
 
@@ -25,11 +29,11 @@
 
 static char message[132];
 
-static struct { char *image,*mask;
+static struct { char *mask;
+	 int image;
 	 int naxis,axes[MAXNAX],offset,mask_exists,image_exists;} images[MAXOPEN];
 
 #define Strcpy (void)strcpy
-char *strcpy();
 void bug_c(),bugno_c();
 void rdhdi_c(),wrhdi_c();
 void mkclose_c(),mkwrite_c();
@@ -149,6 +153,54 @@ char *name,*status;
   images[tno].image_exists = TRUE;
   images[tno].mask_exists = TRUE;
   *thandle = tno;
+}
+/************************************************************************/
+void xyflush_c(thandle)
+int thandle;
+/**xyflush -- Flush out any image changes to disk.			*/
+/*:image-i/o								*/
+/*+ FORTRAN call sequence:
+
+	subroutine xyflush(tno)
+	implicit none
+
+This flushes any changes to an image to disk.
+
+  Input:
+    tno		The handle of the image file.				*/
+/*----------------------------------------------------------------------*/
+{
+  int iostat,i,offset,nbytes,length;
+  float buf[MAXDIM];
+
+/* Simply flush out the mask. */
+
+  if(images[thandle].mask != NULL) mkflush_c(images[thandle].mask);
+
+/* If its a new file, and not all the pixels have yet been written,
+   write zero pixels. First determine the proper size. */
+
+  nbytes = H_REAL_SIZE;
+  for(i=0; i < images[thandle].naxis; i++) nbytes *= images[thandle].axes[i];
+  nbytes += ITEM_HDR_SIZE;
+  offset = hsize_c(images[thandle].image);
+
+/* Determine the number of bytes to pad, and then pad it. */
+
+  nbytes -= offset;
+  if(nbytes > 0)for(i=0; i < MAXDIM; i++)buf[i] = 0.0;
+  while(nbytes > 0){
+    length = MAXDIM*H_REAL_SIZE;
+    if(length > nbytes) length = nbytes;
+    hwriter_c(images[thandle].image,buf,offset,length,&iostat);
+    CHECK(iostat,(message,"Error allocating space for image"));
+    offset += length;
+    nbytes -= length;
+  }
+
+/* Do it all now. */
+
+  hflush_c(thandle,&iostat); 			check(iostat);
 }
 /************************************************************************/
 void xyclose_c(thandle)
