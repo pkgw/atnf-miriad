@@ -54,21 +54,6 @@ c	is "klambda".
 c
 c	Values for "uvrange" must be given either if "options=feather"
 c	is used or if the flux calibration factor is being deduced.
-c@ region
-c	Region-of-interest parameter. See the help on ``region''
-c	for more information. NOTE: This parameter is ONLY used for
-c	determining the flux calibration factor. Only plane selection
-c	(e.g. via the ``image'' command) is allowed. Typically you would
-c	want to select a range of planes which contains significant signal
-c	in the overlap region.
-c@ device
-c	PGPLOT device for a plot. When determining the flux calibration
-c	factor, IMMERGE can produce a plot showing the correspondence
-c	between the high and low resolution data points in the annulus
-c	(after correcting for resolution effects and the deduced flux
-c	calibration factor). Ideally it will show a line with "y=x".
-c	The default is not to produce a plot. It also plots the
-c	difference from this "y=x" line as a function of spatial frequency.
 c@ guard
 c	Before Fourier transforming, the images are padded with a guard
 c	band. "guard" gives one or two values, being the minimum width of
@@ -90,43 +75,38 @@ c	             calibration scale factor.
 c	  feather    This merges the two images together in a fashion similar
 c	             to AIPS IMERG. This method is generally less desirable
 c	             than the default scheme used by IMMERGE.
-c	  shift      Determine the optimum shift to apply to the low
-c	             resolution image to make it align with the high
-c	             resolution one.
+c@ device
+c	PGPLOT device for a plot. When determining the flux calibration
+c	factor, IMMERGE can produce a plot showing the correspondence
+c	between the high and low resolution data points in the annulus
+c	(after correcting for resolution effects and the deduced flux
+c	calibration factor). Ideally it will show a line with "y=x".
+c	The default is not to produce a plot.
 c--
 c
 c  History:
 c    rjs  12jul97 Original version.
-c    rjs  16mar98 Added region parameter.
-c    rjs  19aug98 Fix bug introduced on 16 March where the first plane
-c		  in the output was the last plane in the selected region
-c		  for factor determination.
-c    rjs  02sep98 Subroutine name change only to avoid a LINUX conflict.
-c    rjs  23jul99 Taper down the low resolution image to make it compatible
-c	          with the high resolution one. Added shift option.
+c
 c  Bugs:
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Immerge: version 1.0 23-Jul-99')
+	parameter(version='Immerge: version 1.0 12-Jul-97')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'mirconst.h'
 	include 'mem.h'
-	integer MAXBOX
-	parameter(MAXBOX=2048)
 c
-	integer pIn1,pIn2,pWt1,pWt2
-	logical domerge,dofac,doout,dozero,dofeath,dotaper,doshift
+	integer pIn1,pIn2
+	logical domerge,dofac,doout,dozero,dofeath
 	integer n,ngx,ngy,lIn1,lIn2,lOut,iax,i,k,xoff,yoff,zoff
-	integer nin(3),nout(MAXNAX),ntemp(3),naxis,ifail,npnt
-	integer Box(MAXBOX)
+	integer nin(3),nout(MAXNAX),ntemp(3),naxis,ifail
 	character In1*80,In2*80,out*80,device*64,line*80
 	character mess1*64,mess2*64
-	double precision freq1,freq2,cdelt1,cdelt2,x1(2),x2(2)
-	real fac,uvlo,uvhi,freq,lambda,temp,du,dv,pfac
+	double precision freq1,freq2,cdelt1,cdelt2
+	real fac,uvlo,uvhi,freq,lambda,temp,du,dv
 	real bmaj1,bmin1,bpa1,bmaj2,bmin2,bpa2
 	real bmaj,bmin,bpa,bmajt,bmint,bpat,norm
-	real sfac,sxx,sxy,syy,xs,ys
+	real sfac,sxx,sxy,syy
 c
 	integer NUNITS
 	parameter(NUNITS=4)
@@ -144,37 +124,28 @@ c
 c
 	call output(version)
 	call keyini
-	call GetOpt(domerge,dozero,dofeath,doshift)
+	call GetOpt(domerge,dozero,dofeath)
 	call keyf('in',in1,' ')
 	call keyf('in',in2,' ')
 	if(in1.eq.' '.or.in2.eq.' ')
      *	  call bug('f','Two input files must be given')
+	dofac = .not.keyprsnt('factor')
+	call keyr('factor',fac,1.0)
+	call keya('device',device,' ')
 	call keyi('guard',ngx,0)
 	call keyi('guard',ngy,ngx)
 	if(ngx.lt.0.or.ngy.lt.0)call bug('f','Invalid values for guard')
-	dofac = .not.keyprsnt('factor')
-	call keyr('factor',fac,1.0)
-	if(dofac)then
-	  call keya('device',device,' ')
-	  call BoxInput('region',in1,box,MAXBOX)
-	endif
-	if(dofac.or.dofeath)then
-	  call keyr('uvrange',uvlo,0.)
-	  call keyr('uvrange',uvhi,-1.)
-	  call keymatch('uvrange',NUNITS,units,1,unit,n)
-	  if(n.eq.0)unit = units(1)
-	  if(uvlo.ge.uvhi)
-     *	    call bug('f','Invalid uvrange value')
-	else
-	  uvlo = 0
-	  uvhi = -1
-	endif
+	call keyr('uvrange',uvlo,0.)
+	call keyr('uvrange',uvhi,-1.)
+	call keymatch('uvrange',NUNITS,units,1,unit,n)
+	if(n.eq.0)unit = units(1)
+	if((dofeath.or.dofac).and.uvlo.ge.uvhi)
+     *	  call bug('f','Invalid uvrange value')
 	call keya('out',out,' ')
 	doOut = out.ne.' '
 	if(.not.dofac.and..not.doout)
      *	  call bug('f','Inputs do not require any work')
 	call keyfin
-	dotaper = domerge.or.dofac
 c
 c  Open the input datasets, and get their beam parameters.
 c
@@ -269,37 +240,17 @@ c
 	if(dofac.or.domerge)then
 	  call memAlloc(pIn1,(ngx+2)*ngy,'r')
 	  call memAlloc(pIn2,(ngx+2)*ngy,'r')
-	  if(dotaper)then
-	    call mosLoad(lIn1,npnt)
-	    call memAlloc(pWt1,nIn(1)*nIn(2),'r')
-	    call memAlloc(pWt2,nIn(1)*nIn(2),'r')
-	  else
-	    pWt1 = pIn1
-	    pWt2 = pIn2
-	  endif
 	endif
 c
 c  Determine the scale factor.
 c
 	if(dofac)then
-	  call boxSet(box,3,nIn,' ')
-	  pfac = (4.0*log(2.0))/PI*abs(cdelt1*cdelt2)/(bmaj2*bmin2)
-	  call GetFac(lIn1,lIn2,box,memr(pIn1),memr(pIn2),
-     *	    nIn(1),nIn(2),ngx,ngy,dozero,device,
-     *	      sfac,sxx,sxy,syy,uvlo,uvhi,du,dv,fac,pfac,
-     *	      dotaper,memr(pWt1),memr(pWt2),xs,ys,doshift)
+	  call GetDat(lIn1,memr(pIn1),nIn(1),nIn(2),ngx,ngy,dozero)
+	  call GetDat(lIn2,memr(pIn2),nIn(1),nIn(2),ngx,ngy,dozero)
+	  call GetFac(device,memr(pIn1),memr(pIn2),ngx,ngy,
+     *	      sfac,sxx,sxy,syy,uvlo,uvhi,du,dv,fac)
 	  write(line,'(a,1pe11.3)')'Flux calibration factor:',fac
 	  call trimout(line)
-	  if(doshift)then
-	    x1(1) = xs
-	    x1(2) = ys
-	    call coCvt(lIn1,'op/op',x1,'ow/ow',x2)
-	    write(line,'(a,f10.2,a,f10.2,a)')
-     *	      'Applying a shift of',
-     *	      180*3600/PI*x2(1),', ',180*3600/PI*x2(2),
-     *	      ' arcseconds to low the resolution data'
-	    call trimout(line)
-	  endif
 	endif
 c
 c  Open the output.
@@ -327,15 +278,13 @@ c
 	    endif
 c
 	    if(domerge)then
-	      call GetDat(lIn1,memr(pIn1),nIn(1),nIn(2),
-     *		  ngx,ngy,dozero,.false.,memr(pWt1),memr(pWt2))
-	      if(dotaper)call mosMIni(lIn1,real(k))
-	      call GetDat(lIn2,memr(pIn2),nIn(1),nIn(2),
-     *		  ngx,ngy,dozero,dotaper,memr(pWt1),memr(pWt2))
-	      if(abs(xs)+abs(ys).gt.0)
-     *		call shiftit1(memr(pIn2),ngx,ngy,xs,ys)
-	      if(dotaper)call mosMFin
-	      call Mergeit(dofeath,memr(pIn1),memr(pIn2),ngx,ngy,
+	      if(.not.dofac.or.k.ne.1)then
+		call GetDat(lIn1,memr(pIn1),nIn(1),nIn(2),
+     *						ngx,ngy,dozero)
+		call GetDat(lIn2,memr(pIn2),nIn(1),nIn(2),
+     *						ngx,ngy,dozero)
+	      endif
+	      call Merge(dofeath,memr(pIn1),memr(pIn2),ngx,ngy,
      *		uvlo,uvhi,du,dv,fac/sfac,sxx,sxy,syy)
 	      call WriteOut(lOut,memr(pIn1),ngx,nOut(2))
 	    else
@@ -347,14 +296,8 @@ c
 c
 	call xyClose(lIn1)
 	call xyClose(lIn2)
-	if(dofac.or.domerge)then
-	  call memFree(pIn1,(ngx+2)*ngy,'r')
-	  call memFree(pIn2,(ngx+2)*ngy,'r')
-	  if(dotaper)then
-	    call memFree(pWt1,nIn(1)*nIn(2),'r')
-	    call memFree(pWt2,nIn(1)*nIn(2),'r')
-	  endif
-	endif
+	call memFree(pIn1,(ngx+2)*ngy,'r')
+	call memFree(pIn2,(ngx+2)*ngy,'r')
 c
 	end
 c************************************************************************
@@ -422,20 +365,19 @@ c
 	enddo
 	end
 c************************************************************************
-	subroutine GetOpt(domerge,dozero,dofeath,doshift)
+	subroutine GetOpt(domerge,dozero,dofeath)
 c
 	implicit none
-	logical domerge,dozero,dofeath,doshift
+	logical domerge,dozero,dofeath
 c
 c  Get extra processin parameters.
 c------------------------------------------------------------------------
 	integer NOPTS
-	parameter(NOPTS=4)
+	parameter(NOPTS=3)
 	character opts(NOPTS)*12
 	logical   present(NOPTS)
 c
-	data opts/'normalize   ','zero        ','feather     ',
-     *		  'shift       '/
+	data opts/'normalize   ','zero        ','feather     '/
 c
 	call options('options',opts,present,NOPTS)
 	domerge = .not.present(1)
@@ -443,7 +385,6 @@ c
 	dofeath =      present(3)
 	if(dofeath.and..not.domerge)call bug('f',
      *	  'The feather and normalize options make no sense together')
-	doshift =      present(4)
 	end
 c************************************************************************
 	subroutine MkHead(lIn,lOut,version,fac,mess1,mess2)
@@ -495,22 +436,17 @@ c
 	call hisclose(lOut)
 	end
 c************************************************************************
-	subroutine GetDat(lIn,In,nx,ny,ngx,ngy,dozero,
-     *	  dotaper,Wt1,Wt2)
+	subroutine GetDat(lIn,In,nx,ny,ngx,ngy,dozero)
 c
 	implicit none
 	integer lIn,nx,ny,ngx,ngy
-	logical dozero,dotaper
-	real In(ngx+2,ngy),Wt1(nx,ny),Wt2(nx,ny)
+	logical dozero
+	real In(ngx+2,ngy)
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer i,j,length
 	real scale,x,fac
 	logical flags(MAXDIM)
-c
-c  Get the weight image
-c
-	if(dotaper)call mosWts(Wt1,Wt2,nx,ny,0,0)
 c
 	do j=1,ny
 c
@@ -521,17 +457,6 @@ c
 	  do i=1,nx
 	    if(.not.flags(i))In(i,j) = 0
 	  enddo
-c
-	  if(dotaper)then
-	    do i=1,nx
-	      if(Wt1(i,j).gt.0)then
-	        In(i,j) = In(i,j)/Wt1(i,j)
-	      else
-		In(i,j) = 0
-	      endif
-	    enddo
-	  endif
-	    
 c
 c  Zero extend the image.
 c
@@ -637,8 +562,8 @@ c
 	endif
 c
 	call trimout(line)
-	label = ' arcsec; pa='//itoaf(nint(bpa))
-	write(line,'(a,f8.2,a,f8.2,a)')' ... with beam fwhm:',
+	label = ' arcsec; p.a.='//itoaf(nint(bpa))
+	write(line,'(a,f7.2,a,f7.2,a)')' ... with beam fwhm:',
      *	  (3600*180/PI)*bmaj,' by',(3600*180/PI)*bmin,
      *	  label
 	call trimout(line)
@@ -646,18 +571,14 @@ c
 c
 	end
 c************************************************************************
-	subroutine GetFac(lIn1,lIn2,box,In1,In2,nx,ny,ngx,ngy,
-     *	  dozero,device,sfac,sxx,sxy,syy,uvlo,uvhi,du,dv,fac,pfac,
-     *	  dotaper,Wt1,Wt2,xs,ys,doshift)
+	subroutine GetFac(device,In1,In2,ngx,ngy,
+     *		sfac,sxx,sxy,syy,uvlo,uvhi,du,dv,fac)
 c
 	implicit none
-	integer nx,ny,ngx,ngy,lIn1,lIn2
-	integer box(*)
-	logical dozero,doshift,dotaper
+	integer ngx,ngy
 	complex In1(ngx/2+1,ngy),In2(ngx/2+1,ngy)
-	real sfac,sxx,sxy,syy,uvlo,uvhi,fac,du,dv,pfac,xs,ys
+	real sfac,sxx,sxy,syy,uvlo,uvhi,fac,du,dv
 	character device*(*)
-	real Wt1(nx,ny),Wt2(nx,ny)
 c
 c  Determine the scale factor to normalise everything.
 c
@@ -669,29 +590,17 @@ c    sfac,sxx,sxy,syy Gaussian parameters.
 c    uvlo,uvhi	Annulus of interest, in lambda.
 c    du,dv	Cell increments in u and v.
 c    device	PGPLOT device to plot the fit on.
-c    pfac	Scale factor used in plotting.
 c  Output:
 c    fac	Scale factor to apply to the coarser resolution data.
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	include 'maxdim.h'
 	include 'mem.h'
-	integer MAXRUNS
-	parameter(MAXRUNS=MAXDIM+1)
-	integer nul,nuh,nvl,nvh,n,pX,pY,pUU,pVV,np,npd
-	integer imin,imax,jmin,jmax,kmin,kmax,k
-	integer nruns,runs(3,MAXRUNS)
-	integer blc(3),trc(3)
+	integer nul,nuh,nvl,nvh,n,pX,pY,np
 c
 c  Externals.
 c
 	character itoaf*8
-c
-c  Determine the range of planes to process.
-c
-	call boxInfo(box,3,blc,trc)
-	kmin = blc(3)
-	kmax = trc(3)
 c
 c  Determine the number of pixels which are in the overlap annulus.
 c
@@ -699,214 +608,38 @@ c
 	nuh = nint(abs(uvhi/du)+0.5)
 	nvl = nint(abs(uvlo/dv)-0.5)
 	nvh = nint(abs(uvhi/dv)+0.5)
-	n = (kmax-kmin+1)*
-     *		nint(0.5*PI*(nuh*nvh - nul*nvl) + nuh - nul + 1.5)
-	call memAlloc(pX,n,'c')
-	call memAlloc(pY,n,'c')
-	call memAlloc(pUU,n,'i')
-	call memAlloc(pVV,n,'i')
+	n = 2*nint(0.5*PI*(nuh*nvh - nul*nvl) + nuh - nul + 1.5)
+	call memAlloc(pX,n,'r')
+	call memAlloc(pY,n,'r')
 c
-c  Get all the data in the annuli.
-c
-	np = 0
-	do k=kmin,kmax
-	  call boxRuns(1,k,' ',box,runs,MAXRUNS,nruns,
-     *						imin,imax,jmin,jmax)
-	  if(imin.ne.1.or.imax.ne.nx.or.jmin.ne.1.or.jmax.ne.ny.or.
-     *	    (nruns.ne.ny.and.nruns.ne.0))call bug('f',
-     *	      'Only plane selection supported in region keyword')
-	  if(nruns.gt.0)then
-	    if(k.ne.1)then
-	      call xysetpl(lIn1,1,k)
-	      call xysetpl(lIn2,1,k)
-	    endif
-	    call GetDat(lIn1,In1,nx,ny,ngx,ngy,dozero,
-     *						.false.,Wt1,Wt2)
-	    if(dotaper)call mosMIni(lIn1,real(k))
-	    call GetDat(lIn2,In2,nx,ny,ngx,ngy,dozero,
-     *						dotaper,Wt1,Wt2)
-	    if(dotaper)call mosMFin
-	    call AnnExt(In1,In2,ngx,ngy,memc(pX+np),memc(pY+np),
-     *		memi(pUU+np),memi(pVV+np),
-     *		n-np,npd,sfac,sxx,sxy,syy,uvlo,uvhi,du,dv)
-	    np = np + npd
-	  endif
-	enddo
+	call AnnExt(In1,In2,ngx,ngy,memr(pX),memr(pY),n,np,
+     *	  sfac,sxx,sxy,syy,uvlo,uvhi,du,dv)
 c
 	call trimout('Number of data points in the annulus: '
-     *						//itoaf(np))
+     *						//itoaf(np/2))
 	if(np.eq.0)call bug('f','No Data points found in annulus')
-c
-c  Determine the offset.
-c
-	if(doshift)then
-	  call GetShift(np,memi(pUU),memi(pVV),memc(pX),memc(pY),
-     *						In1,ngx,ngy,xs,ys)
-	  call Shiftit2(np,memi(pUU),memi(pVV),memc(pY),xs,ys,ngx,ngy)
-	else
-	  xs = 0
-	  ys = 0
-	endif
 c
 c  Fit for the scale factor.
 c
-	call DetFac(memc(pX),memc(pY),2*np,fac)
+	call DetFac(memr(pX),memr(pY),np,fac)
 c
 c  Plot the scale factor, if the user wanted this.
 c
-	if(device.ne.' ')call PlotFac(device,memc(pX),memc(pY),
-     *					2*np,fac,pfac,doshift)
+	if(device.ne.' ')call PlotFac(device,memr(pX),memr(pY),np,fac)
 c
 c  Free the allocated memory.
 c
-	call memFree(pX,n,'c')
-	call memFree(pY,n,'c')
-	call memFree(pUU,n,'i')
-	call memFree(pVV,n,'i')
-c
-c  Reset to select the first plane.
-c
-	if(kmax.ne.1)then
-	  call xysetpl(lIn1,1,1)
-	  call xysetpl(lIn2,1,1)
-	endif
+	call memFree(pX,n,'r')
+	call memFree(pY,n,'r')
 c
 	end
 c************************************************************************
-	subroutine GetShift(np,uu,vv,x,y,data,ngx,ngy,xs,ys)
-c
-	implicit none
-	integer np,ngx,ngy
-	integer uu(np),vv(np)
-	complex x(np),y(np),data(ngx/2+1,ngy)
-	real xs,ys
-c
-c  Determine the required shift to optimally align the X and Y data.
-c
-c------------------------------------------------------------------------
-	include 'maxdim.h'
-	integer i,j,k,l
-c
-	do j=1,ngy
-	  do i=1,ngx/2+1
-	    data(i,j) = (0.,0.)
-	  enddo
-	enddo
-c
-c  Accumulate the cross correlation between X and Y.
-c
-	do k=1,np
-	  l = uu(k) + vv(k)
-	  if(2*(l/2).eq.l)then
-	    data(uu(k),vv(k)) = data(uu(k),vv(k)) + x(k)*conjg(y(k))
-	  else
-	    data(uu(k),vv(k)) = data(uu(k),vv(k)) - x(k)*conjg(y(k))
-	  endif
-	enddo
-c
-c  Fourier transform it now.
-c
-	call IFFT(data,ngx,ngy)
-c
-c  Find the peak of the data.
-c
-	call findpk(data,ngx,ngy,xs,ys)
-c
-	end
-c************************************************************************
-	subroutine Shiftit2(np,uu,vv,y,xs,ys,ngx,ngy)
-c
-	implicit none
-	integer np,ngx,ngy
-	integer uu(np),vv(np)
-	real xs,ys
-	complex y(np)
-c------------------------------------------------------------------------
-	include 'mirconst.h'
-	integer i
-	complex W
-	real theta
-c
-	do i=1,np
-	  theta = 2*PI*(xs*(uu(i)-1)/real(ngx)+ys*(vv(i)-1)/real(ngy))
-	  W = cmplx(cos(theta),sin(theta))
-	  y(i) = W*y(i)
-	enddo
-c
-	end
-c************************************************************************
-	subroutine shiftit1(data,ngx,ngy,xs,ys)
-c
-	implicit none
-	integer ngx,ngy
-	real xs,ys
-	complex data(ngx/2+1,ngy)
-c------------------------------------------------------------------------
-	include 'mirconst.h'
-	integer i,j
-	complex W
-	real theta
-c
-	do j=1,ngy
-	  do i=1,ngx/2+1
-	    theta = 2*PI*(xs*(i-1)/real(ngx)+ys*(j-1)/real(ngy))
-	    W = cmplx(cos(theta),sin(theta))
-	    data(i,j) = W*data(i,j)
-	  enddo
-	enddo
-c
-	end
-c************************************************************************
-	subroutine findpk(data,ngx,ngy,xs,ys)
-c
-	implicit none
-	integer ngx,ngy
-	real data(ngx+2,ngy),xs,ys
-c
-c  Find the position, to a fraction of a pixel of the maximum pixel.
-c------------------------------------------------------------------------
-	integer i,j,k,imax,jmax
-	real pkval,fit(9),coeffs(6),fmax
-	double precision pixmax(2)
-c
-	imax = 1
-	jmax = 1
-	pkval = data(1,1)
-	do j=1,ngy
-	  do i=1,ngx
-	    if(data(i,j).gt.pkval)then
-	      pkval = data(i,j)
-	      imax = i
-	      jmax = j
-	    endif
-	  enddo
-	enddo
-c
-	if(imax.eq.1.or.imax.eq.ngx.or.jmax.eq.1.or.jmax.eq.ngy)
-     *	  call bug('f','Cannot fit to peak next to image edge')
-	k = 0
-	do j=jmax-1,jmax+1
-	  do i=imax-1,imax+1
-	    k = k + 1
-	    fit(k) = data(i,j)
-	  enddo
-	enddo
-c
-c  Locate the peak.
-c
-	call pkfit(fit,3,fmax,pixmax,coeffs)
-	xs = imax + pixmax(1) - (ngx/2+1)
-	ys = jmax + pixmax(2) - (ngy/2+1)
-c
-	end
-c************************************************************************
-	subroutine PlotFac(device,X,Y,n,a,pfac,doshift)
+	subroutine PlotFac(device,X,Y,n,a)
 c
 	implicit none
 	integer n
 	character device*(*)
-	real X(n),Y(n),a,pfac
-	logical doshift
+	real X(n),Y(n),a
 c
 c------------------------------------------------------------------------
 	real xmin,xmax,xlo,xhi,xp(2)
@@ -918,11 +651,10 @@ c
 c
 c  Find the min and max.
 c
-	xmin = pfac*x(1)
+	xmin = x(1)
 	xmax = xmin
 	do i=1,n
-	  x(i) = pfac*x(i)
-	  y(i) = pfac*a*y(i)
+	  y(i) = a*y(i)
 	  xmin = min(xmin,x(i),y(i))
 	  xmax = max(xmax,x(i),y(i))
 	enddo
@@ -955,15 +687,9 @@ c
 c  Label it
 c
 	call pgsci(1)
-	if(doshift)then
-	  call pglab('High Resolution Data (Jy)',
-     *		     'Scaled/Shifted Low Resolution Data (Jy)',
-     *		     'Plot of Data in Fourier Annulus')
-	else
-	  call pglab('High Resolution Data (Jy)',
-     *		     'Scaled Low Resolution Data (Jy)',
-     *		     'Plot of Data in Fourier Annulus')
-	endif
+	call pglab('High Resolution Data',
+     *		   'Scaled Low Resolution Data',
+     *		   'Plot of Data in Fourier Annulus')
 	call pgend
 c
 	end
@@ -1002,8 +728,6 @@ c
 	  SumXY = SumXY + X(i)*Y(i)
 	enddo
 c
-	if(SumYY.eq.0)call bug('f','Low resolution image is zero')
-	if(SumXX.eq.0)call bug('f','High resolution image is zero')
 	a = SumXY/SumYY
 	rms = (SumXX + a*a*SumYY - 2*a*SumXY)/(n*SumYY)
 	rms = max(0.01*a,sqrt(max(0.,rms)))
@@ -1054,13 +778,12 @@ c
 c
 	end
 c************************************************************************
-	subroutine AnnExt(In1,In2,ngx,ngy,X,Y,UU,VV,nmax,np,
+	subroutine AnnExt(In1,In2,ngx,ngy,X,Y,nmax,np,
      *	  sfac,sxx,sxy,syy,uvlo,uvhi,du,dv)
 c
 	implicit none
 	integer ngx,ngy,nmax,np
-	complex X(nmax),Y(nmax)
-	integer UU(nmax),VV(nmax)
+	real X(nmax),Y(nmax)
 	complex In1(ngx/2+1,ngy),In2(ngx/2+1,ngy)
 	real sfac,sxx,sxy,syy,uvlo,uvhi,du,dv
 c
@@ -1070,7 +793,6 @@ c
 c  Output:
 c    X,Y	Pixels from the low and high resolution data, that we are
 c		scaling to equalize.
-c    R		Radius in wavelengths
 c    np		Number of pixels extracted.
 c
 c------------------------------------------------------------------------
@@ -1086,16 +808,16 @@ c
 	do j=1,ngy/2+1
 	  do i=1,ngx/2+1
 	    uv2 = ((i-ic)*du)**2 + ((j-jc)*dv)**2
-	    if(uv2.ge.uvlo*uvlo.and.uv2.le.uvhi*uvhi)then
+	    if(uv2.gt.uvlo*uvlo.and.uv2.lt.uvhi*uvhi)then
 	      t = sxx*(i-ic)*(i-ic) + sxy*(i-ic)*(j-jc) + 
      *		  syy*(j-jc)*(j-jc)
 	      t = sfac*exp(t)
-	      np = np + 1
-	      if(np.gt.nmax)call bug('f','Too many points in Annext')
-	      X(np) = t*In1(i,j)
-	      Y(np) =   In2(i,j)
-	      UU(np) = i
-	      VV(np) = j
+	      if(np+2.gt.nmax)call bug('f','Too many points in Annext')
+	      X(np+1) = t*real(In1(i,j))
+	      X(np+2) = t*aimag(In1(i,j))
+	      Y(np+1) =   real(In2(i,j))
+	      Y(np+2) =   aimag(In2(i,j))
+	      np = np + 2
 	    endif
 	  enddo
 	enddo
@@ -1107,23 +829,23 @@ c
 	do j=ngy/2+2,ngy
 	  do i=1,ngx/2+1
 	    uv2 = ((i-ic)*du)**2 + ((j-jc)*dv)**2
-	    if(uv2.ge.uvlo*uvlo.and.uv2.le.uvhi*uvhi)then
+	    if(uv2.gt.uvlo*uvlo.and.uv2.lt.uvhi*uvhi)then
 	      t = sxx*(i-ic)*(i-ic) + sxy*(i-ic)*(j-jc) + 
      *		  syy*(j-jc)*(j-jc)
 	      t = sfac*exp(t)
-	      np = np + 1
-	      if(np.gt.nmax)call bug('f','Too many points in Annext')
-	      X(np) = t*In1(i,j)
-	      Y(np) =   In2(i,j)
-	      UU(np) = i
-	      VV(np) = j
+	      if(np+2.gt.nmax)call bug('f','Too many points in Annext')
+	      X(np+1) = t*real(In1(i,j))
+	      X(np+2) = t*aimag(In1(i,j))
+	      Y(np+1) =   real(In2(i,j))
+	      Y(np+2) =   aimag(In2(i,j))
+	      np = np + 2
 	    endif
 	  enddo
 	enddo
 c
 	end
 c************************************************************************
-	subroutine Mergeit(dofeath,In1,In2,ngx,ngy,uvlo,uvhi,du,dv,
+	subroutine Merge(dofeath,In1,In2,ngx,ngy,uvlo,uvhi,du,dv,
      *						fac,sxx,sxy,syy)
 c
 	implicit none
