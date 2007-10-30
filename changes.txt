@@ -3485,3 +3485,21 @@ and in a way to be consistent with all the other changes happening.
 		various buffer sizes.
 14aug99 rjs	cgrego.for -- Correct some non-standard fortran
 31aug99 rjs	uvio.c -- Correct an error message.
+*********************************** 02aug99 Sent changes to Doug Roberts
+03sep99 swa	uvplt.for -- Add options=notitle
+03sep99 lss	mbspect.for -- pgpt bug when order negative; added rms output line
+08sep99 rjs	co.for -- More robust algorithm in comixed.
+02sep99 rjs	uvio.c,uvdat.for,keyline.for -- Added average channel
+		flagging tolerance. 
+08sep99 rjs	cgrego.for -- Initialise uninitialised variables.
+13sep99 rjs	ephem.for -- Make jullst more robust.
+13sep99 rjs	uvspec.for -- Added axis=dfreq
+20sep99 pjt	mbspect.for - fixed obvious syntax error - does anybody use flint anymore
+23sep99 rjs	uvcat.for -- Fix window selection again!!
+28sep99 rjs	fitsio.for -- Change in number of digits printed in fitwrhdd
+		to work around GILDAS flaw.
+30sep99 rjs	mossen.for -- Make the size of the output equal to the input
+		image bounding box (i.e. count blanked pixels).
+30sep99 rjs	fft.for -- Change bunit in the output header.
+01oct99 vjm	imom.for -- New program: Compute intensity-weighted moment of an image
+05oct99 rjs	blflag.for --  Added options=scalar
