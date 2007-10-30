@@ -5,8 +5,7 @@ c	History:
 c
 c	??????? mchw Original version.
 c	04aug91 mjs  Replaced MAXANT(S) by including maxdim.h
-c       29mar94 nebk Add logical CALMSG
-c       10dec95 nebk Extend CALMSG to an array
+c       29mar94 nebk Add logical DUNREW
 c
 c  General variables:
 c
@@ -34,7 +33,6 @@ c    doleak			Check for polarisation leakage file, and
 c				apply the polarisation corrections.
 c    WillLeak			Set true if doleak is true and leakage files
 c				are present.
-c    dow			Return "w" in the preamble.
 c    nIn			The number of input files given.
 c    pnt			The number of the current input file being
 c				processed.
@@ -45,19 +43,15 @@ c    auto			If true, input data must be autocorrelation
 c				data.
 c    cross			If true, input data must be crosscorrelation
 c				data.
-c    calmsg                     If true, calibration message already issued
-c			        for this file 
-c    npream			Number of elements in the preamble.
-c    idxT			Index of "time" in the preamble.
-c    idxBL			Index of "baseline" in the preamble.
+c    dunrew                     If true, uvdatrew has been called
 c
 	integer maxsels,maxNam,maxIn
-	parameter(maxsels=512,maxNam=20000,maxIn=400)
+	parameter(maxsels=512,maxNam=1024,maxIn=64)
 	real sels(maxsels),lstart,lwidth,lstep,rstart,rwidth,rstep
 	real plmaj,plmin,plangle
 	logical doplanet,dowave,doref,dodata,docal,dosels,doleak,dopass
-	logical PlInit,WillCal,WillLeak,auto,cross,calmsg(maxIn),dow
-	integer k1(maxIn),k2(maxIn),nchan,npream,idxT,idxBL
+	logical PlInit,WillCal,WillLeak,auto,cross,dunrew
+	integer k1(maxIn),k2(maxIn),nchan
 	character line*32,ref*32,InBuf*(maxNam)
 	integer nIn,pnt,tno
 c
@@ -88,34 +82,33 @@ c  Leaks    Polarisation leakage parameters.
 c  nLeaks   Number of polarisation leakage parameters.
 c
 	include 'maxdim.h'
-	integer MAXPOL,MAXPRE
-	parameter(MAXPOL=4,MAXPRE=8)
+	integer maxPol
+	parameter(maxPol=4)
 c
 	integer PolII,PolI,PolQ,PolU,PolV,PolRR,PolLL,PolRL,PolLR
-	integer PolXX,PolYY,PolXY,PolYX,PolQQ,PolUU,PolMin,PolMax
+	integer PolXX,PolYY,PolXY,PolYX,PolMin,PolMax
 	parameter(PolII=0,PolI=1,PolQ=2,PolU=3,PolV=4,PolRR=-1)
 	parameter(PolLL=-2,PolRL=-3,PolLR=-4,PolXX=-5,PolYY=-6)
-	parameter(PolXY=-7,PolYX=-8,PolQQ=5,PolUU=6)
-	parameter(PolMin=PolYX,PolMax=PolUU)
+	parameter(PolXY=-7,PolYX=-8,PolMin=PolYX,PolMax=PolV)
 c
-	integer nPol,Pols(MAXPOL),iPol,nPolF
+	integer nPol,Pols(maxPol),iPol,nPolF
 	logical WillPol,SelPol,SelPol1,PolCpy
-	double precision Spreambl(MAXPRE)
+	double precision Spreambl(4)
 	integer Snread
-	complex SData(MAXCHAN,MAXPOL)
-	integer ncoeff(MAXPOL),indices(MAXPOL,MAXPOL)
-	logical doaver(MAXPOL),Sflags(MAXCHAN,MAXPOL)
-	complex coeffs(MAXPOL,MAXPOL)
-	real SumWts(MAXPOL)
+	complex SData(maxchan,maxPol)
+	integer ncoeff(maxPol),indices(maxPol,maxPol)
+	logical doaver(maxPol),Sflags(maxchan,maxPol)
+	complex coeffs(maxPol,maxPol)
+	real SumWts(maxPol)
 	integer nLeaks
 	complex Leaks(2,MAXANT)
 c
 c  The common blocks.
 c
 	common/UVDatCoA/sels,lstart,lwidth,lstep,rstart,rwidth,rstep,
-     *	 plmaj,plmin,plangle,doplanet,dowave,doref,dodata,dosels,dow,
+     *	 plmaj,plmin,plangle,doplanet,dowave,doref,dodata,dosels,
      *	 plinit,k1,k2,nchan,nIn,pnt,tno,auto,cross,docal,WillCal,doleak,
-     *	 WillLeak,dopass,calmsg,npream,idxT,idxBL
+     *	 WillLeak,dopass,dunrew
 c
 	common/UVDatCoB/line,ref,InBuf
 c
