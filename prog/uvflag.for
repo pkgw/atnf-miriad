@@ -131,9 +131,11 @@ c           bpw     14dec93 Realized that uvwread does not take uvset into
 c                           account, and that therefore line=wide did not
 c                           flag properly if nwchan!=0
 c           rjs     23dec93 Minimum match of line parameter.
-c
-c***********************************************************************
-c
+c	    rjs     10oct94 Eliminate spurious extra call to uvflgwr.
+c	    rjs     16aug96 Eliminate MAXWIDE definition. Change NSELS,
+c			    standardise some FORTRAN.
+c           rjs     09dec97 Make antennas used message more robust.
+c           rjs     11mar98 Some FORTRAN standardisation, to appease g77.
 c************************************************************************
 c uvflag works as follows:
 c It reads the name of the first visibility file.
@@ -144,13 +146,13 @@ c the flagging is done.
 c Then it asks for the next visibility file and does the whole process
 c again until the list is exhausted.
 
-      character*30 version
-      parameter ( version = 'uvflag: version 2.5 23-Dec-93')
+      character*(*) version
+      parameter ( version = 'uvflag: version 2.5 11-Mar-98')
 
-      character*1024   vis
+      character*64     vis
 
       integer          NSELS
-      parameter        ( NSELS = 500 )
+      parameter        ( NSELS = 25000 )
       real             sels(NSELS)
 
       integer          line(7)
@@ -387,8 +389,8 @@ c tformat is transfered to report.
      *                         flagval, apply,ropt,tformat )
 
       character*(*)    vis
-      real             sels(*)
       integer          nsels
+      real             sels(nsels)
       integer          line(*)
       character*(*)    type
       logical          usech(*)
@@ -400,8 +402,6 @@ c tformat is transfered to report.
       integer          unit
       double precision preamble(4)
       include          'maxdim.h'
-      integer          MAXWIDE
-      parameter        ( MAXWIDE = 4 )
       integer          mxchan
       complex          data(MAXCHAN)
       logical          oldflags(MAXCHAN), newflags(MAXCHAN)
@@ -416,21 +416,23 @@ c tformat is transfered to report.
       do while( nchan.ne.0 )
          if( type .eq. 'both' )
      *   then
-
             call uvset(  unit, 'data', 'channel', 0, 1.,1.,1. )
             call uvread( unit, preamble, data, oldflags, mxchan, nchan )
-            if( have(unit,'nchan') .and. nchan.ne.0 )
-     *      call work(   unit, preamble, 'channel',
+            if( have(unit,'nchan') .and. nchan.ne.0 )then
+	      call work(   unit, preamble, 'channel',
      *                   flagval, ropt,tformat,line,
      *                   data,oldflags,newflags, usech, nchan )
-            if( apply ) call uvflgwr( unit,newflags )
+              if( apply ) call uvflgwr( unit,newflags )
+	    endif
 
             if( have(unit,'nwide') .and. nchan.ne.0 ) then
-            call uvwread(unit, data, oldflags, mxchan, nwchan )
-            call work(   unit, preamble, 'wide',
+              call uvwread(unit, data, oldflags, mxchan, nwchan )
+	      if(nwchan.gt.0)then
+		call work(   unit, preamble, 'wide',
      *                   flagval, ropt,tformat,line,
      *                   data,oldflags,newflags, usech, nwchan )
-            if( apply ) call uvwflgwr( unit,newflags )
+                if( apply ) call uvwflgwr( unit,newflags )
+	      endif
             endif
 
          else
@@ -440,12 +442,13 @@ c tformat is transfered to report.
             call uvread( unit, preamble, data, oldflags, mxchan, nchan )
             if(  nchan.ne.0.  .and.
      *           ( (type.eq.'channel' .and. have(unit,'nchan')) .or.
-     *             (type.eq.'wide'    .and. have(unit,'nwide'))      ) )
-     *      call work(   unit, preamble, type,
+     *             (type.eq.'wide'    .and. have(unit,'nwide'))      ) 
+     *								)then
+	      call work(   unit, preamble, type,
      *                   flagval, ropt,tformat,line,
      *                   data,oldflags,newflags, usech, nchan )
-            if( apply ) call uvflgwr( unit,newflags )
-
+              if( apply ) call uvflgwr( unit,newflags )
+	    endif
          endif
          if( nchan.ne.0 ) call reccount(1)
       enddo
@@ -575,16 +578,18 @@ c Do statistics and reporting.
       logical          oldflags(*), newflags(*)
       logical          usech(*)
       integer          nchan
-
+c------------------------------------------------------------------------
+      integer itemp
+c
+c  Externals.
+c
+      integer counting
+c
       call flgset( unit, flagval, data,oldflags,newflags, usech, nchan )
-      call counting( type, oldflags,newflags, nchan )
+      itemp = counting( type, oldflags,newflags, nchan )
       call report( ropt, unit,preamble,tformat,line,type,
      *             data,oldflags,newflags, usech, nchan )
-      return
       end
-
-
-
 c************************************************************************
 c Loop through all channels in the record and set the new flags.
 c Depending on the value of amprange(1) a check will be made whether the
@@ -702,6 +707,9 @@ c Loop through flag arrays to get counts
       do i = 1, NCOUNTS
         totcnts(i,j) = totcnts(i,j) + counts(i,j)
       enddo
+c
+      counting = 0
+c
       return
 
       entry count(nr,type)
@@ -761,8 +769,8 @@ c Type an overview of keyword values
      *       '( ''Linetype '',a, ''; select channel '',i4     )' )
      *       type(:len1(type)), int(line(2))
          if( line(1).gt.1 ) write( outline,
-     *       '( ''Linetype '',a, ''; select '',i4,'' channels; '',
-     *          ''start '',i4,'', width '',i4,'', step '',i4  )' )
+     *       '( ''Linetype '',a, ''; select '',i4,'' channels; '','//
+     *          '''start '',i4,'', width '',i4,'', step '',i4  )' )
      *       type(:len1(type)), line(1), line(2), line(3), line(4)
       elseif( equals( type, 'both' ) )
      *then
@@ -883,11 +891,11 @@ c coded as yymmmdd:hh:mm:ss; extract antennae from baselinenumber
       do i = 1, 4
          counts(i) = count(i,type)
       enddo
-      write( outline, '(
-     *       i4,1x,      a1,1x,     f8.4,1x, f8.4,1x, a,1x,
-     *       i2,1x, i2,2x,
-     *       i4,1x,               i4,2x,    i4,1x,    i4           )' )
-     *       int(visno), type(1:1), sngl(u), sngl(v), caltime(1:16),
+      write( outline, '('//
+     *       'i4,1x,      a1,1x,     f8.4,1x, f8.4,1x, a,1x,'//
+     *       'i2,1x, i2,2x,'//
+     *       'i4,1x,               i4,2x,    i4,1x,    i4           )' )
+     *       int(visno), type(1:1), real(u), real(v), caltime(1:16),
      *       ant1,  ant2, counts
       call logwrit( outline )
 
@@ -936,9 +944,9 @@ c new flag.
             off = mod( off+1, 3 )
             if( off.eq.0 ) outline = ' '
             write( outline( off*hdlen+1 : off*hdlen+hdlen-1 ),
-     *             '( i4,1x,   f8.2,1x,       f6.1,1x,
-     *                l1,''->'',   l1 )' )
-     *                chan(n), cabs(data(n)), arg(data(n)),
+     *             '( i4,1x,   f8.2,1x,       f6.1,1x,'//
+     *                'l1,''->'',   l1 )' )
+     *                chan(n), abs(data(n)), arg(data(n)),
      *                oldflags(n), newflags(n)
           endif
           if( off.eq.2 ) call logwrit( outline )
@@ -953,17 +961,21 @@ c Entry antuse produces an output line with the result.
 
       subroutine antusage( antcode )
 
+      implicit none
       double precision antcode
 
       integer          ant1, ant2
       include          'maxdim.h'
       logical          antused ( MAXANT )
       save             antused
-      character*80     fmt, rtfmt
-      integer          i, j, k, n, nfigi
-
-      character*79     outline, line
+      integer          i, n
+      character        line*64
+      character        outline*(*)
+c
+c  Externals.
+c
       integer          len1
+      character        itoaf*4
 
       data             antused / MAXANT*.FALSE. /
 
@@ -972,31 +984,27 @@ c Entry antuse produces an output line with the result.
           write( line, '( ''Refers to antenna '',i2 )' ) ant1
           call bug( 'w', line )
       else
-         antused( ant1 ) = .TRUE.
+          antused( ant1 ) = .TRUE.
       endif
       if( ant2.lt.1 .or. ant2.gt.MAXANT ) then
           write( line, '( ''Refers to antenna '',i2 )' ) ant2
           call bug( 'w', line )
       else
-         antused( ant2 ) = .TRUE.
+          antused( ant2 ) = .TRUE.
       endif
       return
 
       entry antuse( outline )
-      write( outline, '( ''Antennae used: '' )' )
-      i = len1( outline ) + 2
+      outline = 'Antennas used:'
+      i = len1( outline ) + 1
       do n = 1, MAXANT
-        if( antused(n) )
-     *  then
-           k = nfigi(n)
-           j = i + k-1 + 2
-           fmt = rtfmt( ' i<>,'', '' ',k,1 )
-           write( outline(i:j), fmt ) n
-           i = j + 1
+        if( antused(n) )then
+	  outline(i+1:i+2) = itoaf(n)
+	  i = len1(outline(1:i+2)) + 1
+	  outline(i:i) = ','
         endif
       enddo
-      outline( len1(outline): ) = ' '
-      return
+      outline(i:i) = ' '
       end
 
 
@@ -1012,11 +1020,15 @@ c Type an overview and update history to finish off
       logical       apply
       character*(*) ropt
 
-      character*16  ltype
+      character     ltype*16
       integer       lt, lt1, lt2
       integer       reccount, treccnt
-      integer       totcount, totcnt(6), i
-      character*79  outline
+      integer       totcount, totcnt(6), i, l
+      character     outline*128
+c
+c  Externals.
+c
+      character     itoaf*8
       integer       len1
 
       if( ropt.eq.'none' ) return
@@ -1037,9 +1049,11 @@ c Type an overview and update history to finish off
 
       call nrecords( reccount, 1 )
       call nrecords( treccnt,  2 )
-      write( outline, '( ''Total number of records selected: '',i5,
-     *                   ''; out of '',i5, '' records'' )' )
-     *                     reccount, treccnt
+      outline = 'Total number of records selected: '//itoaf(reccount)
+      l = len1(outline)
+      outline(l+1:) = '; out of '//itoaf(treccnt)
+      l = len1(outline)
+      outline(l+1:) = ' records'
       call lhwr( outline, unit, apply )
 
       call antuse( outline )
@@ -1051,9 +1065,8 @@ c Type an overview and update history to finish off
       if( type.eq.'channel' ) lt2 = 1
       if( type.eq.'wide'    ) lt1 = 2
       if( type.eq.'wide'    ) lt2 = 2
-      write( outline, '(
-     *     ''Counts of correlations within selected channels'' )' )
-      call lhwr( outline, unit, apply )
+      call lhwr('Counts of correlations within selected channels',
+     *	  unit,apply)
 
       do lt = lt1, lt2
 
@@ -1066,15 +1079,15 @@ c Type an overview and update history to finish off
             totcnt(i) = totcount(i,lt)
          enddo
          write( outline, '( ''Good:  '', 3x, i10, 1x, i10 )' )
-      *         totcnt(1), totcnt(3)
-         if( .not.flagval ) write( outline( len1(outline)+1 : ), '(
-      *         4x, ''Changed to bad: '', i10 )' ) totcnt(5)
+     *         totcnt(1), totcnt(3)
+         if( .not.flagval ) write( outline( len1(outline)+1 : ), '('//
+     *         '4x, ''Changed to bad: '', i10 )' ) totcnt(5)
          call lhwr( outline, unit, apply )
 
          write( outline, '( ''Bad:   '', 3x, i10, 1x, i10 )' )
-      *         totcnt(2), totcnt(4)
-         if(      flagval ) write( outline( len1(outline)+1 : ), '(
-      *         4x, ''Changed to good: '',i10 )' ) totcnt(6)
+     *          totcnt(2), totcnt(4)
+         if(      flagval ) write( outline( len1(outline)+1 : ), '('//
+     *          '4x, ''Changed to good: '',i10 )' ) totcnt(6)
          call lhwr( outline, unit, apply )
 
        enddo
