@@ -3219,3 +3219,5 @@ and in a way to be consistent with all the other changes happening.
 16dec97 rjs	key.for,key.h -- Added keyinic and keyputc. Some tidying.
 16dec97 rjs	mbanal.for -- Some enhancements.
 17dec97 rjs	qvack.for -- Allow the "interval" parameter to be negative.
+17dec97 rjs	ppmtomir.for -- New task. Convert non-raw PPM format to Miriad
+		format image.
