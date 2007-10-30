@@ -25,6 +25,12 @@
        30-jun-95  rjs   Declaration to appease gcc.
        15-may-96  rjs	More fiddles with roundup macro.
        18-mar-97  rjs   Remove alignment restriction on hio_c.
+       21-mar-97  rjs   Make some previously dynamic allocations static.
+       30-sep-97  rjs   Start ntree off at 1 (rather than 0).
+       28-nov-97  rjs   Change to cope with text files which do not end with
+			a newline char.
+       09-may-00  rjs   Get rid of spurious error message in hrm_c. Why didn't
+		        I see this ages ago?
 */
 
 
@@ -72,6 +78,7 @@ typedef struct tree { char *name;
 		 int handle,flags,rdwr,wriostat;
 		 ITEM *itemlist; } TREE;
 
+static TREE foreign = {"",0,0,0,0,NULL};
 #define MAXITEM 1024
 
 private int nitem,ntree;
@@ -82,7 +89,7 @@ private ITEM *item_addr[MAXITEM];
 #define hget_item(tno) (item_addr[tno])
 
 private int header_ok,expansion[10],align_size[10];
-private char *align_buf;
+private char align_buf[BUFSIZE];
 private int first=TRUE;
 
 /* Macro to wait for I/O to complete. If its a synchronous i/o system,
@@ -191,10 +198,14 @@ private void hinit_c()
 {
   int i;
 
-  nitem = ntree = 0;
+  nitem = 0;
+  ntree = 1;
   for(i=0; i < MAXITEM; i++)item_addr[i] = NULL;
   for(i=0; i < MAXOPEN; i++)tree_addr[i] = NULL;
-  (void)hcreate_tree_c("");
+
+/* Tree-0 is a special tree used for "foreign" files. */
+
+  tree_addr[0] = &foreign;
 
   expansion[H_BYTE] = 1;
   expansion[H_INT]  = sizeof(int)/H_INT_SIZE;
@@ -213,7 +224,6 @@ private void hinit_c()
   align_size[H_TXT]  = 1;
   first = FALSE;
   header_ok = FALSE;
-  align_buf = Malloc(BUFSIZE);
 }
 /************************************************************************/
 void hflush_c(tno,iostat)
@@ -350,7 +360,7 @@ void habort_c()
 
       t->flags &= ~TREE_CACHEMOD;
       if(t->flags & TREE_NEW)hrm_c(t->handle);
-      else hclose_c(t->handle);
+      else if(i != 0)hclose_c(t->handle);
     }
   }
 }
@@ -396,6 +406,7 @@ int tno;
 /* Delete the directory itself. */
 
   t = hget_tree(tno);
+  t->flags &= ~TREE_CACHEMOD;
   drmdir_c(t->name,&iostat);
   hclose_c(tno);
 }
@@ -924,7 +935,7 @@ char *buf;
 /* Check various end-of-file conditions and for adequate buffers. */
 
   next = offset + (!dowrite && type == H_TXT ? 1 : length );
-  if(!dowrite && type == H_TXT) length = min(length, item->size - offset);
+/*  if(!dowrite && type == H_TXT) length = min(length, item->size - offset); */
   *iostat = -1;
   if(!dowrite && next > item->size)return;
   *iostat = 0;
@@ -1080,6 +1091,9 @@ char *buf;
 			Memcpy(buf,s,len);
 			if(*(s+len-1) == '\n'){
 			  length = len;
+			  *(buf+len-1) = 0;
+			}else if(offset+len == item->size && len < length){
+			  length = ++len;
 			  *(buf+len-1) = 0;
 			}
 			break;
