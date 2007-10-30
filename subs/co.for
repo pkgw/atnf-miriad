@@ -4,22 +4,44 @@ c  A set of routines to convert between differing coordinate systems.
 c  User callable routines are:
 c
 c    subroutine coInit(lu)
-c    subroutine coFin(lu)
+c    subroutine coCreate(lu)
+c    subroutine coDup(lin,lout)
+c    subroutine coRaDec(lu,proj,ra0,dec0)
+c    subroutine coReinit(lu)
+c    subroutine coAxSet(lu,iax,ctype,crpix,crval,cdelt)
 c    subroutine coCvt(lu,in,x1,out,x2)
 c    subroutine coCvt1(lu,iax,in,x1,out,x2)
+c    subroutine coLMN(lu,in,x1,lmn)
+c    subroutine coGeom(lu,in,x1,ucoeff,vcoeff)
+c    subroutine coFreq(lu,in,x1,freq)
 c    subroutine coVelSet(lu,axis)
 c    subroutine coPrjSet(lu)
 c    subroutine coFindAx(lu,axis,iax)
-c    subroutine coAxDesc(lu,iax,ctype,crpix,crval,cdelt)
+c    subroutine coSetd(lu,object,value)
+c    subroutine coAxGet(lu,iax,ctype,crpix,crval,cdelt)
 c    subroutine coGauCvt(lu,in,x1,io,bmaj1,bmin1,bpa1,bmaj2,bmin2,bpa2)
 c    logical function coCompar(lu1,lu2,match)
 c    subroutine coLin(lu1,in,x1,n,ctype,crpix,crval,cdelt)
 c    subroutine coPrint(lu)
-c    subroutine coWrite(lu)
+c    subroutine coWrite(lu,tno)
+c    subroutine coFin(lu)
 c
 c  History:
 c    rjs   9aug94 Original version.
 c    rjs  13sep94 Support 'VELOCITY' and 'FELOCITY' axes.
+c    rjs  12oct94 Added a good many things ... for mosaicing.
+c    rjs  23nov94 A dummy statement to stop the alpha compiler complaining.
+c    rjs  30jan95 Added cogeom.
+c    rjs  26sep95 More tolerant of screwy headers.
+c    rjs  22oct95 Comment out warning about assuming its a linear
+c		  coordinate system.
+c    nebk 20nov95 Terrible error. Initialize docelest to false in cocvt.f
+c    rjs  15oct96 Change call sequence to cogeom.
+c    rjs  16oct96 Correct cartesian conversions near RA=0.
+c    rjs  02jul97 Support "cellscal" keyword.
+c    rjs  07jul97 Treat "epoch" and "obstime" as part of the coordinate
+c		  specification. Add coGetd. Improve coVelSet. Support
+c		  gls projection.
 c************************************************************************
 c* coInit -- Initialise coordinate conversion routines.
 c& rjs
@@ -47,8 +69,7 @@ c		axes, centered on the observing centre.
 c--
 c------------------------------------------------------------------------
 	include 'co.h'
-	integer k,i
-	logical ok
+	integer k
 c
 c  Externals.
 c
@@ -56,7 +77,7 @@ c
 	logical hdprsnt
 c
 	k = CoLoc(lu,.true.)
-	lus(k) = lu
+	if(nalloc(k).gt.1)return
 c
 c  Is this an image of a visibility data set? Assume its visibility is
 c  the "visdata" item is present.
@@ -68,6 +89,304 @@ c
 	else
 	  call bug('f','Unrecognised dataset type, in CoInit')
 	endif
+c
+c  Finish up initialising this coordinate object.
+c
+	call coReinit(lu)
+	end
+c************************************************************************
+c* coDup -- Duplicate a coodinate object.
+c& rjs
+c: coordinates
+c+
+	subroutine coDup(lin,lout)
+c
+	implicit none
+	integer lin,lout
+c
+c  Duplicate a coordinate object.
+c
+c  Input:
+c    lin	Handle of the input coordinate object to be
+c		duplicated.
+c  Output:
+c    lout	Duplicated coordinate object.
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	integer i,k1,k2
+c
+c  Externals.
+c
+	integer coLoc
+c
+	call coCreate(lout)
+	k1 = coLoc(lin,.false.)
+	k2 = coLoc(lout,.false.)
+c
+	naxis(k2) = naxis(k1)
+	do i=1,naxis(k2)
+	  ctype(i,k2) = ctype(i,k1)
+	  crpix(i,k2) = crpix(i,k1)
+	  crval(i,k2) = crval(i,k1)
+	  cdelt(i,k2) = cdelt(i,k1)
+	enddo
+c
+	restfreq(k2) = restfreq(k1)
+	vobs(k2) = vobs(k1)
+	cellscal(k2) = cellscal(k1)
+	epoch(k2) = epoch(k1)
+	obstime(k2) = obstime(k1)
+c
+	call coReinit(lout)
+c
+	end
+c************************************************************************
+c* coRaDec -- Create a simple RA/DEC coordinate system.
+c& rjs
+c: coordinates
+c+
+	subroutine coRaDec(lu,proj,ra0,dec0)
+c
+	implicit none
+	integer lu
+	character proj*(*)
+	double precision ra0,dec0
+c
+c  Create a simple RA/DEC coordinate system.
+c
+c  Input:
+c    proj	Projection geomery (e.g. 'SIN', 'NCP', etc)
+c    ra0,dec0	RA,DEC of the reference point.
+c  Output:
+c    lu		Handle of the output coordinate object.
+c--
+c------------------------------------------------------------------------
+	character ctype*16
+c
+	call coCreate(lu)
+	ctype = 'RA---'//proj
+	call coAxSet(lu,1,ctype,0.d0,ra0,1.d0)
+	ctype = 'DEC--'//proj
+	call coAxSet(lu,2,ctype,0.d0,dec0,1.d0)
+	call coReinit(lu)
+c
+	end
+c************************************************************************
+c* coCreate -- Begin intialisation of a coordinate object.
+c& rjs
+c: coordinates
+c+
+	subroutine CoCreate(lu)
+c
+	implicit none
+	integer lu
+c
+c  Begin building up a coordinate object from scratch.
+c
+c  Output:
+c    lu		Handle of the coordinate object.
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	integer k
+c
+c  Externals.
+c
+	integer coLoc
+c
+	k = coLoc(0,.true.)
+	lu = -k
+	restfreq(k) = 0
+	vobs(k) = 0
+	cellscal(k) = .true.
+	epoch(k) = 0
+	obstime(k) = 0
+	naxis(k) = 0
+	end
+c************************************************************************
+c* coAxSet -- Set the characteristics of a particular axis.
+c& rjs
+c: coordinates
+c+
+	subroutine coAxSet(lu,iax,ctypei,crpixi,crvali,cdelti)
+c
+	implicit none
+	integer lu,iax
+	character ctypei*(*)
+	double precision crpixi,crvali,cdelti
+c
+c  Set the coordinates of an axis to something.
+c
+c  Input:
+c    lu		Handle of the coordinate object.
+c    iax	Axis number.
+c    ctypei,...	FITS-style ctype,crpix,crval,cdelt
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	integer i,k
+c
+c  Externals.
+c
+	integer coLoc
+c
+	k = coLoc(lu,.false.)
+	if(iax.gt.MAXNAX.or.iax.lt.1)
+     *	  call bug('f','Illegal axis number')
+c
+	do i=naxis(k)+1,iax-1
+	  ctype(i,k) = ' '
+	  crpix(i,k) = 1
+	  crval(i,k) = 0
+	  cdelt(i,k) = 1
+	enddo
+c	  	
+	naxis(k) = max(naxis(k),iax)
+	ctype(iax,k) = ctypei
+	crpix(iax,k) = crpixi
+	crval(iax,k) = crvali
+	cdelt(iax,k) = cdelti
+c
+	end
+c************************************************************************
+c* coSetd -- Set the value in the guts of the coordinate routines.
+c& rjs
+c: coordinates
+c+
+	subroutine coSetd(lu,object,value)
+c
+	implicit none
+	integer lu
+	character object*(*)
+	double precision value
+c
+c  Set a value in the guts of the coordinate routines!
+c
+c  Input:
+c    lu		Handle of the coordinate object.
+c    object	Name of the thing to set.
+c    value	Value to use.
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	integer k,l
+	logical ok
+	character obj*8
+c
+c  Externals.
+c
+	integer coLoc
+c
+	k = coLoc(lu,.false.)
+c
+	obj = object
+	l = ichar(obj(6:6)) - ichar('0')
+	ok = l.ge.1.and.l.le.MAXNAX
+c
+	if(obj.eq.'restfreq')then
+	  restfreq(k) = value
+	else if(obj.eq.'vobs')then
+	  vobs(k) = value
+	else if(obj.eq.'epoch')then
+	  epoch(k) = value
+	else if(obj.eq.'obstime')then
+	  obstime(k) = value
+	else if(obj(1:5).eq.'crval'.and.ok)then
+	  crval(l,k) = value
+	else if(obj(1:5).eq.'crpix'.and.ok)then
+	  crpix(l,k) = value
+	else if(obj(1:5).eq.'cdelt'.and.ok)then
+	  cdelt(l,k) = value
+	else
+	  call bug('f','Unrecognised object in coSetd')
+	endif
+c
+	end
+c************************************************************************
+c* coGetd -- Get the value from the guts of the coordinate routines.
+c& rjs
+c: coordinates
+c+
+	subroutine coGetd(lu,object,value)
+c
+	implicit none
+	integer lu
+	character object*(*)
+	double precision value
+c
+c  Get a value from the guts of the coordinate routines!
+c
+c  Input:
+c    lu		Handle of the coordinate object.
+c    object	Name of the thing to set.
+c  Output:
+c    value	Value to use.
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	integer k,l
+	logical ok
+	character obj*8
+c
+c  Externals.
+c
+	integer coLoc
+c
+	k = coLoc(lu,.false.)
+c
+	obj = object
+	l = ichar(obj(6:6)) - ichar('0')
+	ok = l.ge.1.and.l.le.MAXNAX
+c
+	if(obj.eq.'naxis')then
+	  value = naxis(k)
+	else if(obj.eq.'restfreq')then
+	  value = restfreq(k)
+	else if(obj.eq.'vobs')then
+	  value = vobs(k)
+	else if(obj.eq.'epoch')then
+	  value = epoch(k)
+	else if(obj.eq.'obstime')then
+	  value = obstime(k)
+	else if(obj(1:5).eq.'crval'.and.ok)then
+	  value = crval(l,k)
+	else if(obj(1:5).eq.'crpix'.and.ok)then
+	  value = crpix(l,k)
+	else if(obj(1:5).eq.'cdelt'.and.ok)then
+	  value = cdelt(l,k)
+	else
+	  call bug('f','Unrecognised object in coGetd')
+	endif
+c
+	end
+c************************************************************************
+c* coReinit -- Finish initialisation of a coordinate object.
+c& rjs
+c: coordinates
+c+
+	subroutine CoReinit(lu)
+c
+	implicit none
+	integer lu
+c
+c  Finish up initialising a coordinate object.
+c
+c  Input:
+c    lu		Handle of the coordinate object.
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	integer k,i
+	logical ok
+c
+c  Externals.
+c
+	integer coLoc
+c
+c  Find the index of this object.
+c
+	k = coLoc(lu,.false.)
 c
 c  Convert the coordinate type to an enumerated type, and check for
 c  consistency of celestial coordinates.
@@ -100,8 +419,8 @@ c
 	  if(ok)call CoCompat(ctype(ilong(k),k),ctype(ilat(k),k),ok)
 	else if(ilat(k).ne.0.or.ilong(k).ne.0)then
 	  ok = .false.
-	else
-	  ok = .true.
+c	else
+c	  ok = .true.
 	endif
 c
 c  Check everything makes sense.
@@ -142,7 +461,8 @@ c
 	integer coLoc
 c
 	k = coLoc(lu,.false.)
-	Lus(k) = 0
+	nalloc(k) = nalloc(k) - 1
+	if(nalloc(k).eq.0)Lus(k) = 0
 	end
 c************************************************************************
 c* coCvt -- Convert coordinates.
@@ -221,13 +541,25 @@ c
 	k = coLoc(lu,.false.)
 	call coCrack(in,x1pix,x1off,naxis(k),MAXNAX,n)
 	call coCrack(out,x2pix,x2off,n,MAXNAX,nt)
-	if(n.ne.nt)call bug('f','Bad conversion specifiers')
+        docelest = .false.
 c
 c  Convert each of the axes.
 c
-	do i=1,n
+	do i=1,nt
 	  if(i.gt.naxis(k))then
-	    x2(i) = x1(i)
+	    if(i.le.n)then
+	      x2(i) = x1(i)
+	    else
+	      x2(i) = 0
+	    endif
+	  else if(i.gt.n)then
+	    if(x2off(i))then
+	      x2(i) = 0
+	    else if(x2pix(i))then
+	      x2(i) = crpix(i,k)
+	    else
+	      x2(i) = crval(i,k)
+	    endif
 	  else if(cotype(i,k).eq.LINEAR.or.cotype(i,k).eq.VELO.or.
      *	     cotype(i,k).eq.FREQ)then
 	    call CoLinear(crval(i,k),crpix(i,k),cdelt(i,k),
@@ -250,7 +582,7 @@ c
 c
 c  Determine the frequency-dependent scale factor.
 c
-	  if(ivel.eq.0.or.ivel.gt.n)then
+	  if(ivel.eq.0.or.ivel.gt.n.or..not.cellscal(k))then
 	    scal = 1
 	  else
 	    call coFqFac(x1(ivel),ctype(ivel,k),
@@ -280,6 +612,217 @@ c
      *	      x1pix(ira),.true.,x2pix(ira),.true.,
      *	      x1off(ira),.true.,x2off(ira),.true.)
 	  endif
+	endif
+c
+	end
+c************************************************************************
+c* coFreq -- Convert spectral coordinates to frequency.
+c& rjs
+c: coordinates
+c+
+	subroutine coFreq(lu,in,x1,freq1)
+c
+	implicit none
+	integer lu
+	character in*(*)
+	double precision x1(*),freq1
+c
+c  Get the frequency corresponding to a particular coordinate.
+c
+c  Input:
+c    lu		Handle of the coordinate object.
+c    in		As with coCvt
+c    x1		As with coCvt
+c  Output:
+c    freq1	The frequency.
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	include 'mirconst.h'
+	double precision ckms
+	parameter(ckms=0.001*DCMKS)
+c
+	double precision x2(MAXNAX)
+	integer k,itype
+	logical ok
+c
+c  Externals.
+c
+	integer coLoc
+c
+c  Check validity.
+c
+	k = coLoc(lu,.false.)
+	ok = ifreq(k).gt.0
+	if(ok) ok = restfreq(k).gt.0.or.cotype(ifreq(k),k).eq.FREQ
+	if(.not.ok)
+     *	  call bug('f','Non-spectral coordinate system, in coFreq')
+c
+c  Convert the users coordinate to absolute world coordinates.
+c  Fill in the reference location in the output, just in case the
+c  user was silly enough not to give enough inputs.
+c
+	x2(ifreq(k)) = crval(ifreq(k),k)
+	call coCvt(lu,in,x1,'aw/...',x2)
+	freq1 = x2(ifreq(k))
+c
+c  Convert from velocityes
+c
+	itype = cotype(ifreq(k),k)
+	if(itype.eq.FREQ)then
+	  continue
+	else if(itype.eq.FELO)then
+	  freq1 = restfreq(k) / (1+(freq1+vobs(k))/ckms)
+	else if(itype.eq.VELO)then
+	  freq1 = restfreq(k) * (1-(freq1+vobs(k))/ckms)
+	else
+	  call bug('f','Something is screwy, in coFreq')
+	endif
+c
+	end
+c************************************************************************
+c* coLMN -- Convert celestial coordinates to direction cosines.
+c& rjs
+c: coordinates
+c+
+	subroutine coLMN(lu,in,x1,lmn)
+c
+	implicit none
+	integer lu
+	character in*(*)
+	double precision x1(*),lmn(3)
+c
+c  Get the direction cosines corresponding to a particular coordinate.
+c
+c  Input:
+c    lu		Handle of the coordinate object.
+c    in		As with coCvt
+c    x1		As with coCvt
+c  Output:
+c    lmn	The direction cosines (with respect to the reference
+c		position) of the celestial coordinate given by x1.
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	double precision x2(MAXNAX),ra,dec,ra0,dec0
+	integer k
+c
+c  Externals.
+c
+	integer coLoc
+c
+c  Check validity.
+c
+	k = coLoc(lu,.false.)
+	if(ilong(k).eq.0.or.ilat(k).eq.0)
+     *	  call bug('f','Non-celestial coordinate system, in coLMN')
+c
+c  Convert the users coordinate to absolute world coordinates.
+c  Fill in the reference location in the output, just in case the
+c  user was silly enough not to give enough inputs.
+c
+	ra0 = crval(ilong(k),k)
+	dec0 = crval(ilat(k),k)
+	x2(ilong(k)) = ra0
+	x2(ilat(k))  = dec0
+c
+	call coCvt(lu,in,x1,'aw/...',x2)
+c
+	ra = x2(ilong(k))
+	dec = x2(ilat(k))
+c
+c  Convert to direction cosines.
+c
+	lmn(1) = sin(ra-ra0) * cos(dec)
+	lmn(2) = sin(dec)*cos(dec0) - cos(ra-ra0)*cos(dec)*sin(dec0)
+	lmn(3) = sin(dec)*sin(dec0) + cos(ra-ra0)*cos(dec0)*cos(dec) 
+	end
+c************************************************************************
+c* coGeom -- Compute linear coefficients to convert geometries.
+c& rjs
+c: coordinates
+c+
+	subroutine coGeom(lu,in,x1,ucoeff,vcoeff,wcoeff)
+c
+	implicit none
+	integer lu
+	character in*(*)
+	double precision x1(*),ucoeff(3),vcoeff(3),wcoeff(3)
+c
+c  Input:
+c    lu		Handle of the coordinate object.
+c    in		As with coCvt
+c    x1		As with coCvt
+c  Output:
+c    ucoeff,vcoeff Coefficients used to convert (u,v) from one geometry
+c		to another. In particular:
+c	u(corrected) = ucoeff(1)*u(raw) + ucoeff(2)*v(raw) + ucoeff(3)*w(raw)
+c	v(corrected) = vcoeff(1)*u(raw) + vcoeff(2)*v(raw) + vcoeff(3)*w(raw)
+c       w(corrected) = wcoeff(1)*u(raw) + wcoeff(2)*v(raw) + wcoeff(3)*w(raw)
+c--
+c------------------------------------------------------------------------
+	include 'co.h'
+	double precision x2(MAXNAX),ra,dec,ra0,dec0,fac
+	double precision cosa,sina,cosd,sind,cosd0,sind0
+	integer k
+c
+c  Externals.
+c
+	integer coLoc
+c
+c  Check validity.
+c
+	k = coLoc(lu,.false.)
+	if(ilong(k).eq.0.or.ilat(k).eq.0)
+     *	  call bug('f','Non-celestial coordinate system, in coLMN')
+c
+c  Convert the users coordinate to absolute world coordinates.
+c  Fill in the reference location in the output, just in case the
+c  user was silly enough not to give enough inputs.
+c
+	ra0 = crval(ilong(k),k)
+	dec0 = crval(ilat(k),k)
+	x2(ilong(k)) = ra0
+	x2(ilat(k))  = dec0
+c
+	call coCvt(lu,in,x1,'aw/...',x2)
+c
+	ra = x2(ilong(k))
+	dec = x2(ilat(k))
+c
+c  Determine the conversion coefficients.
+c
+	cosd0 = cos(dec0)
+	sind0 = sin(dec0)
+	cosa = cos(ra-ra0)
+	sina = sin(ra-ra0)
+	sind = sin(dec)
+	cosd = cos(dec)
+c
+	if(coProj(k).eq.'ncp')then
+	  ucoeff(1) = cosa
+	  ucoeff(2) = -sina*sind
+	  ucoeff(3) = sina*cosd
+	  vcoeff(1) = sina*sind0
+	  vcoeff(2) = cosd0*cosd + cosa*sind0*sind
+	  vcoeff(3) = cosd0*sind - cosa*sind0*cosd
+	  wcoeff(1) = -sina*cosd0
+	  wcoeff(2) = -cosa*sind*cosd0 + cosd*sind0
+	  wcoeff(3) =  sind*sind0 + cosa*cosd*cosd0
+	else if(coProj(k).eq.'sin')then
+	  fac = 1/(sind0*sind + cosa*cosd*cosd0)
+	  ucoeff(1) =   fac * (cosd0*cosd + cosa*sind0*sind)
+	  ucoeff(2) = - fac * sina*sind0
+          ucoeff(3) =   0
+          vcoeff(1) =   fac * sina*sind
+          vcoeff(2) =   fac * cosa
+          vcoeff(3) =   0
+	  wcoeff(1) =   0
+	  wcoeff(2) =   0
+	  wcoeff(3) =   0
+	else
+	  call bug('f',
+     *	   'Geometry conversion possible for NCP or SIN proj. only')
 	endif
 c
 	end
@@ -427,7 +970,7 @@ c
 	if(cotype(1,k).eq.LAT.or.cotype(1,k).eq.LON.or.
      *	   cotype(2,k).eq.LAT.or.cotype(2,k).eq.LON)then
 	  ivel = ifreq(k)
-	  if(ivel.ne.0.and.ivel.le.n)then
+	  if(ivel.ne.0.and.ivel.le.n.and.cellscal(k))then
 	    call coFqFac(x1(ivel),ctype(ivel,k),
      *	      crval(ivel,k),crpix(ivel,k),cdelt(ivel,k),vobs(k),
      *	      x1off(ivel),x1pix(ivel),scale)
@@ -489,9 +1032,11 @@ c  radio velocity or optical velocity axis.
 c
 c  Input:
 c    lu		Handle of the coordinate system.
-c    type	Either 'frequency', 'radio' or 'optical'. This causes
-c		the velocity axis to be changed to frequency, radio
-c		velocity or optical velocity respectively.
+c    type	Something combination of 'FREQ','VELO' and 'FELO'
+c		with '   ','-OBS','-HEL','-LSR.
+c		For compatibility with the old calling sequence,
+c		"type" can also be 'radio', 'optical' and 'frequency',
+c		which are equivalent to 'VELO', 'FELO' and 'FREQ'.
 c--
 c------------------------------------------------------------------------
 	include 'co.h'
@@ -499,13 +1044,24 @@ c------------------------------------------------------------------------
 	double precision ckms
 	parameter(ckms=0.001*DCMKS)
 c
-	integer k,ivel,otype,itype
-	double precision f,df
-	character frame*4
+	integer k,ira,idec,ivel,otype,itype
+	double precision f,df,vel
+	character iframe*4,oframe*4,ttype*16
 c
 c  Externals.
 c
 	integer coLoc
+c
+c  Standardise. For compatibility with old interface, use 
+	ttype = type
+	call ucase(ttype)
+	if(ttype.eq.'RADIO')then
+	  ttype = 'VELO'
+	else if(ttype.eq.'OPTICAL')then
+	  ttype = 'FELO'
+	else if(ttype.eq.'FREQUENCY')then
+	  ttype = 'FREQ'
+	endif
 c
 	k = coLoc(lu,.false.)
 	ivel = ifreq(k)
@@ -515,26 +1071,30 @@ c
 c
 c  Determine the type.
 c
-	if(type.eq.'frequency')then
+	if(ttype(1:4).eq.'FREQ')then
 	  otype = FREQ
-	else if(type.eq.'radio')then
+	else if(ttype(1:4).eq.'VELO')then
 	  otype = VELO
-	else if(type.eq.'optical')then
+	else if(ttype(1:4).eq.'FELO')then
 	  otype = FELO
 	else
 	  call bug('f','Unrecognised conversion type, in coVelSet')
 	endif
-	if(otype.eq.itype)return
-	if(restfreq(k).le.0)
-     *	  call bug('f','Unable to do axis conversion as restfreq==0')
 c
-c Save the reference frame
+c Determine the reference frame conversion.
 c
       if (ctype(ivel,k)(5:5).eq.'-')then
-        frame = ctype(ivel,k)(6:8)
+        iframe = ctype(ivel,k)(5:8)
       else
-        frame = '???'
+        iframe = ' '
       end if
+      oframe = type(5:)
+      if(oframe.eq.' ')oframe = iframe
+      if(iframe.eq.' ')iframe = oframe
+c
+      if(otype.eq.itype.and.oframe.eq.iframe)return
+      if(restfreq(k).le.0)
+     *	  call bug('f','Unable to do axis conversion as restfreq==0')
 c
 c Determine the frequency of the reference pixel
 c
@@ -547,32 +1107,88 @@ c
       else
         f = crval(ivel,k)
         df = cdelt(ivel,k)
-      end if
+      endif
+c
+c  Determine velocity system conversion, if needed.
+c
+      if(oframe.ne.iframe)then
+	if((oframe.eq.'-HEL'.and.iframe.eq.'-LSR').or.
+     *	   (oframe.eq.'-LSR'.and.iframe.eq.'-HEL'))then
+c
+	  ira = ilong(k)
+	  idec = ilat(k)
+	  if(ira.eq.0.or.idec.eq.0)call bug('f',
+     *	    'Missing RA/DEC -- unable to do velocity frame conversion')
+	  if(ctype(ira,k)(1:4).ne.'RA--'.or.
+     *	     ctype(idec,k)(1:4).ne.'DEC-')call bug('f',
+     *	    'Missing RA/DEC -- unable to do velocity frame conversion')
+	  call coGetVel(crval(ira,k),crval(idec,k),epoch(k),vel)
+c
+	  if(oframe.eq.'-HEL')then
+	    vobs(k) = vobs(k) - vel
+	  else
+	    vobs(k) = vobs(k) + vel
+	  endif
+	else
+	  call bug('f','Unable to convert between '//iframe(2:4)//
+     *	  ' and '//oframe(2:4)//' velocity frames')
+	endif
+      endif
 c
 c Perform the transformation
 c
       if (otype.eq.FELO) then
         crval(ivel,k) =  ckms*(restfreq(k)/f-1) - vobs(k)
         cdelt(ivel,k) = -ckms*(df/f)*(restfreq(k)/f)
-        ctype(ivel,k) = 'FELO-'//frame
+        ctype(ivel,k) = 'FELO'//oframe
       else if (otype.eq.VELO) then
         crval(ivel,k) =  ckms*(1-f/restfreq(k)) - vobs(k)
         cdelt(ivel,k) = -ckms*(df/restfreq(k))
-        ctype(ivel,k) = 'VELO-'//frame
+        ctype(ivel,k) = 'VELO'//oframe
       else
         crval(ivel,k) = f
         cdelt(ivel,k) = df
-        ctype(ivel,k) = 'FREQ-'//frame
+        ctype(ivel,k) = 'FREQ'//oframe
       endif
       cotype(ivel,k) = otype
 c
       end
 c************************************************************************
-c* coAxDesc -- Give information about a particular axis.
+	subroutine coGetVel(raepo,decepo,epoch,vel)
+c
+	implicit none
+	double precision raepo,decepo,epoch,vel
+c
+c  Determine the Sun's LSR velocity component in a given direction.
+c
+c------------------------------------------------------------------------
+	double precision ra2000,dec2000,lmn2000(3),velsun(3)
+	integer i
+c
+c  Externals.
+c
+	double precision epo2jul
+c
+        if(abs(epoch-2000).gt.0.001)then
+          call precess(epo2jul(epoch,' '),raepo,decepo,
+     *                 epo2jul(2000.d0,'J'),ra2000,dec2000)
+          call sph2lmn(ra2000,dec2000,lmn2000)
+        else
+          call sph2lmn(raepo,decepo,lmn2000)
+        endif
+        call vsun(velsun)
+        vel = 0
+        do i=1,3
+          vel = vel + lmn2000(i)*velsun(i)
+        enddo
+c
+	end
+c************************************************************************
+c* coAxGet -- Give information about a particular axis.
 c& rjs
 c: coordinates
 c+
-	subroutine coAxDesc(lu,iax,ctypei,crpixi,crvali,cdelti)
+	subroutine coAxGet(lu,iax,ctypei,crpixi,crvali,cdelti)
 c
 	implicit none
 	integer lu,iax
@@ -639,6 +1255,8 @@ c		whereas     axis = 'ra---sin' will match only 'ra---sin'.
 c
 c		It can also be one of:
 c		  'spectral'   for FREQ, VELO and FELO axes
+c		  'frequency'  as above, but only if there is enough
+c			       information to convert to frequency.
 c		  'latitude'   for DEC, GLAT and ELAT axes
 c		  'longitude'  for RA, GLON and ELON axes.
 c
@@ -666,6 +1284,10 @@ c
 	iax = 0
 	if(type.eq.'SPECTRAL')then
 	  iax = ifreq(k)
+	else if(type.eq.'FREQUENCY')then
+	  iax = ifreq(k)
+	  if(iax.gt.0.and.restfreq(k).le.0.and.
+     *		cotype(iax,k).ne.FREQ) iax = 0
 	else if(type.eq.'LONGITUDE')then
 	  iax = ilong(k)
 	else if(type.eq.'LATITUDE')then
@@ -889,7 +1511,6 @@ c
 	      crpix1(i) = xp(i) - delta/cdelt1(i)
 	      if(cotype(i,k).eq.LON)
      *	        cdelt1(i) = cdelt1(i) * cos( crval(ilat(k),k) )
-	      if(cotype(i,k).ne.FELO)ctype1(i)(6:8) = 'CAR'
 	    else
 	      cdelt1(i) = cdelt(i,k)
 	      crpix1(i) = crpix(i,k)
@@ -1027,16 +1648,17 @@ c* coWrite -- Write out the coordinate description to an image dataset.
 c& rjs
 c: coordinates
 c+
-	subroutine coWrite(lu)
+	subroutine coWrite(lu,tno)
 c
 	implicit none
-	integer lu
+	integer lu,tno
 c
 c  This writes out the coordinate system description to an image
 c  dataset.
 c
 c  Input:
-c    lu		Handle of the coordinate system.
+c    lu		Handle of the coordinate object.
+c    tno	Handle of the output dataset.
 c--
 c------------------------------------------------------------------------
 	include 'co.h'
@@ -1052,14 +1674,22 @@ c
 c
 	do i=1,naxis(k)
 	  num = itoaf(i)
-	  call wrhdd(lu,'crval'//num,crval(i,k))
-	  call wrhdd(lu,'crpix'//num,crpix(i,k))
-	  call wrhdd(lu,'cdelt'//num,cdelt(i,k))
-	  call wrhda(lu,'ctype'//num,ctype(i,k))
+	  call wrhdd(tno,'crval'//num,crval(i,k))
+	  call wrhdd(tno,'crpix'//num,crpix(i,k))
+	  call wrhdd(tno,'cdelt'//num,cdelt(i,k))
+	  call wrhda(tno,'ctype'//num,ctype(i,k))
 	enddo
 c
-	if(restfreq(k).ne.0)call wrhdd(lu,'restfreq',restfreq(k))
-	call wrhdd(lu,'vobs',vobs(k))
+	if(restfreq(k).ne.0)call wrhdd(tno,'restfreq',restfreq(k))
+	call wrhdd(tno,'vobs',vobs(k))
+	if(epoch(k).gt.1800)call wrhdr(tno,'epoch',real(epoch(k)))
+	if(obstime(k).gt.0)call wrhdd(tno,'obstime',obstime(k))
+	if(cellscal(k))then
+	  call wrhda(tno,'cellscal','1/F')
+	else
+	  call wrhda(tno,'cellscal','CONSTANT')
+	endif
+c
 	end
 c************************************************************************
 	subroutine CoCompat(ctype1,ctype2,ok)
@@ -1070,25 +1700,56 @@ c
 c
 c  Check that two celestial coordinates represent a consistent pair.
 c------------------------------------------------------------------------
-	character type1*16,type2*16
+	character type1*16,type2*16,qual1*16,qual2*16
 c
 c  "Sort" them.
 c
 	if(ctype1.lt.ctype2)then
-	  type1 = ctype1
-	  type2 = ctype2
+	  call CoExt(ctype1,type1,qual1)
+	  call CoExt(ctype2,type2,qual2)
 	else
-	  type1 = ctype2
-	  type2 = ctype1
+	  call CoExt(ctype2,type1,qual1)
+	  call CoExt(ctype1,type2,qual2)
 	endif
 c
 c  The projection code (characters 6:8) should be the same,
 c  and make sure We should have a RA/DEC, GLAT/GLON, ELAT/ELON pair.
 c
-	ok = (type1(6:8).eq.type2(6:8)).and.
-     *	     ((type1(1:5).eq.'DEC--'.and.type2(1:5).eq.'RA---').or.
-     *	      (type1(1:5).eq.'GLAT-'.and.type2(1:5).eq.'GLON-').or.
-     *	      (type1(1:5).eq.'ELAT-'.and.type2(1:5).eq.'ELON-'))
+	ok = (qual1.eq.qual2).and.
+     *	     ((type1.eq.'DEC'.and.type2.eq.'RA').or.
+     *	      (type1.eq.'GLAT'.and.type2.eq.'GLON').or.
+     *	      (type1.eq.'ELAT'.and.type2.eq.'ELON'))
+	end
+c************************************************************************
+	subroutine CoExt(ctype,type,qual)
+c
+	implicit none
+	character ctype*(*),type*(*),qual*(*)
+c------------------------------------------------------------------------
+	integer l,i,length
+	logical doqual
+c
+c  Externals.
+c
+	integer len1
+c
+	doqual = .false.
+	l = 0
+	type = ' '
+	qual = ' '
+	length = len1(ctype)
+	do i=1,length
+	  l = l + 1
+	  if(ctype(i:i).eq.'-')then
+	    l = 0
+	    doqual = .true.
+	  else if(doqual)then
+	    qual(l:l) = ctype(i:i)
+	  else
+	    type(l:l) = ctype(i:i)
+	  endif
+	enddo
+c
 	end
 c************************************************************************
 	subroutine CoInitXY(k)
@@ -1103,7 +1764,7 @@ c------------------------------------------------------------------------
 	include 'co.h'
 c
 	integer i
-	character num*2
+	character num*2,cscal*16
 c	character telescop*16
 c	double precision dtemp
 c	logical ewdone,ew
@@ -1121,6 +1782,12 @@ c
 c	if(.not.hdprsnt(lus(k),'vobs'))
 c    *	  call bug('w','VOBS item missing -- assuming it is 0')
 	call rdhdd(lus(k),'vobs',vobs(k),0.d0)
+	call rdhdd(lus(k),'epoch',epoch(k),0.d0)
+	call rdhdd(lus(k),'obstime',obstime(k),0.d0)
+	call rdhda(lus(k),'cellscal',cscal,'1/F')
+	cellscal(k) = cscal.eq.'1/F'
+	if(.not.cellscal(k).and.cscal.ne.'CONSTANT')call bug('w',
+     *	  'Unrecognised cellscal value: '//cscal)
 c
 c	ewdone = .false.
 	do i=1,naxis(k)
@@ -1165,7 +1832,7 @@ c------------------------------------------------------------------------
 	include 'co.h'
 c
 	integer NTYPES
-	parameter(NTYPES=14)
+	parameter(NTYPES=16)
 	character types(NTYPES)*8
 	integer itypes(NTYPES)
 c
@@ -1189,7 +1856,9 @@ c
      *	  'FREQ    ',	FREQ,
      *	  'GLAT    ',	LAT,
      *	  'GLON    ',	LON,
+     *	  'POINTING',   LINEAR,
      *	  'RA      ',	LON,
+     *	  'SDBEAM  ',	LINEAR,
      *	  'STOKES  ',	LINEAR,
      *	  'UU      ',	LINEAR,
      *	  'VELO    ',	VELO,
@@ -1224,6 +1893,8 @@ c
 	    proj = 'tan'
 	  else if(type(l1:l2).eq.'CAR')then
 	    proj = 'car'
+	  else if(type(l1:l2).eq.'GLS')then
+	    proj = 'gls'
 	  else 
 	    umsg = 'Using cartesian projection for axis '//type
 	    call bug('w',umsg)
@@ -1235,7 +1906,7 @@ c
 	  l = len1(type)
 	  umsg = 'Assuming axis '//type(1:l)//
      *		' is a linear coordinate system'
-	  call bug('w',umsg)
+c	  call bug('w',umsg)
 	  itype = LINEAR
 	endif
 c
@@ -1278,6 +1949,9 @@ c
 	crpix(2,k) = 0
 	cdelt(1,k) = 1
 	cdelt(2,k) = 1
+	call uvrdvrd(lus(k),'epoch',epoch(k),0.d0)
+	call uvrdvrd(lus(k),'time',obstime(k),0.d0)
+	cellscal(k) = .false.
 c
 	end
 c************************************************************************
@@ -1288,7 +1962,7 @@ c
 	logical alloc
 c------------------------------------------------------------------------
 	include 'co.h'
-	integer i
+	integer i,free
 c
 	logical first
 	save first
@@ -1297,20 +1971,39 @@ c
 	if(first)then
 	  do i=1,MAXOPEN
 	    Lus(i) = 0
+	    nalloc(i) = 0
 	  enddo
 	  first = .false.
 	endif
 c
-c  Locate the slot for this L.U.
+c  Locate the slot for this lu.
 c
+	free = 0
 	do i=1,MAXOPEN
-	  if(lus(i).eq.lu.or.(alloc.and.lus(i).eq.0))then
+	  if(lus(i).eq.lu.and.nalloc(i).gt.0)then
+	    if(alloc)nalloc(i) = nalloc(i) + 1
 	    CoLoc = i
 	    return
+	  else if(nalloc(i).eq.0)then
+	    free = i
 	  endif
 	enddo
 c
+c  We did not find it. If we are allowed to allocate one, do so.
+c
+	if(alloc.and.free.ne.0)then
+	  if(lu.eq.0)then
+	    lus(free) = -free
+	  else
+	    lus(free) = lu
+	  endif
+	  nalloc(free) = 1
+	  CoLoc = free
+	  return
+	endif
+c
 	call bug('f','Unable to find coordinate object in CoInit')
+	coLoc = 0
 c
 	end
 c************************************************************************
@@ -1498,7 +2191,7 @@ c
 c  Input:
 c    x10,y10	Input celestial coordinate, some combination of pixels or
 c		radians.
-c    proj	Projection code. One of ncp,sin,tan,car,arc
+c    proj	Projection code. One of ncp,sin,tan,car,arc,gls
 c    x1pix,y1pix,x2pix,y2pix Logicals. True if the particular coordinate
 c		is a pixel coordinate.
 c    x1off,y1off,x2off,y2off Logicals. True if the particular coordinate
@@ -1560,8 +2253,12 @@ c
 	    Dalp = atan2(L,(cosyval*t - M*sinyval))
 c
 	  else if(proj.eq.'car')then
-	    Dalp = L / cosyval
 	    y2 = yval + M
+	    Dalp = L / cosyval
+c
+	  else if(proj.eq.'gls')then
+	    y2 = yval + M
+	    Dalp = L / cos(y2)
 c
 	  else if(proj.eq.'tan')then
 	    t = cosyval - M*sinyval
@@ -1587,6 +2284,11 @@ c  Convert from RA,y to x,DEC.
 c
 	else if(y1pix)then
 	  Dalp = x1 - xval
+	  if(Dalp.lt.-DPI)then
+	    Dalp = Dalp + 2*DPI
+	  else if(Dalp.gt.DPI)then
+	    Dalp = Dalp - 2*DPI
+	  endif
 	  M = (y1 - ypix) * dy
 c
 	  if(proj.eq.'ncp')then
@@ -1602,8 +2304,12 @@ c
 c
 	  else if(proj.eq.'car')then
 	    L = Dalp * cos(yval)
-	    y2 = yval + y1
+	    y2 = yval + M
 c
+	  else if(proj.eq.'gls')then
+	    y2 = yval + M
+	    L = Dalp*cos(y2)
+c	  
 	  else if(proj.eq.'tan')then
 	    y2 = atan(cos(Dalp)*(sinyval + M*cosyval)/
      *			(cosyval-M*sinyval))
@@ -1656,8 +2362,12 @@ c
 	    M = sin(y1)*cosyval - cos(y1)*sinyval*cos(Dalp)
 c
 	  else if(proj.eq.'car')then
-	    Dalp = L / cosyval
 	    M = (y1 - yval)
+	    Dalp = L / cosyval
+c
+	  else if(proj.eq.'gls')then
+	    M = (y1 - yval)
+	    Dalp = L / cos(y1)
 c
 	  else if(proj.eq.'tan')then
 	    Dalp = atan(L*cosyval) + asin(tan(y1)*L*sinyval /
@@ -1709,6 +2419,11 @@ c  Convert from RA,DEC to x,y.
 c
 	else
 	  Dalp = x1 - xval
+	  if(Dalp.lt.-DPI)then
+	    Dalp = Dalp + 2*DPI
+	  else if(Dalp.gt.DPI)then
+	    Dalp = Dalp - 2*DPI
+	  endif
 c
 	  if(proj.eq.'ncp')then
 	    L = sin(Dalp) * cos(y1)
@@ -1735,6 +2450,10 @@ c
 c
 	  else if(proj.eq.'car')then
 	    L = Dalp * cosyval
+	    M = (y1 - yval)
+c
+	  else if(proj.eq.'gls')then
+	    L = Dalp * cos(y1)
 	    M = (y1 - yval)
 	  endif
 c
