@@ -63,11 +63,11 @@ c@ vis
 c	The name of the input uv-data file.
 c@ select
 c	The normal uv selection commands. The default is use everything.
-c	See the help on "select" for more details.
+c	Enter "help select" for more details.
 c@ line
 c	The normal uv linetype in the form:
 c	  line,nchan,start,width,step
-c	See the help on "line" for more details.
+c	Enter "help line" for more details.
 c	The default is all channels (or all wide channels if there are no
 c	spectral channels). The output will consist of only spectral or
 c	wideband data (but not both).
@@ -114,10 +114,6 @@ c	   'scalar'	Fit polynomial to amplitude and phase. Default is
 c			to fit (real,imag). 
 c	   'unwrap'	Attempt to extend phases beyond -180 to 180 degrees
 c			for 'scalar' polynomial fit.
-c	   'noamp'	Re-normalize the gains to the average amplitude on
-c			each baseline. i.e. do not force amplitude closure.
-c			The default normalizes the gains to obtain unit
-c			amplitude on all baselines. i.e. amplitude closure.
 c@ device
 c	PGPLOT device for polynomial fits. The default is to ask user.
 c@ nxy
@@ -166,9 +162,7 @@ c    mchw 03jan94 Exclude flagged data. Re-normalize passband to unit gain.
 c    mchw 10apr94 Put MAXWIN into maxdim.h
 c    djw  16jul94 List of poly orders; dimension npoly(2*MAXWIN) 
 c    mchw 08sep94 Suppress plots for constant (autocorrelation) data.
-c    rjs  29mar96 Handle autocorrelation data.
-c    mchw 29dec96 Options=noamp.
-c		  The default now makes unit amplitude on all baselines.
+c
 c  Bugs:
 c    * This can write out either massaged channels, or massaged wides,
 c      but not both simultaneously.
@@ -183,7 +177,7 @@ c-----------------------------------------------------------------------
 	integer ninter,nxy(2),npoly(2*MAXWIN),inpoly
 	logical dotaver
 	logical doflush,buffered,PolVary
-	logical dopass,dowgains,dopoly,dowindow,dowrap,scalar,dsb,noamp
+	logical dopass,dowgains,dopoly,dowindow,dowrap,scalar,dsb
 	double precision preamble(4),T0,T1,Tprev,interval
 	complex data(MAXCHAN)
 	logical flags(MAXCHAN)
@@ -201,7 +195,7 @@ c  Get the input parameters.
 c
 	call output(version)
 	call keyini
-	call GetOpt(uvflags,dopoly,dowindow,dowrap,scalar,dsb,noamp)
+	call GetOpt(uvflags,dopoly,dowindow,dowrap,scalar,dsb)
 	call uvDatInp('vis',uvflags)
 	call keyd('interval',interval,0.d0)
 	call keya('out',out,' ')
@@ -287,7 +281,7 @@ c  for the first average.
 c
 	  if(doflush)then
 	  if(dopass) call Passwrite(tin,tout,dowgains,dopoly,dowindow,
-     *		dowrap,scalar,dsb,device,nxy,npoly,noamp,
+     *		dowrap,scalar,dsb,device,nxy,npoly,
      *		endchan,nbad,maxbad,badchan)
 	    dopass=.false.
 	    call BufFlush(tOut,npol,ninter)
@@ -334,7 +328,7 @@ c  Flush out anything remaining.
 c
 	if(buffered)then
 	  if(dopass) call Passwrite(tin,tout,dowgains,dopoly,dowindow,
-     *		dowrap,scalar,dsb,device,nxy,npoly,noamp,
+     *		dowrap,scalar,dsb,device,nxy,npoly,
      *		endchan,nbad,maxbad,badchan)
 	  dopass=.false.
 	  call VarCopy(tIn,tOut)
@@ -361,12 +355,11 @@ c
 	call uvDatCls
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
-	subroutine GetOpt
-     *		(uvflags,dopoly,dowindow,dowrap,scalar,dsb,noamp)
+	subroutine GetOpt(uvflags,dopoly,dowindow,dowrap,scalar,dsb)
 c
 	implicit none
 	character uvflags*(*)
-	logical dopoly,dowindow,dowrap,scalar,dsb,noamp
+	logical dopoly,dowindow,dowrap,scalar,dsb
 c
 c  Determine the flags to pass to the uvdat routines, and other options.
 c
@@ -377,17 +370,14 @@ c    dowindow	Fit polynomial to each window.
 c    dsb	Fit polynomial to each sideband.
 c    scalar	Fit polynomial to amplitude and phase.
 c    dowrap	Attempt to extend phase beyond -180 to 180 degrees.
-c    noamp      Re-normalize the gains to the average amplitude for
-c                       each baseline. i.e. no amplitude closure.
 c------------------------------------------------------------------------
 	integer nopts
-	parameter(nopts=9)
+	parameter(nopts=8)
 	character opts(nopts)*8
 	integer l
 	logical present(nopts),docal,dopol,dopass
 	data opts/'nocal   ','nopol   ','dopass  ','polyfit ',
-     *		  'window  ','unwrap  ','scalar  ','dsb     ',
-     *		  'noamp   '/
+     *		  'window  ','unwrap  ','scalar  ','dsb     '/
 c
 	call options('options',opts,present,nopts)
 	docal = .not.present(1)
@@ -397,8 +387,7 @@ c
 	dowindow = present(5)
 	dowrap = present(6)
 	scalar = present(7)
-	dsb =    present(8)
-	noamp =  present(9)
+	dsb = present(8)
 	uvflags = 'dslr'
 	l = 4
 	if(docal)then
@@ -524,12 +513,11 @@ c    flags	The data flags.
 c    nread	The number of channels.
 c------------------------------------------------------------------------
 	include 'uvgains.h'
-	integer i,p,bl,pol,i1,i2
+	integer i,p,bl,pol
 c
 c  Determine the baseline number, and conjugate the data if necessary.
 c
-	call BasAnt(preambl(4),i1,i2)
-	bl = ((i2-1)*i2)/2 + i1
+	call uvgetbl(preambl,data,nread,bl)
 c
 c  Zero up to, and including, this baseline.
 c
@@ -609,13 +597,13 @@ c
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
 	subroutine Passwrite(tin,tout,dowgains,dopoly,dowindow,
-     *		dowrap,scalar,dsb,device,nxy,npoly,noamp,
+     *		dowrap,scalar,dsb,device,nxy,npoly,
      *		endchan,nbad,maxbad,badchan)
 c
 	implicit none
 	include 'uvgains.h'
 	integer tin,tout,nxy(2),npoly(2*MAXWIN)
-	logical dowgains,dopoly,dowrap,dowindow,scalar,dsb,noamp
+	logical dowgains,dopoly,dowrap,dowindow,scalar,dsb
 	character*(*) device
 c
 c  Write out the channel gains item.
@@ -636,8 +624,6 @@ c    endchan 	number of edge channels to exclude from poly fit
 c    nbad	number of bad channel ranges
 c    maxbad	max number of bad channel ranges
 c    badchan	pairs of channels corresponding to bad channel ranges
-c    noamp      Re-normalize the gains to the average amplitude for
-c                       each baseline. i.e. no amplitude closure.
 c------------------------------------------------------------------------
 	integer i,j,k,p,iostat,item,offset,ngains,b1,b2
 	complex gains(MAXCHAN*MAXBASE),temp
@@ -696,7 +682,7 @@ c
 		endif
 	      enddo
               call pfit(ngains,x,yamp,yphase,flags,gains,offset,npoly,
-     *          tin,dowrap,scalar,dsb,dowindow,noamp,
+     *          tin,dowrap,scalar,dsb,dowindow,
      *		endchan,nbad,maxbad,badchan,label)
 	    enddo
 	  endif
@@ -712,30 +698,29 @@ c
 	      p = pnt(i,j) - 1
 	      ngains = nchan(i,j)
 	      offset = (j-1)*ngains
+	      sum = 0.
+	      wt = 0.
 	      do k=1,ngains
-		if(abs(buf(k+p)).gt.0)then
-		  gains(k+offset) = count(k+p)/buf(k+p)
-	        else
-	          gains(k+offset) = 1.
+		if(count(k+p).gt.0)then
+		  sum = sum + abs(buf(k+p)/count(k+p))
+		  wt = wt + 1.
 		endif
 	      enddo
 c
-c  Re-normalize the gains to the average amplitude for each baseline.
+c  Re-normalize passband to unit gain.
 c
-	      if(noamp)then
-	        sum = 0.
-	        wt = 0.
+	      if((sum/wt).gt.0.)then
 		do k=1,ngains
-		 if(count(k+p).gt.0)then
-		  sum = sum + abs(buf(k+p)/count(k+p))
-		  wt = wt + 1.
-		 endif
+		  if(abs(buf(k+p)).gt.0)then
+		    gains(k+offset) =  sum/wt * count(k+p)/buf(k+p)
+	          else
+	            gains(k+offset) = sum/wt
+		  endif
 		enddo
-		if((sum/wt).gt.0.)then
-		  do k=1,ngains
-	            gains(k+offset) = sum/wt * gains(k+offset)
-		  enddo
-	        endif
+	      else	
+		do k=1,ngains
+	          gains(k+offset) = (1.,0.)
+		enddo
 	      endif
 c
 c  Process next baseline and polarization.
@@ -773,14 +758,14 @@ c
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
 	subroutine pfit(ngains,x,yamp,yphase,flags,gains,offset,npoly,
-     *          tin,dowrap,scalar,dsb,dowindow,noamp,
+     *          tin,dowrap,scalar,dsb,dowindow,
      *		endchan,nbad,maxbad,badchan,label)
 c
 	implicit none
 	include 'uvgains.h'
 	integer tin,ngains,offset,npoly(2*MAXWIN)
 	integer endchan,maxbad,nbad,badchan(maxbad)
-	logical dowrap,dowindow,scalar,dsb,noamp
+	logical dowrap,dowindow,scalar,dsb
 	character label*(*)
 c
 c Do polynomial fit to averaged data
@@ -803,8 +788,6 @@ c    nbad	number of bad channel ranges
 c    maxbad	max number of bad channel ranges
 c    badchan	pairs of channels corresponding to bad channel ranges
 c    label	Plot label.
-c    noamp      Renormalize the gains to the average amplitude for
-c                       each baseline. i.e. no amplitude closure.
 c  Output
 c    gains = 1. / polynomial fit evaluated at channel
 c------------------------------------------------------------------------
@@ -979,12 +962,16 @@ c
 	  enddo
 	endif
 c
-c  Re-normalize the gains to the average amplitude for each baseline.
+c  Re-normalize passband to unit gain.
 c
-	if(noamp.and.(sum/ngains).ne.0.)then
+	if((sum/ngains).ne.0.)then
 	  do k = 1,ngains
 	    gains(k+offset) = gains(k+offset) * sum/ngains
 	  enddo
 	endif
 c
         end
+c********1*********2*********3*********4*********5*********6*********7*c
+
+
+
