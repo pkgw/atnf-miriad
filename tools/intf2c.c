@@ -17,8 +17,8 @@ Usage:
 
   intf2c -s system [in] [out]
 
-    system: One of "vms","hpux","sun","bsd","trace","alliant","convex",
-            "unicos","alpha", "sgi", "linux". No default.
+    system: One of "vaxc","hpux","sun","bsd","trace","alliant","convex",
+            "unicos","alpha". No default.
 
     in:     Input file. Default is standard input.
     out:    Output file. Default is standard output.
@@ -97,10 +97,9 @@ fortran subroutine fstrcpy(character out,character in)
 /*    rjs  27jul93 Handle subroutines with zero args.			*/
 /*    rjs   9aug93 Exit (rather than return) with 0 to appease VMS.     */
 /*    rjs  20nov94 Added Alphas.					*/
-/*    rjs  26jan95 Added f2c.						*/
 /************************************************************************/
 
-#define VERSION_ID "version 1.0 26-Jan-95"
+#define VERSION_ID "version 1.0 20-Dec-92"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,17 +131,11 @@ void addr_vms(),addr_norm(),addr_uni();
 void init_vms(),init_norm(),init_uni();
 
 SYSTEM systems[] = {
-	{ "vms",  "-1","0",
+	{ "vaxc",  "-1","0",
 	  name_lower,  arg_vms,  len_vms,    addr_vms, init_vms},
 	{ "hpux",   "1","0",
 	  name_lower,  arg_extra,len_extra,  addr_norm,init_norm},
-	{ "linux",  "1","0",
-	  name_lower_,  arg_extra,len_extra,  addr_norm,init_norm},
 	{ "sun",    "1","0",
-	   name_lower_,arg_extra,len_extra,  addr_norm,init_norm},
-	{ "sgi",    "1","0",
-	   name_lower_,arg_extra,len_extra,  addr_norm,init_norm},
-	{ "f2c",    "1","0",
 	   name_lower_,arg_extra,len_extra,  addr_norm,init_norm},
 	{ "bsd",    "1","0",
 	   name_lower_,arg_extra,len_extra,  addr_norm,init_norm},
@@ -575,8 +568,7 @@ char *buf;
   The global variables lineno and last_char are updated.
 ------------------------------------------------------------------------*/
 {
-  char *s;
-  int c;
+  char *s,c;
 
   c = getchar(); if(c == '\n') lineno++;
   while(isspace(c)){
