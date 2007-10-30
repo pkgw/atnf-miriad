@@ -1,4 +1,4 @@
-c************************************************************************
+c***********************************************************************
 	program  uvgen
 	implicit none
 c
@@ -83,6 +83,12 @@ c    25aug97 rjs   General tidy up.
 c    09oct97 rjs   Fix error in generating spectral datasets (introduced
 c		   7 weeks ago).
 c    02nov97 rjs   Change in calling sequence to tinOpen.
+c    07may98 mchw  Add circular polarization to source model.
+c    17may98 mchw  Add Gaussian spectral line and Zeeman keyword.
+c    27may98 mchw  Replace correlator file with keywords.
+c    01jul98 mchw  Added pbfwhm parameters to simulate primary beams.
+c			Fixed some errors in rms noise calculations.
+c    12jan99 rjs   Doc changes only.
 c
 c  Bugs/Shortcomings:
 c    * Frequency and time smearing is not simulated.
@@ -103,27 +109,38 @@ c	value of the visibilities. The calculation includes the response to
 c	polarized sources with linear and circularly polarized feeds. U-V
 c	trajectories for all pairs of antennas are computed.
 c@ source
-c	The name of a text file containing the source components. There is
-c	no default. The source components are elliptical
-c	Gaussian components described by the total flux (Jy) and
-c	position offsets (arcsecs) from the phase center in the directions
-c	of ra and dec. The sources are specified by the full width to half
-c	maximum of the major and minor axes; the position angle of the
-c	major axis measured from north to the east. The default half width
-c	for a "point" source is 0."0001. The sources can be partially linearly
-c	polarized. This information is given as a percentage polarization and
-c	a position angle. A value of 0 for the percentage polarization forms
-c	an unpolarized source.
+c	The name of a text file containing the source components, one
+c	component per line. There is no default.  The source components
+c	are elliptical Gaussian components. Each line consists of at least
+c	three and up to nine values:
+c	  flux,dra,ddec,bmaj,bmin,bpa,iflux,ipa,vflux
+c	where
+c	  flux:          Total flux in Jy.
+c	  dra,ddec:      Position offset from the phase center in arcsec.
+c	  bmaj,bmin,bpa: The full width to half maximum of the major and
+c	                 minor axes, and the position angle of the major
+c	                 axis measured from north to the east. The default
+c	                 half width is 0."0001.
+c	  iflux,ipa:     The sources can be partially linearly polarized.
+c	                 This information is given as a percentage
+c	                 polarization and position angle. The default is 0.
+c	  vflux:         Percentage circular polarization. The default is 0.
+c	The text file is free-format, with commas or blanks used to separate
+c	the values. Comments (starting with #) can be included in the file.
 c@ ant
-c	The name of a text file containing the position of the antennae.
-c	There is no default.
+c	The name of a text file containing the position of the antennas.
+c	There is no default. Each line of the text file gives three values,
+c	being the x, y and z location of an antenna.
 c	The antenna positions can be given in either a right handed
 c	equatorial system or as a local ground based coordinates measured to the
 c	north, east and in elevation. See the "baseunit" parameter to
 c	specify the coordinate system. Some standard antenna configurations
 c	can be found in $MIRCAT/*.ant for ATCA, BIMA and VLA telescopes.
 c	The BIMA and VLA antenna tables, use with baseunit=1, whereas for
-c	the ATCA, use baseunit=51.0204.
+c	the ATCA, use baseunit=-51.0204.
+c
+c	The text file is free-format, with commas or blanks used to separate
+c	the values. Comments (starting with #) can be included in the file.
 c@ baseunit
 c	This specifies the coordinate system used in the antenna file.
 c	A positive value for "baseunit" indicates an equatorial system,
@@ -135,25 +152,36 @@ c	equatorial system measured in nanoseconds.
 c	E.g. 	baseunit=-1 for topocentric coordinates in nanosecs, 
 c		baseunit=3.33564 for geocentric coordinates in meters.
 c@ telescop
-c	This can take on the value of "hatcreek", "atca" or "other".
-c	This determines miscellaneous parameters. In particular, this
-c	determines the interpretation of the correlator setup file
-c	(see below), the "evector" variable and the telescope name.
-c	The default is "hatcreek".
+c	This parameter determine the feed angle variation (i.e. the parallactic
+c	angle plus the feed offset angle - evector). It is also
+c	used to set the name of the telescop variable in the output dataset.
+c	If can take two values, the first gives the antenna mount type, and
+c	can be "altaz" or "equatorial". The second value gives the feed
+c	offset angle ("evector") in degrees. The default is 0.
+c
+c	Alternatively, you can give the name of a known telescope for this
+c	parameter. In this case, the mount type and feed offset angle will
+c	be that of that particular telescope.
+c
+c	The default value is "hatcreek" (which is equivalent to "altaz,0").
 c@ corr
-c	This gives the name of a text file of two lines, giving the
-c	correlator setup, and a spectral line model. There is no default.
-c	The values are:
-c	  Number of channels in each spectral window. 0=wideband only.
-c	  Number of spectra: up to 4 spectral windows can be specified.
-c	  Then up to four starting frequencies followed by the corresponding
-c	  bandwidths for each spectral window. These are specified in MHz.
-c	  Then follow three parameters which model a spectral line:
-c	  famp, fcen and fwid, giving line to continuum
-c	  ratio, freq and width (GHz). This gives a simple spectral line.
-c	  In particular, the visibility value for a channel is scaled by
-c	  a factor:
-c	    1 + famp*( 1-min(1,|(f-fcen)/fwid|) )
+c       Defines the correlator setup. The values are:
+c	  nchan:       Number of channels in each spectral window. Use 0
+c	               for a wideband only file.
+c	  nspect:      Number of spectral windows. Default 1; maximum 4.
+c	  f1,f2,...:   "nspect" values giving the offset for the center 
+c	               frequency of each window, in MHz. Default 0.
+c	  df1,df2,...: "nspect" values giving the total widths of each
+c	               spectral window, in MHz. Default 1000.
+c       No checking is made for valid combinations. 
+c	Default is wideband only for each spectral window.
+c@ spectra
+c	Make a Gaussian spectral line.
+c	The spectral line model line consists of three values:
+c	  famp:	       The line to continuum ratio
+c	  fcen:	       Line freq (GHz)
+c	  fwid:	       Line width (GHz).
+c       Default is no spectral line.
 c@ time
 c	The time of the observation (this corresponds to ha=0). This is in
 c	the form
@@ -163,10 +191,8 @@ c	  yymmmdd:hh:mm:ss.s
 c	The default is 80JAN01.0. A function of this is also used
 c	as a seed for the random number generator.
 c@ freq
-c	Frequency and 2nd IF frequency for the model in GHz.
-c	Defaults are 100,0.250 GHz. 
-c	The IF parameter is currently ignored if the telescope is not 
-c	hatcreek.
+c	Frequency and IF frequency in GHz.
+c	Defaults are 100,0.0 GHz. 
 c@ radec
 c	Source right ascension and declination. These can be given in
 c	hh:mm:ss,dd:mm:ss format, or as decimal hours and decimal
@@ -205,6 +231,12 @@ c	  stokes=xx,yy,xy,yx
 c	or
 c	  stokes=rr,ll,rl,lr
 c	The default is 0 (i.e. no polarization leakage).
+c@ zeeman
+c       Zeeman effect; the keyword gives the product B * Z, where,
+c          Stokes V = B * Z * dI/dnu + Leakage * I
+c          B = line of sight field, and Z = Zeeman splitting term.
+c	This generates a circular polarization for a spectral line.
+c       Default = 0.
 c@ lat
 c	Latitude of observatory, in degrees. Default is 40 degrees.
 c@ cycle
@@ -218,10 +250,23 @@ c	Similarly, if simulating this calibrator, use:
 c	  cycle=0.1,0.4
 c	The default is harange(3),0 (i.e. do not interrupt the observations).
 c@ pbfwhm
-c	The primary beam fwhm, in arcseconds. The value of this will be
-c	approximately 66000/(diam*freq), where "diam" is the antenna
-c	diameter in meters, and "freq" is the observing frequency. The
-c	default is an infinite primary beam (i.e. no primary beam effects).
+c	A primary beam pattern may be specified by three values:
+c	the FWHM for two concentric Gaussian beams, and the fraction of
+c	the amplitude in the second beam. i.e. the primary beam pattern is
+c		(1-fraction)*Gauss(FWHM1) + fraction*Gauss(FWHM2)
+c       The default is an infinite primary beam (no primary beam effects).
+c	A single value specifies a single Gaussian FWHM in arcseconds.
+c	The value of this will be approximately 66000/(diam*freq), 
+c	where "diam" is the antenna diameter in meters, and "freq" is the 
+c	observing frequency.
+c	Two more parameters can be used to simulate a primary beam with an
+c	error beam, or the primary beam pattern which
+c	results from an interferometer using two different antenna diameters.
+c	E.g. pbfwhm=60,480,0.1  simulates a primary beam pattern with an
+c	error beam with FWHM=480'' and 10% of the amplitude of the main beam.
+c	pbfwhm=76,137,-0.2 simulates a primary beam pattern between
+c	10m and 6m antennas at 100 GHz. 
+c	NOTE: Only a single Gaussian beam is currently implemented (July98). 
 c@ center
 c	Offset observing centers for a mosaiced observation, in arcseconds.
 c	Two values (x and y offset) are required per pointing. Several
@@ -289,23 +334,31 @@ c	the dataset, with an appropriate informational message.
 c--
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version = 'Uvgen: version 1.0 25-Aug-97')
+	parameter(version = 'Uvgen: version 1.0 01-Jul-98')
+	integer ALTAZ,EQUATOR
+	parameter(ALTAZ=0,EQUATOR=1)
+	integer PolRR,PolLL,PolRL,PolLR,PolXX,PolYY,PolXY,PolYX
+	parameter(PolRR=-1,PolLL=-2,PolRL=-3,PolLR=-4)
+	parameter(       PolXX=-5,PolYY=-6,PolXY=-7,PolYX=-8)
+c
 	include 'mirconst.h'
 	include 'maxdim.h'
 	include 'uvgen.h'
 c
-	real corfin(4),corbw(4)
-	complex vis,gain(MAXANT),leak(2,MAXANT)
+        real corfin(4),corbw(4),zeeman
+        complex vis,modI,oldI,gradI,gain(MAXANT),leak(2,MAXANT)
 	complex wcorr(maxspect,maxpol),chan(MAXCHAN,maxpol)
 	real wsignal(maxspect),tpower(MAXANT),pnoise(MAXANT)
 	logical flags(MAXCHAN)
 	logical donoise,dogains,doleak,dopoint
 	real sind,cosd,sinl,cosl,sinel,flux,dra,ddec
-	double precision freq,iffreq
-	real wmaj,wmin,wpa,poln,polpa,x,z,h,sinha,cosha,ha,haend
+	double precision freq,iffreq,dtemp
+	real wmaj,wmin,wpa,poln,polpa,polvv,x,z,h,sinha,cosha,ha,haend
 	double precision bxx,byy,bzz,bxy,byx
-	real pbfwhm,center(2,MAXPNT),evector
-	integer n,nant,npnt,ipnt,i,jj,m,is,ic,nchan,nospect,ntemp
+	real pbfwhm(3),center(2,MAXPNT),evector
+	integer mount
+	character telescop*16
+	integer n,nant,npnt,ipnt,i,jj,m,is,ic,nchan,nospect
 	double precision preamble(5),timeout
 	real b1(MAXANT),b2(MAXANT),b3(MAXANT),temp,psi,sinq,cosq,leakrms
 	real systemp(MAXANT*maxspect),inttime
@@ -314,19 +367,16 @@ c
 	integer item, unit
 	character line*132, umsg*80
 	complex gatm
-	real baseline,patm,pslope,pelev
-	logical doatm,dopolar,doellim
+	real baseline,patm,pslope,pelev,xx
+	logical doatm,dopolar,doellim,ok
 c
 c  Parameters from the user.
 c
-	integer NTELS
-	parameter(NTELS=3)
-	character sfile*64,antfile*64,corfile*64,outfile*64
+	character sfile*64,antfile*64,outfile*64
 	real hbeg, hend, hint, arms, prms, utns
 	real tsys,tsky,tau,trms,tatm,cycleon,cycleoff
 	double precision alat,along,sdec,sra,elev
 	integer pol(maxpol),npol,ipol,npolar,ipolar
-	character telescop*16,tels(NTELS)*8
 	character polar(MAXPOLAR)*27,xpolar*27
 c	character polar(MAXPOLAR)*MAXANT,xpolar*MAXANT
 c
@@ -334,7 +384,7 @@ c  Variables describing the source.
 c
  	integer ns
 	real ta(maxsrc),sx(maxsrc),sy(maxsrc),smaj(maxsrc),smin(maxsrc)
-	real spa(maxsrc),per(maxsrc),pa(maxsrc)
+	real spa(maxsrc),per(maxsrc),pa(maxsrc),polv(maxsrc)
 	real smajd(maxsrc),smind(maxsrc),tad(maxsrc),sxd(maxsrc),
      *	     syd(maxsrc),szd(maxsrc)
 c
@@ -353,7 +403,6 @@ c
 c  Data initialisation.
 c
 	data flags /MAXCHAN*.true./
-	data tels/'hatcreek','other   ','atca    '/
 c
 c  Get command line arguments.
 c
@@ -363,17 +412,40 @@ c
 	if(sfile.eq.' ')call bug('f','A source table must be given')
 	call keya('ant',antfile,' ')
 	if(antfile.eq.' ')call bug('f','An antenna table must be given')
-	call keya('corr',corfile,' ')
-	if(corfile.eq.' ')call bug('f',
-     *				      'A correlator file must be given')
 c
-	call keymatch('telescop',NTELS,tels,1,telescop,ntemp)
-	if(ntemp.eq.0) telescop = tels(1)
+        call keyi('corr',nchan,0)
+        call keyi('corr',nospect,1)
+	do i=1,nospect
+          call keyr('corr',corfin(i),0.)
+	enddo
+	do i=1,nospect
+          call keyr('corr',corbw(i),1000.)
+	enddo
+        call keyr('spectra',famp,0.)
+        call keyr('spectra',fcen,0.)
+        call keyr('spectra',fwid,0.)
+c
+	call keya('telescop',telescop,'hatcreek')
 	call ucase(telescop)
+	if(telescop.eq.'ALTAZ')then
+	  mount = ALTAZ
+	  dtemp = 0
+	else if(telescop.eq.'EQUATORIAL')then
+	  mount = EQUATOR
+	  dtemp = 0
+	else
+	  call obspar(telescop,'mount',dtemp,ok)
+	  if(.not.ok)call bug('f','Unrecognized telescope: '//telescop)
+	  mount = nint(dtemp)
+	  call obspar(telescop,'evector',dtemp,ok)
+	  if(.not.ok)dtemp = 0
+	endif
+	call keyr('telescop',evector,real(180d0/DPI*dtemp))
+	evector = PI/180*evector
 c
 	call keyr('baseunit',utns,1.0)
 	call keyd('freq',freq,100.d0)
-	call keyd('freq',iffreq,0.250d0)
+	call keyd('freq',iffreq,0.0d0)
 	call keyt('time',timeout,'atime',0.d0)
 	if(timeout.le.1)call dayjul('80JAN01',timeout)
 	call keyt('radec',sra,'hms',0.d0)
@@ -401,8 +473,11 @@ c
 c
 c  Mosaicing/primary beam parameters.
 c
-	call keyr('pbfwhm',pbfwhm,-1.)
-	pbfwhm = pi/180/3600 * pbfwhm
+	call keyr('pbfwhm',pbfwhm(1),-1.)
+	pbfwhm(1) = pi/180/3600 * pbfwhm(1)
+	call keyr('pbfwhm',pbfwhm(2),-1.)
+	pbfwhm(2) = pi/180/3600 * pbfwhm(2)
+	call keyr('pbfwhm',pbfwhm(3),0.2)
 	call mkeyr('center',center,2*MAXPNT,npnt)
 	if(mod(npnt,2).ne.0) call bug('f',
      *	  'There must be an even number of values for "center"')
@@ -428,6 +503,7 @@ c
 	call keyr('pnoise',pelev,0.)
 	call keyr('leakage',leakrms,0.)
 	leakrms = leakrms / 100.
+        call keyr('zeeman',zeeman,0.)
 	call keyr('systemp',tsys,0.)
 	call keyr('systemp',tsky,0.)
 	call keyr('systemp',tau,0.)
@@ -438,6 +514,7 @@ c
 	call keya('out',outfile,' ')
 	if(outfile.eq.' ')
      *	  call bug('f','Output file must be given')
+c        call GetOpt(dochi,dogaus)
 	call keyfin
 c
 c  Determine the rise and set times of the source, at the minimum
@@ -498,18 +575,13 @@ c
 c  Open the source components file.
 c
 	call hiswrite(unit,'UVGEN: Source specifications:')
-	write(line,'(a)')'     Flux  Offset   Offset   Major  Minor  '//
-     *    'Axis   Polar    Polar'
+        write(line,'(a)')'     Flux     RA      DEC    Major  Minor  '//
+     *    '  Axis    Pol-I  Pol-PA  Pol-V'
 	call output(line(1:80))
         umsg = 'UVGEN: '//line(1:75)
 	call hiswrite(unit, umsg )
-	write(line,'(a)')'             Ra      Dec     Axis   Axis   '//
-     *    'Angle  ization  Angle'
-	call output(line)
-        umsg = 'UVGEN: '//line
-	call hiswrite(unit, umsg )
-	write(line,'(a)')'     (Jy)   (")      (")     (")    (")    '//
-     *    '(deg)   (%)      (deg)'
+        write(line,'(a)')'     (Jy)     (")     (")     (")    (")   '//
+     *    '  (deg)    (%)    (deg)   (%)'
 	call output(line(1:80))
         umsg = 'UVGEN: '//line(1:75)
 	call hiswrite(unit, umsg )
@@ -529,9 +601,15 @@ c
 	  call tinGetr(wpa,0.0)
 	  call tinGetr(poln,0.0)
 	  call tinGetr(polpa,0.0)
+	  call tinGetr(polvv,0.0)
 	  ns = ns + 1
 	  if(ns.gt.maxsrc)
      *	    call bug('f','Max number of source components read')
+          write(line,'(i2,f7.2,2f8.1,2f8.2,f8.1,f8.1,f8.2,f8.1)')
+     *          ns,flux,dra,ddec,wmaj,wmin,wpa,poln,polpa,polvv
+	  call output(line)
+          umsg = 'UVGEN: '//line
+	  call hiswrite(unit, umsg )
 	  ta(ns) = flux
 	  sx(ns) = dra  * pi/180/3600
 	  sy(ns) = ddec * pi/180/3600
@@ -542,11 +620,7 @@ c
 	  spa(ns)  =  wpa * pi/180
 	  per(ns) = poln / 100.
 	  pa(ns)  = polpa * pi/180
-	  write(line,101) ns,flux,dra,ddec,wmaj,wmin,wpa,poln,polpa
-101	  format(i2,F7.2,2F8.1,2F8.2,F8.1,F8.1,F8.2)
-	  call output(line)
-          umsg = 'UVGEN: '//line
-	  call hiswrite(unit, umsg )
+	  polv(ns) = polvv / 100.
 	enddo
 c
 	call tinClose
@@ -597,43 +671,28 @@ c
 	  enddo
 	endif
 c
-c  Get frequency/correlator parameters.
+c  correlator and spectral line parameters.
 c
-	call tinOpen(corfile,' ')
-	if(tinNext().eq.0)call bug('f',
-     *	  'Error reading from correlator file')
-	call tinGeti(nchan,0)
-	call tinGeti(nospect,0)
-	do i=1,nospect
-	  call tinGetr(corfin(i),0.)
-	enddo
-	do i=1,nospect
-	  call tinGetr(corbw(i),0.0)
-	enddo
-	call tinGetr(famp,1.0)
-	call tinGetr(fcen,0.)
-	call tinGetr(fwid,0.)
-	call tinClose
-c
-	write(line,150) (corfin(i),i=1,nospect), (corbw(i),i=1,nospect)
-	call output(line)
+        write(line,'(a,4f8.2)') 'Correlator freq:',(corfin(i),i=1,4)
+        call output(line)
         umsg = 'UVGEN: '//line
-	call hiswrite(unit, umsg)
-150	format('Correlator freq:',4F7.2,' BW:',4F7.2, ' MHz')
+        call hiswrite(unit, umsg)
 c
-	write(line,'(A,F7.2,A,F7.2,A,F7.2,A)')
-     *	 'Line/continuum:',FAMP,' center:', FCEN,', width:',FWID,' GHz'
-	call output(line)
-	umsg = 'UVGEN: '//line
-	call hiswrite(unit, umsg)
+        write(line,'(a,4f8.2)') 'Correlator band:',(corbw(i),i=1,4)
+        call output(line)
+        umsg = 'UVGEN: '//line
+        call hiswrite(unit, umsg)
+c
+        write(line,'(3(a,f11.6),a)')
+     *   'Line/continuum:',famp,' center:', fcen,', width:',fwid,' GHz'
+        call output(line)
+        umsg = 'UVGEN: '//line
+        call hiswrite(unit, umsg)
+        fwid=fwid/sqrt(2.*log(2.))
 c
 c  Calculate spectra frequencies from correlator setup
 c
-	if(telescop.eq.'HATCREEK')then
-	  call coramhat(nospect,nchan,corfin,corbw,freq,iffreq)
-	else
-	  call coramoth(nospect,nchan,corfin,corbw,freq,iffreq)
-	endif
+	call coramoth(nospect,nchan,corfin,corbw,freq,iffreq)
 c
 c  Give some messages to the user.
 c
@@ -661,7 +720,8 @@ c
 	call uvputvrd(unit,'obsra',sra,1)
 	call uvputvrd(unit,'dec',sdec,1)
 	call uvputvrd(unit,'obsdec',sdec,1)
-	if(pbfwhm.gt.0)call uvputvrr(unit,'pbfwhm',3600*180/pi*pbfwhm,1)
+	if(pbfwhm(1).gt.0)
+     *		call uvputvrr(unit,'pbfwhm',3600*180/pi*pbfwhm(1),1)
 c
 	call uvputvrd(unit,'lo1',lo1,1)
 	call uvputvrd(unit,'lo2',lo2,1)
@@ -678,11 +738,7 @@ c
 c
 c  Miscellaneous.
 c
-	if(telescop.eq.'ATCA')then
-	  evector = pi/4
-	else
-	  evector = 0
-	endif
+	call uvputvri(unit,'mount', mount, 1)
 	call uvputvrr(unit,'evector',evector,1)
 	call uvputvra(unit,'telescop',telescop)
 c
@@ -766,7 +822,7 @@ c
 	  umsg = 'UVGEN: '//line
 	  call hiswrite(unit, umsg )
 c
-	  write(line,174)  (rrms(nschan(i),1),i=1,nspect)
+	  write(line,174)  (rrms(ischan(i),1),i=1,nspect)
 174	  format('Channel noise   (Jy): ',8f8.3)
 	  call output(line)
 	  call hiswrite(unit, 'UVGEN: '//line)
@@ -869,7 +925,11 @@ c
 c
 c  Offset the parallactic angle by evector.
 c
-	    psi = atan2(sinq,cosq) + evector
+	    if(mount.eq.ALTAZ)then
+	      psi = atan2(sinq,cosq) + evector
+	    else
+	      psi = evector
+	    endif
 	    call uvputvrr(unit,'chi',psi,1)
 c
 c  Compute systemp and tpower variations for each antenna.
@@ -877,8 +937,8 @@ c
 	    if(Tsky*tau*sinel.gt.0.)then
               temp = exp(-tau/sinel)
               systemp(1) = 2.*(Tsys + Tsky*(1-temp)) / temp
-              call NoiseRms
-     *	  (unit,nant,npol,jyperk,systemp,pol,inttime,wrms,rrms,wsignal)
+              call NoiseRms(unit,nant,npol,jyperk,systemp,pol,
+     *				inttime,wrms,rrms,wsignal)
 	    endif
 	    if(trms.gt.0. .or. tatm.gt.0.) then
 	      do n = 1, nant
@@ -914,9 +974,9 @@ c
 		if(nwide.gt.0)then
 	          do ipol = 1, npol
 		    do is = 1,nwide
-		      call modvis(preamble(1),preamble(2),preamble(3),
-     *			dble(wfreq(is)),ns,tad,sxd,syd,szd,smaj,smind,
-     *			spa,per,pa,pol(ipol),psi,vis)
+                      call modvis(preamble(1),preamble(2),preamble(3),
+     *                  dble(wfreq(is)),ns,tad,sxd,syd,szd,smaj,smind,
+     *                  spa,per,pa,polV,pol(ipol),psi,vis,zeeman,modI)
 		      wsignal(is) = wsignal(is) + 
      *					real(vis)**2 + aimag(vis)**2
 	              wcorr(is,ipol) = vis
@@ -941,12 +1001,36 @@ c
 		    do is = 1, nspect
 		      do ic = ischan(is), ischan(is)+nschan(is)-1
 		        freq = sfreq(is) + (ic-ischan(is))*sdf(is)
-		        call modvis(preamble(1),preamble(2),preamble(3),
-     *			  freq,ns,tad,sxd,syd,szd,smajd,
-     *			  smind,spa,per,pa,pol(ipol),psi,vis)
-		        if (famp.ne.0. .and. fwid.ne.0.)
-     *		          vis = vis * (1.+ famp *
-     *			  (1.-min(1.,abs((real(freq)-fcen)/fwid))))
+                        call modvis(preamble(1),preamble(2),preamble(3),
+     *                    freq,ns,tad,sxd,syd,szd,smajd,smind,spa,
+     *                    per,pa,polV,pol(ipol),psi,vis,zeeman,modI)
+c
+                        if(famp.ne.0. .and. fwid.ne.0.)then
+                            xx = (real(freq)-fcen)/fwid
+                            if(xx.lt.10.)then
+                              vis = vis * (1.+ famp * exp(-xx*xx))
+                              modI = modI * (1.+ famp * exp(-xx*xx))
+                            endif
+c
+                          if(zeeman.ne.0.)then
+                            if(ic.ne.ischan(is))then
+                              gradI = (modI-oldI)/sdf(is)
+                            else
+                              gradI = cmplx(0.,0.)
+                            endif
+                            if(pol(ipol).eq.PolXY) then
+                              vis = vis - cmplx(0.,1.) * zeeman * gradI
+                            else if(pol(ipol).eq.PolYX)then
+                              vis = vis + cmplx(0.,1.) * zeeman * gradI
+                            else if(pol(ipol).eq.PolRR)then
+                              vis = vis + zeeman * gradI
+                            else if(pol(ipol).eq.PolLL)then
+                              vis = vis - zeeman * gradI
+                            endif
+                            oldI = modI
+                          endif
+                        endif
+c
 		        chan(ic,ipol) = vis
 		      enddo
 		    enddo
@@ -1012,14 +1096,14 @@ c
 	call hisclose(unit)
 	call uvclose(unit)
 	end
-c************************************************************************
+c********1*********2*********3*********4*********5*********6*********7*c
 	subroutine GetSrc(pbfwhm,ra0,dec0,center,
      *	    ns,ta,smaj,smin,spa,sx,sy,tad,smajd,smind,sxd,syd,szd)
 c
 	implicit none
 	integer ns
 	double precision ra0,dec0
-	real pbfwhm,center(2)
+	real pbfwhm(3),center(2)
 	real ta(ns),smaj(ns),smin(ns),spa(ns),sx(ns),sy(ns)
 	real tad(ns),smajd(ns),smind(ns),sxd(ns),syd(ns),szd(ns)
 c
@@ -1047,13 +1131,13 @@ c
 	  dec = dec0 + sy(i)
 	  ll = sin(ra-rap) * cos(dec)
 	  mm = sin(dec)*cos(decp) - cos(ra-rap) * cos(dec) * sin(decp)
-	  call points(pbfwhm,
+	  call points(pbfwhm(1),
      *     smaj(i),smin(i),spa(i),ta(i),ll,mm,smajd(i),smind(i),tad(i),
      *	   sxd(i),syd(i),szd(i))
 	enddo
 c
 	end
-c************************************************************************
+c********1*********2*********3*********4*********5*********6*********7*c
 	subroutine points(fwhmpb,fwhm1, fwhm2, pa,flux, x0, y0,
      *				 fwhm1d,fwhm2d,   fluxd,x0d,y0d,z0d)
 c
@@ -1289,17 +1373,18 @@ c
      *	  PolsC2P(pol(1)))
 c
 	end
+
 c************************************************************************
 	subroutine modvis (uns,vns,wns,freq,ns,ta,sx,sy,sz,
-     *		smaj,smin,spa,per,pa,code,psi,cont)
+     *		smaj,smin,spa,per,pa,polV,code,psi,cont,zeeman,modI)
 c
 	implicit none
 	double precision uns,vns,wns,freq
 	integer ns,code
 	real ta(ns),sx(ns),sy(ns),sz(ns),smaj(ns),smin(ns)
-	real spa(ns),per(ns),pa(ns)
-	real psi
-	complex cont
+	real spa(ns),per(ns),pa(ns),polV(ns)
+	real psi,zeeman
+	complex cont,modI
 c
 c  This computes the visibility of model source distribution of linearly
 c  polarized Gaussian components, observed with linear or circular feeds,
@@ -1316,10 +1401,13 @@ c    ta		Peak flux, in Jy.
 c    sx,sy,sz	l,m,n direction cosines.
 c    smaj,smin	Gaussian source FWHM size in the image plane.
 c    spa	Gaussian position angle, in radians.
-c    per	Fractional polarisation (in range [0,1]).
+c    per	Fractional linear polarisation (in range [0,1]).
 c    pa		Position angle of the polarisation, in radians.
+c    polV	Fractional circular polarisation (in range [0,1]).
+c    zeeman	Zeeman coefficient.
 c  Output:
 c    cont	The computed visibility.
+c    modI	The Stokes I model visibility.
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	integer PolI,PolRR,PolLL,PolRL,PolLR,PolXX,PolYY,PolXY,PolYX
@@ -1348,9 +1436,10 @@ c  checking for situations where the component contributes nothing.
 c
 	inten = polspara(code)
 	cont = (0.,0.)
+	modI = (0.,0.)
 	do j = 1,ns
 	  flux = 0
-	  if(per(j).ne.0.or.inten)then
+	  if(polV(j).ne.0..or.per(j).ne.0.or.inten.or.zeeman.ne.0.)then
 	    uvmaj = 1. / ( pi * 0.6 * smaj(j) )
 	    uvmin = 1. / ( pi * 0.6 * smin(j) )
 	    umaj = (u * sin(spa(j)) + v * cos(spa(j))) / uvmaj
@@ -1370,7 +1459,7 @@ c
 	    else if(code.eq.PolYY)then
 	      vis = 1 - per(j) * cos(2.* (pa(j) - psi))
 	    else if(code.eq.PolXY.or.code.eq.PolYX)then
-	      vis = per(j) * sin(2.* (pa(j) - psi))
+	      vis = per(j) * sin(2.* (pa(j) - psi)) 
 	    else if(code.eq.PolRL)then
 	      vis = per(j) * expi(-2.* (pa(j) - psi))
 	    else if(code.eq.PolLR)then
@@ -1378,8 +1467,22 @@ c
 	    else
 	      call bug('f','Unsupported polarization, in ModVis')
 	    endif
+c
+	    if(polV(j).ne.0.)then
+	      if(code.eq.PolRR)then
+		vis = vis + polV(j)
+	      else if(code.eq.PolLL)then
+		vis = vis - polV(j)
+	      else if(code.eq.PolXY)then
+		vis = vis - cmplx(0.,1.)*polV(j)
+	      else if(code.eq.PolYX)then
+		vis = vis + cmplx(0.,1.)*polV(j)
+	      endif
+	    endif
+c
 	    p=2*pi*(u*sx(j)+v*sy(j)+w*(sz(j)-1))
 	    cont = cont + vis * expi(p) * flux
+	    modI = modI + expi(p) * flux
 	  endif
 	enddo
 	end
@@ -1407,8 +1510,6 @@ c------------------------------------------------------------------------
 c
 c  Determine down-conversion chain characteristics.
 c
-	if(nospect.ne.1)
-     *	  call bug('f','Invalid nspect in correlator file')
 	freqif = iffreq
 	lo1 = freq - freqif
 	lo2 = 0.d0
@@ -1431,66 +1532,11 @@ c
 	  numchan = nspect*nchan
 	  do i=1,nspect
 	    sdf(i) = 1e-3 * corbw(i) / nchan
-	    sfreq(i) = freq + 1e-3*corfin(i) - 0.5*(nchan-1)*sdf(1)
+	    sfreq(i) = freq + 1e-3*corfin(i) - 0.5*(nchan-1)*sdf(i)
 	    ischan(i) = 1 + nchan*(i-1)
 	    nschan(i) = nchan
 	  enddo
 	endif
-	end
-c************************************************************************
-	subroutine coramhat(nospect,nchan,corfin,corbw,freq,iffreq)
-c
-	implicit none
-	integer nospect,nchan
-	real corfin(4),corbw(4)
-	double precision freq,iffreq
-c
-c  Derive spectra parameters from correlator setup.
-c
-c  Inputs:
-c    nospect	The number of spectral windows.
-c    nchan	Number of channels per spectra.
-c    corfin	Correlator frequencies.
-c    corbw	Correlator bandwidths.
-c    freq	Frequency of primary line.
-c    iffreq	Frequency of primary line in 2nd IF. 
-c
-c  Outputs via uvgencom common (in uvgen.h).
-c
-c  History:
-c    mchw 22feb84  For revised 4 modes.
-c    mchw 02feb94  generalized hybrid correlator.
-c------------------------------------------------------------------------
-	include 'uvgen.h'
-	integer i
-c
-	lo2  = 1.27d0
-	freqif = lo2 + iffreq
-	lo1 = freq - freqif
-	numchan = nospect*nchan
-	if(numchan.gt.0)then
-	  nspect = nospect
-	  do i = 1,nspect
-	    sdf(i) = 1e-3 * corbw(i) / nchan
-	    sfreq(i) = lo1 + lo2 + 1e-3 * corfin(i)
-	    ischan(i) = (i-1)*nchan + 1
-	    nschan(i) = nchan
-	  enddo
-	else
-	  nspect = 0
-	endif
-c
-c  Determine characteristics of the wideband correlations.
-c
-	nwide = 2
-	wfreq(1) = lo1 - freqif
-	wfreq(2) = lo1 + freqif
-	wwidth(1) = 0.
-	do i = 1,nospect
-	  wwidth(1) = wwidth(1) + 1e-3*corbw(i)
-	enddo
-	wwidth(2) = wwidth(1)
-c
 	end
 c************************************************************************
         subroutine NoiseRms
@@ -1521,7 +1567,7 @@ c
 	do i=1,nwide
 	  wrms(i,1) = jyperk*systemp(1) / sqrt(2*wwidth(i)*1e9*inttime)
 	  wsignal(i) = 0
-	  do ipol=2,npol
+	  do ipol=1,npol
 	    wrms(i,ipol) = wrms(i,1)
 	  enddo
 	enddo
@@ -1547,4 +1593,37 @@ c
 	  endif
 	enddo
 	end
-
+c********1*********2*********3*********4*********5*********6*********7*c
+c options not currently used:
+c@ options
+c       This gives extra processing options. Several options can be given,
+c       each separated by commas. They may be abbreviated to the minimum
+c       needed to avoid ambiguity. Possible options are:
+c          'parang'     Set the effective parallactic angle to zero, for
+c                       cases where this is already done. E.g. corrected
+c                       data, equatorial mounts or polarization rotators.
+c          'gaussian'   Make a Gaussian spectral line with
+c                       center=fcen and FWHM=fwid [GHz].
+        subroutine GetOpt(dochi,dogaus)
+c
+        implicit none
+        logical dochi,dogaus
+c
+c  Determine extra processing options.
+c
+c  Output:
+c    dochi      Set the effective parallactic angle to zero
+c    dogaus     Make Gaussian line profile.
+c-----------------------------------------------------------------------
+       integer nopt
+        parameter(nopt=2)
+        character opts(nopt)*9
+        logical present(nopt)
+        data opts/'parang   ','gaussian '/
+c
+        call options('options',opts,present,nopt)
+        dochi  = present(1)
+        dogaus = present(2)
+c
+        end
+c********1*********2*********3*********4*********5*********6*********7*c
