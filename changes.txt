@@ -3329,3 +3329,14 @@ and in a way to be consistent with all the other changes happening.
 02sep98 rjs	miriad.h -- Added macros of uvgetvr and uvrdvr
 02sep98 rjs	immerge.for -- Change a subroutine name to avoid a LINUX
 		complaint.
+*********************************** 03sep98 Sent changes to Doug Roberts
+09sep98 nebk	cgdisp.for -- "sym" overlay ID strings were not being written
+                in the right place
+09sep98 nebk	cgsubs.for -- RAZEROCG only got it right if the ref value was
+                close to zero.  Failed if close to 2pi
+17sep98 nebk    cgdisp.for -- Was ignoring color table for hardcopy
+15sep98 pjt	fits.for -- Recognise galactic and ecliptic coordinates the right way
+24sep98 rjs	pops.for -- Get the telescope elevation limit.
+24sep98 rjs	obspar.for -- Added VLA elevation limit.
+25sep98 rjs	demos.for -- Less fussy about freq axis for single-plane datasets.
+25sep98 rjs	fits.for -- Correct handling of OBSRA and OBSDEC in op=xyin
