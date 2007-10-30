@@ -9,18 +9,17 @@ c+
 c	TELEPAR gives the characteristics of various observatories.
 c	Its main use is to check that the characteristics are correct.
 c@ observ
-c	Name of the observatory. Several can be given. If none are
-c	given, TELEPAR simply lists the known observatories.
+c	Name of the observatory. Several can be given. Possible values
+c	are atca,hatcreek,vla,wsrt,nobeyama,nobeyama45,ovro,onsala,
+c	quabbin.
 c--
 c  History:
 c    rjs  20jun91 Original version.
 c    rjs   2jun93 Better formating.
-c    rjs  15dec95 List observatories.
-c    rjs  06dec96 Print altitude.
 c------------------------------------------------------------------------
 	character version*(*)
 	integer MAXOBS
-	parameter(version='Telepar: version 1.0 06-Dec-96')
+	parameter(version='Telepar: version 1.0 2-Jun-93')
 	parameter(MAXOBS=16)
 	include 'mirconst.h'
 	character string*20,line*64,observs(MAXOBS)*12,observ*12
@@ -34,10 +33,7 @@ c
 	call keyini
 	call mkeya('observ',observs,MAXOBS,nobs)
 	call keyfin
-c
-	if(nobs.eq.0)then
-	  call obsPrint
-	endif
+	if(nobs.eq.0)call bug('f','No observatory given')
 c
 	do i=1,nobs
 	  call output('********************************')
@@ -61,19 +57,10 @@ c
 	    call output('Longitude:           '//string)	
 	  endif
 c
-	  call obspar(observ,'height',value,ok)
-	  if(ok)then
-	    n = n + 1
-	    write(line,'(a,f6.1,a)')'Height               ',value,
-     *				  ' metres'
-	    call output(line)
-	  endif
-c
 	  call obspar(observ,'evector',value,ok)
 	  if(ok)then
 	    n = n + 1
-	    write(line,'(a,f7.1,a)')'Feed Offset angle:',180/pi*value,
-     *				    ' degrees'
+	    write(line,'(a,f7.1)')'Feed Offset angle:',180/pi*value
 	    call output(line)
 	  endif
 c
