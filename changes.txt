@@ -3253,3 +3253,19 @@ and in a way to be consistent with all the other changes happening.
 *********************************** 05mar98 Sent changes to Doug Roberts
 05mar98 rjs	nllsqu.for,lsqu.for -- Broke these into separate files to
 		work around a problem on some LINUX systems.
+09mar98 rjs	gpplt.for -- Trim down the device spec before passing it
+		through to PGPLOT.
+11mar98 rjs	uvflag.for -- Some FORTRAN standardisation to appease g77.
+11mar98 rjs	imlist.for -- Change a subroutine name to appease g77.
+12mar98 rjs	maths.for -- Increase rbuf to allow for more complex expressions.
+13mar98 rjs	doc.c -- Eliminate check for pre-existing .doc file.
+13mar98 nebk    impol.for -- position angle error was factor of 2 too big
+16mar98 rjs	immerge.for -- Added "region" keyword.
+17mar98 rjs	mosmem.for -- Added single dish ability, factor parameter and
+		options=dofactor.
+19mar98 rjs	imgen.for -- Copy across mosaic table.
+26mar98 rjs	uvdat.for -- Corrected some comments only.
+26mar98 nebk    cgdisp.for -- channel range was wrongly interpreted for line overlays
+31mar98 rjs	cgdisp.for -- Honour the cols1 parameter.
+02apr98 rjs	avmaths.for -- Increase maxruns.
+02apr98 rjs	medfit.for -- New subroutines.
