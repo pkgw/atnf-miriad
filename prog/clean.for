@@ -165,8 +165,6 @@ c               vectorisable code straightforward to write.
 c
 c $Id$
 c-----------------------------------------------------------------------
-      character version*(*)
-      parameter(version='Clean: version 1.0 07-Apr-04')
       include 'maxdim.h'
       integer MaxBeam,maxCmp1,maxCmp2,MaxBox,MaxRun,MaxP
       parameter(maxCmp1=66000,MaxCmp2=32000,MaxP=257)
@@ -179,7 +177,7 @@ c
       real Histo(MaxP/2+1),BemPatch(MaxBeam)
       integer ICmp(maxCmp1),JCmp(maxCmp1)
 c
-      character Mode*8,Moded*8,Text*7,flags*8
+      character Mode*8,Moded*8,Text*7,flags*8,version*80
       real Cutoff,Gain,Phat,Speed,Clip,defClip,Limit
       logical NegStop,Positive,Pad,Asym,NegFound,More,FFTIni,steermsg
       integer MaxNiter,oNiter,Niter,totNiter,minPatch,maxPatch
@@ -191,16 +189,18 @@ c
       integer nMap(3),nBeam(3),nModel(3),nOut(4)
       real EstASum,Flux
       real ResMin,ResMax,ResAMax,ResRms
+c
       common Data
 c
 c  Externals.
 c
-      character itoaf*8
+      character itoaf*8, versan*80
 c-----------------------------------------------------------------------
+      version = versan('clean',
+     *  '$Id$')
 c
 c  Get the input parameters.
 c
-      call output(version)
       call inputs(MapNam,BeamNam,ModelNam,OutNam,MaxNiter,NegStop,
      *  positive,pad,asym,Cutoff,Boxes,MaxBox,MinPatch,Gain,PHat,
      *  Speed,Clip,mode)
@@ -319,7 +319,7 @@ c
           if((moded.ne.'hogbom'.or.ModelNam.ne.' ')
      *                                .and..not.FFTIni)then
             FFTIni = .true.
-            flags(1:1) = 'p'
+            flags = 'p'
             if(.not.asym) flags(2:2) = 's'
             if(pad)       flags(3:3) = 'e'
             call CnvlIniF(pBem,lBeam,n1,n2,icentre,jcentre,PHat,flags)
@@ -351,6 +351,7 @@ c
 c  Perform the appropriate iteration until no more.
 c
         Niter = 0
+        oNiter = 0
         negFound = .false.
         More = nPoint.gt.0.and.ResMin.ne.ResMax
         Limit = 0
