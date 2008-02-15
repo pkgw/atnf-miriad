@@ -9,13 +9,13 @@ for these machines.
 
 Usage:
 
- ratty [-s system] [-I incdir] [-D symbol] [-bglu [-n start inc] [in] [out]
+ ratty [-h] [-s system] [-I incdir] [-D symbol] [-bglu [-n start inc] [in] [out]
 
-    system:  One of "f77" (generic unix compiler), "cft" (Cray FORTRAN
-             compiler), "vms" (VMS FORTRAN), "fx" (alliant unix
+    system:  One of "f77" (generic unix compiler), "unicos" (Cray FORTRAN
+             compiler), "vms" (VMS FORTRAN), "alliant" (alliant unix
              compiler), "convex" (convex unix compiler) or "sun"
              (sun unix compiler), "f2c" (NETLIBs f2c compiler),
-             "hpux", "alpha" or "sgi"
+             "hpux", "alpha" or "sgi", "linux"
 
     incdir:  Directory to search for include files.  The -I option may
              be used repeatedly, but must list only one directory for
@@ -35,6 +35,8 @@ Usage:
              This will enable you to run dbx, and look directly at your
              [in] file, instead of your [out] file. Note that standard
              input cannot be used with this option.
+
+    -h:      give some help and exit
 
     -n:      This gives the start and increment for line numbers generated
              by ratty. The default is 90000 1.
@@ -61,16 +63,16 @@ ANSI-FORTRAN if the host machine does not support this extension.
 whatever the specified compiler supports.
 
 Certain directives are recognized if the target machine has
-vector processing capacities (compilers "cft", "fx" and "convex"):
+vector processing capacities (compilers "unicos", "alliant" and "convex"):
 
     #maxloop, followed by a number, is converted to "cdir$ shortloop"
-    on "cft" and to "cvd$  shortloop" on "fx".
+    on "unicos" and to "cvd$  shortloop" on "alliant".
 
-    #ivdep is converted to "cdir$ ivdep" on "cft", to "cvd$  nodepchk"
-    on "fx", and to "c$dir no_recurrence" on"convex".
+    #ivdep is converted to "cdir$ ivdep" on "unicos", to "cvd$  nodepchk"
+    on "alliant", and to "c$dir no_recurrence" on "convex".
 
-    #nooptimize is converted to "cdir$ nextscalar" on "cft" and to
-    "cvd$ noconcur" followed by "cvd$ novector" on "fx".
+    #nooptimize is converted to "cdir$ nextscalar" on "unicos" and to
+    "cvd$ noconcur" followed by "cvd$ novector" on "alliant".
 */
 /*-- */
 /************************************************************************/
@@ -99,7 +101,11 @@ vector processing capacities (compilers "cft", "fx" and "convex"):
 /*    rjs  20nov94 Added alpha.						*/
 /*    pjt   3jan95 Added f2c (used on linux)                            */
 /*    rjs  15aug95 Added sgi		                                */
+/*    rjs  22may06 Change to appease cygwin.				*/
+/*    mrc  14jul06 Get it to compile with 'gcc -Wall' without warnings. */
+/*    pjt  12mar07 merged MIR4 and atnf versions; re-added -h           */
 /*									*/
+/* $Id$ */
 /************************************************************************/
 /* ToDos/Shortcomings:                                                  */
 /*  The -u flag doesn't convert self-generated if/then/continue etc.    */
@@ -107,8 +113,9 @@ vector processing capacities (compilers "cft", "fx" and "convex"):
 /*      textout("continue\n");                                          */
 /*  to be changed to:                                                   */
 /*      (uflag?textout("continue\n"):textout("CONTINUE\n"));            */
+/*  comment lines like "c#define foo bar" still define !!!              */
 /************************************************************************/
-#define VERSION_ID   "15-Aug-95"
+#define VERSION_ID   "12-mar-07"
 
 #define max(a,b) ((a) > (b) ? (a) : (b) )
 #define min(a,b) ((a) < (b) ? (a) : (b) )
@@ -116,19 +123,39 @@ vector processing capacities (compilers "cft", "fx" and "convex"):
 #define private static
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define TRUE 1
 #define FALSE 0
 
-/* A few things to stop lint complaining. */
+static void get_labelnos(char *slower, char *sinc);
+static void process(FILE *in, char *infile);
+static void message(char *text);
+static void textout(char *text);
+static void numout(int label);
+static void labelout(int label);
+static void blankout(int blanks);
+static void lowercase(char *string);
+static char *getparm(char *line, char *token);
+static void cppline(char *line);
+static char *progtok(char *line, char *token, int *indent, int *lineno, int *bracketting);
+static char *skipexp(char *s, int *bracketting);
+static int get_line(FILE *in, char *line);
+static int reformat(char *s);
+static struct link_list *add_list(struct link_list *list, char *name);
+static FILE *incopen(char *name, char *pathname);
+static int isdefine(char *name);
+static void usage(void);
 
-char *malloc(),*strcpy(),*strcat();
-int fclose(),fputc();
+/* A few things to stop lint complaining. */
 #define Strcpy (void)strcpy
 #define Strcat (void)strcat
 #define Fclose (void)fclose
 #define Fputc  (void)fputc
 #define Malloc(a) malloc((unsigned int)(a))
+
 /*
  * Define capacities of the various compilers. These are:
  *  doloop	is true if the compiler handles the VAX do/dowhile/enddo
@@ -142,23 +169,29 @@ int fclose(),fputc();
 struct system {char *name;int doloop,prog,vector,bslash;} systems[] = {
 	{ "unknown", FALSE, FALSE, FALSE, 0 },
 	{ "f77",     FALSE, FALSE, FALSE, 0 },
-	{ "cft",     FALSE, TRUE,  TRUE, -1 },
+	{ "f2c",     TRUE,  FALSE, FALSE, 1 },
+	{ "unicos",  FALSE, TRUE,  TRUE, -1 },
 	{ "vms",     TRUE,  FALSE, FALSE,-1 },
-	{ "fx",      TRUE,  FALSE, TRUE,  0 },
+	{ "alliant", TRUE,  FALSE, TRUE,  0 },
 	{ "convex",  TRUE,  FALSE, TRUE, -1 },
         { "trace",   TRUE,  FALSE, FALSE, 0 },
 	{ "sun",     TRUE,  FALSE, FALSE, 1 },
 	{ "sgi",     TRUE,  FALSE, FALSE, 0 },
-	{ "f2c",     TRUE,  FALSE, FALSE, 1 },
+	{ "linux",   TRUE,  FALSE, FALSE, 1 },
+	{ "hpux",    FALSE, FALSE, FALSE, 0 },
 	{ "alpha",   TRUE,  FALSE, FALSE, 1 }};
 #define SYS_F77    1
-#define SYS_CFT    2
-#define SYS_VMS    3
-#define SYS_FX     4
-#define SYS_CONVEX 5
-#define SYS_TRACE  6
-#define SYS_SUN    7
-#define SYS_F2C    8
+#define SYS_F2C    2
+#define SYS_CFT    3
+#define SYS_VMS    4
+#define SYS_FX     5
+#define SYS_CONVEX 6
+#define SYS_TRACE  7
+#define SYS_SUN    8
+#define SYS_SGI    9
+#define SYS_LINUX 10
+#define SYS_HPUX  11
+#define SYS_ALPHA 12
 #define NSYS (sizeof(systems)/sizeof(struct system))
 
 #define LOWER 90000	/* Ratty uses statement labels above this number. */
@@ -171,18 +204,10 @@ static int comment,in_routine,gflag,lflag,uflag;
 static int loops[MAXDEPTH],dowhile[MAXDEPTH];
 struct link_list {char *name; struct link_list *fwd;} *defines,*incdir;
 
-private void process(),message(),textout(),labelout(),numout(),blankout(),lowercase(),
-	cppline(),get_labelnos(),usage();
-private struct link_list *add_list();
-private int getline(),reformat(),isdefine();
-private char *getparm(),*progtok(),*skipexp();
-private FILE *incopen();
 private int continuation,quoted=FALSE;
 private int lower,increment;
 /************************************************************************/
-main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc,char *argv[])
 {
   char *s,*infile,*outfile,*sysname;
   int i;
@@ -217,6 +242,7 @@ char *argv[];
 	case 'g': gflag=TRUE; 					break;
         case 'l': lflag = TRUE;                                 break;
 	case 'u': uflag = TRUE;                                 break;
+        case 'h':
 	case '?': usage();		/* will also exit */
 	default:  fprintf(stderr,"### Ignored unrecognized flag %c\n",*(s-1));
 						break;
@@ -273,7 +299,7 @@ char *argv[];
 /* Give a final message. */
 
   printf("Number of lines = %d; number of routines = %d\n",lines,routines);
-  exit(0);
+  return 0;
 }
 /************************************************************************/
 private void get_labelnos(slower,sinc)
@@ -309,13 +335,13 @@ char *infile;
 ------------------------------------------------------------------------*/
 {
   int type,lineno,lineno1,indent,bracketting, glines=0, oldglines;
-  char *s,*s0,line[MAXLINE],token[MAXLINE],msg[MAXLINE];
+  char *s,*s0,line[MAXLINE],pathname[MAXLINE],token[MAXLINE],msg[MAXLINE];
   char gfile[MAXLINE];
   FILE *in2;
 
   if(gflag)strcpy(gfile,infile);            /* init -g filename */
 
-  while(type = getline(in,line)){
+  while((type = get_line(in,line))){
     lines++;
     if(gflag){
         glines++;
@@ -365,7 +391,7 @@ char *infile;
 	    textout("if"); textout(s);
 	    while(bracketting){
 	      textout("\n");
-	      type = getline(in,line);
+	      type = get_line(in,line);
 	      if(type != '*'){
 		message("Bad DOWHILE statement");
 		bracketting = 0;
@@ -403,7 +429,7 @@ char *infile;
 	s0 = token;
 	while(*s && *s != '\'')*s0++ = *s++;
 	*s0 = 0;
-	in2 = incopen(token);
+	in2 = incopen(token,pathname);
 	if(in2 == NULL){
 	  sprintf(msg,"Error opening include file %s",token);
 	  message(msg);
@@ -413,7 +439,11 @@ char *infile;
 	    labelout(lineno); blankout(indent-5); textout("continue\n");
 	  }
           oldglines = glines;
+	  sprintf(msg,"c >>> %s\n",pathname);
+	  textout(msg);
 	  process(in2,token);
+	  sprintf(msg,"c <<< %s\n",pathname);
+	  textout(msg);
 	  Fclose(in2);
           glines = oldglines;
 	}
@@ -733,7 +763,7 @@ int *bracketting;
   return(s);
 }
 /************************************************************************/
-private int getline(in,line)
+private int get_line(in,line)
 FILE *in;
 char *line;
 /*
@@ -809,7 +839,7 @@ char *s;
   type = ' ';
   first = TRUE;
   t = line;
-  while(c = *t++){
+  while((c = *t++)){
     if(c == ' ') *s++ = ' ';
     else if(c == '\t'){
       pad = 8 * ( (s - s0)/8 + 1 ) - (s - s0);
@@ -865,29 +895,34 @@ char *name;
   return(list);
 }
 /************************************************************************/
-private FILE *incopen(name)
-char *name;
+private FILE *incopen(name,pathname)
+char *name,*pathname;
 /*
   Attempt to open an include file.
 ------------------------------------------------------------------------*/
 {
   FILE *fd;
-  char *s,c,line[MAXLINE];
+  char c,*s;
   struct link_list *t;
 
 /* Try the plain, unadulterated name. */
 
-  if((fd = fopen(name,"r")) != NULL) return(fd);
+  if((fd = fopen(name,"r")) != NULL) {
+    getcwd(pathname,MAXLINE);
+    strcat(pathname,"/");
+    strcat(pathname,name);
+    return(fd);
+  }
 
 /* Otherwise try appending it to the list of include file directories. */
 
   for(t = incdir; t != NULL; t = t->fwd){
     s = t->name;
-    Strcpy(line,s);
+    Strcpy(pathname,s);
     c = *(s + strlen(s) - 1);
-    if(isalnum(c))Strcat(line,"/");
-    strcat(line,name);
-    if((fd = fopen(line,"r")) != NULL) break;
+    if(isalnum(c))Strcat(pathname,"/");
+    strcat(pathname,name);
+    if((fd = fopen(pathname,"r")) != NULL) break;
   }
   return(fd);
 }
@@ -922,6 +957,7 @@ private void usage()
    fprintf(stderr,"-g           include # references for dbx\n");
    fprintf(stderr,"-l           convert program text to lower case\n");
    fprintf(stderr,"-u           convert program text to upper case\n");
+   fprintf(stderr,"-h           help (this list)\n");
    fprintf(stderr,"-?           help (this list)\n");
    exit(0);
 }

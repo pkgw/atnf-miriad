@@ -1,20 +1,23 @@
 /************************************************************************/
 /*									*/
-/*	This compacts a text file, by discarding unnecessary		*/
+/*	This compacts a text file, by discarding unnecessary characters	*/
 /*									*/
 /*  History:								*/
 /*    rjs  18sep89  Original version.					*/
+/*    rjs  17feb04  Gosh is it really 15 years old! Return a status.    */
+/*    rjs  30dec06  Simple handling of escape sequences.		*/
 /*									*/
 /* Operations performed include:					*/
 /*	Trim off trailing  blanks.					*/
 /*	Replace multiple spaces with tabs where possible.		*/
 /*	Remove FORTRAN sequence numbers (-f flag).			*/
-/*	Handle backspace and delete characters.				*/
+/*	Handle backspace and delete characters, escape sequences.	*/
 /*	Delete blank lines (-b flag).					*/
 /*									*/
 /************************************************************************/
 
 #define private static
+#include <stdlib.h>
 #include <stdio.h>
 #define MAXLINE 512
 
@@ -24,7 +27,7 @@
 private void process();
 
 /************************************************************************/
-main(argc,argv)
+int main(argc,argv)
 int argc;
 char *argv[];
 {
@@ -73,6 +76,7 @@ char *argv[];
       }
     }
   }
+ return(0);
 }
 /************************************************************************/
 private void process(fout,fin,fort,blank)
@@ -87,7 +91,10 @@ int fort,blank;
 {
   char line[MAXLINE];
   char *s,*t;
-  int dofort,dowrite,linelen0,linelen;
+  int dofort,dowrite,linelen0,linelen,mode;
+
+#define mESC  1
+#define mESCB 2
 
 /* Process the input file. */
 
@@ -96,11 +103,19 @@ int fort,blank;
 /* Eliminate backspace and delete characters from the line, as well as
    any other rubbish. */
 
+    mode = 0;
     t = line;
     for(s=line; *s; s++){
-      if(*s == '\b' || *s == '\177' ){ if(t > line) t--; }
-      else if((*s < ' ' && *s != '\t') || (*s > '\177'));
-      else *t++ = *s;
+      if(mode == mESC && *s == '['){ mode = mESCB;}
+      else if(mode == mESCB){
+        if(!isdigit(*s))mode=0;
+      }else{
+	mode = 0;
+        if(*s == '\b' || *s == '\177' ){ if(t > line) t--; }
+        else if(*s == '\033'){mode = mESC;}
+        else if((*s < ' ' && *s != '\t') || (*s < 0));
+        else *t++ = *s;
+      }
     }
     *t = 0;
 

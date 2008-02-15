@@ -142,6 +142,8 @@ c	  labelling (frame or axes), only draw the frame or axes for
 c	  the spectrum in the bottom left hand corner of the plot
 c	"colour" means make the axes the same colour as the first
 c	  spectrum, else they are white.
+c       "blacklab" means that, if the device is white-background, draw
+c         the axis labels in black. Default is red. 
 c       "fiddle" means enter a routine to allow you to interactively change
 c         the display lookup table.  You can cycle through a variety of   
 c         colour lookup tables, as well as alter a linear transfer function
@@ -394,6 +396,10 @@ c    nebk 29nov95  New call for CONTURCG
 c    nebk 18dec95  New call for VPSIZCG (arg. DOABUT)
 c    nebk 18jan95  Fix silly problem in SPECBLNK causing overlays
 c                  to be ignored if there were blanks in spatial image
+c    nebk 30jan96  New call for CHNSELCG
+c    rjs  21jul97  Fiddles with calls to initco/finco.
+c   nebk  14nov01  Track change to readimcg interface
+c    pjt  13feb02  added blacklab option, like in cgdisp
 c
 c Ideas:
 c  * Be cleverer for sub-cubes which have spectra partly all zero
@@ -403,7 +409,8 @@ c    Bob to play ball with BOXES code.
 c  * Try to swap line colour index to get white lines on black
 c    and vice versa.  Have this vary over the image as appropriate.
 c
-c-----------------------------------------------------------------------
+c---
+c--------------------------------------------------------------------
       implicit none
 c
       include 'maxdim.h'
@@ -430,7 +437,7 @@ c
       real levs(maxlev,maxcon), pixr(2), tr(6), cs(2), pixr2(2), 
      +  slev(maxcon), break(maxcon), vrange(2), irange(2), tfvp(4),
      +  iscale(maxspec), scale(2), vpn(4), vpw(4), vfrac(2), tick(2),
-     +  cumhis(nbins), wdgvp(4), gmm(2), cmm(2,maxcon)
+     +  cumhis(nbins), wdgvp(4), gmm(3), cmm(3,maxcon)
       real vxmin, vymin, vymax, vx, vy, vxsize, vysize, ydispb, 
      +  xdispl, groff, blankg, blankc, vmin, vmax, vvmin, vvmax, 
      +  imin, imax, vxgap, vygap
@@ -452,7 +459,7 @@ c
      +  doframe, fits(2), mark, spnorm, naked, number, mirror, init, 
      +  imnorm, colour, allzero, blconly, doerase, doepoch, igblank,
      +  allgood, allblnk, dofid, dowedge, hdprsnt, gaps, dotr, doaxlab,
-     +  doaylab, donxlab(2), donylab(2), miss, dogrid, doabut
+     +  doaylab, donxlab(2), donylab(2), miss, dogrid, doabut, blacklab
 c
       data blankc /-99999999.00/
       data cin, gin, bin /maxcon*' ', ' ', ' '/
@@ -466,7 +473,7 @@ c
       data txtfill, tflen /'spectrum', 'derivative spectrum', 
      +                     'derivative spectrum', 8, 19, 19/
 c-----------------------------------------------------------------------
-      call output ('CgSpec: version 18-Jan-96')
+      call output ('CgSpec: version 13-Feb-2002')
       call output (' ')
 c
 c Get user inputs
@@ -477,7 +484,7 @@ c
      +   break, cs, ofile, nofile, relax, slines, vrange, vfrac, irange, 
      +   tick, doaxes, doframe, mark, iscale, spnorm, naked, blines, 
      +   number, mirror, colour, blconly, doerase, doepoch, igblank,
-     +   dofid, dowedge, dogrid, ibin, jbin)
+     +   dofid, dowedge, dogrid, blacklab, ibin, jbin)
 c
 c First verify the existence of wanted files and get some extrema
 c
@@ -496,8 +503,10 @@ c
       if (ncon.gt.0)  then
         do i = 1, ncon
           call opimcg (maxnax, cin(i), lc(i), csize(1,i), cnaxis(i))
+	  call initco(lc(i))
           cmm(1,i) =  1.0e30
           cmm(2,i) = -1.0e30
+          cmm(3,i) = -1.0
           call chkax (lc(i), .false., cin(i))
           if (hin.eq.' ') then
             hin = cin(i)
@@ -510,8 +519,10 @@ c Open pixel map image as required
 c
       if (gin.ne.' ') then
         call opimcg (maxnax, gin, lg, gsize, gnaxis)
+	call initco(lg)
         gmm(1) =  1.0e30
         gmm(2) = -1.0e30
+        gmm(3) = -1.0
         call chkax (lg, .false., gin)
         if (hin.eq.' ') then
           hin = gin
@@ -528,10 +539,12 @@ c Open mask image as required
 c
       if (bin.ne.' ') then
         call opimcg (maxnax, bin, lb, bsize, bnaxis)
+	call initco(lb)
         call chkax (lb, .false., bin)
         maskb = hdprsnt (lb, 'mask')
         if (.not.maskb)  then
           call bug ('w', 'The mask image does not have a mask')
+	  call finco(lb)
           call xyclose (lb)
           bin = ' '
         end if
@@ -544,7 +557,7 @@ c
 c Finish key inputs for region of interest
 c
       call region (maxnax, cin, lc, csize, cnaxis, gin, lg, gsize, 
-     +  gnaxis, ibin, jbin, blc, trc, win, maxchan, grpbeg, ngrp, ngrps)
+     +  gnaxis, ibin, jbin, blc, trc, win, ngrps, grpbeg, ngrp)
 c
 c Allocate memory for pixel map/contour and mask images
 c
@@ -579,7 +592,7 @@ c
       defwid = 1
       if (hard.eq.'YES') defwid = 2
       call bgcolcg (bgcol)
-      call setlgc (bgcol, labcol)
+      call setlgc (bgcol, labcol, blacklab)
 c
       do i = 1, ncon
         if (clines(i).eq.0) clines(i) = defwid
@@ -633,6 +646,7 @@ c
            call readbcg (init, lb, ibin, jbin, krng, blc, trc, 
      +                  meml(ipimb), doblnkb)
         end do
+	call finco (lb)
         call xyclose (lb)
       end if
 c
@@ -786,9 +800,13 @@ c
 c
 c Close files and free up memory
 c
-      if (gin.ne.' ') call xyclose(lg)
+      if (gin.ne.' ')then
+	call finco(lg)
+	call xyclose(lg)
+      endif
       if (ncon.gt.0) then
         do i = 1, ncon
+	  call finco(lc(i))
           call xyclose (lc(i))
         end do
       end if
@@ -836,6 +854,7 @@ c for coordinate transformations in OLAYDEC because xyz and xy can
 c cannot exist together
 c
       call xyopen (lh, hin, 'old', maxnax, size)
+      call initco(lh)
       if (nofile.eq.1) then
         if (grid(1)) then
           call genpos (lh, ofile(1), blc, trc, maxpos, npos, opos)
@@ -916,6 +935,7 @@ c
 c Open image
 c
         call opimxyz (maxnax, spin(i), ls, ssize, snaxis)
+	call initco(ls)
         call chkax (ls, .true., spin(i))
 c
 c Find velocity/freq axis (again; checked to exist in OPNCHK)
@@ -1026,8 +1046,10 @@ c
         call memfree (ipsp, sizespec, 'r')
         call memfree (imsp, sizespec, 'l')
         if (iside(i).gt.0) call memfree (iwsp, sizespec, 'r')
+	call finco(ls)
         call xyzclose (ls)
       end do
+      call finco(lh)
       call xyclose (lh)
 c
 c Free up merged mask memory and close PGPLOT device
@@ -1275,7 +1297,7 @@ c
       subroutine decopt (dofull, eqscale, solneg, relax, doaxes, 
      +   doframe, mark, norm, naked, number, mirror, colour, 
      +   blconly, doerase, doepoch, igblank, dofid, dowedge, dotwo,
-     +   dogrid)
+     +   dogrid, blacklab)
 c----------------------------------------------------------------------
 c     Decode options array into named variables.
 c
@@ -1302,15 +1324,16 @@ c     dofid     Fiddle lookup table
 c     dowedge   Draw pixel map wedge
 c     dotwo     Two sided derivative for "dspectrum" else 1 sided
 c     dogrid    Draw coordinate grid
+c     blacklab  True if labels are black for white background devices
 c-----------------------------------------------------------------------
       implicit none
 c
       logical dofull, eqscale, solneg(*), relax, doaxes, doframe,
      +  mark, norm, naked, number, mirror, colour, blconly, doerase, 
-     +  doepoch, igblank, dofid, dowedge, dotwo, dogrid
+     +  doepoch, igblank, dofid, dowedge, dotwo, dogrid, blacklab
 cc
       integer maxopt
-      parameter (maxopt = 22)
+      parameter (maxopt = 23)
 c
       character opshuns(maxopt)*9
       logical present(maxopt)
@@ -1319,7 +1342,7 @@ c
      +              'mark     ', 'normalize', 'naked    ', 'number   ',
      +              'mirror   ', 'colour   ', 'blconly  ', 'noerase  ',
      +              'noepoch  ', 'noblank  ', 'fiddle   ', 'wedge    ',
-     +              '1sided   ', 'grid     '/
+     +              '1sided   ', 'grid     ', 'blacklab '/
 c-----------------------------------------------------------------------
       call optcg ('options', opshuns, present, maxopt)
 c
@@ -1345,6 +1368,7 @@ c
       dowedge   =      present(20)
       dotwo     = .not.present(21)
       dogrid    =      present(22)
+      blacklab  =      present(23)
 c
       end
 c
@@ -1428,7 +1452,7 @@ c
       integer maxlev, ncon, nlevs(*), blc(*), trc(*), lc(*), lg, lh,
      +  nspec, srtlev(maxlev,*), ibin(2), jbin(2)
       real levs(maxlev,*), vymin, slev(*), pixr(2), pcs, ydispb, 
-     +  iscale(nspec), gmm(2), cmm(2,*)
+     +  iscale(nspec), gmm(*), cmm(3,*)
       character*(*) cin(*), gin, trfun, spin(nspec), labtyp(2)
 cc
       real xpos, ypos, yinc
@@ -1583,7 +1607,7 @@ c
      +   clines, break, cs, ofile, nofile, relax, slines, vrange, vfrac, 
      +   irange, tick, doaxes, doframe, mark, scale, norm, naked, 
      +   blines, number, mirror, colour, blconly, doerase, doepoch, 
-     +   igblank, dofid, dowedge, dogrid, ibin, jbin)
+     +   igblank, dofid, dowedge, dogrid, blacklab, ibin, jbin)
 c-----------------------------------------------------------------------
 c     Get the unfortunate user's long list of inputs
 c
@@ -1647,6 +1671,7 @@ c   igblank    Ignore spatial blanks when drawing spectra
 c   dofid      Fiddle lookup table
 c   dowedge    Draw pixel map wedge
 c   dogrid     Draw overlay grid
+c   blacklab   True if labels are black for white background devices
 c   i,jbin     SPatial pixek increment and averaging in x and y directions
 c-----------------------------------------------------------------------
       implicit none
@@ -1662,7 +1687,7 @@ c
      +  pdev, ofile(maxspec), trfun, levtyp(maxcon), ltypes(maxtyp)
       logical dofull, eqscale, solneg(maxcon), relax, doframe, doaxes,
      +  mark, norm, naked, number, mirror, colour, blconly, doerase,
-     +  doepoch, igblank, dofid, dowedge, dogrid, dunw
+     +  doepoch, igblank, dofid, dowedge, dogrid, dunw, blacklab
 cc
       integer nmaxim
       parameter (nmaxim = 10)
@@ -1685,7 +1710,8 @@ c Get options first
 c
       call decopt (dofull, eqscale, solneg, relax, doaxes, doframe, 
      +   mark, norm, naked, number, mirror, colour, blconly,
-     +   doerase, doepoch, igblank, dofid, dowedge, dotwo, dogrid)
+     +   doerase, doepoch, igblank, dofid, dowedge, dotwo, dogrid,
+     +   blacklab)
 c
 c Sort out input images
 c
@@ -2157,7 +2183,6 @@ c
       npos = 0
       iostat = 0
       pix3 = dble(2*pl1+npl-1) / 2.0
-      call initco(lun)
 c
       do while (iostat.ne.-1)
         aline = ' '
@@ -2187,7 +2212,6 @@ c
         end if
       end do
 c
-      call finco (lun)
       call txtclose (lpos)
       aline = 'There were no locations in overlay file '//ofile(1:lo)
       if (npos.eq.0) call bug ('f', aline)
@@ -2268,6 +2292,7 @@ c
         end if
         call output (line)
         call xyopen (lh, spin(i), 'old', maxnax, size)
+	call initco(lh)
         call rdhdi (lh, 'naxis', naxis, 0)
 c
         call imminmax (lh, naxis, size, limin, limax)
@@ -2282,16 +2307,15 @@ c
           call bug ('f', line) 
         end if         
 c
-        call initco (lh)
         call w2wsco  (lh, iax, 'abspix', ' ', 1.0d0, 'absnat', ' ', v1)
         call w2wsco  (lh, iax, 'abspix', ' ', dble(size(iax)), 
      +                'absnat', ' ', v2)
-        call finco (lh)
 c
         lvmin = min(v1,v2)
         lvmax = max(v1,v2)
         vmin = min(vmin, lvmin)
         vmax = max(vmax, lvmax)
+	call finco(lh)
         call xyclose (lh)
       end do
 c
@@ -2768,7 +2792,7 @@ c
 c
 c
       subroutine region (maxnax, cin, lc, csize, cnaxis, gin, lg, gsize,
-     +  gnaxis, ibin, jbin, blc, trc, win, maxgrp, grpbeg, ngrp, ngrps)
+     +  gnaxis, ibin, jbin, blc, trc, win, ngrps, grpbeg, ngrp)
 c----------------------------------------------------------------------
 c     Finish key routine inputs for region of interest now.    Also
 c     return the header items for all further use when computing
@@ -2786,6 +2810,7 @@ c  Output:
 c    blc,trc       3-D Hyper-rectangle surrounding region of interest
 c    win           Size of region of interest for each of up to
 c                  3 dimensions.
+c    ngrps         Number of groups of channels.
 c    grpbeg        List of start planes for each group of planes
 c                  that are all  to be avearged together. A new
 c                  group is begun at every interruption to the
@@ -2793,13 +2818,12 @@ c                  continuity of the selected channels, or if the
 c                  channel increment is reached.
 c    ngrp          Number of channels in each group of channel to
 c                  be averaged together for each sub-plot.
-c    ngrps         Number of groups of channels.
 c
 c----------------------------------------------------------------------
       implicit none
 c     
       integer maxnax, cnaxis, gnaxis, csize(maxnax), gsize(maxnax), 
-     +  blc(*), trc(*), win(2), maxgrp, ngrp(maxgrp), grpbeg(maxgrp), 
+     +  blc(*), trc(*), win(2), ngrp(*), grpbeg(*), 
      +  ngrps, ibin(2), jbin(2), lc, lg
       character*(*) cin, gin
 cc
@@ -2817,12 +2841,12 @@ c must be a pixel map or contour image.
 c
       if (cin.ne.' ') then
         call boxinput ('region', cin, boxes, maxbox)
-        call boxset (boxes, cnaxis, csize, 's')
+        call boxset (boxes, cnaxis, csize, ' ')
         naxis = cnaxis
         lh = lc
       else if (gin.ne.' ') then
         call boxinput ('region', gin, boxes, maxbox)
-        call boxset (boxes, gnaxis, gsize, 's')
+        call boxset (boxes, gnaxis, gsize, ' ')
         naxis = gnaxis
         lh = lg
       end if
@@ -2843,16 +2867,16 @@ c find size of binned window
 c
       call winfidcg (size(1), 1, ibin, blc(1), trc(1), win(1))
       call winfidcg (size(2), 2, jbin, blc(2), trc(2), win(2))
-      if (win(1).le.1 .or. win(2).le.1) call bug ('f',
-     +   'Cannot display just one spatial pixel')
 c
-c Find list of start planes and number of planes for all
-c selected image planes which are to be averaged together
+c Find list of start planes and number of planes for all selected
+c image planes which are to be averaged together.  Signal to
+c CHNSELCG that we want, for each group of channels, the averaging
+c number to be equal to the number of contiguous channels available
+c in that group
 c   
-      kbin(1) = trc(3) - blc(3) + 1
-      kbin(2) = kbin(1)
-      call chnselcg (blc, trc, kbin, maxbox, boxes, maxgrp,
-     +               grpbeg, ngrp, ngrps)
+      kbin(1) = 0
+      kbin(2) = 0
+      call chnselcg (blc, trc, kbin, maxbox, boxes, ngrps, grpbeg, ngrp)
 c     
 c Tell user
 c
@@ -2918,7 +2942,6 @@ c
         typeo(i) = 'arcsec'
         win(i) = pos(i)
       end do
-      call initco (lh)
       call w2wco (lh, 2, typei, ' ', win, typeo, ' ', wout)
 c
       do i = 1, 2
@@ -3133,14 +3156,11 @@ c
         win(i) = pos(i)
         typeo(i) = 'absnat'
       end do
-      call initco (lh)
       call w2wco (lh, 2, typei, ' ', win, typeo, ' ', wout)
-      call finco (lh)
 c
 c Now work out the centre of the spectrum in spectrum image
 c coordinates (linear for velocity, arcsec for spatial)
 c
-      call initco (ls)
       naxis = min(3,snaxis)
       j = 1
       do i = 1, naxis
@@ -3191,7 +3211,6 @@ c
       do i = 1, naxis
         strc(i) = nint(wout(i))
       end do
-      call finco (ls)
 c
 c Make sure BLC and TRC in increasing order
 c
@@ -3270,7 +3289,7 @@ c
       end
 c
 c
-      subroutine setlgc (bgcol, labcol)
+      subroutine setlgc (bgcol, labcol, blacklab)
 c-----------------------------------------------------------------------
 c     Set line graphics colours
 c
@@ -3281,13 +3300,18 @@ c    colour indices to use
 c-----------------------------------------------------------------------
       implicit none
       integer labcol, bgcol
+      logical blacklab
 c-----------------------------------------------------------------------
       labcol = 7
       if (bgcol.eq.1) then
 c
 c White background
 c
-        labcol = 2
+         if (blacklab) then
+            labcol = 1
+         else
+            labcol = 2
+         endif
       else if (bgcol.eq.0) then
 c
 c Black background
@@ -3299,3 +3323,5 @@ c
       end if
 c
       end
+
+

@@ -59,6 +59,8 @@ c	             is to give a one line message at each iteration.
 c--
 c  History:
 c    rjs   7aug95  Adapted from MOSMEM.
+c    rjs  02jul97  cellscal change.
+c    rjs  23jul97  added pbtype.
 c------------------------------------------------------------------------
 	character version*(*)
 	parameter(version='MosTess: version 1.0 7-Aug-95')
@@ -939,7 +941,7 @@ c------------------------------------------------------------------------
 	real crpix
 	character line*72,num*2
 	integer nkeys
-	parameter(nkeys=15)
+	parameter(nkeys=17)
 	character keyw(nkeys)*8
 c
 c  Externals.
@@ -949,7 +951,7 @@ c
 	data keyw/   'obstime ','epoch   ','history ','lstart  ',
      *	  'lstep   ','ltype   ','lwidth  ','object  ','pbfwhm  ',
      *	  'observer','telescop','restfreq','vobs    ','btype   ',
-     *	  'mostable'/
+     *	  'mostable','cellscal','pbtype  '/
 c
 c  Fill in some parameters that will have changed between the input
 c  and output.

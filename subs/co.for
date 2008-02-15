@@ -9,13 +9,14 @@ c    subroutine coDup(lin,lout)
 c    subroutine coRaDec(lu,proj,ra0,dec0)
 c    subroutine coReinit(lu)
 c    subroutine coCvt(lu,in,x1,out,x2)
+c    subroutine coCvtv(lu,in,x1,out,x2,valid)
 c    subroutine coCvt1(lu,iax,in,x1,out,x2)
 c    subroutine coLMN(lu,in,x1,lmn)
 c    subroutine coGeom(lu,in,x1,ucoeff,vcoeff)
 c    subroutine coFindAx(lu,axis,iax)
 c    subroutine coFreq(lu,in,x1,freq)
 c    subroutine coVelSet(lu,axis)
-c    subroutine coPrjSet(lu)
+c    subroutine coPrjSet(lu,proj)
 c    subroutine coAxGet(lu,iax,ctype,crpix,crval,cdelt)
 c    subroutine coAxSet(lu,iax,ctype,crpix,crval,cdelt)
 c    subroutine coGetd(lu,object,value)
@@ -57,6 +58,8 @@ c    rjs   8sep99 More robust algorithm in comixed.
 c    rjs  10may00 Comment out some code to hopefully get a better wrap algorithm.
 c    dpr  16feb01 Bump up MAXITERS to 1000 in comixed to handle Erik
 c                 Muller data. Not a good solution.
+c    rjs  31may06 Develop coCvtv (validate coordinate), and check for
+c		  invalid coordinate conversions.
 c************************************************************************
 c* coInit -- Initialise coordinate conversion routines.
 c& rjs
@@ -64,7 +67,6 @@ c: coordinates
 c+
 	subroutine coInit(lu)
 c
-	implicit none
 	integer lu
 c
 c  Initialise the coordinate conversion system.
@@ -116,7 +118,6 @@ c: coordinates
 c+
 	subroutine coDup(lin,lout)
 c
-	implicit none
 	integer lin,lout
 c
 c  Duplicate a coordinate object.
@@ -165,7 +166,6 @@ c: coordinates
 c+
 	subroutine coRaDec(lu,proj,ra0,dec0)
 c
-	implicit none
 	integer lu
 	character proj*(*)
 	double precision ra0,dec0
@@ -196,7 +196,6 @@ c: coordinates
 c+
 	subroutine CoCreate(lu)
 c
-	implicit none
 	integer lu
 c
 c  Begin building up a coordinate object from scratch.
@@ -230,7 +229,6 @@ c: coordinates
 c+
 	subroutine coAxSet(lu,iax,ctypei,crpixi,crvali,cdelti)
 c
-	implicit none
 	integer lu,iax
 	character ctypei*(*)
 	double precision crpixi,crvali,cdelti
@@ -275,7 +273,6 @@ c: coordinates
 c+
 	subroutine coSetd(lu,object,value)
 c
-	implicit none
 	integer lu
 	character object*(*)
 	double precision value
@@ -332,7 +329,6 @@ c: coordinates
 c+
 	subroutine coSeta(lu,object,value)
 c
-	implicit none
 	integer lu
 	character object*(*),value*(*)
 c
@@ -381,7 +377,6 @@ c: coordinates
 c+
 	subroutine coGetd(lu,object,value)
 c
-	implicit none
 	integer lu
 	character object*(*)
 	double precision value
@@ -444,7 +439,6 @@ c: coordinates
 c+
 	subroutine coGeta(lu,object,value)
 c
-	implicit none
 	integer lu
 	character object*(*),value*(*)
 c
@@ -492,7 +486,6 @@ c: coordinates
 c+
 	subroutine CoReinit(lu)
 c
-	implicit none
 	integer lu
 c
 c  Finish up initialising a coordinate object.
@@ -568,7 +561,6 @@ c: coordinates
 c+
 	subroutine coFin(lu)
 c
-	implicit none
 	integer lu
 c
 c  This tidies up, and deletes a coordinate system previously initialised
@@ -590,16 +582,40 @@ c
 	if(nalloc(k).eq.0)Lus(k) = 0
 	end
 c************************************************************************
-c* coCvt -- Convert coordinates.
+c* coCvt -- Convert coordinates, die on error.
+c& mrc
+c: coordinates
+c+
+      subroutine coCvt(lu,in,x1,out,x2)
+c
+      integer lu
+      character in*(*),out*(*)
+      double precision x1(*),x2(*)
+c
+c  Call coCvtv and die immediately if the conversion is invalid.  This
+c  interface exists for backwards compatibility only.  It should not be
+c  used in new code.
+c--
+c------------------------------------------------------------------------
+      logical valid
+
+      call coCvtv (lu, in, x1, out, x2, valid)
+      if (.not.valid) then
+        call bug ('f', 'Invalid coordinate conversion in coCvt')
+      end if
+
+      end
+c************************************************************************
+c* coCvtv -- Convert coordinates - with validation.
 c& rjs
 c: coordinates
 c+
-	subroutine coCvt(lu,in,x1,out,x2)
+	subroutine coCvtv(lu,in,x1,out,x2,valid)
 c
-	implicit none
 	integer lu
 	character in*(*),out*(*)
 	double precision x1(*),x2(*)
+	logical valid
 c
 c  Convert coordinates from one coordinate system to another.
 c  Input and output coordinates can be either "pixel" or "world"
@@ -647,7 +663,9 @@ c    out	This indicates the units of the output coordinates, in the
 c		same fashion as the `in' value. The outputs must correspond
 c		one-for-one with the inputs.
 c  Output:
-c    x2		The output coordinates, in units given by `out'. 
+c    x2		The output coordinates, in units given by `out'.
+c    valid	If true, all is OK. If false then the coordinate conversion
+c		requested was invalid.
 c--
 c------------------------------------------------------------------------
 	include 'co.h'
@@ -667,6 +685,7 @@ c
 	call coCrack(in,x1pix,x1off,naxis(k),MAXNAX,n)
 	call coCrack(out,x2pix,x2off,n,MAXNAX,nt)
         docelest = .false.
+	valid = .true.
 c
 c  Convert each of the axes.
 c
@@ -724,21 +743,21 @@ c
      *	      crval(ira,k),crpix(ira,k),scal*cdelt(ira,k),
      *	      crval(idec,k),crpix(idec,k),scal*cdelt(idec,k),
      *	      x1pix(ira),x1pix(idec),x2pix(ira),x2pix(idec),
-     *	      x1off(ira),x1off(idec),x2off(ira),x2off(idec))
+     *	      x1off(ira),x1off(idec),x2off(ira),x2off(idec),valid)
 	  else if(idec.le.n)then
 	    call coCelest(0.d0,x1(idec),temp,x2(idec),coproj(k),
      *	      llcos(k),llsin(k),
      *	      crval(ira,k),crpix(ira,k),scal*cdelt(ira,k),
      *	      crval(idec,k),crpix(idec,k),scal*cdelt(idec,k),
      *	      .true.,x1pix(idec),.true.,x2pix(idec),
-     *	      .true.,x1off(idec),.true.,x2off(idec))
+     *	      .true.,x1off(idec),.true.,x2off(idec),valid)
 	  else
 	    call coCelest(x1(ira),0.d0,x2(ira),temp,coproj(k),
      *	      llcos(k),llsin(k),
      *	      crval(ira,k),crpix(ira,k),scal*cdelt(ira,k),
      *	      crval(idec,k),crpix(idec,k),scal*cdelt(idec,k),
      *	      x1pix(ira),.true.,x2pix(ira),.true.,
-     *	      x1off(ira),.true.,x2off(ira),.true.)
+     *	      x1off(ira),.true.,x2off(ira),.true.,valid)
 	  endif
 	endif
 c
@@ -750,7 +769,6 @@ c: coordinates
 c+
 	subroutine coFreq(lu,in,x1,freq1)
 c
-	implicit none
 	integer lu
 	character in*(*)
 	double precision x1(*),freq1
@@ -817,7 +835,6 @@ c: coordinates
 c+
 	subroutine coLMN(lu,in,x1,lmn)
 c
-	implicit none
 	integer lu
 	character in*(*)
 	double precision x1(*),lmn(3)
@@ -865,7 +882,7 @@ c  Convert to direction cosines.
 c
 	lmn(1) = sin(ra-ra0) * cos(dec)
 	lmn(2) = sin(dec)*cos(dec0) - cos(ra-ra0)*cos(dec)*sin(dec0)
-	lmn(3) = sin(dec)*sin(dec0) + cos(ra-ra0)*cos(dec0)*cos(dec) 
+	lmn(3) = sin(dec)*sin(dec0) + cos(ra-ra0)*cos(dec0)*cos(dec)
 	end
 c************************************************************************
 c* coGeom -- Compute linear coefficients to convert geometries.
@@ -874,7 +891,6 @@ c: coordinates
 c+
 	subroutine coGeom(lu,in,x1,ucoeff,vcoeff,wcoeff)
 c
-	implicit none
 	integer lu
 	character in*(*)
 	double precision x1(*),ucoeff(3),vcoeff(3),wcoeff(3)
@@ -963,7 +979,6 @@ c: coordinates
 c+
 	subroutine coCvt1(lu,iax,in,x1,out,x2)
 c
-	implicit none
 	integer lu,iax
 	double precision x1,x2
 	character in*(*),out*(*)
@@ -982,7 +997,7 @@ c--
 c------------------------------------------------------------------------
 	include 'co.h'
 	integer k,ira,idec,n
-	logical x1off,x2off,x1pix,x2pix
+	logical x1off,x2off,x1pix,x2pix,valid
 	double precision bscal,bzero,dtemp
 c
 c  Externals.
@@ -999,6 +1014,8 @@ c
 	if(n.ne.1)call bug('f','Invalid conversion, in coCvt1')
 	call coCrack(out,x2pix,x2off,1,1,n)
 	if(n.ne.1)call bug('f','Invalid conversion, in coCvt1')
+c
+	valid = .true.
 c
 c  Convert a linear axis.
 c
@@ -1017,7 +1034,7 @@ c
      *	    llcos(k),llsin(k),
      *	    crval(ira,k),crpix(ira,k),cdelt(ira,k),
      *	    crval(idec,k),crpix(idec,k),cdelt(idec,k),
-     *	    x1pix,x1pix,x2pix,x2pix,x1off,.true.,x2off,.true.)
+     *	    x1pix,x1pix,x2pix,x2pix,x1off,.true.,x2off,.true.,valid)
 c
 c  Convert a DEC axis.
 c
@@ -1028,7 +1045,7 @@ c
      *	    llcos(k),llsin(k),
      *	    crval(ira,k),crpix(ira,k),cdelt(ira,k),
      *	    crval(idec,k),crpix(idec,k),cdelt(idec,k),
-     *	    x1pix,x1pix,x2pix,x2pix,.true.,x1off,.true.,x2off)
+     *	    x1pix,x1pix,x2pix,x2pix,.true.,x1off,.true.,x2off,valid)
 c
 c  Convert a FELO axis.
 c
@@ -1036,6 +1053,9 @@ c
 	  call coFelo(x1,x2,crval(iax,k),crpix(iax,k),cdelt(iax,k),
      *	     x1pix,x1off,x2pix,x2off)
 	endif
+c
+	if(.not.valid)call bug('f',
+     *	  'An invalid coordinate conversion was requested in coCvt1')
 c
 	end
 c************************************************************************
@@ -1046,7 +1066,6 @@ c+
 	subroutine coGauCvt(lu,in,x1,ing,bmaj1,bmin1,bpa1,
      *				     outg,bmaj2,bmin2,bpa2)
 c
-	implicit none
 	integer lu
 	double precision x1(*)
 	character in(*),ing*(*),outg*(*)
@@ -1168,7 +1187,6 @@ c: coordinates
 c+
 	subroutine coVelSet(lu,type)
 c
-	implicit none
 	integer lu
 	character type*(*)
 c
@@ -1198,7 +1216,7 @@ c  Externals.
 c
 	integer coLoc
 c
-c  Standardise. For compatibility with old interface, use 
+c  Standardise. For compatibility with old interface, use
 	ttype = type
 	call ucase(ttype)
 	if(ttype.eq.'RADIO')then
@@ -1306,7 +1324,6 @@ c
 c************************************************************************
 	subroutine coGetVel(raepo,decepo,epoch,vel)
 c
-	implicit none
 	double precision raepo,decepo,epoch,vel
 c
 c  Determine the Sun's LSR velocity component in a given direction.
@@ -1340,7 +1357,6 @@ c: coordinates
 c+
 	subroutine coAxGet(lu,iax,ctypei,crpixi,crvali,cdelti)
 c
-	implicit none
 	integer lu,iax
 	character ctypei*(*)
 	double precision crpixi,crvali,cdelti
@@ -1385,7 +1401,6 @@ c: coordinates
 c+
 	subroutine coFindAx(lu,axis,iax)
 c
-	implicit none
 	integer lu,iax
 	character axis*(*)
 c
@@ -1465,7 +1480,6 @@ c: coordinates
 c+
 	logical function coCompar(lu1,lu2,match)
 c
-	implicit none
 	integer lu1,lu2
 	character match*(*)
 c
@@ -1587,7 +1601,6 @@ c: coordinates
 c+
 	subroutine coLin(lu,in,x1,n,ctype1,crpix1,crval1,cdelt1)
 c
-	implicit none
 	integer lu,n
 	character in*(*),ctype1(n)*(*)
 	double precision x1(*),crpix1(n),crval1(n),cdelt1(n)
@@ -1683,7 +1696,6 @@ c: coordinates
 c+
 	subroutine coPrint(lu)
 c
-	implicit none
 	integer lu
 c
 c  Print out a description of a coordinate system.
@@ -1762,7 +1774,6 @@ c: coordinates
 c+
 	subroutine coPrjSet(lu,p)
 c
-	implicit none
 	integer lu
 	character p*(*)
 c
@@ -1803,7 +1814,6 @@ c: coordinates
 c+
 	subroutine coWrite(lu,tno)
 c
-	implicit none
 	integer lu,tno
 c
 c  This writes out the coordinate system description to an image
@@ -1852,7 +1862,6 @@ c
 c************************************************************************
 	subroutine CoCompat(ctype1,ctype2,ok)
 c
-	implicit none
 	character ctype1*(*),ctype2*(*)
 	logical ok
 c
@@ -1888,7 +1897,6 @@ c
 c************************************************************************
 	subroutine CoExt(ctype,type,qual)
 c
-	implicit none
 	character ctype*(*),type*(*),qual*(*)
 c------------------------------------------------------------------------
 	integer l,i,length
@@ -1919,7 +1927,6 @@ c
 c************************************************************************
 	subroutine CoInitXY(k)
 c
-	implicit none
 	integer k
 c
 c  Initialise the coordinate information for an image data-set.
@@ -1992,7 +1999,6 @@ c
 c************************************************************************
 	subroutine CoTyCvt(type,itype,proj)
 c
-	implicit none
 	character type*(*),proj*(*)
 	integer itype
 c
@@ -2065,7 +2071,7 @@ c
 	    proj = 'car'
 	  else if(type(l1:l2).eq.'GLS')then
 	    proj = 'gls'
-	  else 
+	  else
 	    umsg = 'Using cartesian projection for axis '//type
 	    call bug('w',umsg)
 	    proj = 'car'
@@ -2084,7 +2090,6 @@ c
 c************************************************************************
 	subroutine CoInitUV(k)
 c
-	implicit none
 	integer k
 c
 c  Initialise the coordinate information for a visibility data-set.
@@ -2129,7 +2134,6 @@ c
 c************************************************************************
 	integer function CoLoc(lu,alloc)
 c
-	implicit none
 	integer lu
 	logical alloc
 c------------------------------------------------------------------------
@@ -2244,7 +2248,6 @@ c
 c************************************************************************
 	subroutine coFqFac(x1,type,xval,xpix,dx,vobs,x1off,x1pix,scal)
 c
-	implicit none
 	double precision x1,xval,xpix,dx,vobs,scal
 	logical x1off,x1pix
 	character type*4
@@ -2289,7 +2292,6 @@ c************************************************************************
 	subroutine coFelo(x10,x2,xval,xpix,dx,
      *					x1pix,x1off,x2pix,x2off)
 c
-	implicit none
 	double precision x10,x2,xval,xpix,dx
 	logical x1pix,x1off,x2pix,x2off
 c
@@ -2352,14 +2354,13 @@ c
 c************************************************************************
 	subroutine coCelest(x10,y10,x2,y2,proj,llcos,llsin,
      *	  xval,xpix,dx,yval,ypix,dy,
-     *	  x1pix,y1pix,x2pix,y2pix,x1off,y1off,x2off,y2off)
+     *	  x1pix,y1pix,x2pix,y2pix,x1off,y1off,x2off,y2off,valid)
 c
-	implicit none
 	double precision x10,y10,x2,y2,llcos,llsin
 	character proj*(*)
 	double precision xval,yval,xpix,ypix,dx,dy
 	logical x1pix,y1pix,x2pix,y2pix
-	logical x1off,y1off,x2off,y2off
+	logical x1off,y1off,x2off,y2off,valid
 c
 c  Convert celestial coordinates between grid and world coordinates.
 c
@@ -2376,6 +2377,7 @@ c    dx,xval,xpix: cdelt,crval and crpix values.
 c    dy,yval,ypix
 c  Output:
 c    x2,y2
+c    valid	False if an illegal coordinate conversion was attempted.
 c
 c------------------------------------------------------------------------
 	include 'mirconst.h'
@@ -2409,22 +2411,22 @@ c
 	  continue
 	else if(x1pix.and.y1pix)then
 	  call coxy2ll(x1,y1,x2,y2,xpix,dx,xval,ypix,dy,yval,
-     *						llcos,llsin,proj)
+     *					llcos,llsin,proj,valid)
 c
 c  Handle a mixed conversion.
 c
 	else if(x1pix)then
 	  call comixed(x1,y1,x2,y2,xpix,dx,xval,ypix,dy,yval,
-     *					llcos,llsin,proj,.true.)
+     *				llcos,llsin,proj,.true.,valid)
 	else if(y1pix)then
 	  call comixed(x1,y1,x2,y2,xpix,dx,xval,ypix,dy,yval,
-     *					llcos,llsin,proj,.false.)
+     *				llcos,llsin,proj,.false.,valid)
 c
 c  Convert from RA,DEC to x,y.
 c
 	else
 	  call coll2xy(x1,y1,x2,y2,xpix,dx,xval,ypix,dy,yval,
-     *						llcos,llsin,proj)
+     *					llcos,llsin,proj,valid)
 	endif
 c
 c  We now have the full set of possibilities. Return the variety the
@@ -2468,7 +2470,6 @@ c************************************************************************
 	subroutine CoLinear(xval,xpix,dx,x1pix,x1off,x2pix,x2off,
      *	  bscal,bzero)
 c
-	implicit none
 	logical x1pix,x1off,x2pix,x2off
 	double precision xpix,dx,xval
 	double precision bscal,bzero
@@ -2525,16 +2526,16 @@ c
 	end
 c************************************************************************
 	subroutine coll2xy(x1,y1,x2,y2,
-     *	  xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj)
+     *	  xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj,valid)
 c
-	implicit none
 	double precision x1,y1,x2,y2
 	double precision xpix,dx,xval,ypix,dy,yval,llcos,llsin
 	character proj*(*)
+	logical valid
 c
 c------------------------------------------------------------------------
 	include 'mirconst.h'
-	double precision Dalp,L,M,dtemp,t,sinyval,cosyval
+	double precision Dalp,L,M,dtemp,t,sinyval,cosyval,td
 c
 	sinyval = sin(yval)
 	cosyval = cos(yval)
@@ -2551,62 +2552,74 @@ c
 	  Dalp = Dalp - 2*DPI
 	endif
 c
-c
-c
-	if(proj.eq.'ncp')then
-	  L = sin(Dalp) * cos(y1)
-	  M = (cosyval - cos(y1)*cos(Dalp))/sinyval
-c
-	else if(proj.eq.'sin')then
-	  L = sin(Dalp) * cos(y1)
-	  M = (sin(y1)*cosyval - cos(y1)*sinyval*cos(Dalp))
-c
-	else if(proj.eq.'tan')then
-	  t = 1/(sin(y1)*sinyval+cos(y1)*cosyval*cos(Dalp))
-	  L = sin(Dalp) * cos(y1) * t
-	  M = (sin(y1)*cosyval - cos(y1)*sinyval*cos(Dalp)) * t
-c
-	else if(proj.eq.'arc')then
-	  t = acos(sin(y1)*sinyval+cos(y1)*cosyval*cos(Dalp))
-	  if(t.eq.0)then
-	    t = 1
-	  else
-	    t = t / sin(t)
-	  endif
-	  L = sin(Dalp) * cos(y1) * t
-	  M = (sin(y1)*cosyval - cos(y1)*sinyval*cos(Dalp)) * t
-c
-	else if(proj.eq.'car')then
+	valid = .true.
+	if(proj.eq.'car')then
 	  L = Dalp * cosyval
 	  M = (y1 - yval)
 c
 	else if(proj.eq.'gls')then
 	  L = Dalp * cos(y1)
 	  M = (y1 - yval)
+	else
+	  td = sin(y1)*sinyval+cos(y1)*cosyval*cos(Dalp)
+	  if(td.lt.0)then
+	    valid = .false.
+	  else if(proj.eq.'ncp')then
+	    if(y1*yval.le.0)then
+	      valid = .false.
+	    else
+	      L = sin(Dalp) * cos(y1)
+	      M = (cosyval - cos(y1)*cos(Dalp))/sinyval
+	    endif
+	  else if(proj.eq.'sin')then
+	    L = sin(Dalp) * cos(y1)
+	    M = (sin(y1)*cosyval - cos(y1)*sinyval*cos(Dalp))
+c
+	  else if(proj.eq.'tan')then
+	    t = 1/(sin(y1)*sinyval+cos(y1)*cosyval*cos(Dalp))
+	    L = sin(Dalp) * cos(y1) * t
+	    M = (sin(y1)*cosyval - cos(y1)*sinyval*cos(Dalp)) * t
+c
+	  else if(proj.eq.'arc')then
+	    t = acos(td)
+	    if(t.eq.0)then
+	      t = 1
+	    else
+	      t = t / sin(t)
+	    endif
+	    L = sin(Dalp) * cos(y1) * t
+	    M = (sin(y1)*cosyval - cos(y1)*sinyval*cos(Dalp)) * t
+	  endif
 	endif
 c
-	dtemp = L*llcos + M*llsin
-	M     = M*llcos - L*llsin
-	L     = dtemp
-	x2 = L / dx + xpix
-	y2 = M / dy + ypix
+	if(valid)then
+	  dtemp = L*llcos + M*llsin
+	  M     = M*llcos - L*llsin
+	  L     = dtemp
+	  x2 = L / dx + xpix
+	  y2 = M / dy + ypix
+	else
+	  x2 = 0
+	  y2 = 0
+	endif
 c
 	end
 c************************************************************************
 	subroutine coxy2ll(x1,y1,x2,y2,
-     *	  xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj)
+     *	  xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj,valid)
 c
-	implicit none
 	double precision x1,y1,x2,y2
 	double precision xpix,dx,xval,ypix,dy,yval,llcos,llsin
 	character proj*(*)
+	logical valid
 c
 c------------------------------------------------------------------------
-	double precision L,M,Dalp,t,dtemp,cosyval,sinyval,s,r
+	double precision L,M,Dalp,t,dtemp,cosyval,sinyval,s,r,t1
 c
 	sinyval = sin(yval)
 	cosyval = cos(yval)
 c
+	valid = .true.
 	L = (x1 - xpix) * dx
 	M = (y1 - ypix) * dy
 	dtemp = L*llcos - M*llsin
@@ -2616,12 +2629,26 @@ c
 	if(proj.eq.'ncp')then
 	  t = cosyval - M*sinyval
 	  Dalp = atan2(L,t)
-	  y2 = sign(acos(t/cos(Dalp)),yval)
+	  if(abs(t/cos(Dalp)).gt.1)then
+	    valid = .false.
+	  else
+	    y2 = sign(acos(t/cos(Dalp)),yval)
+	  endif
 c
 	else if(proj.eq.'sin')then
-	  t = sqrt(1-L*L-M*M)
-	  y2 = asin(M*cosyval+sinyval*t)
-	  Dalp = atan2(L,(cosyval*t - M*sinyval))
+	  t1 = 1-L*L-M*M
+	  if(t1.lt.0)then
+	    valid = .false.
+	  else
+	    t = sqrt(t1)
+	    t1 = M*cosyval+sinyval*t
+	    if(abs(t1).gt.1)then
+	      valid = .false.
+	    else
+	      y2 = asin(M*cosyval+sinyval*t)
+	      Dalp = atan2(L,(cosyval*t - M*sinyval))
+	    endif
+	  endif
 c
 	else if(proj.eq.'car')then
 	  y2 = yval + M
@@ -2645,22 +2672,30 @@ c
 	    t = 1
 	  endif
 	  r  = M*cosyval * t + sinyval*s
-	  y2 = asin(r)
-	  Dalp = atan2(L*t*cosyval,s-r*sinyval)
+	  if(abs(r).gt.1)then
+	    valid = .false.
+	  else
+	    y2 = asin(r)
+	    Dalp = atan2(L*t*cosyval,s-r*sinyval)
+	  endif
 	endif
 c
-	x2 = Dalp + xval
+	if(valid)then
+	  x2 = Dalp + xval
+	else
+	  x2 = 0
+	  y2 = 0
+	endif
 c
 	end
 c************************************************************************
 	subroutine comixed(x1,y1,x2,y2,xpix,dx,xval,ypix,dy,yval,
-     *						llcos,llsin,proj,pw2wp)
+     *					llcos,llsin,proj,pw2wp,valid)
 c
-	implicit none
 	double precision x1,y1,x2,y2
 	double precision xpix,dx,xval,ypix,dy,yval,llcos,llsin
 	character proj*(*)
-	logical pw2wp
+	logical pw2wp,valid
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	real TOL
@@ -2672,6 +2707,9 @@ c
 	real delta
 	integer i,i1,i2,niter
 c
+	x2 = 0
+	y2 = 0
+	valid = .true.
 	if(pw2wp)then
 	  x(1) = x1
 	  x(2) = ypix
@@ -2694,14 +2732,17 @@ c
 c  Do the conversion at three points.
 c
 	  call coxy2ll(x(1),x(2),yd(1),yd(2),
-     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj)
+     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj,valid)
+	  if(.not.valid)return
 	  y(i1) = yd(i1)
 	  call coll2xy(y(1),y(2),xd(1),xd(2),
-     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj)
+     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj,valid)
+	  if(.not.valid)return
 	  xdd(1) = 0.5*(x(1)+xd(1) + abs(dy/dx)*abs(x(2)-xd(2)))
 	  xdd(2) = 0.5*(x(2)+xd(2) + abs(dx/dy)*abs(x(1)-xd(1)))
 	  call coxy2ll(xdd(1),xdd(2),ydd(1),ydd(2),
-     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj)
+     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj,valid)
+	  if(.not.valid)return
 c
 c  Generate relative coordinates.
 c
@@ -2731,9 +2772,12 @@ c
 c
 c	if(delta.gt.tol)call bug('f','Failed to converge, in coMixed')
 	call coxy2ll(x(1),x(2),y(1),y(2),
-     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj)
+     *		    xpix,dx,xval,ypix,dy,yval,llcos,llsin,proj,valid)
 c
-	if(pw2wp)then
+	if(.not.valid)then
+	  x2 = 0
+	  y2 = 0
+	else if(pw2wp)then
 	  x2 = y(1)
 	  y2 = x(2)
 	else

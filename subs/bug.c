@@ -1,26 +1,30 @@
-/************************************************************************/
-/*									*/
-/* This handles errors and can abort your program.			*/
-/*									*/
-/*  History:								*/
-/*    rjs,mjs ????    Very mixed history. Created, destroyed, rewritten.*/
-/*    rjs     26aug93 Call habort_c.					*/
-/*    rjs     14jul98 Add a caste operation in errmsg_c, to attempt	*/
-/*		      to appease some compilers.			*/
-/*    rjs      9aug02 Support for "darwin" OS.				*/
-/************************************************************************/
+/*============================================================================
+*
+* This handles errors and can abort your program.
+*
+*  History:
+*    rjs,mjs ????    Very mixed history. Created, destroyed, rewritten.
+*    rjs     26aug93 Call habort_c.
+*    rjs     14jul98 Add a caste operation in errmsg_c, to attempt
+*		     to appease some compilers.
+*    rjs      9aug02 Support for "darwin" OS.
+*    rjs      3jul04 Use strerror routine.
+*
+*  $Id$
+*===========================================================================*/
 
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "miriad.h"
+#include "sysdep.h"
 
-static char *errmsg_c();
-void bug_c();
+private char *errmsg_c();
 
 char *Name = NULL;
 int reentrant=0;
 /************************************************************************/
-void buglabel_c(name)
-char *name;
+void buglabel_c(Const char *name)
 /** buglabel -- Give the "program name" to be used as a label in messages. */
 /*& mjs									*/
 /*: error-handling							*/
@@ -42,9 +46,7 @@ char *name;
   strcpy(Name,name);
 }
 /************************************************************************/
-void bugno_c(s,n)
-char s;
-int n;
+void bugno_c(char s,int n)
 /** bugno -- Issue an error message, given a system error number.	*/
 /*& mjs									*/
 /*: error-handling							*/
@@ -68,8 +70,7 @@ int n;
   else bug_c(s,errmsg_c(n));
 }
 /************************************************************************/
-void bug_c(s,m)
-char s,*m;
+void bug_c(char s,Const char *m)
 /** bug -- Issue an error message, given by the caller.			*/
 /*& mjs									*/
 /*: error-handling							*/
@@ -112,7 +113,7 @@ char s,*m;
   }
 }
 /************************************************************************/
-static char *errmsg_c(n)
+private char *errmsg_c(n)
 int n;
 /*
   Return the error message associated with some error number.
@@ -130,16 +131,18 @@ int n;
   string[len0] = 0;
   return(string);
 #else
-# if !defined(linux) && !defined(darwin)
+# ifdef HAS_STRERROR
+  return(strerror(n));
+# else
+#  if !defined(linux) && !defined(darwin_ppc) && !defined(darwin_x86)
   extern int sys_nerr;
   extern char *sys_errlist[];
-# endif
-
-
+#  endif
   if(n > 0 && n <= sys_nerr)return((char *)sys_errlist[n]);
   else{
     sprintf(string,"Unknown error with number %d detected.",n);
     return(string);
   }
+# endif
 #endif
 }

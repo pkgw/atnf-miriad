@@ -1,12 +1,12 @@
-/************************************************************************/
-/*                                                                      */
-/*  This is a simple shell to run the MIRIAD, Werong and NEMO systems.  */
-/*                                                                      */
-/************************************************************************/
-/*									*/
-/*= miriad -- Simple Miriad front-end for dumb terminals.		*/
-/*& rjs									*/
-/*: tools 								*/
+/****************************************************************************/
+/*                                                                          */
+/*  This is a simple shell to run the MIRIAD, Werong and NEMO systems.      */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*= miriad -- Simple Miriad front-end for dumb terminals.                   */
+/*& rjs                                                                     */
+/*: tools                                                                   */
 /*+
   "miriad" is a command-line front-end to run Miriad tasks from a dumb
   terminal. The commands that you give it are somewhat AIPS-like.
@@ -34,35 +34,29 @@
 
   Type
     help tasks
-  for more information about Miriad tasks.				*/
+  for more information about Miriad tasks.                                  */
 
-/*-- 									*/
+/*--                                                                        */
 
 
-#define VERSION_ID "version 1.0 26-Oct-99"
+#define VERSION_ID "version 1.5, 2007/06/12"
 
-/************************************************************************/
-/*  COMPILE DEFINE OPTIONS:                                             */
-/*                                                                      */
-/*  Use as:  -Doption (unix) or /DEFINE=(option=1) (VMS) in CC          */
-/*                                                                      */
-/*   <option>      <explanation>                                        */
-/*   --------      -------------                                        */
-/*  NOPATHSEARCH   if set, search of full $PATH is disabled (uses       */
-/*                 $MIRBIN only).                                       */
-/*  NOINTERRUPT    if set, interrupts like ^\, ^C, ^Y are not caught    */
-/*  GETENV         set this if your OS has no char *getenv()            */
-/*  READLINE	   GNU readline library is available. In this case, link*/
-/*		   with -lreadline -ltermcap.				*/
-/*  DO_CSHRC	   Shed csh with just the -c flag (not -cf).		*/
-/*									*/
-/*  vms		   Set if this is being compiled on VMS.		*/
-/************************************************************************/
+/*****************************************************************************
+*  COMPILE DEFINE OPTIONS:
+*
+*  Use as:  -Doption (unix) in CC
+*
+*   <option>      <explanation>
+*   --------      -------------
+*  NOPATHSEARCH   if set, search of full $PATH is disabled (uses $MIRBIN
+*                 only).
+*  NOINTERRUPT    if set, interrupts like ^\, ^C, ^Y are not caught
+*  GETENV         set this if your OS has no char *getenv()
+*  READLINE       GNU readline library is available. In this case, link with
+*                 -lreadline -ltermcap.
+*  DO_CSHRC       Shed csh with just the -c flag (not -cf).
+*****************************************************************************/
 
-#if defined(vms)
-#  define NOPATHSEARCH 1
-#  define NOINTERRUPT  1
-#endif
 #if !defined(NOPATHSEARCH)
 #  define PATHSEARCH 1
 #endif
@@ -70,72 +64,79 @@
 #  define INTERRUPT 1
 #endif
 
-/************************************************************************/
-/*                                                                      */
-/*  History:                                                            */
-/*    rjs  Dark-ages Original version.                                  */
-/*    pjt   4dec89   Warning when no write permission in save_vars.     */
-/*    rjs  21feb90   Some minor enhancements, suggested by Brian        */
-/*                   Glendenning.                                       */
-/*    pjt  26feb90   Changed environment variables, plus more           */
-/*                   descriptive messages.                              */
-/*    rjs   5mar90   Merged PJT and RJS versions.                       */
-/*    pjt  12mar90   don't write keyfile when not needed                */
-/*    pjt  15mar90   'gob' is same as 'go' with backgrounding           */
-/*    pjt  16mar90   added save, and help with no options               */
-/*    pjt   9apr90   some more help                                     */
-/*    rjs  26apr90   Looks in local directory for .doc files. On VMS,   */
-/*                   it checks for the foreign command definitiion,     */
-/*                   before overwriting it with its own.                */
-/*    pjt   6may90   compile option to search $PATH in Unix (execvp)    */
-/*    pjt  13may90   -b BIN -d DEF -p PDOC options                      */
-/*    pjt  15jun90   added TASK command - to set default task           */
-/*                   and SETENV, thinking on tget/tput command          */
-/*    pjt  20jun90   quit/exit is now different - load/save have def    */
-/*    pjt  10jul90   catch a few signals                                */
-/*    rjs  13aug90   Different pager for help command.			*/
-/*    rjs  21mar91   The "er" command.					*/
-/*    rjs  22may91   Fixed the "er" command!				*/
-/*    rjs  22may91   Stole various things from pjt's version.		*/
-/*    rjs  20jun91   Various mods to the help command.			*/
-/*    rjs  29aug91   Auto TPUT on "go" to $MIRDEF, TGET from $MIRDEF,   */
-/*    rjs  16sep91   Better error message.				*/
-/*    rjs   9oct91   -l flag for tget and tput.				*/
-/*    rjs   1may92   Wait for subprocess to finish, in docommand.	*/
-/*    rjs  21may92   Warn when unrecognised variables are set.		*/
-/*    rjs   4jun92   Increased some buffers. Better bounds checking.    */
-/*                   Removed much pjt bs.                               */
-/*    rjs  11sep92   View puts files in MIRDEF.				*/
-/*    rjs  19dec92   -Dhpux. csh -cf when shedding a command.		*/
-/*    rjs  05dec92   -Dhpux is the only thing to shed with csh -cf.	*/
-/*    rjs  16sep93   Background tasks ignore signals.			*/
-/*    rjs  20nov93   More args. Better treatment if a environment var   */
-/*		     missing.						*/
-/*    rjs   1dec93   go command can redirect standard output.		*/
-/*    rjs   4oct94   All machines shed csh with -cf.			*/
-/*    rjs  16feb95   New er command handling.				*/
-/*    rjs   3may96   Tidy defines. Fiddle with reading input a bit.	*/
-/*    rjs   4jun96   Really attempt to kill off children.		*/
-/*    rjs  29oct99   help -w						*/
-/*									*/
-/*    ToDo anyhow:                                                      */
-/*      check earlier if lastexit can be written, otherwise complain    */
-/*    Complaints/Wishes from users:                                     */
-/*      - why cannot I use aliases                                      */
-/*    LGM's ideas:                                                      */
-/*      - also remember per keyword which program used it, such that    */
-/*        they can be used next to each other                           */
-/*                                                                      */
-/************************************************************************/
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
+/*****************************************************************************
+*
+*  History:
+*    rjs  Dark-ages Original version.
+*    pjt   4dec89   Warning when no write permission in save_vars.
+*    rjs  21feb90   Some minor enhancements, suggested by Brian Glendenning.
+*    pjt  26feb90   Changed environment variables, plus more descriptive
+*                   messages.
+*    rjs   5mar90   Merged PJT and RJS versions.
+*    pjt  12mar90   don't write keyfile when not needed
+*    pjt  15mar90   'gob' is same as 'go' with backgrounding
+*    pjt  16mar90   added save, and help with no options
+*    pjt   9apr90   some more help
+*    rjs  26apr90   Looks in local directory for .doc files.
+*    pjt   6may90   compile option to search $PATH in Unix (execvp)
+*    pjt  13may90   -b BIN -d DEF -p PDOC options
+*    pjt  15jun90   added TASK command - to set default task and SETENV,
+*                   thinking on tget/tput command
+*    pjt  20jun90   quit/exit is now different - load/save have def
+*    pjt  10jul90   catch a few signals
+*    rjs  13aug90   Different pager for help command.
+*    rjs  21mar91   The "er" command.
+*    rjs  22may91   Fixed the "er" command!
+*    rjs  22may91   Stole various things from pjt's version.
+*    rjs  20jun91   Various mods to the help command.
+*    rjs  29aug91   Auto TPUT on "go" to $MIRDEF, TGET from $MIRDEF,
+*    rjs  16sep91   Better error message.
+*    rjs   9oct91   -l flag for tget and tput.
+*    rjs   1may92   Wait for subprocess to finish, in docommand.
+*    rjs  21may92   Warn when unrecognised variables are set.
+*    rjs   4jun92   Increased some buffers. Better bounds checking.
+*                   Removed much pjt bs.
+*    rjs  11sep92   View puts files in MIRDEF.
+*    rjs  19dec92   -Dhpux. csh -cf when shedding a command.
+*    rjs  05dec92   -Dhpux is the only thing to shed with csh -cf.
+*    rjs  16sep93   Background tasks ignore signals.
+*    rjs  20nov93   More args. Better treatment if a environment var missing.
+*    rjs   1dec93   go command can redirect standard output.
+*    rjs   4oct94   All machines shed csh with -cf.
+*    rjs  16feb95   New er command handling.
+*    rjs   3may96   Tidy defines. Fiddle with reading input a bit.
+*    rjs   4jun96   Really attempt to kill off children.
+*    rjs  29oct99   help -w
+*    rjs  22may06   Change to appease cygwin.
+*    mrc  14jul06   Compile with 'gcc -Wall' without warnings.
+*
+*    ToDo anyhow:
+*      check earlier if lastexit can be written, otherwise complain
+*    Complaints/Wishes from users:
+*      - why cannot I use aliases
+*    LGM's ideas:
+*      - also remember per keyword which program used it, such that they can
+*        be used next to each other
+*
+* $Id$
+*****************************************************************************/
+
 #include <ctype.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
 #if defined(INTERRUPT)
 #include <signal.h>
+#endif
+
+#ifdef READLINE
+#include <readline/history.h>
+#include <readline/readline.h>
 #endif
 
 #ifndef R_OK
@@ -152,11 +153,11 @@
 #define MAXARG    32
 #define HASHSIZE 127
 #define MAXINPUT  10
-typedef struct variable { 
+typedef struct variable {
     char *name;
-    char *value; 
+    char *value;
     int user,taught;
-    struct variable *fwd; 
+    struct variable *fwd;
 } VARIABLE;
 
 
@@ -172,35 +173,31 @@ char buffer[MAXBUF];
 char taskname[MAXBUF];          /* current default name of task */
 int mecho;
 int Qkeys = 0;      /* 0: keys were not updated     1: were */
-int input_level = 0;	     /* nesting level of INPUT command */
-int pid = 0;		     /* Process ID of child */
+int input_level = 0;         /* nesting level of INPUT command */
+int pid = 0;                 /* Process ID of child */
 FILE *fpinput[MAXINPUT];
 int   dopopen[MAXINPUT];
 
 /* forward references to make (ansi) compilers happy */
 
-#ifndef vms
 char *getenv();
 void dosetenv(),dounsetenv();
-#endif
 void get_vars(),save_vars(),doset(),dounset(),doinp(),dogo(),dohelp(),
      dotask(),dosource(), doer(), docd(), doload(), dosave(),
      docommand(), doview(), dotput(), dotget(),motd(),newenv();
 void filename(), bug();
-int  getline(),task_args();
+int  get_line(),task_args();
 #if defined(INTERRUPT)
 void review();
 #endif
 char *xpand(),*tlate();
 
-#ifdef vms
-#include <errno.h>
-#else
 extern int errno;       /* or <errno.h> */
 extern char **environ;  /* point to environment */
-#endif
-/************************************************************************/
-main(ac,av)
+
+
+/****************************************************************************/
+int main(ac,av)
 int ac;
 char *av[];
 {
@@ -212,32 +209,30 @@ char *av[];
 #if defined(INTERRUPT)
   signal(SIGTERM, review);            /* catch interrupts */
   signal(SIGQUIT, review);            /* for review */
-  signal(SIGINT,  review);            /* and ^C also */ 
+  signal(SIGINT,  review);            /* and ^C also */
 #endif
   for(i=0; i<HASHSIZE; i++){        /* Initialise the hash table. */
         hashtable[i] = NULL;
   }
 
   get_vars("lastexit");             /* Read "lastexit". */
-  motd();			    /* Give the message of the day. */
-  strcpy(taskname,"miriad");	    /* The default tawsk is "miriad" */
+  motd();                           /* Give the message of the day. */
+  strcpy(taskname,"miriad");        /* The default tawsk is "miriad" */
 
   more = 1;
   while(more) {                      /* Loop to get a command. */
-    argc = getline(argv);
+    argc = get_line(argv);
     if(!argc);
     else if(!strcmp(argv[0],"set"))      {mecho = input_level == 0;
-					  doset(argc,argv);
-					  mecho = 0;
-					  Qkeys++; }
+                                          doset(argc,argv);
+                                          mecho = 0;
+                                          Qkeys++; }
     else if(!strcmp(argv[0],"unset"))    {dounset(argc,argv); Qkeys++; }
     else if(!strcmp(argv[0],"inp"))      {doinp(argc,argv); }
     else if(!strcmp(argv[0],"go"))       {dogo(argc,argv); }
-#ifndef vms
-    else if(!strcmp(argv[0],"er"))	 {doer(argc,argv);   Qkeys++; }
+    else if(!strcmp(argv[0],"er"))       {doer(argc,argv);   Qkeys++; }
     else if(!strcmp(argv[0],"setenv"))   {dosetenv(argc,argv); }
     else if(!strcmp(argv[0],"unsetenv")) {dounsetenv(argc,argv); }
-#endif
     else if(!strcmp(argv[0],"help"))     {dohelp(argc,argv); }
     else if(!strcmp(argv[0],"view"))     {doview(argc,argv); Qkeys++; }
     else if(!strcmp(argv[0],"save"))     {dosave(argc,argv); }
@@ -248,13 +243,13 @@ char *av[];
     else if(!strcmp(argv[0],"task"))     {dotask(argc,argv); }
     else if(!strcmp(argv[0],"exit"))     {more = 0; }
     else if(!strcmp(argv[0],"quit"))     {Qkeys = 0; more = 0; }
-    else if(!strcmp(argv[0],"cd"))	 {docd(argc,argv); }
+    else if(!strcmp(argv[0],"cd"))       {docd(argc,argv); }
     else                                 {docommand(argc,argv); }
 
     if(input_level>0 && more==0) {  /* if exit from input file */
         input_level--;                /* decrease stack of input filesx */
-	if(dopopen[input_level]) pclose(fpinput[input_level]);
-	else			 fclose(fpinput[input_level]);
+        if(dopopen[input_level]) pclose(fpinput[input_level]);
+        else                     fclose(fpinput[input_level]);
         more=1;                     /* and keep on trucking */
     }
   } /* while */
@@ -264,36 +259,39 @@ char *av[];
       fprintf(stderr,"### Warning: Variables not saved in lastexit\n");
   return(0);
 }
-/************************************************************************/
+
+
+/*****************************************************************************
+* Print the message of the day.
+*---------------------------------------------------------------------------*/
 void motd()
-/*
-  Give the message of the day.
-------------------------------------------------------------------------*/
+
 {
   char path[MAXBUF],line[MAXBUF];
   FILE *f;
 
-  filename(path,"MIRPDOC","motd",".doc");
+  filename(path, "MIR", "doc/motd", ".doc");
   f = fopen(path,"r");
   if(f != NULL){
     while(fgets(line,MAXBUF,f) != NULL)fputs(line,stdout);
     fclose(f);
   }
 }
-/************************************************************************/
-int getline(argv)
+
+
+/*****************************************************************************
+* Prompt and read a line from STDIN and break it into tokens.  If the second
+* token is an equals sign, then make it into a "set" command.
+*---------------------------------------------------------------------------*/
+int get_line(argv)
 char *argv[];
-/*
-  This prompts and reads a line from STDIN. It breaks it into tokens.
-  If the second token is an equals sign, then this makes it into a
-  "set" command.
-------------------------------------------------------------------------*/
+
 {
-  int n,inter,doset,i,ntrys,within,l;
+  int n,inter,doset,i,ntrys,within;
   char prompt[MAXBUF],buffer2[MAXBUF];
   char *s,quotec;
 #ifdef READLINE
-  char *readline();
+  int  l;
 #endif
 
 /* Get a line from the user. */
@@ -326,7 +324,7 @@ char *argv[];
   } else if(fgets(buffer2,MAXBUF-1,fpinput[input_level-1])==NULL) {
     input_level--;
     if(dopopen[input_level])pclose(fpinput[input_level]);
-    else		    fclose(fpinput[input_level]);
+    else                    fclose(fpinput[input_level]);
     buffer2[0] = 0;
   }
 
@@ -334,7 +332,7 @@ char *argv[];
 
   s = xpand(buffer,buffer2);
   if(s == NULL)buffer[0] = 0;
-  else	       *s = 0;
+  else         *s = 0;
 
 /* Break the line into words. */
 
@@ -377,12 +375,14 @@ char *argv[];
   }
   return(n);
 }
-/************************************************************************/
+
+
+/*****************************************************************************
+* Expand any $ characters into the equivalent text or environment variables.
+*---------------------------------------------------------------------------*/
 char *xpand(s,t)
 char *s,*t;
-/*
-  Expand any $ characters into the equivalent text or environment variables.
-------------------------------------------------------------------------*/
+
 {
   char var[MAXBUF],*u;
 
@@ -398,12 +398,14 @@ char *s,*t;
   }
   return(s);
 }
-/************************************************************************/
+
+
+/*****************************************************************************
+* Return the value of a symbol or environment variable.
+*---------------------------------------------------------------------------*/
 char *tlate(var)
 char *var;
-/*
-  Return the value of a symbol or environment variable.
-------------------------------------------------------------------------*/
+
 {
   int hashval;
   char *t;
@@ -422,22 +424,18 @@ char *var;
   if(v != NULL) return(v->value);
 
 /* If we failed, check for an environment variable. */
-
-#ifndef vms
   t = getenv(var);
-#else
-  t = NULL;
-#endif
 
   if(t == NULL) fprintf(stderr,"### No such variable: %s\n",var);
   return(t);
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void doset(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   char *s,*t,prev;
   int hashval,i,len;
@@ -448,12 +446,12 @@ char *argv[];
     for(i=0;i<HASHSIZE;i++) {
       v = hashtable[i];
       while(v) {
-	if(v->value != NULL)printf("%8s = %s\n",v->name,v->value);
-	v = v->fwd;
+        if(v->value != NULL)printf("%8s = %s\n",v->name,v->value);
+        v = v->fwd;
       }
     }
     return;
-  } 
+  }
 
 /* Find the value of the parameter, stored in the hash table. */
 
@@ -511,12 +509,13 @@ char *argv[];
   }
   *s++ = 0;
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void dounset(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   int i,hashval;
   char *t;
@@ -536,19 +535,20 @@ char *argv[];
     }
   }
 }
-#ifndef vms
-/************************************************************************/
+
+
+/*****************************************************************************
+* A quick edit of various keywords.
+*---------------------------------------------------------------------------*/
 void doer(argc,argv)
 int argc;
 char *argv[];
-/*
-  A quick edit of various keywords.
-------------------------------------------------------------------------*/
+
 {
   char line[MAXBUF];
   int hashval;
   char *t;
-  VARIABLE *v;  
+  VARIABLE *v;
 
 /* Check the arguments. */
 
@@ -582,13 +582,13 @@ char *argv[];
   dopopen[input_level] = TRUE;
   input_level++;
 }
-#endif
-/************************************************************************/
+
+
+/****************************************************************************/
 void doinp(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   int i,n;
   char *task;
@@ -607,19 +607,20 @@ char *argv[];
                                           " " : args[i].value));
   }
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void dosource(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   if(argc > 2) fprintf(stderr,"### Extra arguments on line ignored.\n");
 
   if(argc==1) return;
   if(input_level+1 > MAXINPUT) {
-	fprintf(stderr,"### Too many nested inputs in %s\n",argv[1]);
-	return;
+        fprintf(stderr,"### Too many nested inputs in %s\n",argv[1]);
+        return;
   }
   fpinput[input_level] = fopen(argv[1],"r");
   dopopen[input_level] = FALSE;
@@ -629,12 +630,13 @@ char *argv[];
   }
   input_level++;
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void doview(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   int i,n;
   FILE *fd;
@@ -658,23 +660,20 @@ char *argv[];
       fprintf(fd,"%-9s= %s\n",args[i].name,(args[i].value == NULL ?
                                           "" : args[i].value));
     fclose(fd);
-#ifdef vms
-    viewer = "edit";
-#else
     if((viewer = getenv("VISUAL")) == NULL)
         if((viewer = getenv("EDITOR")) == NULL) viewer = "vi";
-#endif
     sprintf(command,"%s %s",viewer,name);
     system(command);
     get_vars(name);
   }
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void dotput(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   int i,n,dolocal;
   FILE *fd;
@@ -685,8 +684,8 @@ char *argv[];
   for(i=1; i < argc; i++){
     s = argv[i];
     if(*s == '-')while(*++s)switch(*s){
-      case 'l':	dolocal = TRUE; break;
-      default:	fprintf(stderr,"### Unrecognised flag %c ignored\n",*s);
+      case 'l': dolocal = TRUE; break;
+      default:  fprintf(stderr,"### Unrecognised flag %c ignored\n",*s);
     } else if(task == NULL) task = s;
     else fprintf(stderr,"### Ignoring %s\n",s);
   }
@@ -711,70 +710,14 @@ char *argv[];
     fclose(fd);
   }
 }
-#ifdef vms
-/************************************************************************/
+
+
+/****************************************************************************/
 void dogo(argc,argv)
 int argc;
 char *argv[];
-/*  VMS version (no backgrounding/spawning yet)
-------------------------------------------------------------------------*/
-{
-  FILE *fd;
-  int i,n,table;
-  char line[MAXBUF],parameter[MAXBUF],*task;
-  struct {int length; char *pnt; } name,value;
-#define LIB$K_CLI_GLOBAL_SYM 2
-#define assign(descriptor,string) descriptor.length = strlen(string);\
-                                  descriptor.pnt    = string
 
-  if(argc < 1) return;
-  if(argc > 2) fprintf(stderr,"### Extra arguments on line ignored.\n");
-  task = ( argc > 1 ? argv[1] : taskname);
-  n = task_args(task);
-  if(n < 0){
-    fprintf(stderr,"### Found no documentation on task %s.\n",task);
-  } else {
-/* Write out the "TPUT" file. */
 
-    filename(path,"MIRDEF",task,".def");
-    fd = fopen(path,"w");
-    if(fd == NULL){
-      fprintf(stderr,"### Failed to open %s\n",name);
-    } else {
-      for(i=0; i<n; i++)
-        if(args[i].value != NULL)
-	  fprintf(fd,"%-9s= %s\n",args[i].name,args[i].value);
-      fclose(fd);
-    }
-/* Check if the foreign command is defined. If not, define it. */
-    assign(name,task);
-    value.length = MAXBUF; value.pnt = line;
-    if(lib$get_symbol(&name,&value) != 1){
-      table = LIB$K_CLI_GLOBAL_SYM;
-      sprintf(line,"$MIRBIN:%s.exe",task);
-      assign(name,task); assign(value,line);
-      lib$set_symbol(&name,&value,&table);
-    }
-
-/* Build up the command line. */
-
-    strcpy(line,task);
-    for(i=0; i<n; i++){                 /* CHECK IF THIS STILL WORKS 15-jun-90 PJT */
-      if(args[i].value != NULL){
-        sprintf(parameter," %s=%s",args[i].name,args[i].value);
-        strcat(line,parameter);
-      }
-    }
-    system(line);
-  }
-}
-#else
-/************************************************************************/
-void dogo(argc,argv)
-int argc;
-char *argv[];
-/*      Unix version
-------------------------------------------------------------------------*/
 {
   FILE *fd;
   int i,n,bg,length,fh;
@@ -792,10 +735,10 @@ char *argv[];
   for(i=1; i < argc; i++){
     s = argv[i];
     if(*s == '-')while(*++s != 0)switch(*s){
-      case 'r':	if(++i < argc) runner = argv[i]; break;
+      case 'r': if(++i < argc) runner = argv[i]; break;
       case 'b': bg = 1; break;
       default:
-	fprintf(stderr,"### Unrecognised flag %c ignored\n",*s);
+        fprintf(stderr,"### Unrecognised flag %c ignored\n",*s);
     } else if( *s == '>'){
       if(*(s+1) != 0) output = s + 1;
       else if(++i < argc) output = argv[i];
@@ -825,7 +768,7 @@ char *argv[];
     } else {
       for(i=0; i<n; i++)
         if(args[i].value != NULL)
-	  fprintf(fd,"%-9s= %s\n",args[i].name,args[i].value);
+          fprintf(fd,"%-9s= %s\n",args[i].name,args[i].value);
       fclose(fd);
     }
 
@@ -849,12 +792,12 @@ char *argv[];
     length = 0;
     for(i=0; i<n; i++){
       if(args[i].value != NULL){
-	s = parameter + length;
+        s = parameter + length;
         length += strlen(args[i].name) + strlen(args[i].value) + 2;
         if(length > MAXBUF){
-	  fprintf(stderr,"### Internal bug: Argument list too long\n");
- 	  return;
-	}
+          fprintf(stderr,"### Internal bug: Argument list too long\n");
+          return;
+        }
         sprintf(s,"%s=%s",args[i].name,args[i].value);
         *t++ = s;
       }
@@ -871,14 +814,14 @@ char *argv[];
 #if defined(INTERRUPT)
         signal(SIGTERM, SIG_IGN);
         signal(SIGQUIT, SIG_IGN);
-        signal(SIGINT,  SIG_IGN); 
+        signal(SIGINT,  SIG_IGN);
 #endif
       }
       if(output != NULL){
-	fh = open(output,O_WRONLY|O_CREAT|O_TRUNC,0644);
-	if(fh < 0)fprintf(stderr,"### Unable to open redirected output\n");
-	dup2(fh,1);
-	close(fh);
+        fh = open(output,O_WRONLY|O_CREAT|O_TRUNC,0644);
+        if(fh < 0)fprintf(stderr,"### Unable to open redirected output\n");
+        dup2(fh,1);
+        close(fh);
       }
 
 #if defined(PATHSEARCH)
@@ -892,15 +835,15 @@ char *argv[];
   }
   pid = 0;
 }
-#endif
-/************************************************************************/
+
+
+/****************************************************************************/
 void dohelp(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
-  char rest[MAXBUF],path[MAXBUF],command[MAXBUF],*task,*key,*s;
+  char rest[MAXBUF],command[MAXBUF],*task,*key,*s;
   int i,doweb;
 
 /* Determine the thing we want help on. */
@@ -910,19 +853,19 @@ char *argv[];
     for(i=1; i < argc; i++){
       s = argv[i];
       if(*rest){
-	strcat(rest," ");strcat(rest,s);
+        strcat(rest," ");strcat(rest,s);
       }else if (*s == '-'){
-	s++;
+        s++;
         while(*s)switch(*s++){
-	  case 'w': doweb = TRUE;			break;
-	  case 'k': if( ++i < argc ) key = argv[i];	break;
-	}
+          case 'w': doweb = TRUE;                       break;
+          case 'k': if( ++i < argc ) key = argv[i];     break;
+        }
       }else if(*s == '|' || *s == '>' ){
-	strcpy(rest,s);
+        strcpy(rest,s);
       } else {
-	task = s;
+        task = s;
       }
-    }    
+    }
   }
   if(!task) task = taskname;
 
@@ -931,26 +874,21 @@ char *argv[];
   if(task_args(task) < 0){
     fprintf(stderr,"### Cannot find and/or read help for %s\n",task);
   }else{
-#ifdef vms
-    sprintf(path,"%s.doc",task);
-    if(access(path,R_OK))filename(path,"MIRPDOC",task,".doc");
-    sprintf(command, "type/page %s",path);
-#else
     strcpy(command,"mirhelp ");
     if(doweb)strcat(command,"-w ");
     if(key){ strcat(command,"-k "); strcat(command,key); strcat(command," ");}
     strcat(command,task);
     if(*rest)strcat(command,rest);
-#endif
     system(command);
   }
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void dosave(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   char path[MAXBUF];
 
@@ -961,12 +899,14 @@ char *argv[];
     save_vars(path);
   }
 }
-/************************************************************************/
+
+
+
+/****************************************************************************/
 void doload(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   char path[MAXBUF];
 
@@ -977,12 +917,13 @@ char *argv[];
     get_vars(path);
   }
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void dotget(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   char path[MAXBUF],*vals[MAXARGS+1],*task,*s;
   int n,narg,i,dolocal;
@@ -992,8 +933,8 @@ char *argv[];
   for(i=1; i < argc; i++){
     s = argv[i];
     if(*s == '-')while(*++s)switch(*s){
-      case 'l':	dolocal = TRUE;	break;
-      default:	fprintf(stderr,"### Unrecognised flag %c ignored\n",*s);
+      case 'l': dolocal = TRUE; break;
+      default:  fprintf(stderr,"### Unrecognised flag %c ignored\n",*s);
     } else if(task == NULL) task = s;
     else fprintf(stderr,"### Ignoring %s\n",s);
   }
@@ -1013,38 +954,36 @@ char *argv[];
       if(narg > 1)dounset(narg,vals);
     }
     get_vars(path);
-    if(task != taskname)strcpy(taskname,task);    
+    if(task != taskname)strcpy(taskname,task);
     doinp(1,"inp");
   } else fprintf(stderr,"### Could not read %s.def\n",task);
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void docd(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
     if (argc == 2) {     /* change directory */
         if (chdir(argv[1]) != 0)
             fprintf(stderr,"### Failed to change directory %s\n",argv[1]);
-    	/* printf("Current directory is: ***\n"); */
-    } else {            
+        /* printf("Current directory is: ***\n"); */
+    } else {
         if (argc == 1) {    /* if one arg: show current dir */
-#ifdef VMS
-            system("show default");
-#else
             system("pwd");
-#endif
         } else
-	    fprintf(stderr, "### Incorrect number of arguments\n");
+            fprintf(stderr, "### Incorrect number of arguments\n");
     }
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void dotask(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   if(argc > 1) {
     strcpy(taskname,argv[1]);
@@ -1052,13 +991,13 @@ char *argv[];
     printf("Current default task is: %s\n",taskname);
   }
 }
-#ifndef vms
-/************************************************************************/
+
+
+/****************************************************************************/
 void dosetenv(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
     if ( argc < 3) {
         fprintf(stderr,"### Usage: setenv env_var value\n");
@@ -1066,12 +1005,13 @@ char *argv[];
     }
     newenv(argv[1],argv[2]);
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void dounsetenv(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
     if ( argc < 2) {
         fprintf(stderr,"### Usage: unsetenv env_var\n");
@@ -1079,13 +1019,13 @@ char *argv[];
     }
     newenv(argv[1],"");
 }
-#endif
-/************************************************************************/
+
+
+/****************************************************************************/
 void docommand(argc,argv)
 int argc;
 char *argv[];
-/*
-------------------------------------------------------------------------*/
+
 {
   char *s, buffer[MAXBUF];
   int i,pid;
@@ -1099,9 +1039,6 @@ char *argv[];
   while (*s == ' ' || *s == '\t')   /* skip whitespace */
     s++;
   if (! *s || (*s == '#')) return;
-#ifdef vms
-  system(buffer);         /* and execute it by the host cmd.interpreter */
-#else
                         /* In UNIX: pass it such that aliases are known */
   pid = fork();
 #ifdef DO_CSHRC
@@ -1120,11 +1057,13 @@ char *argv[];
   signal(SIGQUIT, review);            /* of signals */
   signal(SIGINT,  review);
 #endif
-#endif
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void get_vars(name)
 char *name;
+
 {
   FILE *fd;
   char *argv[3],line[MAXBUF],*s;
@@ -1148,9 +1087,12 @@ char *name;
   }
   fclose(fd);
 }
-/************************************************************************/
+
+
+/****************************************************************************/
 void save_vars(name)
 char *name;
+
 {
   int i;
   VARIABLE *v;
@@ -1194,31 +1136,49 @@ char *name;
   fclose(fd);
   fprintf(stderr,"[Variables saved in %s]\n",name);
 }
-/************************************************************************/
+
+
+/*****************************************************************************
+* Get the arguments and their values, for a particular task.
+*---------------------------------------------------------------------------*/
 int task_args(task)
 char *task;
-/*
-  This gets the arguments, and their values, for a particular task.
-------------------------------------------------------------------------*/
+
 {
-  char line[MAXBUF],path[MAXBUF],keyword[MAXBUF],*t;
+  char *dir, keyword[MAXBUF], line[MAXBUF], path[MAXBUF], *t;
   FILE *fd;
   VARIABLE *v;
-  int n,hashval,found;
+  int n,hashval;
 
-/* Check both the local directory, and the standard directory for the .doc
-   file. */
+/* Search for the .doc file. */
+  sprintf(path, "./%s.doc", task);
+  fd = fopen(path, "r");
+  if (!fd) {
+    if ((dir = getenv("HOME"))) {
+      sprintf(path, "%s/miriad/doc/%s.doc", dir, task);
+      fd = fopen(path, "r");
+    }
 
-  sprintf(path,"%s.doc",task);
-  fd = fopen(path,"r");
-  if(!fd){
-    filename(path,"MIRPDOC",task,".doc");
-    fd = fopen(path,"r");
+    if (!fd) {
+      if ((dir = getenv("MIRPDOC"))) {
+        while (dir) {
+          if ((t = strchr(dir, ':'))) {
+            sprintf(path, "%.*s/%s.doc", (t-dir), dir, task);
+            dir = t + 1;
+          } else {
+            sprintf(path, "%s/%s.doc", dir, task);
+            dir = 0;
+          }
+
+          if (fd = fopen(path, "r")) break;
+        }
+      }
+
+      if (!fd) return -1;
+    }
   }
-  if(!fd)return(-1);
 
 /* Scan the .doc file for the keywords. */
-
   n = 0;
   while( fgets(line,sizeof(line),fd) != NULL){
     if(sscanf(line,"%%N %s",keyword) == 1){
@@ -1246,8 +1206,8 @@ char *task;
 /* Save the name and value. */
 
       if(n >= MAXARGS){
-	fprintf(stderr,"### Internal bug: Too many arguments...aborting\n");
-	exit(0);
+        fprintf(stderr,"### Internal bug: Too many arguments...aborting\n");
+        exit(0);
       }
       args[n].value = v->value;
       args[n].name = v->name;
@@ -1257,48 +1217,54 @@ char *task;
   fclose(fd);
   return(n);
 }
-/************************************************************************/
+
+
+/*****************************************************************************
+* Make a filename from the input components.
+*---------------------------------------------------------------------------*/
 void filename(out,envvar,name,type)
 char *out,*envvar,*name,*type;
-/*
-  This makes a filename from the input components.
-------------------------------------------------------------------------*/
+
 {
-#ifdef vms
-  if(envvar && *envvar)sprintf(out,"%s:%s%s",envvar,name,type);
-  else       sprintf(out,"%s%s",name,type);
-#else
   char *s;
-  if(envvar && *envvar){
+
+  if (envvar && *envvar) {
     s = getenv(envvar);
-    if(s == NULL || *s == 0) sprintf(out,"%s%s",name,type);
-    else sprintf(out,"%s/%s%s",s,name,type);
-  }else sprintf(out,"%s%s",name,type);
-#endif
+    if (s == NULL || *s == 0) {
+      sprintf(out,"%s%s",name,type);
+    } else {
+      sprintf(out,"%s/%s%s",s,name,type);
+    }
+  } else {
+    sprintf(out,"%s%s",name,type);
+  }
 }
-/************************************************************************/
+
+
+/*****************************************************************************
+* Print an error message then exit.
+*---------------------------------------------------------------------------*/
 void bug(message)
 char *message;
-/*
-  This prints an error message, then exits.
-------------------------------------------------------------------------*/
+
 {
   fprintf(stderr,"%s\n",message);
   exit(1);
 }
-#ifndef vms
-/************************************************************************/
+
+
+/*****************************************************************************
+* Enter a new environment variable.  If 'value' is NULL, erase it.
+*
+*   input:  var         name of env. variable
+*           value       value of env. variable
+*---------------------------------------------------------------------------*/
 void newenv(var,value)
 char *var, *value;
+
 {
     char **ep, **newep, **epfrom, **epto, *cp;
     int  elen, vlen, nev, i;
-/*
-        enter a new environment variable. If 'value' is NULL, erase it.
-
-    input:  var         name of env. variable
-            value       value of env. variable
-------------------------------------------------------------------------*/
     vlen = strlen(var);
 
     for (nev=0, ep=environ; *ep != NULL; ep++) {            /* loop all vars */
@@ -1324,7 +1290,7 @@ char *var, *value;
 
     newep = (char **)  malloc( (nev+2) * sizeof(char **) );   /* allocate new */
     for (i=0, epfrom=environ, epto=newep; i<nev; i++)     /* copy old stuff */
-       *epto++ = *epfrom++;   
+       *epto++ = *epfrom++;
     cp = malloc(vlen+strlen(value)+2);          /* allocate for new one */
     if (cp==NULL) {
         fprintf(stderr,"### No memory to add environment %s=%s\n",var,value);
@@ -1335,12 +1301,15 @@ char *var, *value;
     *epto = NULL;       /* terminate array */
     environ = newep;    /* set new environment */
 }
-/************************************************************************/
-/* getenv: a local version, in case *getenv() is not supplied by your OS */
 
+
+/*****************************************************************************
+* getenv: a local version, in case *getenv() is not supplied by your OS
+*---------------------------------------------------------------------------*/
 #if defined(GETENV)
 char *getenv(var)
 char *var;
+
 {
     char **ep, *cp;
     int vlen, elen;
@@ -1357,12 +1326,13 @@ char *var;
     }
     return(NULL);
 }
+#endif
 
-#endif
-#endif
-/**********************************************************************/
+
+/****************************************************************************/
 #if defined(INTERRUPT)
 void review()
+
 {
   fprintf(stderr,
        "Miriad shell cannot be interrupted, type 'help miriad' for info\n");

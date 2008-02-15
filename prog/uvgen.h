@@ -13,12 +13,11 @@ c
 	integer maxspect
 	parameter(maxspect=8)
         integer maxsrc,maxpol,maxpnt,maxpolar
-        parameter(maxsrc=1000,maxpol=4,maxpnt=100,maxpolar=20)
+        parameter(maxsrc=1000,maxpol=4,maxpnt=500,maxpolar=20)
 c
 	double precision sfreq(maxspect),sdf(maxspect),lo1,lo2,freqif
 	real wfreq(maxspect),wwidth(maxspect)
 	integer numchan,nwide,nspect,ischan(maxspect),nschan(maxspect)
 	common/uvgencom/sfreq,sdf,lo1,lo2,freqif,wfreq,wwidth,
      *	  numchan,nwide,nspect,ischan,nschan
-
 

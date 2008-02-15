@@ -35,6 +35,7 @@ c--
 c  History:
 c    rjs  15mar01 Original version.
 c    rjs  24apr01 Extract opacGet. Allow selecting by polarisation.
+c    rjs  18sep05 Corrected incorrect type.
 c------------------------------------------------------------------------
 	character version*(*)
 	parameter(version='DSDCAL version 1.0 24-Apr-01')
@@ -79,7 +80,7 @@ c
 	call keya('device',device,' ')
 	call keya('out',out,' ')
 	if(device.eq.' '.and.out.eq.' ')call bug('f','No work to do')
-	call keyd('tol',tol,4.0d0)
+	call keyr('tol',tol,4.0)
 	if(tol.le.0)call bug('f','Invalid tolerance')
 	call getopt(atmcor)
 	call keya('dsdlog',dsdlog,' ')
@@ -164,7 +165,7 @@ c
 	    do i=2,nchan
 	      freq = freq + sfreq(i)
 	    enddo
-	    freq = freq / nchan
+	    freq = freq / nchan * 1e9
 	    call opacGet(1,freq,els(j),temps(j),
      *	      presss(j),humids(j),factor(nselect),Tsky(nselect))
 	    airmass(nselect) = 1/sin(els(j))
@@ -263,7 +264,7 @@ c
 	      do i=2,nchan
 	        freq = freq + sfreq(i)
 	      enddo
-	      freq = freq / nchan
+	      freq = freq / nchan * 1e9
 	      call opacGet(1,freq,els(j),temps(j),
      *	      presss(j),humids(j),factor,Tsky)
 	      t3 = t3 / factor(1)

@@ -53,6 +53,13 @@ c	RA-Dec offset of desired phase center relative to phase center
 c	of original uv dataset in arcseconds. Source of interest should be 
 c	at the phase center in the typical use of this program. 
 c	Default = 0.0,0.0.
+c@ type
+c       Calculate the amplitude and standard deviation for each bin based on 
+c       the real and imaginary components (total) or just based on the real 
+c       component (real). The "real" option is useful if your expected source 
+c       visibility is entirely real -- i.e. a point source or circularly 
+c       symmetric source at the phase center. 
+c       Possible options are "total" and "real". Default: total.
 c@ device
 c	Plot device name. If not specified, no plot is created.
 c@ log  
@@ -63,6 +70,9 @@ c	lgm 25mar92 Original version started as offshoot of uvaver.
 c       mjs 08apr92 Variable name mod so it compiles on Convex.
 c       mjs 13mar93 pgplot subr names have less than 7 chars.
 c	rjs 26aug94 Better coordinate handling. Fix a few problems.
+c       lgm 03mar97 Corrected standard deviation calculation
+c       pjt  3may99 proper logopen/close interface; better line= stmts
+c	mchw 16may02 format change on output listing.
 c  Bugs:
 c------------------------------------------------------------------------
 	include 'maxdim.h'
@@ -74,13 +84,13 @@ c
 	parameter (maxbins = 200)
 c
 	character version*(*)
-	parameter(version='UvAmp: version 1.0 26-Aug-94')
+	parameter(version='UvAmp: version 2.0 16-may-02')
 	character uvflags*8,line*80,pldev*60,logfile*60
-	character bunit*10
+	character bunit*10,type*5
 	integer tIn,i,nread,numdat(maxbins),numbins,ibin
 	real sdatr2(maxbins),sdati2(maxbins),uuvamp(maxbins)
         real sigmean(maxbins),top(maxbins)
-	real uvdist(maxbins),rdat,idat,sigr2,sigi2,binsiz,uvd
+	real uvdist(maxbins),rdat,idat,sigr2,sigi2,binsiz,uvd,sigtot
 	real dra,ddec,ratio(maxbins),phaz,bot(maxbins)
 	real xzero(2),yzero(2),maxamp,minamp,expect(maxbins)
 	logical ampsc,klam
@@ -106,6 +116,16 @@ c
 	call keya('bin',bunit,'nsec')
 	call keyr('offset',dra,0.0)
 	call keyr('offset',ddec,0.0)
+        call keya('type',type,'total')
+        if(type .eq. 'real') then
+          line = ' Using only the real components in calculations'
+          call output(line)
+        else
+          line = ' Using the real and imaginary components ' //
+     *           'in calculations '
+          call output(line)
+        endif
+        call output('  ')
 	call keya('device',pldev,' ')
 	call keya('log',logfile,' ')
 	call keyfin
@@ -138,7 +158,7 @@ c
 c  Open the input uv file and output logfile.
 c
 	if(.not.uvDatOpn(tIn))call bug('f','Error opening input')
-	if(logfile .ne. ' ') call LogOpen(logfile,' ')
+	call LogOpen(logfile,' ')
 c
 c  Convert dra,ddec from true to grid offsets.
 c
@@ -176,8 +196,8 @@ c  Write out header stuff for log file
 c
 	line='                 Output Visibility Amplitudes'
         call LogWrite(line,more)
-	line(1:50)='     uv limits      amplitude   sigma      S/N   '
-        line(51:70)='expect      #pnts   '
+	line='     uv limits        amplitude   sigma      S/N   ' //
+     *       'expect      #pnts   '
 	call LogWrite(line,more)
 	if(klam) then
 	   call LogWrite('       (klam) ',more)
@@ -190,12 +210,19 @@ c  in mean, singal-to-noise, and expectational value for zero signal
 c
 	do i=1,numbins
 	   if(numdat(i) .gt. 2) then
-	      rdat = real(sumdat(i))/numdat(i)
-	      idat = aimag(sumdat(i))/numdat(i)
-	      uuvamp(i) = (rdat*rdat + idat*idat)**0.5
+	      rdat  = real(sumdat(i))/numdat(i)
+	      idat  = aimag(sumdat(i))/numdat(i)
 	      sigr2 = (sdatr2(i) - numdat(i)*rdat*rdat)/(numdat(i)-1)
 	      sigi2 = (sdati2(i) - numdat(i)*idat*idat)/(numdat(i)-1)
-	      sigmean(i) = ((sigr2 + sigi2)/(numdat(i)-2))**0.5
+              if(type .eq. 'real') then
+                uuvamp(i) = (rdat*rdat)**0.5
+                sigtot = sigr2
+              else
+	        uuvamp(i) = (rdat*rdat + idat*idat)**0.5
+                sigtot = (rdat*rdat/(uuvamp(i)*uuvamp(i)))*sigr2 +
+     1                   (idat*idat/(uuvamp(i)*uuvamp(i)))*sigi2
+              endif
+	      sigmean(i) = (sigtot/(numdat(i)-2))**0.5
 	      if(sigmean(i).gt.0)then
 		ratio(i) = uuvamp(i)/sigmean(i)
 	      else
@@ -209,7 +236,7 @@ c
 	      expect(i)  = 0.0
 	   endif
 	   write(line,
-     0     '(f8.1,1x,f8.1,2x,1pe9.2,1x,e9.2,2x,0pf6.1,2x,1pe9.2,2x,i8)') 
+     0     '(f9.2,1x,f9.2,2x,1pe9.2,1x,e9.2,2x,0pf6.1,2x,1pe9.2,2x,i8)') 
      1          binsiz*(i-1),binsiz*i,uuvamp(i),
      2		sigmean(i),ratio(i),expect(i),numdat(i)
 	   call LogWrite(line,more)

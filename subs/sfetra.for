@@ -34,6 +34,7 @@ c History:
 c   bpw   11sep90   created
 c   bpw   20jun91   corrected document (dsfetra instead of dsfetr)
 c   mjs   20jun91   changed dsfetr call to dsfetra call below
+c   pjt   15mar95   fixed statement for f2c (linux)
 c
 c-----------------------------------------------------------------------
 
@@ -72,6 +73,8 @@ c     input vector
       double precision     v0( 3 )
 c     output vector
       double precision     v ( 3 )
+c     counters
+      integer              i, j
 
 c     matrix with definition of rotation
       data tm  / -0.0669887394d0 , -0.8727557659d0 , -0.4835389146d0 ,
@@ -85,9 +88,6 @@ c     supergalactic transform
      6            0.3831583954d0 ,  0.3366379840d0 ,  0.8601537722d0 ,
      7           -0.8972185056d0 , -0.0856688522d0 ,  0.4331971849d0 ,
      8            0.2195190133d0 , -0.9377290203d0 ,  0.2692130889d0 /
-
-c     counters
-      integer              i, j
 
 c     set up input vector
       v0( 1 ) = dcos( lon ) * dcos( lat )

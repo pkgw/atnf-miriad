@@ -262,8 +262,12 @@ c     rjs 28jan00 Some FORTRAN standardization to get it through a
 c                 compiler.
 c     bpw 28feb01 Make it work under linux
 c     bpw 21may01 Add smooth keyword
+c     rjs 18sep05 Corrected type mismatch error.
+c     tw  21jun07 ngauss=1 default; fix seg fault when writing residual
+c                 cube; fix mask error on residual and model cubes
 c
-c************************************************************************
+c $Id$
+c***********************************************************************
 
 c The main program first gets all inputs and then calls the workhorse.
 c The inputs are:
@@ -309,8 +313,6 @@ c              el 4=max # gaussians, used when sorting a range
 
       program gaufit
 
-      character*50 version
-      parameter    ( version = 'gaufit: version 2.1 28-Feb-01' )
       integer      units(   6)
       integer      prfinfo(10)
       integer      MAXRUNS
@@ -321,7 +323,11 @@ c              el 4=max # gaussians, used when sorting a range
       real         cmpsort( 4)
       character*80 prnm
 
-      call output(version)
+      character versan*80, version*80
+c-----------------------------------------------------------------------
+      version = versan ('gaufit',
+     :  '$Id$')
+
       call inputs(units,prfinfo,runs,ngauss,limlist,cmpsort,prnm)
       call work(  units,prfinfo,runs,ngauss,limlist,cmpsort,prnm)
       call finish(units,version)
@@ -330,7 +336,7 @@ c              el 4=max # gaussians, used when sorting a range
       end
 
 
-c************************************************************************
+c***********************************************************************
 
 c Inputs reads all keyword values and transforms them to variables
 c usable in work.
@@ -431,6 +437,7 @@ c dumprf(1) is unit to copy header from
          dumprf(1) = units(1)
          if( mdl.ne.' ' )
      *   call setopen( mdl,'new',units(3), naxis,axleni, dumprf,fitax)
+         dumprf(1) = units(1)
          if( res.ne.' ' )
      *   call setopen( res,'new',units(4), naxis,axleni, dumprf,fitax)
       endif
@@ -465,7 +472,7 @@ c ngauss increased.
             do i = 1, naxis
                if( i.lt.fitax ) axlenp(i) = axleni(i)
                if( i.gt.fitax ) axlenp(i) = axleni(i+1)
-            enddo 
+            enddo
             dumprf(1) = units(1)
             ngauss(5) = 0
             ngauss(6) = ngauss(1)
@@ -477,7 +484,7 @@ c ngauss increased.
          endif
          axlenp(naxis) = 6*ngauss(6) + 1
          prfinfo(3)    = axlenp(naxis)
- 
+
          call setopen(par,'new',units(5), naxis,axlenp,dumprf,naxis)
 
 c create parameter axis on axis naxis
@@ -683,7 +690,7 @@ c     a0,a1,am1 keep flint quiet
 
 c        Get maximum number of gaussian components from keyword
          nchan = prfinfo(2)
-         call keyi( 'ngauss', ngauss(1), 0 )
+         call keyi( 'ngauss', ngauss(1), 1 )
          call assertl( nchan.gt.3*ngauss(1),
      *             'Not enough datapoints to fit this many parameters' )
 
@@ -717,7 +724,7 @@ c        Number of channels found from crval(naxis+1)
       endif
 
 c get smoothing factor
-      call keyd( 'smooth', limlist(14), 1. )
+      call keyr( 'smooth', limlist(14), 1.0 )
 
 c # initial estimates to make is ngauss from keyword
       ngauss(2) = ngauss(1)
@@ -839,11 +846,11 @@ c             is the only reason that a fit failed
       return
       end
 
-c************************************************************************
-c************************************************************************
-c************************************************************************
-c************************************************************************
-c************************************************************************
+c***********************************************************************
+c***********************************************************************
+c***********************************************************************
+c***********************************************************************
+c***********************************************************************
 
 c work loops over all profiles, reads each profile, applies the
 c gaussfitting algorithm, and writes the results.
@@ -1107,7 +1114,7 @@ c write model, residual to output datasets
      *        call gaussmod(model,nchan,gausspar,ngauss(4))
             do i = 1, nchan
                residual(i) = data(i) - model(i)
-               mask(i)     = .false.
+               mask(i)     = .true.
             enddo
          else
             do i = 1, nchan
@@ -1228,7 +1235,7 @@ c***********************************************************************
 c***********************************************************************
 c***********************************************************************
 c***********************************************************************
-c************************************************************************
+c***********************************************************************
 
 c convert data array to gaussian parameters.
 c if also inbox=true, then apply selection criteria and sort
@@ -1300,7 +1307,7 @@ c***********************************************************************
 c***********************************************************************
 c***********************************************************************
 c***********************************************************************
-c************************************************************************
+c***********************************************************************
 
       subroutine gssest( data,mask,nchan, gaussest,ngauss,
      *                   limlist, cmpsort, pass )
@@ -1388,7 +1395,7 @@ c Enough points to make a fit?
       return
       end
 
-c************************************************************************
+c***********************************************************************
 
       integer function rdestim( gaussest,ngauss )
 
@@ -1529,7 +1536,7 @@ c insert found gaussian in estimates array
 
       integer unit, i, cnt, lcnt, nl, gssnum(20)
       save    unit, cnt, gssnum
-      
+
       if( test(1).eq.4 .and. mode.eq.0 ) then
          open(unit=unit,file='test.wip',status='new')
          cnt = 0
@@ -1845,7 +1852,7 @@ c return the component number of the resulting gaussian
          ngauss   = ngauss + 1
          mergecmp = ngauss
       else
-         mergecmp = mergenum         
+         mergecmp = mergenum
       endif
 
       return
@@ -1895,7 +1902,7 @@ c     Make a fit
       end
 
 
-c************************************************************************
+c***********************************************************************
 
       integer function fitloop( data,mask,nchan,
      *                          gausspar,gaussest,ngauss,
@@ -1915,6 +1922,7 @@ c************************************************************************
       logical   dofit, tryagain
       integer   dogssfit, cutoffs
 
+      integer   MAXFIT
       parameter ( MAXFIT = 30 )
       integer   fitnum, nfit(MAXFIT)
       integer   ier(MAXFIT)
@@ -2074,7 +2082,7 @@ c Take absolute value of sigma, because drvmrq only cares about sigma^2
       logical    mask(*)
       real       x(*)
       integer    nchan
-      
+
       logical    optval1, optval2
       integer    cmpind
       integer    i, j
@@ -2204,7 +2212,7 @@ c less than length dispersion.; fitted 1/width^2 -> abs & reverse lt, gt
       integer   ngauss
       real      limlist(*)
 
-      integer   cmpind, errind, errpar, rmsind
+      integer   cmpind, errind, errpar
 
       integer   i, j, k, eflag
       real      a,w
@@ -2247,7 +2255,7 @@ c        amplitude too low
 
 c        low amplitude components still ok if width reasonable
 c        i.e. integral > 5*cut, but not too wide (w<15)
-c        set eflag to -13 and cutoffs to -12; then 
+c        set eflag to -13 and cutoffs to -12; then
 c        a) component gets counted as OK one by tryagain
 c        b) component gets accepted near end of tryagain
 c        c) errout is called to print message # |-13| = 13
@@ -2314,7 +2322,7 @@ c                      0.8  1.2  0.6  1.8  1.0
 
       if( fitnum.eq.1 ) try=1
       fiddlenm(fitnum)=0
- 
+
 c ier 0 and rms low enough -> done
       if( ier(fitnum) .eq. 0 ) then
           tryagain = .false.
@@ -2473,7 +2481,7 @@ c        if low-amplitude component is wide enough, but not too wide, ok it
             if( acclow .and. interout )
      *      call wrtout('Accept low amplitude cmps with OK integral',1)
             if( dellow .and. interout .and. ier(fitnum).eq.0 )
-     *      call wrtout('Delete weak components and accept fit',1)      
+     *      call wrtout('Delete weak components and accept fit',1)
          else if( ier(fitnum).eq.-13 ) then
             ngauss(4)=0
          endif
@@ -2637,7 +2645,7 @@ c if ier=-12/-13, multiple msg for all gaussians, else just one message
       return
       end
 
-c************************************************************************
+c***********************************************************************
 
       subroutine checkres( gausspar, gaussest, ngauss )
       real         gausspar(*), gaussest(*)
@@ -2665,7 +2673,7 @@ c************************************************************************
       return
       end
 
-c************************************************************************
+c***********************************************************************
 
       subroutine errout( line, n1, ier )
       character*(*) line
@@ -3107,7 +3115,7 @@ c        intpar1<0 => 2pix2phys
       return
       end
 
-c************************************************************************
+c***********************************************************************
 
       subroutine header( unit )
 
@@ -3172,11 +3180,11 @@ c        1=RA, 2=DEC, 3=VELO, 4=FREG
       return
       end
 
-c************************************************************************
-c************************************************************************
-c************************************************************************
-c************************************************************************
-c************************************************************************
+c***********************************************************************
+c***********************************************************************
+c***********************************************************************
+c***********************************************************************
+c***********************************************************************
 
       subroutine writprof( data, model, estimate, nchan, pixels,
      *                     gausspar, ngauss, prnm )
@@ -3261,7 +3269,7 @@ c     next statement to keep flint quiet
        return
        end
 
-c************************************************************************
+c***********************************************************************
 
 c Finish up
       subroutine finish( units, version )
@@ -3412,7 +3420,7 @@ c***********************************************************************
       return
       end
 
-c************************************************************************
+c***********************************************************************
 
       subroutine wrtout( line, n1 )
       character*(*) line
@@ -3430,7 +3438,7 @@ c************************************************************************
       endif
       end
 
-c************************************************************************
+c***********************************************************************
 
       subroutine gaussfun( x, pars, y, dydpar, npars, compgrad )
       integer npars
@@ -3475,7 +3483,7 @@ c************************************************************************
       end
 
 
-c------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c23456789012345678901234567890123456789012345678901234567890123456789012
 c
 c       DRVMRQ is a driver for MRQMIN that sets up a few needed vectors
@@ -3692,7 +3700,7 @@ c Calculate fit errors: and copy to output array
        end
 
 
-c--------------------------------------------------------------------
+c-----------------------------------------------------------------------
 
       SUBROUTINE MRQMIN( X,Y,SIG,NDATA, XPAR,NPARS, FITLIST,NTOFIT,
      *                   COVAR,ALPHA,NPMAX, CHISQ, FUNCS, ALAMDA,
@@ -3900,7 +3908,7 @@ c We end up here if successful
 
       END
 
-c-------------------------------------------------------------------
+c-----------------------------------------------------------------------
 
 c Routine to resort out the matrix so that it conforms to the original
 c definition again, if a list of fixed parameters (FITLIST) was given.
@@ -3946,7 +3954,7 @@ c definition again, if a list of fixed parameters (FITLIST) was given.
       RETURN
       END
 
-c--------------------------------------------------------------------
+c-----------------------------------------------------------------------
 
       SUBROUTINE MRQCOF( X,Y,SIG,NDATA, XPAR,NPARS, FITLIST,NTOFIT,
      *                   ALPHA,BETA, NALP, CHISQ, FUNCS, COMPGRAD )
@@ -4010,7 +4018,7 @@ c     to COMPGRAD can be deleted and all IF(COMPGRAD) made true.
       END
 
 c
-c------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
       SUBROUTINE SVDCMP( MATX,M,N, MPMAX,NPMAX, WVEC,VMAT, ITS )
 
@@ -4252,7 +4260,7 @@ c
       END
 
 c
-c------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
       SUBROUTINE SVBKSB( U,W,V, NTOFIT,N, MP,NP, BETA,DX )
 

@@ -341,9 +341,18 @@ c		     inputs.
 c    rjs  04-jul-05  More robust to some weirdo variants.
 c    rjs  19-sep-05  Better defaults for velocity info, and better
 c		     velocity formula. Handle AIPS OB tables.
+c    rjs  24-sep-05  Increase max number of sources in op=uvout
+c    rjs  03-aug-06  In reading in images, llrot was sometimes not
+c                    correct. Also handle some rare keywords a little better.
+c    rjs  01-jan-07  Extended baseline numbering convention. Better handling
+c		     of SMA-style Nasmyth mounts.
+c    rjs  24-jan-07  More robust to bad antenna tables.
+c    rjs  26-jan-07  Fix bug I introduced two days ago!
+c    jhz  09-feb-07  Set MAXFREQ=MAXWIN fits.h so that it
+c                    can read SMA FITS output data from IDL.
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='Fits: version 1.1 19-Sep-05')
+	parameter(version='Fits: version 1.1 09-Feb-07')
 	integer maxboxes
 	parameter(maxboxes=2048)
 	character in*128,out*128,op*8,uvdatop*12
@@ -603,7 +612,7 @@ c  Externals.
 c
 	integer len1,PolCvt
 	character itoaf*8
-	double precision fuvGetT0
+	double precision fuvGetT0,antbas
 c
 c  Open the input FITS and output MIRIAD files.
 c
@@ -732,10 +741,7 @@ c
 	    ww = 0
 	  endif
 	  time = visibs(uvT) + T0
-	  bl = int(visibs(uvBl) + 0.01)
-	  ant1 = bl/256
-	  ant2 = mod(bl,256)
-	  config = nint(100*(visibs(uvBl)-bl))+1
+	  call fbasant(visibs(uvBl),ant1,ant2,config)
 	  if(uvSrcid.gt.0) srcid  = nint(visibs(uvSrcId))
 	  if(uvFreqid.gt.0)freqid = nint(visibs(uvFreqId))
 c
@@ -771,7 +777,7 @@ c  do not start at 1 it keeps the nants from the table
           else 
 	    nants = max(nants,ant1,ant2)
 	  end if
-	  bl = 256*ant1 + ant2
+	  bl = nint(antbas(ant1,ant2))
 	  nconfig = max(config,nconfig)
 c
 c  Determine some times at whcih data are observed. Use these later to
@@ -1313,7 +1319,7 @@ c------------------------------------------------------------------------
 	include 'mirconst.h'
 	include 'fits.h'
 c
-	logical badapp,badepo,more,found,badmnt
+	logical badapp,badepo,more,found,badmnt,badan
 	double precision Coord(3,4),rfreq,freq
 	double precision veldef
 	character defsrc*16,num*2
@@ -1478,8 +1484,8 @@ c
 	  call fitrdhdd(lu,'ARRAYZ',zc,0.d0)
 	  call ftabGetd(lu,'STABXYZ',0,xyz)
 	  call antproc(lefty,xc,yc,zc,xyz,n,antpos(1,nconfig),
-     *		lat(nconfig),long(nconfig))
-	  llok = .true.
+     *		lat(nconfig),long(nconfig),badan)
+	  llok = llok.or..not.badan
 	  call ftabNxt(lu,'AIPS AN',found)
 	enddo
 c
@@ -1526,8 +1532,8 @@ c
 	    call fitrdhdd(lu,'ARRAYZ',zc,0.d0)
 	    call ftabGetd(lu,'ORBXYZ',0,xyz)
 	    call antproc(lefty,xc,yc,zc,xyz,n,antpos(1,nconfig),
-     *		lat(nconfig),long(nconfig))
-	    llok = .true.
+     *		lat(nconfig),long(nconfig),badan)
+	    llok = llok.or..not.badan
 	  endif
 	endif
 c
@@ -1729,47 +1735,68 @@ c
 c
 	end
 c************************************************************************
-	subroutine antproc(lefty,xc,yc,zc,xyz,n,antpos,lat,long)
+	subroutine antproc(lefty,xc,yc,zc,xyz,n,antpos,lat,long,badan)
 c
 	implicit none
 	integer n
 	double precision xc,yc,zc,antpos(n,3),lat,long,xyz(3,n)
-	logical lefty
+	logical lefty,badan
 c
 c  Fiddle the antenna information.
 c
+c  Intput:
+c    lefty	The antenna table is in a left handed coordinate system.
+c    xc,yc,zc	Array centre.
+c    xyz	Antenna positions relative to the array centre.
+c    n		Number of antennas.
+c
+c  Output:
+c    badan	The antenna coordinates were bad, and the remaining values
+c		are unset.
+c    lat,long	The latitude and longitude of the observatory.
+c    antpos	Antenna positions, in Miriad format.
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	double precision r,cost,sint,height,temp
-	integer i
+	integer i,idx
 c
 c  Determine the latitude, longitude and height of the first antenna
 c  (which is taken to be the observatory lat,long,height). Handle
 c  geocentric and local coordinates.
 c
-	if(abs(xc)+abs(yc)+abs(zc).eq.0)then
-	  call xyz2llh(xyz(1,1),xyz(2,1),xyz(3,1),
-     *	      lat,long,height)
-	else
-	  call xyz2llh(xc,yc,zc,
-     *	       lat,long,height)
-	endif
-c
 c  Convert them to the Miriad system: y is local East, z is parallel to pole
 c  Units are nanosecs.
 c
+	badan = .false.
 	if(abs(xc)+abs(yc)+abs(yc).eq.0)then
-	  r = sqrt(xyz(1,1)*xyz(1,1) + xyz(2,1)*xyz(2,1))
-	  cost = xyz(1,1) / r
-	  sint = xyz(2,1) / r
-	  do i=1,n
-	    temp = xyz(1,i)*cost + xyz(2,i)*sint - r
-	    antpos(i,1) = (1d9/DCMKS) * temp
-	    temp = -xyz(1,i)*sint + xyz(2,i)*cost
-	    antpos(i,2) = (1d9/DCMKS) * temp
-	    antpos(i,3) = (1d9/DCMKS) * (xyz(3,i)-xyz(3,1))
-	  enddo
+	  call goodxyz(idx,xyz,n)
+	  if(idx.ne.0)then
+	    call xyz2llh(xyz(1,idx),xyz(2,idx),xyz(3,idx),
+     *	      lat,long,height)
+	    r = sqrt(xyz(1,idx)*xyz(1,idx) + xyz(2,idx)*xyz(2,idx))
+	    cost = xyz(1,idx) / r
+	    sint = xyz(2,idx) / r
+	    do i=1,n
+	      temp = xyz(1,i)*cost + xyz(2,i)*sint - r
+	      antpos(i,1) = (1d9/DCMKS) * temp
+	      temp = -xyz(1,i)*sint + xyz(2,i)*cost
+	      antpos(i,2) = (1d9/DCMKS) * temp
+	      antpos(i,3) = (1d9/DCMKS) * (xyz(3,i)-xyz(3,idx))
+	    enddo
+	  else
+	    call bug('w','Bad antenna coordinates ignored')
+	    lat = 0
+	    long = 0
+	    height = 0
+	    do i=1,n
+	      antpos(i,1) = 0
+	      antpos(i,2) = 0
+	      antpos(i,3) = 0
+	    enddo
+	    badan = .true.
+	  endif
 	else
+	  call xyz2llh(xc,yc,zc,lat,long,height)
 	  do i=1,n
 	    antpos(i,1) = (1d9/DCMKS) * xyz(1,i)
  	    antpos(i,2) = (1d9/DCMKS) * xyz(2,i)
@@ -1780,12 +1807,40 @@ c
 c  If the antenna table uses a left-handed system, convert it to a 
 c  right-handed system.
 c
-	if(lefty)then
+	if(lefty.and..not.badan)then
 	  long = -long
 	  do i=1,n
 	    antpos(i,2) = -antpos(i,2)
 	  enddo
 	endif
+c
+	end
+c************************************************************************
+	subroutine goodxyz(idx,xyz,n)
+c
+	implicit none
+	integer idx,n
+	double precision xyz(3,n)
+c
+c  Locate the first antenna coordinate that looks valid. If no valid
+c  coordinates are found, return 0.
+c
+c  Input:
+c    xyz	Antenna coordinates.
+c    n		Number of antennas.
+c  Output:
+c    idx	Index of first good antenna.
+c------------------------------------------------------------------------
+	real r
+	integer i
+c
+	idx = 0
+	i = 0
+	dowhile(idx.eq.0.and.i.lt.n)
+	  i = i + 1
+	  r = xyz(1,i)*xyz(1,i)+xyz(2,i)*xyz(2,i)+xyz(3,i)*xyz(3,i)
+	  if(r.gt.1e12)idx = i
+	enddo
 c
 	end
 c************************************************************************
@@ -2209,8 +2264,8 @@ c------------------------------------------------------------------------
 	include 'fits.h'
 	integer i,j,k
 	logical newsrc,newfreq,newconfg,newlst,newchi,newvel,neweq
-	real chi,dT
-	double precision lst,vel
+	real chi,chi2,dT
+	double precision lst,vel,az,el
 	double precision sfreq0(MAXIF),sdf0(MAXIF),rfreq0(MAXIF)
 c
 c  Externals.
@@ -2321,10 +2376,19 @@ c
 c  Compute and save the parallactic angle. Recompute whenever LST changes.
 c
 	newchi = (newlst.or.newsrc.or.newconfg).and.llok.and.
-     *		 emok.and.(mount(config).eq.ALTAZ)
+     *		 emok.and.
+     *		(mount(config).eq.ALTAZ.or.mount(config).eq.NASMYTH)
 	if(newchi)then
 	  call parang(raapp(srcidx),decapp(srcidx),lst,lat(config),chi)
-	  call uvputvrr(tno,'chi',chi+evec,1)
+	  if(mount(config).eq.NASMYTH)then
+	    call azel(raapp(srcidx),decapp(srcidx),lst,lat(config),
+     *								 az,el)
+	    chi2 = -el
+	    call uvputvrr(tno,'chi2',chi2,1)
+	  else
+	    chi2 = 0
+	  endif
+	  call uvputvrr(tno,'chi',chi+evec+chi2,1)
 	endif
 c
 c  Compute and save the radial velocity. Compute a new velocity every
@@ -2485,7 +2549,7 @@ c
 	double precision xyz(3*MAXANT),lat,long,height
 c
 	integer MAXSRC
-	parameter(MAXSRC=512)
+	parameter(MAXSRC=2048)
 	double precision ras(MAXSRC),decs(MAXSRC)
 	double precision aras(MAXSRC),adecs(MAXSRC)
 	character sources(MAXSRC)*16
@@ -2627,7 +2691,7 @@ c
 	    OutData(uvV+1) = -1e-9 * preamble(2)
 	    OutData(uvW+1) = -1e-9 * preamble(3)
 	    OutData(uvT+1) = preamble(4) - T0
-	    OutData(uvBl+1) = 256*ant1 + ant2
+	    call fantbas(ant1,ant2,1,OutData(uvBl+1))
 	    OutData(uvSrc+1) = iSrc
 	    OutData(1) = P
 	    i0 = uvData
@@ -3662,6 +3726,7 @@ c
 c
 	ilong = 0
 	ilat = 0
+	llrot = 0
 c
 	do i=1,naxis
 	  num = itoaf(i)
@@ -4494,7 +4559,7 @@ c    version
 c
 c------------------------------------------------------------------------
 	integer nlong,nshort
-	parameter(nlong=47,nshort=9)
+	parameter(nlong=50,nshort=9)
 	character card*80
 	logical more,discard,found,unrec
 	integer i
@@ -4513,15 +4578,15 @@ c
      *	  '        ', .true.,  'ALTRPIX ', .false., 'ALTRVAL ', .false.,
      *    'BITPIX  ', .false., 'BLANK   ', .false., 'BLOCKED ', .false.,
      *	  'BMAJ    ', .false., 'BMIN    ', .false., 'BPA     ', .false.,
-     *	  'BSCALE  ', .false., 'BTYPE   ', .false.,
-     *	  'BUNIT   ', .false., 'BZERO   ', .false., 'CELLSCAL', .false.,
-     *	  'COMMAND ', .true.,  'COMMENT ', .true.,
+     *	  'BSCALE  ', .false., 'BTYPE   ', .false., 'BUNIT   ', .false.,
+     *    'BZERO   ', .false., 'CELLSCAL', .false., 'COMMAND ', .true.,
+     *    'COMMENT ', .true.,  'DATAMAX ', .false., 'DATAMIN ', .false., 
      *	  'DATE    ', .false., 'DATE-MAP', .false., 'DATE-OBS', .false.,
      *	  'END     ', .false., 'EPOCH   ', .false., 'EQUINOX ', .false.,
      *	  'EXTEND  ', .false., 'GCOUNT  ', .false., 'GROUPS  ', .false.,
      *	  'HISTORY ', .true.,  'INSTRUME', .false., 'LSTART  ', .false.,
-     *	  'LSTEP   ', .false., 'LTYPE   ', .false., 'LWISTH  ', .false.,
-     *	  'OBJECT  ', .false.,
+     *	  'LSTEP   ', .false., 'LTYPE   ', .false., 'LWIDTH  ', .false.,
+     *	  'NITERS  ', .false., 'OBJECT  ', .false.,
      *	  'OBSDEC  ', .false., 'OBSERVER', .false., 'OBSRA   ', .false.,
      *	  'ORIGIN  ', .false., 'PBFWHM  ', .false., 'PBTYPE  ', .false.,
      *	  'PCOUNT  ', .false., 'RESTFREQ', .false., 'RMS     ', .false.,

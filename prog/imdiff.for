@@ -115,6 +115,8 @@ c		    to nebk for all of above work fixing my poor effort.
 c    rjs  16jul93   Doc changes.
 c    rjs  05aug93   Fix various formating botches. NEBK does a sloppy job.
 c    nebk 19sep94   Fix typo in options=expand in subroutien getopt
+c    rjs  07dec99   Fix writing of history for "adjust" image.
+c    rjs  18sep05   Fix type of boxes argument.
 c
 c  Bugs and Shortcomings:
 c   * This should really be part of "shifty".
@@ -123,7 +125,7 @@ c     This is hangover from Werong days.
 c
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='version 19-Sep-94')
+	parameter(version='version 7-Dec-99')
 	include 'maxdim.h'
 	include 'maxnax.h'
 	include 'imdiff.h'
@@ -137,7 +139,8 @@ c
 	real z(10),e(10),w(100),a,b,c,sigma,da,db,crpix
 	double precision sx,sy,sxx,syy,sxy
 	integer n,nvary
-	real Buff(maxdim),Boxes(maxboxes)
+	real Buff(maxdim)
+	integer Boxes(maxboxes)
 	character perr(4)*40,bunit*9
 c
 c  Externals.
@@ -222,11 +225,11 @@ c
 	if(adjust.ne.' ') then
 	  call xyopen(lAdj, Adjust, 'new', naxis, nsizo)
 	  call headcopy(lu(1), ladj, axnum, naxis, blc, trc)
-	  call hisopen(lres, 'append')
-	  call hiswrite(lres, 'IMDIFF: Miriad ImDiff: '//version)
-	  call hisinput(lres, 'IMDIFF')
-	  call hiswrite(lres, 'IMDIFF: This is an adjusted image')
-	  call hisclose(lres)
+	  call hisopen(lAdj, 'append')
+	  call hiswrite(lAdj, 'IMDIFF: Miriad ImDiff: '//version)
+	  call hisinput(lAdj, 'IMDIFF')
+	  call hiswrite(lAdj, 'IMDIFF: This is an adjusted image')
+	  call hisclose(lAdj)
 	  do i = 1, naxis
 	    call rdhdr(lu(1), 'crpix'//itoaf(i), crpix,
      *			real(nsize(i,1)/2+1))

@@ -1,6 +1,5 @@
 c************************************************************************
 	program atlod
-	implicit none
 c
 c= atlod - Convert an RPFITS file into Miriad uv format.
 c& rjs
@@ -12,13 +11,13 @@ c@ in
 c	Name of the input RPFITS files. Several names can be given -- wildcard
 c	expansion is supported. If a single name is given, this can be a raw
 c	tape device name (e.g. /dev/nrst0 in UNIX) containing several files.
-c	In this case, see the NFILES keyword below. There is no default. 
+c	In this case, see the NFILES keyword below. There is no default.
 c@ out
 c	Name of the output Miriad uv data-set. No default.
 c@ ifsel
 c	IF number to select.  Default is all IFs.  For example,
-c	if you observed with 5 GHz (frequency 1) and 8 GHz (frequency 2) 
-c	simultaneously, IF 1 would be the 5 GHz data and IF 2 would 
+c	if you observed with 5 GHz (frequency 1) and 8 GHz (frequency 2)
+c	simultaneously, IF 1 would be the 5 GHz data and IF 2 would
 c	be the 8 GHz data.
 c@ restfreq
 c	The rest frequency, in GHz, for line observations.  By default,
@@ -116,6 +115,27 @@ c	This gives one or two numbers, being the number of scans to skip,
 c	followed by the number of scans to process. NOTE: This applies to
 c	all files read. The default is to skip none and process all scans.
 c--
+c
+c  Program Structure:
+c    Miriad atlod can be divided into three rough levels. The high level
+c    gets input parameters, opens the output, and tells the appropriate
+c    subroutines what to do.
+c
+c    The RP layer is the layer which interacts with RPFITSIN and the RPFITS
+c    common. It "dispatch" routine (RPDISP) waits for an integration to
+c    start, and then calls the Poke routines in the order:
+c	Poke1st (start an integration)
+c	PokeMisc,PokeAnt,PokeIF,PokeSrc (if these have changed)
+c	PokeSC (syscal info), PokeData (corr data).
+c	PokeFlsh (finish the integration)
+c    Prioir to calling the Poke routines, RPDISP discards unneeded
+c    data and maps the selected frequencies notional IFs.
+c    The RP layer is in charge of data selection.
+c
+c    The Poke layer buffers up information about the current integration,
+c    and flushes it to the output file when all is ready. The Poke
+c    layer is in charge of any massaging that needs to be done to the
+c    data (e.g. hanning smoothing, sampler correction).
 c
 c  History:
 c    rjs  12feb91 Original version.
@@ -221,34 +241,16 @@ c    rjs  15oct05 Check for buffer overflows. Increase buffer size. Better
 c	          flagging statistics.
 c    rjs  02jan06 Save reference pointing information. 8MHz debirdie algorithm.
 c		  Added nopol option.
+c    rjs  14jan06 Be relaxed about missing met data scans when applying
+c		  opacity correction.
+c    mhw  19oct07 Cope with new 3mm receiver on ca02 which has xyphase
 c
-c  Program Structure:
-c    Miriad atlod can be divided into three rough levels. The high level
-c    gets input parameters, opens the output, and tells the appropriate
-c    subroutines what to do.
-c
-c    The RP layer is the layer which interacts with RPFITSIN and the RPFITS
-c    common. It "dispatch" routine (RPDISP) waits for an integration to
-c    start, and then calls the Poke routines in the order:
-c	Poke1st (start an integration)
-c	PokeMisc,PokeAnt,PokeIF,PokeSrc (if these have changed)
-c	PokeSC (syscal info), PokeData (corr data).
-c	PokeFlsh (finish the integration)
-c    Prioir to calling the Poke routines, RPDISP discards unneeded
-c    data and maps the selected frequencies notional IFs.
-c    The RP layer is in charge of data selection.
-c
-c    The Poke layer buffers up information about the current integration,
-c    and flushes it to the output file when all is ready. The Poke
-c    layer is in charge of any massaging that needs to be done to the
-c    data (e.g. hanning smoothing, sampler correction).
-c------------------------------------------------------------------------
+c $Id$
+c-----------------------------------------------------------------------
 	integer MAXFILES,MAXTIMES
 	parameter(MAXFILES=128,MAXTIMES=32)
-	character version*(*)
-	parameter(version='AtLod: version 1.0 02-Jan-06')
 c
-	character in(MAXFILES)*64,out*64,line*64,t1*18,t2*18
+	character in(MAXFILES)*128,line*64,out*64,t1*18,t2*18,version*80
 	integer tno,ntimes
 	integer ifile,ifsel,nfreq,iostat,nfiles,i
 	double precision rfreq(2),times(2,MAXTIMES)
@@ -259,11 +261,13 @@ c
 c
 c  Externals.
 c
-	character rperr*32,itoaf*8
+	character itoaf*8, rperr*32, versan*80
+c-----------------------------------------------------------------------
+      version = versan ('atlod',
+     :  '$Id$')
 c
 c  Get the input parameters.
 c
-	call output(version)
 	call keyini
 	call mkeyf('in',in,MAXFILES,nfiles)
 	if(nfiles.eq.0)
@@ -379,7 +383,6 @@ c
 c************************************************************************
 	subroutine caflag(tno,times,ntimes)
 c
-	implicit none
 	integer tno,ntimes
 	double precision times(2,ntimes)
 c------------------------------------------------------------------------
@@ -414,7 +417,6 @@ c************************************************************************
      *	  unflag,dohann,birdie,dobary,doif,dowt,dopmps,
      *	  nopol,polflag,hires,nocacal)
 c
-	implicit none
 	logical doauto,docross,dosam,relax,unflag,dohann,dobary,doop
 	logical docomp,doif,birdie,dowt,dopmps,doxyp,polflag,hires,sing
 	logical docaldat,nocacal,nopol
@@ -484,7 +486,6 @@ c
 c************************************************************************
 	subroutine Fixed(tno,dobary)
 c
-	implicit none
 	integer tno
 	logical dobary
 c
@@ -527,7 +528,6 @@ c************************************************************************
 	subroutine PokeIni(tno1,dosam1,doxyp1,doop1,
      *		dohann1,birdie1,dowt1,dopmps1,dobary1,doif1,hires1)
 c
-	implicit none
 	integer tno1
 	logical dosam1,doxyp1,dohann1,doif1,dobary1,birdie1,dowt1
 	logical dopmps1,hires1,doop1
@@ -579,6 +579,12 @@ c
 	  enddo
 	enddo
 c
+c  Nominal met data values.
+c
+	stemp = 300
+	spress = 1013*97.5
+	shumid = 0.3
+c
 c  Determine some constants for later use.
 c
 	call obspar('ATCA','latitude', lat, ok)
@@ -590,7 +596,6 @@ c
 c************************************************************************
 	subroutine PokeInfo(scanno,time)
 c
-	implicit none
 	double precision time
 	integer scanno
 c
@@ -613,7 +618,6 @@ c************************************************************************
 	subroutine PokeStat(nrec,fgbad,fgoffsrc,fginvant,fgsysc,fgsam,
      *								fgcal)
 c
-	implicit none
 	integer nrec,fgbad,fgoffsrc,fginvant,fgsysc,fgsam,fgcal
 c
 c  Report statistics on this file.
@@ -652,7 +656,6 @@ c
 c************************************************************************
 	subroutine liner(string)
 c
-	implicit none
 	character string*(*)
 c
 c------------------------------------------------------------------------
@@ -666,7 +669,6 @@ c
 c************************************************************************
 	subroutine liners(string)
 c
-	implicit none
 	character string*(*)
 c
 c------------------------------------------------------------------------
@@ -679,7 +681,6 @@ c
 c************************************************************************
 	subroutine sortcds(ncard,card,sctype,refpnt,nants,okref)
 c
-	implicit none
 	integer ncard,nants
 	logical okref
 	real refpnt(2,nants)
@@ -725,7 +726,6 @@ c
 c************************************************************************
 	subroutine crackpnt(line,refpnt,nants,ok)
 c
-	implicit none
 	character line*(*)
 	integer nants
 	real refpnt(2,nants)
@@ -764,7 +764,6 @@ c
 c************************************************************************
 	subroutine cardvali(card,ival)
 c
-	implicit none
 	integer ival
 	character card*(*)
 c------------------------------------------------------------------------
@@ -779,8 +778,8 @@ c
         j = i - 1
         do while(card(j+1:j+1).ne.' '.and.card(j+1:j+1).ne.'/')
           j = j + 1
-        enddo   
-        ok = .false.   
+        enddo
+        ok = .false.
         if(j.ge.i)call atodf(card(i:j),out,ok)
         if(.not.ok)
      *      call bug('f','Conversion error in decoding FITS card')
@@ -800,7 +799,7 @@ c
 	integer len1
 c
 	i1 = 1
-	i2 = len1(in)	
+	i2 = len1(in)
 	do i=1,i2
 	  c = in(i:i)
 	  if(index('/[]:',c).ne.0)i1 = i + 1
@@ -811,7 +810,6 @@ c
 c************************************************************************
 	subroutine Poke1st(time1,nifs1,nants1)
 c
-	implicit none
 	double precision time1
 	integer nifs1,nants1
 c
@@ -831,7 +829,6 @@ c
 c************************************************************************
 	subroutine PokeIF(if,nfreq1,bw,freq,ref,rfreq,nstok,cstok)
 c
-	implicit none
 	integer if,nfreq1,nstok
 	character cstok(nstok)*(*)
 	double precision freq,bw,ref,rfreq
@@ -844,7 +841,7 @@ c------------------------------------------------------------------------
 c
 c  Externals.
 c
-	integer PolsP2C	
+	integer PolsP2C
 c
 	if(if.gt.nifs)call bug('f','Invalid IF in PokeIF')
 	if(nstok.gt.ATPOL)call bug('f',
@@ -876,9 +873,9 @@ c
 c
 	if(dohann.and.nfreq(if).gt.33)then
 	  edge(if) = 1
-	  sfreq(if) = sfreq(if) + edge(if)*sdf(if)
+	  sfreq(if) = sfreq(if) + sdf(if)
 	  sdf(if) = 2*sdf(if)
-	  nfreq(if) = (nfreq(if)-2*edge(if)+1)/2
+	  nfreq(if) = (nfreq(if)-1)/2
 	endif
 c
 c  If birdie mode, flag out the birdie channel.
@@ -902,7 +899,6 @@ c
 c************************************************************************
 	subroutine birdchan(sfreq,sdf,nfreq,chan)
 c
-	implicit none
 	integer nfreq,chan
 	double precision sfreq,sdf
 c------------------------------------------------------------------------
@@ -918,10 +914,8 @@ c
 c************************************************************************
 	subroutine pokemet(mdata1,mcount1)
 c
-	implicit none
 	integer mcount1
 	real mdata1(mcount1)
-	
 c
 c------------------------------------------------------------------------
 	include 'atlod.h'
@@ -936,7 +930,6 @@ c
 c************************************************************************
 	subroutine pokeref(refpnt1,nant1)
 c
-	implicit none
 	integer nant1
 	real refpnt1(2,nant1)
 c------------------------------------------------------------------------
@@ -953,7 +946,6 @@ c************************************************************************
 	subroutine PokeSC(ant,if,chi1,tcorr1,
      *		xtsys1,ytsys1,xyphase1,xyamp1,xsamp,ysamp,pntrms,pntmax)
 c
-	implicit none
 	integer ant,if,tcorr1
 	real chi1,xtsys1,ytsys1,xyphase1,xyamp1
 	real xsamp(3),ysamp(3),pntrms,pntmax
@@ -988,7 +980,6 @@ c************************************************************************
 	subroutine PokeSrc(srcnam,ra1,dec1,obsra1,obsdec1,
      *					pntra1,pntdec1,calcode1)
 c
-	implicit none
 	character srcnam*(*)
 	double precision ra1,dec1,obsra1,obsdec1,pntra1,pntdec1
 	character calcode1*(*)
@@ -1071,7 +1062,6 @@ c
 c************************************************************************
 	subroutine PokeAnt(n,x,y,z,sing)
 c
-	implicit none
 	integer n
 	double precision x(n),y(n),z(n)
 	logical sing
@@ -1125,10 +1115,9 @@ c
 	end
 c************************************************************************
 	subroutine PokeData(u1,v1,w1,baseln,if,bin,vis,nfreq1,nstoke1,
-     *		flag1,inttime1,docon,doxyflip,doxy)
+     *		flag1,inttime1,docon,doxyflip,doxy,wbandxy)
 c
-	implicit none
-	integer nfreq1,nstoke1,if,baseln,bin
+	integer nfreq1,nstoke1,if,baseln,bin,wbandxy
 	real u1,v1,w1,inttime1
 	logical flag1(nstoke1),docon,doxyflip,doxy
 	complex vis(nfreq1*nstoke1)
@@ -1176,7 +1165,7 @@ c
 	  inttime(bl) = 10
 	endif
 	inttim = max(inttim,inttime(bl))
-c       
+c
 c  Remove the phase switching.
 c
 	if(dopmps)
@@ -1193,7 +1182,6 @@ c
      *	   abs(abs(nfreq(if)*sdf(if))-0.008).lt.0.0001)then
 	  call do8(vis,nstoke(if),nfreq(if),sfreq(if),sdf(if))
 	endif
-	
 c
 c  Allocate buffer slots for each polarisation. Save the flags, Copy the
 c  data to the output. Do sampler corrections.
@@ -1216,7 +1204,7 @@ c
 c
 c  Do XY phase correction if needed.
 c
-	  if(doxyp.and.doxy)then
+	  if(doxyp.and.(doxy.or.wbandxy.gt.0))then
 	    if(dosw(bl))then
 	      pol = polcode(if,p)
 	      if(pol.eq.PolXY)then
@@ -1225,10 +1213,10 @@ c
 		pol = PolXY
 	      endif
 	      call XypCorr(nfreq(if),data(ipnt),pol,
-     *		i1,i2,if,xyphase,ATIF,ATANT)
+     *		i1,i2,if,xyphase,ATIF,ATANT,wbandxy)
 	    else
 	      call XYpCorr(nfreq(if),data(ipnt),polcode(if,p),
-     *		i2,i1,if,xyphase,ATIF,ATANT)
+     *		i2,i1,if,xyphase,ATIF,ATANT,wbandxy)
 	    endif
 	  endif
 	enddo
@@ -1237,7 +1225,6 @@ c
 c************************************************************************
 	subroutine do8(vis,npol,nfreq,sfreq,sdf)
 c
-	implicit none
 	integer nfreq,npol
 	complex vis(npol,nfreq)
 	double precision sfreq,sdf
@@ -1257,7 +1244,10 @@ c
 	if(chan.le.nfreq)then
 	  if(nfreq.gt.MAXDIM+1)
      *	    call bug('f','Buffer overflow when debirding 8MHz')
-	  n = 2*nfreq-2
+
+	  n = 2*nfreq
+	  if (mod(nfreq,2).eq.1) n = n - 2
+
 	  do j=1,npol
 	    do i=1,nfreq
 	      cbuff(i) = vis(j,i)
@@ -1278,7 +1268,6 @@ c
 c************************************************************************
 	subroutine deswitch(vis,npol,nchan,time,inttime,i1,i2)
 c
-	implicit none
 	integer npol,nchan,i1,i2
 	complex vis(nchan,npol)
 	double precision time
@@ -1314,14 +1303,16 @@ c
 c
 	end
 c************************************************************************
-	subroutine XypCorr(nfreq,vis,pol,i1,i2,if,xyphase,ATIF,ATANT)
+	subroutine XypCorr(nfreq,vis,pol,i1,i2,if,xyphase,ATIF,ATANT,
+     *                     wbandxy)
 c
-	implicit none
-	integer nfreq,pol,i1,i2,if,ATIF,ATANT
+	integer nfreq,pol,i1,i2,if,ATIF,ATANT,wbandxy
 	complex vis(nfreq)
 	real xyphase(ATIF,ATANT)
 c
 c  Correct the data with the measured XY phase.
+c  As of 18OCT07 antenna 2 has valid xyphase at 3mm, use wbandxy==2 to
+c  indicate this
 c------------------------------------------------------------------------
 	integer PolXX,PolYY,PolXY,PolYX
 	parameter(PolXX=-5,PolYY=-6,PolXY=-7,PolYX=-8)
@@ -1329,12 +1320,23 @@ c------------------------------------------------------------------------
 	complex fac
 	real theta
 c
+        theta = 0
 	if(pol.eq.PolYY)then
-	  theta = xyphase(if,i1) - xyphase(if,i2)
+          if (wbandxy.eq.0) then
+	    theta = xyphase(if,i1) - xyphase(if,i2)
+          endif
 	else if(pol.eq.PolXY)then
-	  theta =                - xyphase(if,i2)
+          if (wbandxy.eq.0) then
+             theta =                - xyphase(if,i2)
+          else
+             theta =                - xyphase(if,wbandxy)
+          endif
 	else if(pol.eq.PolYX)then
-	  theta = xyphase(if,i1)
+          if (wbandxy.eq.0) then
+	    theta = xyphase(if,i1)
+          else
+            theta = xyphase(if,wbandxy)
+          endif
 	else
 	  theta = 0
 	endif
@@ -1350,7 +1352,6 @@ c
 c************************************************************************
 	subroutine Reweight(vis,cscr,rscr,npol,nchan,wts)
 c
-	implicit none
 	integer npol,nchan
 	complex vis(npol,nchan),cscr(nchan)
 	real wts(2*nchan-2),rscr(2*nchan-2)
@@ -1377,7 +1378,6 @@ c
 c************************************************************************
 	subroutine PokeMisc(telescop,observer,version,sctype)
 c
-	implicit none
 	character telescop*(*),observer*(*),version*(*),sctype*(*)
 c
 c  Set various miscellaneous parameters.
@@ -1405,7 +1405,6 @@ c
 c************************************************************************
 	subroutine PokeFlsh
 c
-	implicit none
 c
 c  Flush out a saved integration.
 c------------------------------------------------------------------------
@@ -1504,14 +1503,18 @@ c
 	  jyperk = getjpk(real(sfreq(1)))
 
 	  if(opcorr)then
-	    if(mcount.lt.3)
-     *	      call bug('f','No met data to compute opacity correction')
 	    do if=1,nifs
 	      freq0(if) = (sfreq(if) + 0.5*(nfreq(if)-1)*sdf(if))*1e9
 	    enddo
-	    call opacGet(nifs,freq0,real(el),mdata(1)+273.15,
-     *					     97.5*mdata(2),
-     *					     0.01*mdata(3),fac,Tb)
+	    if(mcount.lt.3)then
+	      call bug('w','No met data to compute opacity correction')
+	    else
+	      stemp = mdata(1) + 273.15
+	      spress = 97.5*mdata(2)
+	      shumid = 0.01*mdata(3)
+	    endif
+	    call opacGet(nifs,freq0,real(el),stemp,spress,shumid,
+     *					     		   fac,Tb)
 	    tfac = 1
 	    do if=1,nifs
 	      fac(if) = 1/fac(if)
@@ -1659,7 +1662,7 @@ c
 c
 	do if=1,nifs
 	  nbin(if) = 0
-	enddo	  
+	enddo
 c
 	mcount = 0
 	refnant = 0
@@ -1671,7 +1674,6 @@ c
 c************************************************************************
 	subroutine opapply(data,nchan,fac)
 c
-	implicit none
 	integer nchan
 	real fac
 	complex data(nchan)
@@ -1686,7 +1688,6 @@ c
 c************************************************************************
 	subroutine PolPut(tno,pol,dosw)
 c
-	implicit none
 	integer tno,pol
 	logical dosw
 c
@@ -1715,7 +1716,6 @@ c************************************************************************
 	subroutine VelRad(dolsr,time,raapp,decapp,raepo,decepo,
      *	  lst,lat,vel)
 c
-	implicit none
 	logical dolsr
 	double precision time,raapp,decapp,raepo,decepo
 	double precision lst,lat,vel
@@ -1821,7 +1821,6 @@ c
 c************************************************************************
 	subroutine GetFlag(flag,n,bchan,flags)
 c
-	implicit none
 	integer n,bchan
 	logical flag,flags(n)
 c
@@ -1840,7 +1839,6 @@ c************************************************************************
      *		xsampler,ysampler,axisrms,axismax,
      *		ATIF,ATANT,nants,if1,if2,buf)
 c
-	implicit none
 	integer tno,ATIF,ATANT,nants,if1,if2,tcorr
 	real chi,xtsys(ATIF,ATANT),ytsys(ATIF,ATANT)
 	real xyphase(ATIF,ATANT),xyamp(ATIF,ATANT)
@@ -1870,7 +1868,6 @@ c------------------------------------------------------------------------
 c************************************************************************
 	subroutine Sca(tno,var,axis,nants,buf)
 c
-	implicit none
 	integer tno,nants
 	character var*(*)
 	real axis(nants),buf(2*nants)
@@ -1891,7 +1888,6 @@ c
 c************************************************************************
 	subroutine Sct(tno,var,xtsys,ytsys,ATIF,ATANT,if1,if2,nants,buf)
 c
-	implicit none
 	integer tno,ATIF,ATANT,if1,if2,nants
 	character var*(*)
 	real buf(ATIF*ATANT),xtsys(ATIF,ATANT),ytsys(ATIF,ATANT)
@@ -1915,7 +1911,6 @@ c
 c************************************************************************
 	subroutine Sco(tno,var,dat,ndim,ATIF,ATANT,if1,if2,nants,buf)
 c
-	implicit none
 	integer ATIF,ATANT,if1,if2,nants,tno,ndim
 	character var*(*)
 	real dat(ndim,ATIF,ATANT),buf(ndim*ATIF*ATANT)
@@ -1940,7 +1935,6 @@ c
 c************************************************************************
 	subroutine CntStok(npol,pnt,nifs,nstoke,ATIF)
 c
-	implicit none
 	integer npol,nifs,nstoke,ATIF,pnt(ATIF,nstoke)
 c
 c  Determine the number of valid Stokes records in this record.
@@ -1962,7 +1956,6 @@ c************************************************************************
 	subroutine GetDat(data,nvis,pnt,flag,nfreq,fac,bchan,nifs,
      *					vis,flags,ndata,nchan)
 c
-	implicit none
 	integer nvis,nifs,pnt(nifs),nfreq(nifs),bchan(nifs),nchan
 	integer ndata
 	logical flag(nifs),flags(ndata)
@@ -2012,7 +2005,6 @@ c
 c************************************************************************
 	subroutine AsciiCpy(in,out,length)
 c
-	implicit none
 	character in*(*),out*(*)
 	integer length
 c
@@ -2039,7 +2031,6 @@ c************************************************************************
 	subroutine SamCorr(nfreq,vis,pol,i1,i2,if,time,
      *		xsampler,ysampler,ATIF,ATANT)
 c
-	implicit none
 	integer i1,i2,if,nfreq,pol,ATIF,ATANT
 	real xsampler(3,ATIF,ATANT),ysampler(3,ATIF,ATANT)
 	double precision time
@@ -2105,7 +2096,6 @@ c************************************************************************
 c************************************************************************
 	subroutine RPSkip(in,iostat)
 c
-	implicit none
 	character in*(*)
 	integer iostat
 c
@@ -2119,7 +2109,6 @@ c************************************************************************
 	subroutine RPDisp(in,scanskip,scanproc,doauto,docross,docaldat,
      *	  relax,sing,unflag,nopol,polflag,ifsel,userfreq,nuser,iostat)
 c
-	implicit none
 	character in*(*)
 	integer scanskip,scanproc,ifsel,nuser,iostat
 	double precision userfreq(*)
@@ -2148,10 +2137,10 @@ c------------------------------------------------------------------------
 	include 'mirconst.h'
 	integer MAXPOL,MAXSIM,MAXXYP,NDATA
 	parameter(MAXPOL=4,MAXSIM=4,MAXXYP=5,NDATA=MAXCHAN*MAXPOL)
-	double precision J01Jul04
-	parameter(J01Jul04=2453187.5d0)
+	double precision J01Jul04,J18Oct07
+	parameter(J01Jul04=2453187.5d0,J18Oct07=2454390.5d0)
 	include 'rpfits.inc'
-	integer scanno,i1,i2,baseln,i,id,j
+	integer scanno,i1,i2,baseln,i,id,j,wbandxy
 	logical NewScan,NewSrc,NewFreq,NewTime,Accum,ok,badbit
 	logical flags(MAXPOL),corrfud,kband,wband,flipper
 	integer jstat,flag,bin,ifno,srcno,simno,Ssrcno,Ssimno
@@ -2162,7 +2151,7 @@ c------------------------------------------------------------------------
 	double precision reftime,ra0,dec0,pntra,pntdec
 	character calcode*16,sctype*16
 c
-c  The following has to agree with the first dimension of if_cstok in 
+c  The following has to agree with the first dimension of if_cstok in
 c  rpfits.inc.
 c
 	integer MPOL
@@ -2286,7 +2275,7 @@ c
 	      enddo
 	    enddo
 c
-c  Handle end-of-scan 
+c  Handle end-of-scan
 c
 	  else if(jstat.eq.2)then
 	    jstat = 0
@@ -2301,7 +2290,7 @@ c  immediately again, skip to the next header.
 c
 	  else if(jstat.eq.5)then
 	    if(badbit)then
-	      call bug('w', 
+	      call bug('w',
      *          'I/O error occurred with jstat=5. Look for next header')
 	      jstat = -1
 	      call rpfitsin(jstat,vis,weight,baseln,ut,u,v,w,flag,
@@ -2356,10 +2345,10 @@ c
 	      time = ut / (3600.d0*24.d0) + jday0
 c
 c  Now we cludge a correlator fix:
-c  It can happen that the datobs is written just before the 
+c  It can happen that the datobs is written just before the
 c  change of a ut day, but the ut is written after the change of
 c  ut day. What the correlator should do is write the ut as ut+8640,
-c  but as of 10-04-01 it didn't. 
+c  but as of 10-04-01 it didn't.
 c  So, in this case, jday0 should be incremented here.
 c  We assume no-one is going to average more than 30 sec...
 c
@@ -2520,6 +2509,12 @@ c	      tint = 0
 	      if(tint.eq.0)tint = 15.0
 	      flipper = .not.kband.or.time.gt.J01Jul04
 c
+c  Only CA02 has XY noise cal at wband
+c
+              wbandxy=0
+              if (wband.and.time.gt.J18Oct07
+     *            .and.instrument(1:4).eq.'ATCA') wbandxy=2 
+c
 c  It is pretty late to be checking for a buffer overflow, but RPFITSIN's
 c  interface does not guard against it at all! So at least we are checking!
 c
@@ -2532,7 +2527,7 @@ c
 c
 	      call PokeData(u,v,w,baseln,Sif(ifno),bin,
      *		vis,if_nfreq(ifno),nstoke(ifno),flags,
-     *		tint,if_invert(ifno).lt.0,flipper,.not.wband)
+     *		tint,if_invert(ifno).lt.0,flipper,.not.wband,wbandxy)
 c
 c  Reinitialise things.
 c
@@ -2574,7 +2569,6 @@ c
 c************************************************************************
 	subroutine RPEOF(jstat)
 c
-	implicit none
 	integer jstat
 c
 c  Skip to the EOF.
@@ -2596,7 +2590,6 @@ c
 c************************************************************************
 	character*(*) function RPErr(jstat)
 c
-	implicit none
 	integer jstat
 c
 c  Translate an RPFITSIN jstat value into something a bit more
@@ -2625,7 +2618,6 @@ c
 c************************************************************************
 	subroutine RPClose(jstat)
 c
-	implicit none
 	integer jstat
 c------------------------------------------------------------------------
 	integer flag,baseln,bin,ifno,srcno
@@ -2643,7 +2635,6 @@ c
 c************************************************************************
 	subroutine RPOpen(in,jstat)
 c
-	implicit none
 	character in*(*)
 	integer jstat
 c
@@ -2673,7 +2664,6 @@ c************************************************************************
 	subroutine PolMap(nopol,mpol,nif,nstin,cstin,nstout,cstout,
      *								pselect)
 c
-	implicit none
 	integer nif,mpol
 	integer nstin(nif),nstout(nif)
 	logical pselect(mpol,nif),nopol
@@ -2724,7 +2714,6 @@ c
 c************************************************************************
 	subroutine vissy(vis,nchan,nstin,pselect)
 c
-	implicit none
 	integer nchan,nstin
 	complex vis(nstin*nchan)
 	logical pselect(nstin)
@@ -2747,7 +2736,6 @@ c
 c************************************************************************
 	character*(*) function pcent(frac,total)
 c
-	implicit none
 	integer frac,total
 c------------------------------------------------------------------------
 	character val*5
@@ -2763,7 +2751,6 @@ c------------------------------------------------------------------------
 c************************************************************************
 	subroutine ChkAnt(x,y,z,antvalid,nant,sing)
 c
-	implicit none
 	integer nant
 	double precision x(nant),y(nant),z(nant)
 	logical antvalid(nant),sing
@@ -2782,7 +2769,6 @@ c************************************************************************
 	subroutine GetFg(nstok,cstok,flag,xflag1,yflag1,xflag2,yflag2,
      *		flags,fgsam)
 c
-	implicit none
 	integer nstok,flag,fgsam
 	character cstok(nstok)*(*)
 	logical flags(nstok),xflag1,yflag1,xflag2,yflag2
@@ -2819,7 +2805,6 @@ c************************************************************************
 	subroutine syscflag(polflag,xsamp,ysamp,xyphase,xyamp,
      *		nxyp,maxxyp,xyp,ptag,xya,atag,xflag,yflag,mmrelax)
 c
-	implicit none
 	real xsamp(3),ysamp(3),xyphase,xyamp
 	integer nxyp,maxxyp,ptag(maxxyp),atag(maxxyp)
 	real xyp(maxxyp),xya(maxxyp)
@@ -2839,7 +2824,7 @@ c    xsamp	The x sampler statistics (percent).
 c    ysamp	The y sampler statistics (percent).
 c    xyphase	The online xyphase measurement (radians).
 c    xyamp	XY amplitude, in (pseudo)Jy.
-c    maxxyp	The max number of xy phase 
+c    maxxyp	The max number of xy phase
 c  Input/Output:
 c    nxyp	Number of buffered xyphase measurements.
 c    tag	Tags for xyphase measurements. The oldest xyphase measurement
@@ -2885,7 +2870,6 @@ c
 c************************************************************************
 	subroutine MedMerge(nxyp,maxxyp,xyphase,xyp,tag,mxyp)
 c
-	implicit none
 	integer nxyp,maxxyp,tag(maxxyp)
 	real xyphase,xyp(maxxyp),mxyp
 c------------------------------------------------------------------------
@@ -2947,7 +2931,6 @@ c
 c************************************************************************
 	real function getjpk(freq)
 c
-	implicit none
 	real freq
 c------------------------------------------------------------------------
 	if(freq.lt.15)then
@@ -2966,7 +2949,6 @@ c************************************************************************
      *		chi,tcorr,pntrms,pntmax,nxyp,xyp,ptag,xya,atag,MAXXYP,
      *		xflag,yflag,mmrelax,mdata,mcount)
 c
-	implicit none
 	integer MAXIF,MAXANT,MAXXYP,nq,nif,nant,invert(MAXIF)
 	integer tcorr,mcount
 	real syscal(nq,nif,nant),mdata(9)
@@ -3052,7 +3034,6 @@ c************************************************************************
 	subroutine AtFlush(mcount,scinit,tcorr,scbuf,xflag,yflag,
      *							MAXIF,MAXANT)
 c
-	implicit none
 	integer MAXIF,MAXANT
 	integer tcorr,mcount
 	logical scinit(MAXIF,MAXANT),scbuf(MAXIF,MAXANT)
@@ -3079,7 +3060,6 @@ c************************************************************************
 	subroutine SimMap(ifnum,nif,ifsimul,ifchain,ifsel,
      *		  If2Sim,nifs,Sim2If,Sif,MAXSIM)
 c
-	implicit none
 	integer nif,ifnum(nif),ifsimul(nif),ifchain(nif),ifsel,MAXSIM
 	integer If2Sim(nif),nifs(nif),Sim2IF(MAXSIM,nif),Sif(nif)
 c
@@ -3177,7 +3157,6 @@ c
 c************************************************************************
 	subroutine cacalIni
 c
-	implicit none
 c------------------------------------------------------------------------
 	integer MAXTIMES
 	parameter(MAXTIMES=32)
@@ -3193,7 +3172,6 @@ c
 c************************************************************************
 	subroutine cacalCnt(count)
 c
-	implicit none
 	integer count
 c------------------------------------------------------------------------
 	integer MAXTIMES
@@ -3207,7 +3185,6 @@ c
 c************************************************************************
 	subroutine cacalTyp(calcode,time)
 c
-	implicit none
 	character calcode*(*)
 	double precision time
 c------------------------------------------------------------------------
@@ -3239,7 +3216,6 @@ c
 c************************************************************************
 	subroutine cacalFin(time1,MAXTIME1,ntime1)
 c
-	implicit none
 	integer MAXTIME1,ntime1
 	double precision time1(2,MAXTIME1)
 c------------------------------------------------------------------------
@@ -3258,7 +3234,7 @@ c
 	  time1(2,i) = times(2,i)
 	enddo
 	ntime1 = ntimes
-c	  
+c
 	end
 c************************************************************************
 c************************************************************************
@@ -3274,7 +3250,7 @@ C      gain has been calculated on the assumption that the
 C      sampler statistics were either set on :
 C
 C      17.1, 50.0, 17.1 percent, for SSEXP = 17.1
-C                  --OR--   
+C                  --OR--
 C      17.3, 50.0, 17.3 percent, for SSEXP = 17.3
 C
 C      whereas they were actually n1, z1, p1 and n2, z2, p2 percent
@@ -3305,7 +3281,7 @@ C BEGIN
       QZ2 = GAIN_PARAM( Z2 )
       QP2 = GAIN_PARAM( P2 )
 
-C In the following, a is the gain that was applied on line. 
+C In the following, a is the gain that was applied on line.
 C It is calculated from
 C  a = average correlator count / digital correlator gain at
 C      zero correlation
@@ -3315,9 +3291,9 @@ C          5.444705 = 6.19 / 1.1368844
          A = 5.444705
       ELSE IF (SSEXP.GT.17.0) THEN
 C          5.392175663 = 6.13 / 1.1368324
-         A = 5.392175663 
+         A = 5.392175663
       END IF
-         
+
 C
       TWOBIT_GAIN_ADJUST = A /
      *     TWOBIT_GAIN_R0( QN1, QZ1, QP1, QN2, QZ2, QP2 )
@@ -3425,7 +3401,7 @@ C EXTERNAL FUNCTIONS
 
 C BEGIN
 
-      TWOBIT_GAIN_R0 = 0.159154943 * 
+      TWOBIT_GAIN_R0 = 0.159154943 *
      *            ( G_QUAD( QZ1, QP1, QZ2, QP2 ) +
      *                G_QUAD( QZ1, QN1, QZ2, QP2 ) +
      *                  G_QUAD( QZ1, QP1, QZ2, QN2 ) +

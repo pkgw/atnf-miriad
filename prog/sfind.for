@@ -115,7 +115,7 @@ c
 c@ in
 c       The input image.
 c@ type
-c       Specifies the type of the image in the IN keyword. Minimum match 
+c       Specifies the type of the image in the IN keyword. Minimum match
 c       is supported.   Choose from:
 c
 c       "contour"   (contour plot)
@@ -126,18 +126,18 @@ c       as contour plots may be deceiving. Default is "pixel".
 c       Ignored in 'FDR' mode (the default).
 c
 c@ region
-c       Region of interest.  Choose only one spatial region (bounding 
-c       box only supported), but as many spectral regions (i.e., 
+c       Region of interest.  Choose only one spatial region (bounding
+c       box only supported), but as many spectral regions (i.e.,
 c       multiple IMAGE specifications) as you like.  If you display a
-c       3-D image, the cursor options are activated after each sub-plot 
-c       (channel or group of channels; see CHAN below) is drawn.  
+c       3-D image, the cursor options are activated after each sub-plot
+c       (channel or group of channels; see CHAN below) is drawn.
 c       Default is full image.
 c@ xybin
 c       Upto 4 values.  These give the spatial increment and binning
 c       size in pixels for the x and y axes to be applied to the selected
 c       region.   If the binning size is not unity, it must be equal
-c       to the increment.  For example, to bin up the image by 4 pixels in 
-c       the x direction and to pick out every third pixel in the y 
+c       to the increment.  For example, to bin up the image by 4 pixels in
+c       the x direction and to pick out every third pixel in the y
 c       direction, set XYBIN=4,4,3,1
 c       Defaults are 1,XYBIN(1),XYBIN(1),XYBIN(3)
 c@ chan
@@ -181,7 +181,7 @@ c       Default is zero.
 c       Ignored in 'FDR' mode (the default).
 c@ rmsbox
 c       In 'FDR' mode (the default) this is the size of the 'smoothing'
-c       box used when estimating the background and standard deviation 
+c       box used when estimating the background and standard deviation
 c       of the image. It is suggested that this be several to many times
 c       the beam size to prevent sources from artificially skewing the
 c       background estimates. This may require some experimentation,
@@ -218,7 +218,7 @@ c       Ignored in 'FDR' mode (the default).
 c@ labtyp
 c       Two values.  The spatial label type of the x and y axes.
 c       Minimum match is active.  Select from:
-c       
+c
 c       "hms"       the label is in H M S (e.g. for RA)
 c       "dms"       the label is in D M S (e.g. for DEC)
 c       "arcsec"    the label is in arcsecond offsets
@@ -232,44 +232,46 @@ c       "abskms"    the label is in Km/s
 c       "relkms"    the label is in Km/s offsets
 c       "absghz"    the label is in GHz
 c       "relghz"    the label is in GHz offsets
-c       "absnat"    the label is in linear coordinates as defined by 
+c       "absnat"    the label is in linear coordinates as defined by
 c                   the header you might call this the natural axis label
 c       "relnat"    the label is in offset natural coordinates
-c       
-c       All offsets are from the reference pixel.  
+c
+c       All offsets are from the reference pixel.
 c       Defaults are "abspix", LABTYP(1) unless LABTYP(1)="hms"
 c       whereupon LABTYP(2) defaults to "dms" (for RA and DEC).
 c       Ignored in 'FDR' mode (the default).
+c@ logfile
+c       Log file name, default 'sfind.log'.
 c@ options
 c       Task enrichment options.  Minimum match is active.
 c
 c       "fiddle" means enter a routine to allow you to interactively change
 c         the display lookup table.  You can cycle through b&w and colour
-c         displays, as well as alter the transfer function by the cursor 
-c         location, or by selecting predefined transfer functions such as 
+c         displays, as well as alter the transfer function by the cursor
+c         location, or by selecting predefined transfer functions such as
 c         histogram equalization, logarithmic, & square root.
 c       "wedge" means that if you are drawing a pixel map, also draw
-c         and label a wedge to the right of the plot, showing the map 
+c         and label a wedge to the right of the plot, showing the map
 c         of intensity to colour
 c
 c       "3value"  means label each sub-plot with the appropriate value
-c         of the third axis (e.g. velocity or frequency for an xyv ordered 
+c         of the third axis (e.g. velocity or frequency for an xyv ordered
 c         cube, position for a vxy ordered cube).
 c       "3pixel"  means label each sub-plot with the pixel value of the
-c         the third axis.   Both "3pixel" and "3value" can appear, and both 
+c         the third axis.   Both "3pixel" and "3value" can appear, and both
 c         will be written on the plot.  They are the average values when
 c         the third axis is binned up with CHAN.  If the third axis is
-c         not velocity or frequency, the units type for "3VALUE" will be 
-c         chosen to be the complement of any like axis in the first 2. 
-c        E.g., the cube is in vxy order and LABTYP=ABSKMS,ARCSEC the units 
-c        for the "3VALUE" label will be arcsec.  If LABTYP=ABSKMS,HMS the 
+c         not velocity or frequency, the units type for "3VALUE" will be
+c         chosen to be the complement of any like axis in the first 2.
+c        E.g., the cube is in vxy order and LABTYP=ABSKMS,ARCSEC the units
+c        for the "3VALUE" label will be arcsec.  If LABTYP=ABSKMS,HMS the
 c        "3VALUE" label will be DMS (if the third [y] axis is declination).
 c
 c       "grid" means draw a coordinate grid on the plot rather than just ticks
 c
-c       "noerase"  Don't erase a snugly fitting rectangle into which the 
+c       "noerase"  Don't erase a snugly fitting rectangle into which the
 c        "3-axis" value string is written.
-c      
+c
 c       "unequal" means draw plots with unequal scales in x and y. The
 c        default is that the scales are equal.
 c
@@ -283,7 +285,7 @@ c         flux densities from this fit are bi-parabolically fitted *peak*
 c         flux densities, and the positions are to the peak flux density
 c         position (which will always be within 1 pixel of the brightest
 c         pixel in the source). This option is useful for providing a starting
-c         point for groups of sources which the gaussian fitting procedure 
+c         point for groups of sources which the gaussian fitting procedure
 c         hasn't taken a liking to.
 c
 c       "asciiart" During the interactive section of the program, an ascii
@@ -334,10 +336,10 @@ c         dividing by the standard deviation. The mean and sigma are
 c         calculated in regions of size 'rmsbox' tiled over the image.
 c         Ignored if 'oldsfind' is present.
 c
-c       "kvannot" As well as the regular log file (sfind.log, always
-c         written) create a kview format annotation file, called
-c         'sfind.ann,' containing one ellipse per object, with the
-c         appropriate location, size, and position angle.
+c       "kvannot" As well as the regular log file (always written)
+c         create a kview format annotation file, called 'sfind.ann'
+c         containing one ellipse per object, with the appropriate
+c         location, size, and position angle.
 c
 c       "fdrpeak" The default for source measurement is to use only pixels
 c         above the FDR threshold in measuring the properties of
@@ -457,9 +459,9 @@ c    nebk 12feb96  Massaged to fix subroutine call mismatches, remove
 c                  unused variables, remove hangovers from cgcurs that
 c                  were not needed, gave unvalued variables a value,
 c                  remove unused subroutines.  Made no default for "cutoff"
-c                  and xrms. Put some protection into BASECAL for bad 
+c                  and xrms. Put some protection into BASECAL for bad
 c                  rms values. Change structure of code in subroutine SEARCH
-c                  deal with blanks in BASECAL. 
+c                  deal with blanks in BASECAL.
 c    amh  05mar96  added iterative section to subroutine FITTING, whereby
 c                  sources with fwhm comparable to area used for selecting
 c                  pixels are re-calculated with a larger area. Also deal
@@ -525,6 +527,10 @@ c                  in subroutines fdr and basecal.
 c    amh  29aug02  Fixed minor bug which could cause 'psfsize' point source
 c                  fits to return peak and integrated fluxes too low for
 c                  bright sources.
+c    pjt  20feb03  defined alpha (implicit undefined)
+c    amh  10jun04  Fixed bug which caused erroneously low rms's in rmsboxes
+c                  with blanked pixels at the bottom left, leading to many
+c                  spurious sources at the edges of non-square images.
 c
 c
 c To do:
@@ -542,67 +548,70 @@ c       cursor). This could be used as well as or instead of the current
 c       method. Think about two seperate options to indicate user's desire
 c       of which.
 c
+c  $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
       include 'mem.h'
-c
+
       real wedisp, wedwid, tfdisp
       integer maxlev, maxpos, nxdef, nydef, nbins
       parameter (maxlev = 50, maxpos = 50, nxdef = 4, nydef = 4,
      +   wedisp = 1.0, tfdisp = 0.5, wedwid = 0.05, nbins = 128)
-c
+
       integer ipim, ipnim
-c
-      real levs(maxlev), pixr(2), tr(6), cs(2), pixr2(2), scale(2), 
+
+      real levs(maxlev), pixr(2), tr(6), cs(2), pixr2(2), scale(2),
      +  tfvp(4), wdgvp(4), cumhis(nbins), dmm(3)
-      real slev, vxmin, vymin, vymax, vx, vy, vxsize, vysize, vxgap, 
-     +  vygap, ydispb, xdispl, groff, blank, cut, xrms
-c
-      integer blc(3), trc(3), size(maxnax), win(maxnax),
+      real slev, vxmin, vymin, vymax, vx, vy, vxsize, vysize, vxgap,
+     +  vygap, ydispb, xdispl, groff, blank, cut, xrms, alpha
+
+      integer blc(3), trc(3), size(maxnax), win(maxnax), nc,
      +  grpbeg(maxchan), ngrp(maxchan), srtlev(maxlev), his(nbins)
       integer nx, ny, nlevs, lin, naxis, k, ierr, pgbeg, iostat, ipage,
      +  ibin(2), jbin(2), kbin(2), krng(2), nlast, ngrps,
      +  llog, jj, wedcod, labcol, poscol, statcol, regcol, rmsbox,
-     +  npnt
-c
-      character labtyp(2)*6
-      character in*64, pdev*64, xlabel*40, ylabel*40, trfun*3, levtyp*1
-c
+     +  npnt, nelc
+
+      character in*128, labtyp(2)*6, levtyp*1, logfil*128, pdev*64,
+     +  trfun*3, xlabel*40, ylabel*40
+
       logical do3val, do3pix, eqscale, doblnk, dotr, donxlab(2),
      +  donylab(2), dopixel, gaps, doabut, doaxlab, doaylab,
      +  mark, doerase, dowedge, dofid, grid, nofit, asciiart,
      +  auto, negative, pbcor, oldsfind, fdrimg, sigmaimg, normimg,
      +  kvannot, fdrpeak, allpix, psfsize, rmsimg
-c
+
       data ipage, scale /0, 0.0, 0.0/
       data dmm /1.0e30, -1.0e30, -1.0/
       data gaps, doabut, dotr /.false., .false., .false./
+
+      character versan*80, version*80
 c-----------------------------------------------------------------------
-      call output (' ')
-      call output ('Sfind: Version 29-Aug-2002')
-      call output (' ')
+      version = versan('sfind',
+     +  '$Id$')
 c
 c Get user inputs
 c
-      call inputs (maxlev, in, ibin, jbin, kbin, levtyp, slev, levs, 
-     +   nlevs, pixr, trfun, pdev, labtyp, do3val, do3pix, eqscale, 
-     +   nx, ny, cs, dopixel, mark, doerase, dowedge, dofid, grid,
-     +   cut, rmsbox, alpha, xrms, nofit, asciiart, auto, negative,
-     +   pbcor, oldsfind, sigmaimg, rmsimg, fdrimg, normimg, kvannot,
-     +   fdrpeak, allpix, psfsize)
+      call inputs (maxlev, in, ibin, jbin, kbin, levtyp, slev, levs,
+     +   nlevs, pixr, trfun, pdev, labtyp, logfil, do3val, do3pix,
+     +   eqscale, nx, ny, cs, dopixel, mark, doerase, dowedge, dofid,
+     +   grid, cut, rmsbox, alpha, xrms, nofit, asciiart, auto,
+     +   negative, pbcor, oldsfind, sigmaimg, rmsimg, fdrimg, normimg,
+     +   kvannot, fdrpeak, allpix, psfsize)
       if (oldsfind) then
-       call output ('Running as Sfind: version 1.4, 09-Nov-98')
-       call output (' ')
+        call output ('Running as Sfind: version 1.4, 09-Nov-98')
+        call output (' ')
       end if
 c
 c Open log files
 c
-      call txtopen (llog, 'sfind.log', 'append', iostat)
-      if (iostat.ne.0) 
-     +  call bug ('f', 'Error opening text file "sfind.log"')
+      call txtopen (llog, logfil, 'append', iostat)
+      nc = nelc(logfil)
+      if (iostat.ne.0)
+     +  call bug ('f', 'Error opening log file "' // logfil(:nc) // '"')
       call output (' ')
-      call output ('*** Source list output to sfind.log')
+      call output ('*** Source list output to ' // logfil(:nc))
       call output (' ')
       call output ('Now opening image...')
       call output (' ')
@@ -618,7 +627,7 @@ c
       call region (in, naxis, size, ibin, jbin, kbin, blc, trc,
      +             win, ngrps, grpbeg, ngrp)
 c
-c Try to allocate memory for images.  
+c Try to allocate memory for images.
 c
       call memalloc (ipim,  win(1)*win(2), 'r')
       call memalloc (ipnim, win(1)*win(2), 'i')
@@ -649,8 +658,8 @@ c
        call nxnycg (nxdef, nydef, ngrps, nx, ny, nlast)
 c
 c Work out if wedge outside or inside subplots. Also work out
-c if plotting one wedge per subplot or one wedge for all  
-c       
+c if plotting one wedge per subplot or one wedge for all
+c
        call wedgincg ('NO', dofid, dowedge, nx, ny, 1, trfun, wedcod)
 c
 c Work out default character sizes for axis and channel labels
@@ -660,7 +669,7 @@ c
 c Open plot device
 c
        ierr = pgbeg (0, pdev, 1, 1)
-       if (ierr.ne.1)then
+       if (ierr.ne.1) then
         call pgldev
         call bug ('f', 'Error opening plot device')
        endif
@@ -671,24 +680,24 @@ c
 c Set line graphics colour indices
 c
        call setlgc (labcol, poscol, statcol, regcol)
-c       
+c
 c Init OFM routines
-c       
+c
        if (dopixel) call ofmini
 c
 c Set axis labels
 c
        call setlabcg (lin, labtyp, .false., xlabel, ylabel)
-c 
+c
 c Set label displacements from axes
 c
        call setdspcg (lin, labtyp, blc, trc, xdispl, ydispb)
 c
-c Work out view port encompassing all sub-plots. Also return 
+c Work out view port encompassing all sub-plots. Also return
 c the viewport size of sub-plots.
 c
        call vpsizcg (.false., dofid, 0, ' ', ' ', 0, ' ', maxlev,
-     +   nlevs, srtlev, levs, slev, nx, ny, cs, xdispl, ydispb, 
+     +   nlevs, srtlev, levs, slev, nx, ny, cs, xdispl, ydispb,
      +   gaps, doabut, dotr, wedcod, wedwid, tfdisp, labtyp, vxmin,
      +   vymin, vymax, vxgap, vygap, vxsize, vysize, tfvp, wdgvp)
 c
@@ -725,11 +734,11 @@ c Apply transfer function
 c
          call pgsci (labcol)
          if (dopixel) then
-           if (trfun.ne.'lin') call apptrfcg (pixr, trfun, groff, 
+           if (trfun.ne.'lin') call apptrfcg (pixr, trfun, groff,
      +        win(1)*win(2), memi(ipnim), memr(ipim), nbins,
      +        his, cumhis)
 c
-c Draw wedge 
+c Draw wedge
 c
            if (wedcod.eq.1 .or. wedcod.eq.2) then
             call pgsch (cs(1))
@@ -745,7 +754,7 @@ c
            if (k.eq.1) call ofmcol (1, pixr2(1), pixr2(2))
            call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
      +                  win(2), pixr2(1), pixr2(2), tr)
-         else 
+         else
 c
 c Draw contours
 c
@@ -781,7 +790,7 @@ c
 c
 c Modify lookup table
 c
-         if (dofid) call ofmmod (tfvp, win(1)*win(2), memr(ipim), 
+         if (dofid) call ofmmod (tfvp, win(1)*win(2), memr(ipim),
      +                           memi(ipnim), pixr2(1), pixr2(2))
 c
 c Write velocity or channel label
@@ -796,12 +805,12 @@ c
 c Interactive graphical source finding routine
 c
          call search_old (lin, win(1), win(2), memr(ipim), memi(ipnim),
-     +     blc, ibin, jbin, krng, llog, mark, cut, rmsbox, xrms, 
+     +     blc, ibin, jbin, krng, llog, mark, cut, rmsbox, xrms,
      +     nofit, asciiart, auto, negative, pbcor, in, psfsize)
 c
 c Increment sub-plot viewport locations and row counter
 c
-         call subinccg (k, nx, ny, vxmin, vymax, vxsize, vysize, 
+         call subinccg (k, nx, ny, vxmin, vymax, vxsize, vysize,
      +                  vxgap, vygap, vx, vy)
 c
 c Page plot device
@@ -819,8 +828,8 @@ c
        call txtclose(llog)
        call pgend
 c
-c Now the image display section of code is passed, perform search automatically
-c (non-interactively) if required.
+c Now the image display section of code is passed, perform search
+c automatically (non-interactively) if required.
 c
       else
 c
@@ -839,7 +848,7 @@ c The source-detection subroutine.
 c
         if (oldsfind) then
          call search_old (lin, win(1), win(2), memr(ipim), memi(ipnim),
-     +     blc, ibin, jbin, krng, llog, mark, cut, rmsbox, xrms, 
+     +     blc, ibin, jbin, krng, llog, mark, cut, rmsbox, xrms,
      +     nofit, asciiart, auto, negative, pbcor, in, psfsize)
         else
          call search(lin, win(1), win(2), memr(ipim), memi(ipnim),
@@ -862,7 +871,6 @@ c
 c
 c
       subroutine cgcur (x, y, ans)
-      implicit none
       real x, y
       character ans*1
       call pgupdt
@@ -878,15 +886,16 @@ c
      +   auto, negative, pbcor, in, psfsize)
 c-----------------------------------------------------------------------
 c  This is the master subroutine for the detecting of sources and the
-c interactive decision bit. It detects bright pixels, determines whether they
-c are brighter than the surrounding 24 pixels (of which none are permitted to
-c be blanked) and if so, performs a bi-parabolic fit to the peak. This is
-c then used to determine if the source is above a user set multiple of the
-c background rms around the source, and if so an elliptical gaussian fit is
-c carryed out. The results are then written to the screen and the cursor
-c moved to the position of the object where it waits for the users yay or nay.
-c After user input, the source parameters are written, along with a flag (Y
-c or N), to the log file, sfind.log
+c  interactive decision bit.  It detects bright pixels, determines
+c  whether they are brighter than the surrounding 24 pixels (of which
+c  none are permitted to be blanked) and if so, performs a bi-parabolic
+c  fit to the peak.  This is then used to determine if the source is
+c  above a user set multiple of the background rms around the source,
+c  and if so an elliptical gaussian fit is carried out.  The results are
+c  then written to the screen and the cursor moved to the position of
+c  the object where it waits for the users yay or nay.  After user
+c  input, the source parameters are written, along with a flag (Y or N),
+c  to the log file.
 c
 c  Input:
 c     lin       Image handle
@@ -902,18 +911,18 @@ c     mark      True to mark cursor locations
 c     cut       flux limit below which sources are ignored
 c     rmsbox    size of box (in pixels) within which background rms is
 c               first calculated
-c     xrms      multiple of background rms above which source must be before
-c               user is given option of saying yay or nay
+c     xrms      multiple of background rms above which source must be
+c               before user is given option of saying yay or nay
 c     nofit     True means don't do gaussian fitting for each source
 c     asciiart  display ascii representations of each source during
 c               interactive source selection
 c     auto      skip all the interactive bits of source flagging.
-c     negative  inverts image: positive pixels become negative and vice versa
+c     negative  inverts image: positive pixels become negative and vice
+c               versa
 c     pbcor     true to correct fluxes by primary beam attenuation
 c     in        image name
 c
 c-----------------------------------------------------------------------
-      implicit none
 c
       integer nx, ny, blc(2), llog, ibin, jbin, lin, nimage(nx,ny),
      +  krng(2)
@@ -1024,8 +1033,8 @@ c
       call BeamPar (lIn, k, bvol, bvolp, bmaj, bmin, bpa,
      +              bmajp, bminp, bpap, nobeam)
 c
-c Loop over all pixels, searching for bright pixels and moving the cursor
-c to that position.
+c Loop over all pixels, searching for bright pixels and moving the
+c cursor to that position.
 c
       do l = 3,nx-3
        do m = 3,ny-3
@@ -1037,13 +1046,13 @@ c
         if (pval.lt.cut) goto 60
         do i = l-2,l+2
           do j = m-2,m+2
-            if( ((i.ne.l .or. j.ne.m) .and. nimage(i,j).gt.0 .and.
+            if (((i.ne.l .or. j.ne.m) .and. nimage(i,j).gt.0 .and.
      +          pval.le.image(i,j)) .or. nimage(i,j).eq.0) goto 60
           end do
         end do
 c
-c Bi-parabolic fit, base-level and background rms calculation and subtraction
-c of base-level from peak
+c Bi-parabolic fit, base-level and background rms calculation and
+c subtraction of base-level from peak.
 c
         call peakfit(l, m, xpos, ypos, nx, ny, peak, image)
         call basecal_old(nx, ny, l, m, base0, sigma, rmsbox, image,
@@ -1175,8 +1184,8 @@ c
             call txtwrite (llog, line, len1(line), iostat)
 c
 c When user presses quit-type command, check to see that's really what
-c they wanted to do, and if so do it. If not, accept the different button
-c as the intended command.
+c they wanted to do, and if so do it. If not, accept the different
+c button as the intended command.
 c
           else if (cch.eq.'X') then
             call output('Are you sure you want to quit here?')
@@ -1194,8 +1203,8 @@ c
          end do
         else
 c
-c The "auto" procedure treats every source as if the user flagged it good
-c (pressed button "A").
+c The "auto" procedure treats every source as if the user flagged it
+c good (pressed button "A").
 c
          iloc = iloc + 1
          ysources = ysources + 1
@@ -1224,9 +1233,10 @@ c-----------------------------------------------------------------------
 c    Perform a bi-parabolic fit to the position l,m and return fitted
 c    coordinates x,y and flux density, peak. Parabolas are fitted along
 c    both the x and y axes, and the resulting position is the x,y coords
-c    of the parabola's peak (always within one pixel of the brightest pixel).
-c    The resulting peak flux density is simply the flux density the brightest
-c    pixel would have had if it had been centered at the position x,y.
+c    of the parabola's peak (always within one pixel of the brightest
+c    pixel).  The resulting peak flux density is simply the flux density
+c    the brightest pixel would have had if it had been centered at the
+c    position x,y.
 c
 c     If            z = a x^2 + b x + c
 c     Then      z_max = b*b/a
@@ -1274,7 +1284,7 @@ c    Iteratively calculate the base level around the found source using
 c    all pixels falling within a square of side length rmsbox pixels
 c    centred on the peak, but excluding those falling within a circle
 c    with radius of boxsize.
-c    
+c
 c  Input:
 c    nx,ny   Size of image array
 c    l,m     Bright pixel position
@@ -1377,30 +1387,31 @@ c-----------------------------------------------------------------------
 c  Do elliptical Gaussian fit to source. First the pixels to be used in
 c  the fitting are selected on the basis that they are monotonically
 c  decreasing away from the "central" bright pixel, then the gaussian
-c  fit is done as per the task "imfit". If the size of the region within
-c  which pixels were selected for the fit is smaller than 4 times the fwhm
-c  of the major axis of the source, the procedure is iterated with a larger
-c  region. If this procedure diverges, (detected by the increasing region
-c  becoming larger than the image size), the source is ignored.
-c  Once the source size and parameters are finally accepted, the background
-c  rms is recalculated (more accurately now the source size is known) again,
-c  and used for the output.
+c  fit is done as per the task "imfit".  If the size of the region
+c  within which pixels were selected for the fit is smaller than 4 times
+c  the fwhm of the major axis of the source, the procedure is iterated
+c  with a larger region. If this procedure diverges, (detected by the
+c  increasing region becoming larger than the image size), the source is
+c  ignored.  Once the source size and parameters are finally accepted,
+c  the background rms is recalculated (more accurately now the source
+c  size is known) again, and used for the output.
 c
-c  Once the fit is done the source parameters are recorded and passed back
-c  to subroutine "search" for it to output as appropriate.
+c  Once the fit is done the source parameters are recorded and passed
+c  back to subroutine "search" for it to output as appropriate.
 c
 c  Input
 c    nx,ny    Size of image
 c    image    Image
 c    nimage   Normalised Image (for masking info)
-c    sigma    the background rms around the source. Used to clip pixels. It is
-c             recalculated after the source fitting, and is an output as well.
-c    nobeam   logical used to determine default beam size if not detected in
-c             image header.
-c    bmajp    pixel size of major axis of beam. Used for setting size of box
-c             within which to detect pixels for gaussian fitting.
-c    blc, bin image params used for switching between full image and binned
-c             subimage pixels.
+c    sigma    the background rms around the source. Used to clip pixels.
+c             It is recalculated after the source fitting, and is an
+c             output as well.
+c    nobeam   logical used to determine default beam size if not
+c             detected in image header.
+c    bmajp    pixel size of major axis of beam. Used for setting size of
+c             box within which to detect pixels for gaussian fitting.
+c    blc, bin image params used for switching between full image and
+c             binned subimage pixels.
 c    lx, my   integer pixel coord of brightest pixel in object. Used in
 c             pixel selection routine.
 c    asciiart logical. True if user wants ascii pictures of the objects
@@ -1415,12 +1426,12 @@ c    xpos, xposerr    x-position and error of object.
 c    ypos, yposerr    y-position and error of object.
 c    pkfl, pkflerr    peak flux density (and error) for object.
 c    intfl            integrated flux density of object.
-c    amaj, amin, posa axes (arcsec) and position angle (degrees) of object.
+c    amaj, amin, posa axes (arcsec) and position angle (degrees) of
+c                     object.
 c    rms              rms of gaussian fit to selected pixels.
 c    fitok            logical. False if the fit failed for any reason.
 c
 c-----------------------------------------------------------------------
-      implicit none
       include 'sfind.h'
       integer MAXVAR
       parameter(MAXVAR=20)
@@ -1443,22 +1454,19 @@ c-----------------------------------------------------------------------
 c
 c Initialise parameters
 c
-      dumm = 0.
-      nsrc = 1
-      do i = 1,nsrc
-        vflux(i) = .true.
-        vl0(i) = .true.
-        vm0(i) = .true.
-        vfwhm1(i) = .true.
-        vfwhm2(i) = .true.
-        vpa(i) = .true.
-        fwhm1(i) = 1.
-        fwhm2(i) = 1.
-        l0(i) = 0.
-        m0(i) = 0.
-      end do
-      clip = sigma
-      fitok = .true.
+      vflux  = .true.
+      vl0    = .true.
+      vm0    = .true.
+      vfwhm1 = .true.
+      vfwhm2 = .true.
+      vpa    = .true.
+      fwhm1  = 1.0
+      fwhm2  = 1.0
+      l0     = 0.0
+      m0     = 0.0
+
+      clip   = sigma
+      fitok  = .true.
 c
 c Set the plane appropriate to the displayed image.  Since
 c this may be a range of planes averaged together, take the
@@ -1470,9 +1478,9 @@ c  Set the size of the region within which to select pixels to be used in
 c  the gaussian fitting procedure.
 c
       if (nobeam) then
-       boxsize = 5.
+        boxsize = 5.0
       else
-       boxsize = bmajp
+        boxsize = bmajp
       end if
 c
 c  Load the data. Ie, choose the pixels in the region of the source to
@@ -1489,18 +1497,17 @@ c
 c
 c  Convert the coordinates to pixels, and fill in defaults if necessary.
 c
-      call CoordFid(lIn,k,.true.)
       call GetEst
 c
 c  Pack the variables into an array.
 c
       call PackVar(xvar,nvar,MAXVAR)
       dofit = nvar.gt.0
-      if(.not.dofit) then
+      if (.not.dofit) then
         fitok = .false.
         return
       end if
-      if(nvar.ge.m) then
+      if (nvar.ge.m) then
         fitok = .false.
         return
       end if
@@ -1510,52 +1517,51 @@ c
       fiterr = 0
       call lsqfit(FUNCTION,m,nvar,xvar,covar,rms,ifail1,ifail2)
       call UPackVar(xvar,nvar)
-      if(ifail2.eq.0)call UpackCov(covar,nvar)
-      if(ifail1.ne.0) fiterr = 1
-      if(ifail2.ne.ifail1) fiterr = 2
+      if (ifail2.eq.0)call UpackCov(covar,nvar)
+      if (ifail1.ne.0) fiterr = 1
+      if (ifail2.ne.ifail1) fiterr = 2
 c
 c If 'psfsize' selected, check object size and if smaller than
 c psf, set to psf size and fit again for peak and position.
 c
-      if ((psfsize).and.((fwhm1(1).lt.bmajp).or.(fwhm2(1).lt.bminp)))
-     +       then
-       do i = 1,nsrc
-         vflux(i) = .true.
-         vl0(i) = .true.
-         vm0(i) = .true.
-         vfwhm1(i) = .false.
-         vfwhm2(i) = .false.
-         vpa(i) = .false.
-         fwhm1(i) = bmajp
-         fwhm2(i) = bminp
-         pa(i) = bpap
-       end do
-       fitok = .true.
-c  Pack the variables into an array.
-       call PackVar(xvar,nvar,MAXVAR)
-       dofit = nvar.gt.0
-       if(.not.dofit) then
-         fitok = .false.
-         return
-       end if
-       if(nvar.ge.m) then
-         fitok = .false.
-         return
-       end if
-c  Do the fitting process.
-       fiterr = 0
-       call lsqfit(FUNCTION,m,nvar,xvar,covar,rms,ifail1,ifail2)
-       call UPackVar(xvar,nvar)
-       if(ifail2.eq.0)call UpackCov(covar,nvar)
-       if(ifail1.ne.0) fiterr = 1
-       if(ifail2.ne.ifail1) fiterr = 2
+      if (psfsize .and. (fwhm1.lt.bmajp .or. fwhm2.lt.bminp)) then
+        vflux  = .true.
+        vl0    = .true.
+        vm0    = .true.
+        vfwhm1 = .false.
+        vfwhm2 = .false.
+        vpa    = .false.
+        fwhm1  = bmajp
+        fwhm2  = bminp
+        pa     = bpap
+
+        fitok = .true.
+c       Pack the variables into an array.
+        call PackVar(xvar,nvar,MAXVAR)
+        dofit = nvar.gt.0
+        if (.not.dofit) then
+          fitok = .false.
+          return
+        end if
+        if (nvar.ge.m) then
+          fitok = .false.
+          return
+        end if
+
+c       Do the fitting process.
+        fiterr = 0
+        call lsqfit(FUNCTION,m,nvar,xvar,covar,rms,ifail1,ifail2)
+        call UPackVar(xvar,nvar)
+        if (ifail2.eq.0)call UpackCov(covar,nvar)
+        if (ifail1.ne.0) fiterr = 1
+        if (ifail2.ne.ifail1) fiterr = 2
       end if
 c
 c  Check to see whether the fitted size of the image is comparable to the
 c  initial box size used in selecting pixels, and if so iterate the
 c  procedure choosing a larger box size.
 c
-      if (boxsize.lt.max(abs(fwhm1(1)),abs(fwhm2(1)))) then
+      if (boxsize.lt.max(abs(fwhm1),abs(fwhm2))) then
 c
 c Checks for divergence - eg, noise being fitted by ever larger
 c gaussians. Stops and aborts fit if object fwhm is larger than one quarter the
@@ -1566,8 +1572,8 @@ c next iteration.) This (moderately) arbitrary number is, however, an
 c unsatisfactory way of dealing with the problem, and a better one would
 c be appreciated.
 c
-       if (max(abs(fwhm1(1)),abs(fwhm2(1))).lt.min(nx,ny,240)/4) then
-        boxsize = max(abs(fwhm1(1)),abs(fwhm2(1)))
+       if (max(abs(fwhm1),abs(fwhm2)).lt.min(nx,ny,240)/4) then
+        boxsize = max(abs(fwhm1),abs(fwhm2))
         goto 1200
        else
         fitok = .false.
@@ -1610,12 +1616,10 @@ c
        call bug('w','Source may still be real, but parameters may'
      +          //' be incorrect.')
       end if
-c
-c  Convert to astronomical units, and report - ie, finalise results.
-c
-      call CoordFid(lIn,k,.false.)
-      call Report (bvol, bvolp, xposerr, yposerr,
-     +   pkfl, pkflerr, intfl, amaj, amin, posa, posns, lIn)
+
+c     Convert the fit parameters to astronomical units.
+      call gaucvt (lIn, k, bvol, bvolp, xposerr, yposerr,
+     +   pkfl, pkflerr, intfl, amaj, amin, posa, posns)
 c
       end
 c
@@ -1630,8 +1634,7 @@ c  Input:
 c    clip      Clip level.
 c  Output:
 c    m            Number of points loaded.
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
       integer m,nx,ny,lmn,lmx,mmn,mmx,nimage(nx,ny)
       integer i,xt,yt,ll,mm, blc(2),bin(2), lx,my, maxline
@@ -1717,7 +1720,7 @@ c
 c-----------------------------------------------------------------------
 c  This is the *new* master subroutine for the detecting of sources.
 c It runs subroutine fdr, which makes the normalised image, sigma image
-c and fdr image (if necessary), and most importantly, establishes the 
+c and fdr image (if necessary), and most importantly, establishes the
 c fdr threshold. Then sources are measured, in routine fdrfit.
 c
 c  Input:
@@ -1726,7 +1729,7 @@ c     nx,ny     Size of image
 c     image     Image
 c     nimage    blanking image (0 for blanked pixels)
 c     blc       blc of window being displayed
-c     i,jbin    Spatial pixel increment 
+c     i,jbin    Spatial pixel increment
 c     krng      Start plane and number of planes averaged together
 c               to make the current displayed plane
 c     llog      Handle of log file
@@ -1753,7 +1756,6 @@ c               decreasing ones
 c     psfsize   true to restrict minimum source size to that of psf
 c
 c-----------------------------------------------------------------------
-      implicit none
       include 'maxdim.h'
       include 'maxnax.h'
       include 'mem.h'
@@ -1779,14 +1781,14 @@ c
 c Start by checking beam parameters, since will die if the beam doesn't
 c exist.
 c
-      call BeamPar (lIn, k, bvol, bvolp, bmaj, bmin, bpa, 
+      call BeamPar (lIn, k, bvol, bvolp, bmaj, bmin, bpa,
      +              bmajp, bminp, bpap, nobeam)
       if (nobeam) then
        call bug('f','No beam information found - FDR analysis'
      +      //' needs this to work')
       end if
 c Now begin properly.
-      call output (' ')  
+      call output (' ')
       call output ('****************************************')
       call output ('Beginning Non-Interactive Source Finding')
       call output ('****************************************')
@@ -1833,7 +1835,7 @@ c
       call txtwrite (llog, line4, len1(line4), iostat)
 c
 c Set the plane appropriate to the displayed image.  Since
-c this may be a range of planes averaged together, take the 
+c this may be a range of planes averaged together, take the
 c integer nearest the average plane
 c
       k = nint(real(krng(1) + krng(1) + krng(2) - 1)/2.0)
@@ -1880,7 +1882,7 @@ c    method of fitting a gaussian to the pixel histogram, using
 c    all pixels falling within a square of side length rmsbox pixels
 c    centred on the peak. If this fails, fall back on iterative method
 c    used in the original version of sfind.
-c     
+c
 c  Input:
 c    nx,ny   Size of image array
 c    l,m     Bright pixel position
@@ -1925,8 +1927,8 @@ c for comparison with rms value calculated below.
       ptr = 0
       do jj = mmn, mmx
        do ii = lmn, lmx
+        ptr = ptr + 1
         if (nimage(ii,jj).gt.0) then
-         ptr = ptr + 1
          image2(ptr) = image(ii,jj)
          mask(ptr) = .true.
          rng(1) = min(rng(1),image(ii,jj))
@@ -2030,7 +2032,6 @@ c    trms   sigma of the gaussian background
 c    mean   mean of the gaussian background
 c
 c-----------------------------------------------------------------------
-      implicit none
       include 'maxdim.h'
       include 'maxnax.h'
       include 'sfind.h'
@@ -2038,7 +2039,7 @@ c
       integer MAXBOX, MAXVAR, MAXBIN
       parameter (MAXBOX=1024, MAXVAR=20, MAXBIN=50)
 c
-      integer i, j, n, ifail1, ifail2, nvar, ni, nj,
+      integer i, j, n, nd, ifail1, ifail2, nvar, ni, nj,
      +  blc(MAXNAX), trc(MAXNAX), id
       integer nwithinr
       real trms, mom(3), wmin, wmax, wid,
@@ -2050,7 +2051,6 @@ c
 c
       external function
 c-----------------------------------------------------------------------
-      ns = 1
       nd = MAXBIN
       ok = .true.
       nwithinr = 0
@@ -2071,14 +2071,14 @@ c
 c
       n = 0
       do i = 1, ni*nj
-        if(mask(i)) then
+        if (mask(i)) then
           n = n + 1
           sum = sum + image(i)
           squ = squ + image(i)**2
         end if
       end do
 c
-      if(n.eq.0) then
+      if (n.eq.0) then
         if (.not.auto) call bug('w', 'Image plane all blank')
         ok = .false.
         return
@@ -2118,7 +2118,7 @@ c average contributing to that bin
 c
       norm = 0.0
       do i = 1, nd
-        if(data2(i).gt.0.0) then
+        if (data2(i).gt.0.0) then
           xd(i) = xd(i) / data2(i)
           norm = norm + data2(i)
         end if
@@ -2138,12 +2138,12 @@ c
       end do
       nd = j - 1
 c
-      if(nd.eq.0) then
+      if (nd.eq.0) then
 c        call bug('w','No data in histogram')
         ok = .false.
         return
       end if
-c     
+c
 c Normalise histogram volume to 1.0
 c
       bmax = -1.0e30
@@ -2155,24 +2155,21 @@ c
 c Set Gaussian fits parameter estimates.
 c 1: peak, 2: centre, 3: FWHM
 c
-      nsrc = 1
 c l0 = mean (mu), m0 = FWHM (and sigma=rms=m0/2sqrt(2ln2)).
-      do i = 1,nsrc
-       flux(i) = bmax
-       l0(i) = mom(1)
-       m0(i) = mom(2) * sqrt(8.0 * log(2.0))
+      flux = bmax
+      l0 = mom(1)
+      m0 = mom(2) * sqrt(8.0 * log(2.0))
 c
-       fwhm1(i) = 0.0
-       fwhm2(i) = 0.0
-       pa(i) = 0.0
+      fwhm1 = 0.0
+      fwhm2 = 0.0
+      pa    = 0.0
 c
-       vflux(i) = .true.
-       vl0(i) = .true.
-       vm0(i) = .true.
-       vfwhm1(i) = .false.
-       vfwhm2(i) = .false.
-       vpa(i) = .false.
-      end do
+      vflux  = .true.
+      vl0    = .true.
+      vm0    = .true.
+      vfwhm1 = .false.
+      vfwhm2 = .false.
+      vpa    = .false.
 c
 c Fit histogram with a Gaussian
 c
@@ -2182,12 +2179,12 @@ c
       ndata = nd
 c
       call packvar(xvar,nvar,MAXVAR)
-      if(nvar.eq.0) call bug ('f', 'HIST: Internal logic error')
+      if (nvar.eq.0) call bug ('f', 'HIST: Internal logic error')
 c
       call lsqfit(FUNCTION,nd,nvar,xvar,covar,rms,ifail1,ifail2)
 c
       call upackvar(xvar,nvar)
-      if(ifail2.eq.0) call upackcov(covar,nvar)
+      if (ifail2.eq.0) call upackcov(covar,nvar)
       if (ifail1.ne.0 .or. ifail2.ne.0) then
         ok = .false.
         return
@@ -2195,18 +2192,18 @@ c
 c
 c Compute fitted image rms, and mean
 c
-      trms = abs(m0(1)) / sqrt(8.0 * log(2.0))
-      mean = l0(1)
+      trms = abs(m0) / sqrt(8.0 * log(2.0))
+      mean = l0
 c
       end
 c
 c
-      subroutine decopt(do3val, do3pix, eqscale, mark, doerase, 
+      subroutine decopt(do3val, do3pix, eqscale, mark, doerase,
      +                  dowedge, dofid, grid, nofit, asciiart, auto,
      +                  negative, pbcor, oldsfind, fdrimg, sigmaimg,
      +                  rmsimg, normimg, kvannot, fdrpeak, allpix,
      +                  psfsize)
-c----------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c     Decode options array into named variables.
 c
 c   Output:
@@ -2238,7 +2235,6 @@ c     allpix    true if want to use all pixels, not just monotonically
 c               decreasing ones
 c     psfsize   true to restrict minimum source size to that of the psf
 c-----------------------------------------------------------------------
-      implicit none
 c
       logical do3val, do3pix, eqscale, mark, doerase, dofid,
      + dowedge, grid, nofit, asciiart, auto, negative, pbcor,
@@ -2298,7 +2294,7 @@ c
 c
 c
       subroutine inputs (maxlev, in, ibin, jbin, kbin, levtyp, slev,
-     +   levs, nlevs, pixr, trfun, pdev, labtyp, do3val, do3pix, 
+     +   levs, nlevs, pixr, trfun, pdev, labtyp, logfil, do3val, do3pix,
      +   eqscale, nx, ny, cs, dopixel, mark, doerase, dowedge, dofid,
      +   grid, cut, rmsbox, alpha, xrms, nofit, asciiart, auto,
      +   negative, pbcor, oldsfind, sigmaimg, rmsimg, fdrimg, normimg,
@@ -2317,10 +2313,11 @@ c   slev       Contour levels scale factors (absolute or percentage)
 c   levs       Contour levels.  Will be scaled by SLEV for contouring
 c   nlevs      Number of contour levels
 c   pixr       Pixel map intensity range
-c   trfun      Type of pixel map transfer function: 'log', 'lin', 
+c   trfun      Type of pixel map transfer function: 'log', 'lin',
 c             'heq', or 'sqr'
 c   pdev       PGPLOT plot device/type
 c   labtyp     Type of labels for x and y axes
+c   logfil     Log file name.
 c   do3val     True means label sub-plots with value of third axis
 c   do3pix     True means label sub-plots with pixel of third axis
 c   eqscale    True means plot with x and y scales
@@ -2359,22 +2356,21 @@ c   allpix     true if want to use all pixels, not just monotonically
 c              decreasing ones
 c   psfsize    true to restrict minimum source size to that of the psf
 c-----------------------------------------------------------------------
-      implicit none
-c
+
       integer maxlev, nx, ny, nlevs, ibin(2), jbin(2), kbin(2), rmsbox
       real levs(maxlev), pixr(2), cs(2), slev, cut, xrms, alpha
-      character*(*) labtyp(2), in, pdev, trfun, levtyp
+      character*(*) in, labtyp(2), levtyp, logfil, pdev, trfun
       logical do3val, do3pix, eqscale, dopixel, mark, doerase,
      + dowedge, dofid, grid, nofit, asciiart, auto, negative, pbcor,
      + oldsfind, fdrimg, sigmaimg, rmsimg, normimg, kvannot, fdrpeak,
      + allpix, psfsize
-cc
+
       integer ntype, nlab, ntype2, nimtype
       parameter (ntype = 14, ntype2 = 3)
       character type(ntype)*6, imtype*7, type2(ntype2)*7
-      data type  /'hms   ', 'dms   ', 'abspix', 'relpix', 
-     +            'arcsec', 'arcmin', 'absghz', 'relghz', 
-     +            'abskms', 'relkms', 'absnat', 'relnat', 
+      data type  /'hms   ', 'dms   ', 'abspix', 'relpix',
+     +            'arcsec', 'arcmin', 'absghz', 'relghz',
+     +            'abskms', 'relkms', 'absnat', 'relnat',
      +            'absdeg', 'reldeg'/
       data type2 /'contour', 'pixel', 'grey'/
 c-----------------------------------------------------------------------
@@ -2385,7 +2381,7 @@ c-----------------------------------------------------------------------
       if (nimtype.eq.0) imtype = 'pixel'
       dopixel = .true.
       if (imtype.eq.'contour') dopixel = .false.
-c
+
       call keyi ('xybin', ibin(1), 1)
       call keyi ('xybin', ibin(2), ibin(1))
       if (ibin(2).ne.1 .and. ibin(2).ne.ibin(1)) call bug ('f',
@@ -2399,32 +2395,32 @@ c
      +  'Non-unit y spatial averaging must be equal to increment')
       jbin(1) = max(jbin(1), 1)
       jbin(2) = max(jbin(2), 1)
-c
-      call keyi ('chan', kbin(1), 1) 
-      call keyi ('chan', kbin(2), 1) 
+
+      call keyi ('chan', kbin(1), 1)
+      call keyi ('chan', kbin(2), 1)
       kbin(1) = max(kbin(1), 1)
       kbin(2) = max(kbin(2), 1)
-c
+
       call keya ('slev', levtyp, 'a')
       call keyr ('slev', slev, 0.0)
       call lcase (levtyp)
       if (levtyp.ne.'p' .and. levtyp.ne.'a') call bug ('f',
      +   'Unrecognized contour level scale type; must be "p" or "a"')
-c
+
       call mkeyr ('levs', levs, maxlev, nlevs)
-c
+
       call keyr ('range', pixr(1), 0.0)
       call keyr ('range', pixr(2), 0.0)
       call keya ('range', trfun, 'lin')
       call lcase (trfun)
       if (dopixel) then
-        if (trfun.ne.'lin' .and. trfun.ne.'log' .and. trfun.ne.'heq' 
-     +      .and. trfun.ne.'sqr') call bug ('f', 
+        if (trfun.ne.'lin' .and. trfun.ne.'log' .and. trfun.ne.'heq'
+     +      .and. trfun.ne.'sqr') call bug ('f',
      +    'Unrecognized pixel map transfer function type')
       else
         trfun = ' '
       end if
-c
+
       call decopt (do3val, do3pix, eqscale, mark, doerase, dowedge,
      +             dofid, grid, nofit, asciiart, auto, negative,
      +             pbcor, oldsfind, fdrimg, sigmaimg, rmsimg, normimg,
@@ -2433,34 +2429,37 @@ c
         dofid = .false.
         dowedge = .false.
       end if
-c
+
       call keya ('device', pdev, ' ')
       if ((pdev.eq.' ').and.(.not.auto)) then
         call pgldev
         call bug ('f', 'A PGPLOT device must be given')
       end if
-c
+
       call keymatch ('labtyp', ntype, type, 2, labtyp, nlab)
       if (nlab.eq.0) labtyp(1) = 'abspix'
       if (nlab.le.1) then
         labtyp(2) = labtyp(1)
         if (labtyp(1).eq.'hms') labtyp(2) = 'dms'
       end if
-c
-      if ( (index(labtyp(1),'lin').ne.0  .and. 
+
+      call keya ('logfile', logfil, ' ')
+      if (logfil.eq.' ') logfil = 'sfind.log'
+
+      if ( (index(labtyp(1),'lin').ne.0  .and.
      +      index(labtyp(2),'lin').eq.0) .or.
-     +     (index(labtyp(2),'lin').ne.0  .and. 
+     +     (index(labtyp(2),'lin').ne.0  .and.
      +      index(labtyp(1),'lin').eq.0) ) then
-        if (eqscale) call bug ('i', 
+        if (eqscale) call bug ('i',
      +  'You might consider options=unequal with these axis types')
       end if
-c
+
       call keyi ('nxy', nx, 0)
       call keyi ('nxy', ny, nx)
-c
+
       call keyr ('csize', cs(1), 0.0)
       call keyr ('csize', cs(2), 0.0)
-c
+
       call keyr('cutoff',cut,0.0)
       if (cut.lt.0.0)
      +  call bug('f','You must give a non-negative value for cutoff')
@@ -2478,10 +2477,10 @@ c
         call bug('f','Invalid value for keyword "xrms"')
        end if
       end if
-c
+
       end
-c
-c       
+
+
       subroutine setlgc (labcol, poscol, statcol, regcol)
 c-----------------------------------------------------------------------
 c     Set line graphics colours
@@ -2489,7 +2488,6 @@ c
 c  OUtput
 c    colour indices to use
 c-----------------------------------------------------------------------
-      implicit none
       integer labcol, poscol, statcol, regcol
 cc
       integer bgcol
@@ -2528,7 +2526,7 @@ c
 c
       subroutine region (in, naxis, size, ibin, jbin, kbin, blc, trc,
      +                   win, ngrps, grpbeg, ngrp)
-c----------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c     Finish key routine inputs for region of interest now.
 c
 c  Input:
@@ -2546,13 +2544,12 @@ c                  channel increment is reached.
 c    ngrp          Number of channels in each group of channel to
 c                  be averaged together for each sub-plot.
 c    blc,trc       3-D Hyper-rectangle surrounding region of interest
-c    win           Size of BINNED region of interest for 
+c    win           Size of BINNED region of interest for
 c                  first 2 dimensions
 c
-c----------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
 c
-      integer naxis, size(naxis), blc(*), trc(*), win(2), ngrp(*), 
+      integer naxis, size(naxis), blc(*), trc(*), win(2), ngrp(*),
      +  grpbeg(*), ngrps, ibin(2), jbin(2), kbin(2)
       character in*(*)
 cc
@@ -2561,7 +2558,7 @@ cc
       parameter (maxbox = 1024)
 c
       integer boxes(maxbox)
-c----------------------------------------------------------------------
+c-----------------------------------------------------------------------
       call boxinput ('region', in, boxes, maxbox)
       call boxset (boxes, naxis, size, 's')
       call keyfin
@@ -2588,7 +2585,7 @@ c
       end
 c
 c
-      subroutine fitting (lIn, krng, nx, ny, image, rms, xpos, 
+      subroutine fitting (lIn, krng, nx, ny, image, rms, xpos,
      +    xposerr, ypos, yposerr, pkfl, pkflerr, intfl, amaj,
      +    amin, posa, posns, blc, bin, lx, my, bvol, bpap,
      +    bvolp, bmajp, bminp, nimage, boxsize, image2, pcut, fitok,
@@ -2640,7 +2637,6 @@ c    fitok            logical. False if the fit failed for any reason.
 c    usedpixels       number of pixels used in the fit
 c
 c-----------------------------------------------------------------------
-      implicit none
       include 'maxdim.h'
       include 'maxnax.h'
       include 'mem.h'
@@ -2654,7 +2650,7 @@ c
       integer k,m,nvar,lx,my, nx,ny, krng(2), nimage(nx,ny), fiterr
       integer boxsize,ipim,ip2im,xpixused(n),ypixused(n), usedpixels
       integer nfdrused, dumcount
-      real image(nx,ny), meanimg(nx,ny), sgimg(nx,ny), dumm
+      real image(nx,ny), meanimg(nx,ny), sgimg(nx,ny)
       real xvar(MAXVAR),covar(MAXVAR*MAXVAR),rms
       real bvol,bvolp, xpos, ypos, pkfl, intfl
       real amaj, amin, posa, bmajp, bminp, bpap
@@ -2668,24 +2664,21 @@ c-----------------------------------------------------------------------
 c
 c Initialise parameters
 c
-      dumm = 0.
-      nsrc = 1
-      do i = 1,nsrc
-        vflux(i) = .true.
-        vl0(i) = .true.
-        vm0(i) = .true.
-        vfwhm1(i) = .true.
-        vfwhm2(i) = .true.
-        vpa(i) = .true.
-        fwhm1(i) = 1.
-        fwhm2(i) = 1.
-        l0(i) = 0.
-        m0(i) = 0.
-      end do
+      vflux  = .true.
+      vl0    = .true.
+      vm0    = .true.
+      vfwhm1 = .true.
+      vfwhm2 = .true.
+      vpa    = .true.
+      fwhm1  = 1.0
+      fwhm2  = 1.0
+      l0     = 0.0
+      m0     = 0.0
+
       fitok = .true.
 c
 c Set the plane appropriate to the displayed image.  Since
-c this may be a range of planes averaged together, take the 
+c this may be a range of planes averaged together, take the
 c integer nearest the average plane
 c
       k = nint(real(krng(1) + krng(1) + krng(2) - 1)/2.0)
@@ -2710,8 +2703,7 @@ c
       if (.not.fitok) return
 c reject source if number of FDR pixels used is less than 1/4 the
 c area covered by beam, or no pixels at all were used.
-      if (((float(nfdrused)).lt.(sqrt(bmajp*bminp*pi)/4.)).or.
-     +       (m.eq.0)) then
+      if (m.eq.0 .or. float(nfdrused).lt.sqrt(bmajp*bminp*PI)/4.0) then
 c      if (m.eq.0) then
        fitok = .false.
        return
@@ -2719,7 +2711,6 @@ c      if (m.eq.0) then
 c
 c  Convert the coordinates to pixels, and fill in defaults if necessary.
 c
-      call CoordFid(lIn,k,.true.)
       call GetEst
 c make sure it's a 2-D gaussian
       gdim = 2
@@ -2728,11 +2719,11 @@ c  Pack the variables into an array.
 c
       call PackVar(xvar,nvar,MAXVAR)
       dofit = nvar.gt.0
-      if(.not.dofit) then
+      if (.not.dofit) then
         fitok = .false.
         return
       end if
-      if(nvar.ge.m) then
+      if (nvar.ge.m) then
         fitok = .false.
         return
       end if
@@ -2742,14 +2733,14 @@ c
       fiterr = 0
       call lsqfit(FUNCTION,m,nvar,xvar,covar,rms,ifail1,ifail2)
       call UPackVar(xvar,nvar)
-      if(ifail2.eq.0)call UpackCov(covar,nvar)
-      if(ifail1.ne.0) fiterr = 1
-      if(ifail2.ne.ifail1) fiterr = 2
+      if (ifail2.eq.0)call UpackCov(covar,nvar)
+      if (ifail1.ne.0) fiterr = 1
+      if (ifail2.ne.ifail1) fiterr = 2
 c
 c If fit is much larger than number of pixels used, trying fitting again
 c with more pixels to refine the fit. m is the number of used pixels.
 c
-      if ((m).lt.(pi*fwhm1(1)*fwhm2(1)/4)) then
+      if (m.lt.fwhm1*fwhm2*PI_4) then
          dumcount = dumcount+1
 c allocate memory for slopearry and connct again
        call memalloc(ipim,(boxsize+1)*(boxsize+1),'l')
@@ -2772,15 +2763,13 @@ c
        if (.not.fitok) return
 c reject source if number of FDR pixels used is less than 1/4 the
 c area covered by beam, or no pixels at all were used.
-       if (((float(nfdrused)).lt.(sqrt(bmajp*bminp*pi)/4.)).or.
-     +       (m.eq.0)) then
-        fitok = .false.
-        return
+       if (m.eq.0 .or. float(nfdrused).lt.sqrt(bmajp*bminp*PI)/4.0) then
+         fitok = .false.
+         return
        end if
 c
 c  Convert the coordinates to pixels, and fill in defaults if necessary.
 c
-       call CoordFid(lIn,k,.true.)
        call GetEst
 c make sure it's a 2-D gaussian
        gdim = 2
@@ -2789,11 +2778,11 @@ c  Pack the variables into an array.
 c
        call PackVar(xvar,nvar,MAXVAR)
        dofit = nvar.gt.0
-       if(.not.dofit) then
+       if (.not.dofit) then
          fitok = .false.
          return
        end if
-       if(nvar.ge.m) then
+       if (nvar.ge.m) then
          fitok = .false.
          return
        end if
@@ -2803,54 +2792,54 @@ c
        fiterr = 0
        call lsqfit(FUNCTION,m,nvar,xvar,covar,rms,ifail1,ifail2)
        call UPackVar(xvar,nvar)
-       if(ifail2.eq.0)call UpackCov(covar,nvar)
-       if(ifail1.ne.0) fiterr = 1
-       if(ifail2.ne.ifail1) fiterr = 2
+       if (ifail2.eq.0)call UpackCov(covar,nvar)
+       if (ifail1.ne.0) fiterr = 1
+       if (ifail2.ne.ifail1) fiterr = 2
       end if
 
 c
 c If 'psfsize' selected, check object size and if smaller than
 c psf, set to psf size and fit again for peak and position.
 c
-      if ((psfsize).and.((fwhm1(1).lt.bmajp).or.(fwhm2(1).lt.bminp)))
-     +       then
-       do i = 1,nsrc
-         vflux(i) = .true.
-         vl0(i) = .true.
-         vm0(i) = .true.
-         vfwhm1(i) = .false.
-         vfwhm2(i) = .false.
-         vpa(i) = .false.
-         fwhm1(i) = bmajp
-         fwhm2(i) = bminp
-         pa(i) = bpap
-       end do
-       fitok = .true.
-c  Pack the variables into an array.
-       call PackVar(xvar,nvar,MAXVAR)
-       dofit = nvar.gt.0
-       if(.not.dofit) then
-         fitok = .false.
-         return
-       end if
-       if(nvar.ge.m) then
-         fitok = .false.
-         return
-       end if
-c  Do the fitting process.
-       fiterr = 0
-       call lsqfit(FUNCTION,m,nvar,xvar,covar,rms,ifail1,ifail2)
-       call UPackVar(xvar,nvar)
-       if(ifail2.eq.0)call UpackCov(covar,nvar)
-       if(ifail1.ne.0) fiterr = 1
-       if(ifail2.ne.ifail1) fiterr = 2
+      if (psfsize .and. (fwhm1.lt.bmajp .or. fwhm2.lt.bminp)) then
+        vflux  = .true.
+        vl0    = .true.
+        vm0    = .true.
+        vfwhm1 = .false.
+        vfwhm2 = .false.
+        vpa    = .false.
+        fwhm1  = bmajp
+        fwhm2  = bminp
+        pa     = bpap
+
+        fitok = .true.
+
+c       Pack the variables into an array.
+        call PackVar(xvar,nvar,MAXVAR)
+        dofit = nvar.gt.0
+        if (.not.dofit) then
+          fitok = .false.
+          return
+        end if
+        if (nvar.ge.m) then
+          fitok = .false.
+          return
+        end if
+
+c       Do the fitting process.
+        fiterr = 0
+        call lsqfit(FUNCTION,m,nvar,xvar,covar,rms,ifail1,ifail2)
+        call UPackVar(xvar,nvar)
+        if (ifail2.eq.0)call UpackCov(covar,nvar)
+        if (ifail1.ne.0) fiterr = 1
+        if (ifail2.ne.ifail1) fiterr = 2
       end if
 c
 c  Check to see whether the fitted size of the image is comparable to the
 c  initial box size used in selecting pixels, and if so iterate the
 c  procedure choosing a larger box size.
 c
-      if (boxsize.lt.max(abs(fwhm1(1)),abs(fwhm2(1)))) then
+      if (boxsize.lt.max(abs(fwhm1),abs(fwhm2))) then
 c
 c Checks for divergence - eg, noise being fitted by ever larger
 c gaussians. Stops and aborts fit if object fwhm is larger than one quarter the
@@ -2861,8 +2850,8 @@ c next iteration.) This (moderately) arbitrary number is, however, an
 c unsatisfactory way of dealing with the problem, and a better one would
 c be appreciated.
 c
-       if (max(abs(fwhm1(1)),abs(fwhm2(1))).lt.min(nx,ny,240)/4) then
-        boxsize = 3.0*max(abs(fwhm1(1)),abs(fwhm2(1)))
+       if (max(abs(fwhm1),abs(fwhm2)).lt.min(nx,ny,240)/4) then
+        boxsize = 3.0*max(abs(fwhm1),abs(fwhm2))
         goto 1200
        else
         fitok = .false.
@@ -2878,138 +2867,62 @@ c the same source can't be detected and fit multiple times
       end do
 c record number of used pixels
       usedpixels = usedpixels + nfdrused
-c
-c  Convert to astronomical units, and report - ie, finalise results.
-c
-      call CoordFid(lIn,k,.false.)
-      call Report (bvol, bvolp, xposerr, yposerr, 
-     +   pkfl, pkflerr, intfl, amaj, amin, posa, posns, lIn)
-c
+
+c     Convert to astronomical units.
+      call gaucvt (lIn, k, bvol, bvolp, xposerr, yposerr,
+     :   pkfl, pkflerr, intfl, amaj, amin, posa, posns)
+
       end
-c
-c
-      subroutine CoordFid(lIn,k,topix)
-c------------------------------------------------------------------------
-c
-c  Convert coordinates between world and pixel coordinates.
-c
-c  Input:
-c    lIn      Handle of the coordinate system.
-c    k
-c    topix
-c------------------------------------------------------------------------
-      implicit none
-      include 'sfind.h'
-      integer lIn,k
-      logical topix
-      double precision in(3),out(3)
-      double precision crpix(2),crval(2),cdelt(2)
-      character ctype(2)*16
-      real bmaj,bmin,bpa,dx,dy
-      integer i
-c------------------------------------------------------------------------
-      do i=1,nsrc
-c
-c  Convert the position.
-c
-          in(1) = l0(i)
-          in(2) = m0(i)
-          in(3) = k
-          if(topix)then
-            call coCvt(lIn,'ow/ow/ap',in,'ap/ap/ap',out)
-          else
-            call coCvt(lIn,'ap/ap/ap',in,'ow/ow/ap',out)
-          endif
-          l0(i) = out(1)
-          m0(i) = out(2)
-c
-c  Convert the gaussian parameters.
-c
-          if(topix)then
-            call coGauCvt(lIn,'ow/ow/ap',in,
-     +              'w',fwhm1(i),fwhm2(i),pa(i),'p',bmaj,bmin,bpa)
-          else
-            call coGauCvt(lIn,'ap/ap/ap',in,
-     +              'p',fwhm1(i),fwhm2(i),pa(i),'w',bmaj,bmin,bpa)
-          endif
-c
-c  Convert the uncertainties.
-c
-          sfwhm1(i) = bmaj / fwhm1(i) * sfwhm1(i)
-          sfwhm2(i) = bmin / fwhm2(i) * sfwhm2(i)
-          if(spa(i)+sl0(i)+sm0(i).gt.0)then
-            if(topix)then
-            call coLin(lIn,'ow/ow/ap',in,2,ctype,crpix,crval,cdelt)
-            dx = 1/abs(cdelt(1))
-            dy = 1/abs(cdelt(2))
-            else
-            call coLin(lIn,'ap/ap/ap',in,2,ctype,crpix,crval,cdelt)
-            dx = abs(cdelt(1))
-            dy = abs(cdelt(2))
-            endif
-            sl0(i) = sl0(i) * dx
-            sm0(i) = sm0(i) * dy
-            spa(i) = spa(i) / ( dy/dx*cos(pa(i))**2 + 
-     +                          dx/dy*sin(pa(i))**2 )
-          endif
-c
-          fwhm1(i) = bmaj
-          fwhm2(i) = bmin
-          pa(i)    = bpa
-      enddo
-c
-      end
-c
-c
+
+
       subroutine GetEst
-c------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c  Generate an initial estimate for a single component model.
 c
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
       include 'mirconst.h'
-c
+
       integer i
       double precision P,XP,YP,XYP,XXP,YYP,SP
       real t,fac
-c------------------------------------------------------------------------
-      SP = 0
-      P = 0
-      XP = 0
-      YP = 0
-      XYP = 0
-      XXP = 0
-      YYP = 0
-c
+c-----------------------------------------------------------------------
+      SP = 0D0
+      P  = 0D0
+      XP = 0D0
+      YP = 0D0
+      XYP = 0D0
+      XXP = 0D0
+      YYP = 0D0
+
       do i=1,ndata
         SP  = SP + data(i)
-        t = abs(data(i))
+        t   = abs(data(i))
         P   = P   + t
         XP  = XP  + t*x(i)
         YP  = YP  + t*y(i)
-        XYP = XYP + t*x(i)*y(i)
         XXP = XXP + t*x(i)*x(i)
+        XYP = XYP + t*x(i)*y(i)
         YYP = YYP + t*y(i)*y(i)
       enddo
-c
-      fac = 4*log(2.)
+
       XP  = XP / P
       YP  = YP / P
-      XYP = XYP / P - XP*YP
       XXP = XXP / P - XP*XP
+      XYP = XYP / P - XP*YP
       YYP = YYP / P - YP*YP
-      l0(1) = XP
-      m0(1) = YP
-      fwhm1(1) = sqrt(fac*(XXP + YYP +
-     +            sqrt( (XXP-YYP)**2 + 4*(XYP)**2 )))
-      fwhm2(1) = sqrt(fac*(XXP + YYP -
-     +            sqrt( (XXP-YYP)**2 + 4*(XYP)**2 )))
-      pa(1) = 0.5*atan2(2*XYP,YYP-XXP)
-      flux(1) = sign(fac * P / ( pi * fwhm1(1) * fwhm2(1) ),SP)
-c
+      l0  = XP
+      m0  = YP
+
+      fac = 4.0*log(2.0)
+      fwhm1 = sqrt(fac*(XXP + YYP + sqrt( (XXP-YYP)**2 + 4*(XYP)**2 )))
+      fwhm2 = sqrt(fac*(XXP + YYP - sqrt( (XXP-YYP)**2 + 4*(XYP)**2 )))
+      pa    = 0.5*atan2(2*XYP,YYP-XXP)
+      flux  = sign(fac*P/(PI*fwhm1*fwhm2), SP)
+
       end
-c
+
+
       subroutine LoadDat(m,nx,ny,xpos,ypos,blc,bin,image,boxsize,
      +    lx,my,nimage,maxline,image2,pcut,fitok,slopearry,connct,
      +    xpixused,ypixused,meanimg,sgimg,nfdrused,fdrpeak,allpix)
@@ -3042,8 +2955,7 @@ c    fitok     false if had problems
 c    x,ypixused list of pixel positions to be 'blanked' if fit works,
 c               to prevent multiple detections of the same source
 c    nfdrused  number of FDR pixels used in the fit
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
       integer m,nx,ny,lmn,lmx,mmn,mmx,nimage(nx,ny)
       integer i,j,xt,yt,ll,mm, blc(2),bin(2), lx,my, maxline
@@ -3251,19 +3163,19 @@ c
       yoff = yt / real(ndata)
 c
       end
- 
+
 c
       subroutine slopey(xx,yy,xc,yc,nx,ny,image,slpdwn)
-c-----------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c this subroutine checks that a given pixel is less than all the pixels
 c between it and the central (brightest) pixel.
 c
-c-----------------------------------------------------------------------------
+c-----------------------------------------------------------------------
       integer xx,yy,xc,yc,nx,ny,closerx,closery
       integer furtherx,furthery,pp,qq,stepl,stepm
       real image(nx,ny)
       logical slpdwn
-c-----------------------------------------------------------------------------
+c-----------------------------------------------------------------------
       if (xx.gt.xc) then
        closerx = xx-1
        furtherx = xx+1
@@ -3324,159 +3236,159 @@ c-----------------------------------------------------------------------
 c
 c  Store all the things that we need to vary.
 c
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
       integer nvar,MAXVAR
       real var(MAXVAR)
-      integer i,j,ncurr
+      integer j,ncurr
       real tmp(6)
 c-----------------------------------------------------------------------
       nvar = 0
-      do i=1,nsrc
-        ncurr = 0
-        if(vflux(i))then
-          ncurr = ncurr + 1
-          tmp(ncurr) = flux(i)
-        endif
-        if(vl0(i))then
-          ncurr = ncurr + 1
-          tmp(ncurr) = l0(i) - xoff
-        endif
-        if(vm0(i))then
-          ncurr = ncurr + 1
-          tmp(ncurr) = m0(i) - yoff
-        endif
-        if(vfwhm1(i))then
-          ncurr = ncurr + 1
-          tmp(ncurr) = fwhm1(i)
-        endif
-        if(vfwhm2(i))then
-          ncurr = ncurr + 1
-          tmp(ncurr) = fwhm2(i)
-        endif
-        if(vpa(i))then
-          ncurr = ncurr + 1
-          tmp(ncurr) = pa(i)
-        endif
+
+      ncurr = 0
+      if (vflux) then
+        ncurr = ncurr + 1
+        tmp(ncurr) = flux
+      endif
+      if (vl0) then
+        ncurr = ncurr + 1
+        tmp(ncurr) = l0 - xoff
+      endif
+      if (vm0) then
+        ncurr = ncurr + 1
+        tmp(ncurr) = m0 - yoff
+      endif
+      if (vfwhm1) then
+        ncurr = ncurr + 1
+        tmp(ncurr) = fwhm1
+      endif
+      if (vfwhm2) then
+        ncurr = ncurr + 1
+        tmp(ncurr) = fwhm2
+      endif
+      if (vpa) then
+        ncurr = ncurr + 1
+        tmp(ncurr) = pa
+      endif
 c
 c  Copy the estimates to the variables.
 c
-        if(nvar+ncurr.gt.MAXVAR)
-     +        call bug('f','Too many free parameters')
-        do j=1,ncurr
-          nvar = nvar + 1
-          var(nvar) = tmp(j)
-        enddo
-c
+      if (nvar+ncurr.gt.MAXVAR)
+     +      call bug('f','Too many free parameters')
+      do j=1,ncurr
+        nvar = nvar + 1
+        var(nvar) = tmp(j)
       enddo
 c
       end
 c
 c
       subroutine UpackCov(covar,nvar)
-c------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
 c  Unpack the covariance matrix.
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
-      integer nvar
-      real covar(nvar,nvar)
-      integer i,n
-c------------------------------------------------------------------------
+      integer n, nvar
+      real    covar(nvar,nvar)
+c-----------------------------------------------------------------------
       n = 0
-      do i=1,nsrc
-        if(vflux(i))then
-          n = n + 1
-          sflux(i) = covar(n,n)
-        endif
-        if(vl0(i))then
-          n = n + 1
-          sl0(i) = covar(n,n)
-        endif
-        if(vm0(i))then
-          n = n + 1
-          sm0(i) = covar(n,n)
-        endif
-        if(vfwhm1(i))then
-          n = n + 1
-          sfwhm1(i) = covar(n,n)
-        endif
-        if(vfwhm2(i))then
-          n = n + 1
-          sfwhm2(i) = covar(n,n)
-        endif
-        if(vpa(i))then
-          n = n + 1
-          spa(i) = covar(n,n)
-        endif
-      enddo
-c
-      if(n.ne.nvar)
+
+      if (vflux) then
+        n = n + 1
+        sflux = covar(n,n)
+      endif
+
+      if (vl0) then
+        n = n + 1
+        sl0 = covar(n,n)
+      endif
+
+      if (vm0) then
+        n = n + 1
+        sm0 = covar(n,n)
+      endif
+
+      if (vfwhm1) then
+        n = n + 1
+        sfwhm1 = covar(n,n)
+      endif
+
+      if (vfwhm2) then
+        n = n + 1
+        sfwhm2 = covar(n,n)
+      endif
+
+      if (vpa) then
+        n = n + 1
+        spa = covar(n,n)
+      endif
+
+      if (n.ne.nvar)
      +        call bug('f','Inconsistency in UPackCov')
-c
+
       end
-c
-c
+
+
       subroutine UPackVar(var,nvar)
-c------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
 c  Unpack all the things that we need to vary.
 c
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
-      integer nvar
-      real var(nvar)
-      integer i,n
-c------------------------------------------------------------------------
+      integer n, nvar
+      real    var(nvar)
+c-----------------------------------------------------------------------
       n = 0
-      do i=1,nsrc
-        if(vflux(i))then
-          n = n + 1
-          flux(i) = var(n)
-        endif
-        if(vl0(i))then
-          n = n + 1
-          l0(i) = var(n) + xoff
-        endif
-        if(vm0(i))then
-          n = n + 1
-          m0(i) = var(n) + yoff
-        endif
-        if(vfwhm1(i))then
-          n = n + 1
-          fwhm1(i) = var(n)
-        endif
-        if(vfwhm2(i))then
-          n = n + 1
-          fwhm2(i) = var(n)
-        endif
-        if(vpa(i))then
-          n = n + 1
-          pa(i) = var(n)
-        endif
-      enddo
-c
-      if(n.ne.nvar)
+
+      if (vflux) then
+        n = n + 1
+        flux = var(n)
+      endif
+
+      if (vl0) then
+        n = n + 1
+        l0 = var(n) + xoff
+      endif
+
+      if (vm0) then
+        n = n + 1
+        m0 = var(n) + yoff
+      endif
+
+      if (vfwhm1) then
+        n = n + 1
+        fwhm1 = var(n)
+      endif
+
+      if (vfwhm2) then
+        n = n + 1
+        fwhm2 = var(n)
+      endif
+
+      if (vpa) then
+        n = n + 1
+        pa = var(n)
+      endif
+
+      if (n.ne.nvar)
      +        call bug('f','Inconsistency in UPackVar')
-c
+
       end
-c
-c
+
+
       subroutine FUNCTION(m,nvar,var,fvec,iflag)
-c------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
       integer m,nvar,iflag
       real var(nvar)
       real fvec(m)
       integer i
-c------------------------------------------------------------------------
-      if(m.ne.ndata)call bug('f','Inconsistency in FUNCTION')
+c-----------------------------------------------------------------------
+      if (m.ne.ndata)call bug('f','Inconsistency in FUNCTION')
 c
 c  Unpack the things that we are solving for.
 c
@@ -3494,19 +3406,18 @@ c
 c  Compute the residuals now.
 c
       do i=1,m
-       if (gdim.eq.1) then
-        model2(i) = fvec(i)
-        fvec(i) = data2(i) - fvec(i)
-       else
-        fvec(i) = data(i) - fvec(i)
-       end if
+        if (gdim.eq.1) then
+          fvec(i) = data2(i) - fvec(i)
+        else
+          fvec(i) = data(i) - fvec(i)
+        end if
       enddo
 c
-      end      
+      end
 c
 c
       subroutine Eval1(x0,Model,n)
-c-------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
 c  Evaluate the current model at some pixels.
 c
@@ -3515,41 +3426,27 @@ c    n            Number of points.
 c    x0         Pixel coordinates at which to evaluate the model.
 c  Output:
 c    model      The evaluated model.
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
-      integer n
-      real Model(n)
-      real x0(n)
-c      integer x0(n)
-      integer i,j
-      real t,xx,xscal
-c-------------------------------------------------------------------------
-c  Set the model to zero initially.
-c
-      do i=1,n
+      integer i, n
+      real model(n), t, x0(n), xx, xscal
+c-----------------------------------------------------------------------
+c     Gaussian component.
+      xscal = 4.0*log(2.0)/(m0*m0)
+
+c     Loop over the various model types.
+      do i = 1, n
         model(i) = 0
+        xx = x0(i) - l0
+        t  = xscal*(xx*xx)
+        if (t.lt.70) model(i) = model(i) + flux * exp(-t)
       enddo
-c
-c  Loop over the various model types.
-c
-      do j=1,nsrc
-c
-c  Gaussian component.
-c
-          xscal = 4*log(2.)/(m0(j)**2)
-          do i=1,n
-            xx = x0(i) - l0(j)
-            t = xscal*(xx*xx)
-            if(t.lt.70)model(i) = model(i) + flux(j) * exp(-t)
-          enddo
-      enddo
-c
+
       end
-c
-c
+
+
       subroutine Eval(x0,y0,Model,n)
-c-------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
 c  Evaluate the current model at some pixels.
 c
@@ -3558,136 +3455,131 @@ c    n            Number of points.
 c    x0,y0      Pixel coordinates at which to evaluate the model.
 c  Output:
 c    model      The evaluated model.
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       include 'sfind.h'
-      integer n
-      real Model(n)
-      real x0(n),y0(n)
-c      integer x0(n),y0(n)
-      integer i,j
-      real cospa,sinpa,t,xx,yy,xp,yp,xscal,yscal
-c-------------------------------------------------------------------------
-c  Set the model to zero initially.
-c
-      do i=1,n
-        model(i) = 0
+      integer i, n
+      real    cospa, model(n), sinpa, t, x0(n), xp, xscal, xx, y0(n),
+     :        yp, yscal, yy
+c-----------------------------------------------------------------------
+c     Gaussian component.
+      cospa = cos(pa)
+      sinpa = sin(pa)
+      xscal = 4.0*log(2.0)/(fwhm2*fwhm2)
+      yscal = 4.0*log(2.0)/(fwhm1*fwhm1)
+
+c     Loop over the various model types.
+      do i = 1, n
+        xx = x0(i) - l0
+        yy = y0(i) - m0
+        yp =  yy*cospa + xx*sinpa
+        xp = -yy*sinpa + xx*cospa
+        t = xscal*(xp*xp) + yscal*(yp*yp)
+
+        if (t.lt.70) then
+          model(i) = flux * exp(-t)
+        else
+          model(i) = 0.0
+        end if
       enddo
-c
-c  Loop over the various model types.
-c
-      do j=1,nsrc
-c
-c  Gaussian component.
-c
-          cospa = cos(pa(j))
-          sinpa = sin(pa(j))
-          xscal = 4*log(2.)/(fwhm2(j)*fwhm2(j))
-          yscal = 4*log(2.)/(fwhm1(j)*fwhm1(j))
-          do i=1,n
-            xx = x0(i) - l0(j)
-            yy = y0(i) - m0(j)
-            yp =  yy*cospa + xx*sinpa
-            xp = -yy*sinpa + xx*cospa
-            t = xscal*(xp*xp) + yscal*(yp*yp)
-            if(t.lt.70)model(i) = model(i) + flux(j) * exp(-t)
-          enddo
-      enddo
-c
+
       end
-c
-c
-      subroutine Report(bvol,bvolp,xposerr,yposerr,pkfl,pkflerr,
-     +                    intfl,amaj,amin,posa,posns,lIn)
-c-----------------------------------------------------------------------------
-c  Report on the source component solution.
+
+
+      subroutine gaucvt (lIn, k, bvol, bvolp, xposerr, yposerr, pkfl,
+     :  pkflerr, intfl, amaj, amin, posa, awpos)
+c-----------------------------------------------------------------------
+c  Convert the source component parameters from pixel coordinates to
+c  astronomical (angular) measures.
 c
 c  Input:
-c    lIn            handle of image
+c    lIn            Handle of the coordinate system.
+c
 c  Output:
-c    posns          x and y positions in abs. world coords (radians)
+c    bvol
+c    bvolp
 c    xposerr        xposition error.
 c    yposerr        yposition error.
 c    pkfl, pkflerr  peak flux density of source, and its error.
 c    intfl          integrated flux density of the source
 c    amaj, amin     major and minor fwhm of source (arcsec)
 c    posa           position angle of source (degrees E of N)
-c------------------------------------------------------------------------
-      implicit none
+c    awpos          x and y positions in abs. world coords (radians)
+c-----------------------------------------------------------------------
       include 'mirconst.h'
       include 'sfind.h'
-c
-      integer lin
-      real bvol,bvolp
-      real f1,f2,p,sf1,sf2,sp,tflux,sfac
-        real xposerr, yposerr, pkfl, pkflerr, intfl
-        real amaj, amin, posa
-        double precision posns(2),newpos(2)
-c-----------------------------------------------------------------------------
-      if(bvolp.gt.0)then
+
+      integer   lIn, k
+      real      amaj, amin, bmaj, bmin, bpa, bvol, bvolp, dx, dy, intfl,
+     :          pkfl, pkflerr, posa, sfac, tmp, xposerr, yposerr
+      double precision appos(2), awpos(2), cdelt(2), crpix(2), crval(2),
+     :          x1(3)
+      character ctype(2)*16
+c-----------------------------------------------------------------------
+c     Convert the gaussian parameters to world coordinates.
+      x1(1) = l0
+      x1(2) = m0
+      x1(3) = k
+      call coGauCvt(lIn, 'ap/ap/ap', x1,
+     +  'p', fwhm1, fwhm2, pa, 'w', bmaj, bmin, bpa)
+
+c     Convert the uncertainties.
+      sfwhm1 = sfwhm1 * bmaj / fwhm1
+      sfwhm2 = sfwhm2 * bmin / fwhm2
+      if ((spa+sl0+sm0).gt.0.0) then
+        call coLin(lIn,'ap/ap/ap',x1,2,ctype,crpix,crval,cdelt)
+        dx = abs(cdelt(1))
+        dy = abs(cdelt(2))
+        sl0 = sl0 * dx
+        sm0 = sm0 * dy
+        spa = spa / ((dy/dx)*cos(pa)**2 + (dx/dy)*sin(pa)**2 )
+      endif
+
+      fwhm1 = bmaj
+      fwhm2 = bmin
+      pa    = bpa
+
+      if (bvolp.gt.0) then
         sfac = sqrt(bvolp)
       else
         sfac = 1
       endif
-c
-        pkfl = 1000.*flux(1)
-        pkflerr = 1000.*sfac*sflux(1)
-      if(bvol.gt.0.)then
-        tflux = flux(1) * pi/4 * abs(fwhm1(1)) * abs(fwhm2(1))
-        tflux = tflux / log(2.0)
-        tflux = tflux / bvol
-          intfl = 1000.*tflux
-        else
-          intfl = 0.
+
+      pkfl = 1000.0*flux
+      pkflerr = 1000.0*sfac*sflux
+      if (bvol.gt.0.0) then
+        intfl = 1000.0*flux * abs(fwhm1*fwhm2) * PI_4 / (log(2.0)*bvol)
+      else
+        intfl = 0.0
       endif
-      posns(1) = l0(1)
-      posns(2) = m0(1)
-      call coCvt(lIn,'ow/ow',posns,'aw/aw',newpos)
-      posns(1) = newpos(1)
-      posns(2) = newpos(2)
-      xposerr =3600*180/pi*sfac*sl0(1)
-      yposerr =3600*180/pi*sfac*sm0(1)
-      call GauFid(fwhm1(1),fwhm2(1),sfac*sfwhm1(1),
-     +            sfac*sfwhm2(1),pa(1),sfac*spa(1),f1,f2,sf1,sf2,p,sp)
-        amaj = f1
-        amin = f2
-        posa = p
-c
+
+      appos(1) = l0
+      appos(2) = m0
+      call coCvt(lIn, 'ap/ap', appos, 'aw/aw', awpos)
+      xposerr = sl0 * sfac * R2AS
+      yposerr = sm0 * sfac * R2AS
+
+c     Convert gaussian parameters to arcsec.
+      amaj = abs(fwhm1) * R2AS
+      amin = abs(fwhm2) * R2AS
+      posa = pa * R2D
+
+      if (amaj.lt.amin) then
+        tmp  = amaj
+        amaj = amin
+        amin = tmp
+        posa = posa + 90.0
+      end if
+
+      posa = mod(posa, 180.0)
+      if (posa.lt.-90.0) then
+        posa = posa + 180.0
+      else if (posa.gt. 90.0) then
+        posa = posa - 180.0
+      end if
+
       end
-c
-c
-      subroutine GauFid(fwhm1,fwhm2,sfwhm1,sfwhm2,pa,spa,f1,f2,
-     +                                          sf1,sf2,p,sp)
-c-----------------------------------------------------------------------------
-c
-c  Convert the gaussian parameters to arcsec.
-c------------------------------------------------------------------------
-      implicit none
-      include 'mirconst.h'
-      real fwhm1,fwhm2,pa,f1,f2,p,sfwhm1,sfwhm2,spa,sf1,sf2,sp
-      real t
-c----------------------------------------------------------------------------
-      f1 = 3600*180/pi * abs(fwhm1)
-      f2 = 3600*180/pi * abs(fwhm2)
-      sf1 = 3600*180/pi * sfwhm1
-      sf2 = 3600*180/pi * sfwhm2
-      p = 180./pi * pa
-      sp = 180./pi * spa
-      if(f1.lt.f2)then
-        t = f1
-        f1 = f2
-        f2 = t
-        t = sf1
-        sf1 = sf2
-        sf2 = t
-        p = p + 90
-      endif
-      p = mod(p,180.)
-      if(p.lt.-90) p = p + 180
-      if(p.gt. 90) p = p - 180
-      end
-c
-c
+
+
       subroutine BeamPar(lIn,k,bvol,bvolp,bmaj,bmin,bpa,bmajp,bminp,
      +                   bpap,nobeam)
 c-----------------------------------------------------------------------
@@ -3702,8 +3594,7 @@ c            be determined.
 c    bvolp      Beam volume in pixels.
 c    bmaj,bmin,bpa Beam major, minor axes and position angle.
 c    bmajp,bminp,bpap Beam major, minor axes and position angle in pix. coords.
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       integer lIn,k
       real bvol,bvolp,bmaj,bmin,bpa
 cc
@@ -3720,7 +3611,7 @@ c
       call rdhdr(lIn,'bmaj',bmaj,0.)
       call rdhdr(lIn,'bmin',bmin,0.)
       call rdhdr(lIn,'bpa',bpa,0.)
-      bpa = pi/180 * bpa
+      bpa =bpa * R2D
         if ((bmaj.eq.0.).or.(bmin.eq.0.)) then
          call bug('w','Beam not detected in map -')
          call bug('w','Using arbitrary value of 5 pixels.')
@@ -3730,7 +3621,7 @@ c
          goto 1111
         end if
 c
-      if(bmaj*bmin.gt.0)then
+      if (bmaj*bmin.gt.0.0) then
         x(1) = 0
         x(2) = 0
         x(3) = 0
@@ -3745,16 +3636,16 @@ c  Determine the beam value, in radians**2
 c
       call rdhda(lIn,'bunit',bunit,' ')
       call ucase(bunit)
-      if(index(bunit,'/PIXEL').ne.0)then
+      if (index(bunit,'/PIXEL').ne.0) then
         x(1) = 0
         x(2) = 0
         x(3) = k
         call coLin(lIn,'op/op/ap',x,2,ctype,crpix,crval,cdelt)
         bvol = abs(cdelt(1)*cdelt(2))
         bvolp = 1
-      else if(index(bunit,'/BEAM').ne.0.and.bmaj*bmin.gt.0)then
-        bvol = pi/4/log(2.0)*bmaj*bmin
-        bvolp = pi/4/log(2.0)*bmajp*bminp
+      else if (index(bunit,'/BEAM').ne.0 .and. bmaj*bmin.gt.0.0) then
+        bvol  = bmaj  * bmin  * PI_4 / log(2.0)
+        bvolp = bmajp * bminp * PI_4 / log(2.0)
       else
         bvol = 0
         bvolp = 0
@@ -3804,7 +3695,6 @@ c    blc,bin    subimage blc and binning information
 c    maxx,maxy  size of full image (not subregion, which is nx,ny)
 c    nfdrpix    number of pixels detected by FDR
 c-----------------------------------------------------------------------
-      implicit none
       include 'maxdim.h'
       include 'maxnax.h'
       include 'mem.h'
@@ -3901,9 +3791,10 @@ c allocate memory for mask and image2 array in basecal
       call memalloc(ipim,(boxsize+1)*(boxsize+1),'l')
       call memalloc(ip2im,(boxsize+1)*(boxsize+1),'r')
 c
-c "Normalise" image, by determining mean and sigma in boxes of size boxsize,
-c and subtracting mean and dividing by sigma, to make the fdr stuff work
-c for images with images where sigma varies significantly over the image
+c "Normalise" image, by determining mean and sigma in boxes of size
+c boxsize, and subtracting mean and dividing by sigma, to make the fdr
+c stuff work for images with images where sigma varies significantly
+c over the image
 c
       do ii = 1,nint(float(nx)/float(boxsize))+1
        do jj = 1,nint(float(ny)/float(boxsize))+1
@@ -4027,53 +3918,16 @@ c
       mmn = 1
       mmx = ny
 c calculate area covered by beam, in pixels
-      bareap = bmajp*bminp*pi/4./log(2.)
+      bareap = bmajp *bminp * PI_4 / log(2.0)
 c ee is constant e.
-      ee = exp(1.)
+      ee = exp(1.0)
 c
       npix = 0
-
-c Don't have to manually define gaussian PDF since I discovered
-c how to do it using a call to errfun(x). Doing it my old way is
-c seriously much slower, but kept here commented out for historical
-c reasons.
-cc defining gaussianpdf for lookup table, setting mean and sigma to 0 and 1
-cc since have 'normalised' the image above
-c      mean = 0
-c      sigma = 1
-c      xmin = mean - 30.*sigma
-c      xmax = mean + 30.*sigma
-cc filling in a gaussian with area=1
-c      dx = (xmax - xmin)/(nn-1)
-c      do ii = 1,nn/2
-c       gsabsc(ii) = xmin + (xmax-xmin)*(ii-1)/(nn-1)
-c       gsord(ii) = exp(-0.5*(gsabsc(ii)-mean)**2/sigma**2)/
-c     +              sqrt(2.*pi*sigma**2)
-cc integrate
-c       if (ii.gt.1) then
-c        inty(ii) = inty(ii-1) + gsord(ii)*dx
-c       else
-c        inty(ii) = gsord(ii)*dx
-c       end if
-c       gsabsc(nn-ii+1) = xmax - (xmax-xmin)*(ii-1)/(nn-1)
-c       gsord(nn-ii+1) = exp(-0.5*(gsabsc(nn-ii+1)-mean)**2/sigma**2)/
-c     +              sqrt(2.*pi*sigma**2)
-cc integrate
-c       inty(nn-ii+1) = 1.-inty(ii)
-c      end do
 
 c looping over pixels assigning pvalues - the actual FDR bit
       do ii = lmn,lmx
        do jj = mmn,mmx
         if (nimage(ii,jj).ne.0) then
-cc extreme values
-c         if (image2(ii,jj).gt.xmax) then
-c          pvalue = 1.
-c         else if (image2(ii,jj).lt.xmin) then
-c          pvalue = 0.
-c         else
-c          call gaussianpdf(nn,gsabsc,gsord,inty,image2(ii,jj),pvalue)
-c         end if
 c Note: Gaussian Probability Distribution Function (GPDF) is related to
 c the error function erf(x) by GPDF(x) = 0.5(1+erf(x/sqrt(2)))
          pvalue = 0.5*(1+errfun(image2(ii,jj)/sqrt(2.)))
@@ -4085,8 +3939,8 @@ c the error function erf(x) by GPDF(x) = 0.5(1+erf(x/sqrt(2)))
       end do
 c sort plist into order
       call sortr(plist,npix)
-c fdrdenom is the denominator of the slope (alpha/fdrdenom) for the fdr line
-c defined this way, it runs from 1 to sum_i=1^N (1/i), for
+c fdrdenom is the denominator of the slope (alpha/fdrdenom) for the fdr
+c line defined this way, it runs from 1 to sum_i=1^N (1/i), for
 c bareap=1 (uncorrelated) to N (fully correlated)
       if (bareap.lt.1.) then
        fdrdenom = 1.
@@ -4104,22 +3958,16 @@ c bareap=1 (uncorrelated) to N (fully correlated)
 c find crossing point
       gotit = .false.
       pcut = 0.
-c This is not approved miriad procedure - used by AMH for quick testing only
-c      open(1,file='tt',status='unknown')
       do ii = npix,1,-1
        pline = (alpha/(100.*fdrdenom))
 c       pline = (alpha/(100.*log(float(npix))))
 c       pline = (alpha/100.)
      +              *(float(ii)/float(npix))
-c This is not approved miriad procedure - used by AMH for quick testing only
-c       write(1,*) float(ii)/float(npix),pline,plist(ii)
        if ((pline.ge.plist(ii)).and.(.not.gotit)) then
         pcut = pline
         gotit = .true.
        end if
       end do
-c This is not approved miriad procedure - used by AMH for quick testing only
-c      close(1)
 c
 c Loop over all pixels to test whether image2(l,m)<P_cut.
 c If image2(l,m) > pcut, then pixel is most likely background,
@@ -4168,7 +4016,7 @@ c
       write(line,'(a,f7.2,a)')
      +  'This corresponds to a threshold of ', sigctoff, ' sigma,'
       call output(line)
-      write(line,'(a,f16.10,a)') 
+      write(line,'(a,f16.10,a)')
      +  'which means a minimum flux threshold of ',fluxctoff,' Jy.'
       call output(line)
       write(line,'(a)')
@@ -4206,14 +4054,14 @@ c    pbcor      true to make correction for primary beam shape
 c    llog       handle for log file
 c    kvannot    true to make annotation file output
 c    fdrpeak    true to use all pixels in source fits
-c    allpix     true to use all pixels, not just monotonically decreasing ones
+c    allpix     true to use all pixels, not just monotonically
+c               decreasing ones
 c    psfsize    true to restrict minimum source size to that of the psf
 c    alpha      FDR percentage of false pixel detections
 c    nfdrpix    number of pixels detected by FDR
 c    meanimg    image of background mean values
 c    sgimg      image of background sigma values
 c-----------------------------------------------------------------------
-      implicit none
 c
       include 'maxdim.h'
       include 'maxnax.h'
@@ -4237,7 +4085,7 @@ c
 c
       logical blnkannulus,atpeak
       character line*160,typei(2)*6,typeo(2)*6,radec(2)*80
-c----------------------------------------------------------------------
+c-----------------------------------------------------------------------
       call output(' ')
       call output('********************************')
       call output('Beginning source measurements...')
@@ -4246,7 +4094,7 @@ c----------------------------------------------------------------------
       dumcount = 0
       if (kvannot) then
        call txtopen (lann, 'sfind.ann', 'append', iostat)
-       if (iostat.ne.0) 
+       if (iostat.ne.0)
      +  call bug ('f', 'Error opening text file "sfind.ann"')
        write(line,'("color green")')
        call txtwrite (lann, line, len1(line), iostat)
@@ -4338,10 +4186,10 @@ c
           if (.not.fitok) goto 60
 c write out annotation file line if necessary
           if (kvannot) then
-           write(line,49) posns(1)*180/pi,posns(2)*180/pi,
-     +        amaj/3600.,amin/3600.,90.-posa
-49         format("ellipse ",f16.10,f16.10,f16.10,f16.10,f8.2)
-           call txtwrite (lann, line, len1(line), iostat)
+            write(line,49) posns(1)*R2D, posns(2)*R2D,
+     +         amaj/3600.0, amin/3600.0, 90.0-posa
+49          format("ellipse ",f16.10,f16.10,f16.10,f16.10,f8.2)
+            call txtwrite (lann, line, len1(line), iostat)
           end if
 c
 c Convert location (peak or fitted) to formatted coordinate string
@@ -4379,7 +4227,7 @@ c
      +         radec(2)(1:radeclen(2))//' '//line
 c
 c write to log file, after appending 'Y' (as source confirmation, for
-c consistency, since FDR mode is run in 'auto' mode, so all sources 
+c consistency, since FDR mode is run in 'auto' mode, so all sources
 c are defined to be real).
 c
           line(len1(line)+1:len1(line)+6) = '     Y'
@@ -4431,38 +4279,4 @@ c     +              nflse
 c       call output(line)
 c      end if
       return
-      end
-
-
-      subroutine gaussianpdf(nn,gsabsc,gsord,inty,val,pv)
-c-----------------------------------------------------------------------
-c calculates integrated gaussian values, and assigns pvalue (pv) as
-c the value corresponding to the intensity nearest 'val'
-c     
-c  Input:
-c    nn         number of points in the gaussian pdf
-c    gsabsc     abscissa values
-c    gsord      ordinate values
-c    inty       gaussian pdf values (integrated ordinate values)
-c    val        pixel intensity value
-c  Output:
-c    pv         P-value of input pixel
-c-----------------------------------------------------------------------
-      implicit none
-      integer rr,nn
-      real val,pv,gsabsc(nn),gsord(nn),inty(nn)
-c-----------------------------------------------------------------------
-      do rr = 1,nn
-c check to see if we've reached 'val' yet, and finish if so.
-       if (gsabsc(rr).ge.val) then
-        if (rr.gt.1) then
-c linearly interpolate between bounding values
-         pv = inty(rr-1) + (inty(rr)-inty(rr-1))*(val-gsabsc(rr-1))/
-     +        (gsabsc(rr)-gsabsc(rr-1))
-        else
-         pv = inty(1)
-        end if
-        return
-       end if
-      end do
       end

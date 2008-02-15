@@ -32,6 +32,8 @@ c  History:
 c    06aug92 mchw  Adapted from RALINT task.
 c    16sep92 mchw  Added pivot and cleaned up code. Stubs for other axes.
 c    27feb93 mjs   use tmpdim.h instead of maxdim.h
+c    02jul97 rjs   cellscal change.
+c    23jul97 rjs   added pbtype.
 c------------------------------------------------------------------------
 	include 'tmpdim.h'
  	character version*(*)
@@ -145,10 +147,10 @@ c
 c  Be careful that nkeys and nckeys match the number of keywords.
 c
 	data keyw/   'bmaj    ','bmin    ','bpa     ','bunit   ',
-     *    'date-obs','epoch   ','history ','instrume',
+     *    'obstime ','epoch   ','history ','instrume',
      *	  'ltype   ','lstart  ','lwidth  ','lstep   ','niters  ',
      *	  'object  ','observer','obsra   ','obsdec  ','pbfwhm  ',
-     *    'restfreq','telescop','vobs    ','xshift  ','yshift  '/
+     *    'restfreq','telescop','vobs    ','cellscal','pbtype  '/
 c
 c  Keyword values which must be changed as they are passed from in to out.
 c

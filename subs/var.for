@@ -40,7 +40,8 @@ c    pjt  25oct98 Added tau230,rmspath (BIMA specific)
 c    rjs  16nov03 Added wind and axismax.
 c    rjs  15feb04 Added calcode and name.
 c    rjs  19sep04 Added smon,rain,refpnt,sctype
-c
+c    rjs  02jan06 Added refpnt
+c    rjs  08jan07 Added chi2
 c************************************************************************
 c*VarInit -- Initialise the copy routines.
 c:uv-data
@@ -96,7 +97,7 @@ c
 	integer i
 c
 	integer nvar,nline,nwide,nvelo
-	parameter(nvar=94,nline=8,nwide=3,nvelo=4)
+	parameter(nvar=95,nline=8,nwide=3,nvelo=4)
         character var(nvar)*8,line(nline)*8,wide(nwide)*8,velo(nvelo)*8
 c
 c  Variables to check for a change, for line=channel.
@@ -132,7 +133,8 @@ c
      *	   'veldop  ','veltype ','version ','vsource ','wind    ',
      *	   'winddir ','windmph ','delay   ','delay0  ','xtsys   ',
      *	   'ytsys   ','xsampler','ysampler','xyamp   ','pbtype  ',
-     *     'tau230  ','rmspath ','smonrms ','rain    ','sctype  '/
+     *     'tau230  ','rmspath ','smonrms ','rain    ','sctype  ',
+     *	   'chi2    '/
 c------------------------------------------------------------------------
 	avall = .false.
 c

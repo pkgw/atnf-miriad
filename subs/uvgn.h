@@ -34,7 +34,7 @@ c
 c
 	include 'maxdim.h'
 	integer MAXTAB,MAXFEEDS,MAXGAINS,MAXSPECT
-	parameter(MAXTAB=2,MAXFEEDS=2,MAXSPECT=32)
+	parameter(MAXTAB=2,MAXFEEDS=2,MAXSPECT=MAXWIN)
 	parameter(MAXGAINS=3*MAXANT)
 	integer t1,t2,nsols,nants,nfeeds,ntau,ngains,gitem,solno(MAXTAB)
 	double precision timetab(MAXTAB),dtime
@@ -45,7 +45,7 @@ c
 	logical docgains,dowgains
 	integer pCgains,pWgains
 c
-	logical dopass,aver
+	logical dopass,aver,first
 	integer tno,vwide,vline,nchan,nspect,nschan(MAXSPECT)
 	double precision sfreq(MAXSPECT),sdf(MAXSPECT),freq0
 	integer pFlags(2),pDat(2),nDat(2),pTab,nTab,pFreq(2),nFreq(2)
@@ -61,5 +61,5 @@ c
 c
 	common/uvGnC/sfreq,sdf,freq0,tno,vwide,vline,nchan,nspect,
      *	  nschan,pFlags,pDat,nDat,pTab,nTab,pFreq,nFreq,dopass,
-     *	  aver
+     *	  aver,first
 

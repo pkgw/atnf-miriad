@@ -1,10 +1,10 @@
-c************************************************************************
       program prthd
       implicit none
 c
 c= PRTHD -- Print a summary about the contents of a data-set.
 c& rjs
 c: miscellaneous
+c+
 c	PRTHD is a Miriad task which gives a summary about a Miriad data-set.
 c@ in
 c	Name of the input data-set. No default. This may be either a uv
@@ -43,13 +43,16 @@ c    rjs  23jul97 Print galactic and ecliptic coordinates in decimal format.
 c		  Support pbtype.
 c    rjs  31jul97 Use MAXWIN for number of spectra.
 c    rjs  01aug97 Better format for beam size.
+c    rjs  24feb98 Use MAXWIDE rather than MAXWIN for number of wide channels.
+c    rjs  25nov98 Print out sky rotation.
+c    rjs  03jan05 Increase number of digits.
 c
 c  Bugs and Shortcomings:
 c    * Descriptions in brief mode could be a bit more verbose!
 c------------------------------------------------------------------------
 	character version*(*)
 	integer MAXIN
-	parameter(version='Prthd: version 1-Aug-97')
+	parameter(version='Prthd: version 03-Jan-05')
 	parameter(MAXIN=256)
 	integer tno,i,iostat,nin
 	character in(MAXIN)*64,logf*64,line*80
@@ -247,6 +250,13 @@ c
 c
 c  Parameters related to coordinates.
 c
+      call rdhdd (tno, 'llrot', dval, 0.d0)
+      if(dval.ne.0)then
+	write(line,'(a,f6.1,a)')'Image/Sky Rotation Angle:',180/pi*dval,
+     *				' degrees'
+	call logwrite(line,more)
+	call logwrite(' ',more)
+      endif
       call rdhdd (tno, 'obstime', dval, 0.d0)
       if(dval.gt.0)then
 	call julday(dval,'H',aval1)
@@ -447,13 +457,13 @@ c------------------------------------------------------------------------
       double precision sdf(MAXWIN),sfreq(MAXWIN),restfreq(MAXWIN)
       double precision time
       double precision obsra,obsdec,ra,dec,delra,deldec,pntra,pntdec
-      real wwidth(MAXWIN),wfreq(MAXWIN)
+      real wwidth(MAXWIDE),wfreq(MAXWIDE)
       logical updated,present,more
 c
 c  Externals.
 c
       integer len1
-      character itoaf*8,PolsC2P*2,hangleh*12,rangleh*12
+      character itoaf*12,PolsC2P*2,hangleh*12,rangleh*12
       logical hdprsnt
 c
 c  Close and reopen the file as a visibility file.
@@ -571,7 +581,7 @@ c
 	if(present)call logwrite(' ',more)
 	call logwrite('Continuum (wide) correlations: ',more)
 	call uvrdvri(tno,'nwide',nchan,1)
-	if(nchan.le.MAXWIN)then
+	if(nchan.le.MAXWIDE)then
 	  call uvgetvrr(tno,'wfreq',wfreq,nchan)
 	  call uvgetvrr(tno,'wwidth',wwidth,nchan)
 	  call logwrite(

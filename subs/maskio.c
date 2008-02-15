@@ -14,23 +14,25 @@
 /*    rjs   3mar93   Make mkflush a user-callable routine.		*/
 /*    rjs  23dec93   Do not open in read/write mode unless necessary.	*/
 /*    rjs   6nov94   Change item handle to an integer.			*/
+/*    rjs  19apr97   Handle FORTRAN LOGICALs better. Some tidying.      */
+/*    rjs  03jan05   Tidying.						*/
 /************************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "miriad.h"
+#include "io.h"
 
 #define BUG(sev,a)   bug_c(sev,a)
 #define ERROR(sev,a) bug_c(sev,((void)sprintf a,message))
 #define CHECK(x) if(x) bugno_c('f',x)
 
-#define private static
-
-char *sprintf();
-private void mkfill();
-void mkflush_c();
-
 static char message[128];
 
 #define BITS_PER_INT 31
 
-int bits[BITS_PER_INT] = {
+static int bits[BITS_PER_INT] = {
 		0x00000001,0x00000002,0x00000004,0x00000008,
 		0x00000010,0x00000020,0x00000040,0x00000080,
 		0x00000100,0x00000200,0x00000400,0x00000800,
@@ -40,7 +42,7 @@ int bits[BITS_PER_INT] = {
 		0x01000000,0x02000000,0x04000000,0x08000000,
 		0x10000000,0x20000000,0x40000000};
 
-int masks[BITS_PER_INT+1]={
+static int masks[BITS_PER_INT+1]={
 		0x00000000,0x00000001,0x00000003,0x00000007,0x0000000F,
 			   0x0000001F,0x0000003F,0x0000007F,0x000000FF,
 			   0x000001FF,0x000003FF,0x000007FF,0x00000FFF,
@@ -52,21 +54,21 @@ int masks[BITS_PER_INT+1]={
 
 #include "io.h"
 
-char *malloc();
-
 #define MK_FLAGS 1
 #define MK_RUNS 2
 #define BUFFERSIZE 128
 #define OFFSET (((ITEM_HDR_SIZE-1)/H_INT_SIZE + 1)*BITS_PER_INT)
-typedef struct {int item;
-		int buf[BUFFERSIZE],offset,length,size,modified,rdonly,tno;
-		char name[32];
-		} MASK_INFO;
+typedef struct {
+  int item;
+  int buf[BUFFERSIZE],offset,length,size,modified,rdonly,tno;
+  char name[32];
+} MASK_INFO;
+
+
+private void mkfill(MASK_INFO *mask,int offset);
 
 /************************************************************************/
-char *mkopen_c(tno,name,status)
-char *name,*status;
-int tno;
+char *mkopen_c(int tno,char *name,char *status)
 /*
   This opens a mask item, and readies it for access.
 
@@ -123,8 +125,7 @@ int tno;
   return((char *)mask);
 }
 /************************************************************************/
-void mkclose_c(handle)
-char *handle;
+void mkclose_c(char *handle)
 /*
   This writes out any stuff that we have buffered up, and then closes
   the mask file.
@@ -142,9 +143,7 @@ char *handle;
   free((char *)mask);
 }
 /************************************************************************/
-int mkread_c(handle,mode,flags,offset,n,nsize)
-char *handle;
-int offset,n,*flags,nsize,mode;
+int mkread_c(char *handle,int mode,int *flags,int offset,int n,int nsize)
 /*
 ------------------------------------------------------------------------*/
 {
@@ -231,9 +230,7 @@ int offset,n,*flags,nsize,mode;
   return(flags - flags0);
 }
 /************************************************************************/
-void mkwrite_c(handle,mode,flags,offset,n,nsize)
-char *handle;
-int offset,n,*flags,nsize;
+void mkwrite_c(char *handle,int mode,Const int *flags,int offset,int n,int nsize)
 /*
 ------------------------------------------------------------------------*/
 {
@@ -296,8 +293,9 @@ int offset,n,*flags,nsize;
         blen = min( BITS_PER_INT - boff,len);
         bitmask = *buf;
         for(i=boff; i<boff+blen; i++){
-	  if(*flags++ == FORT_FALSE) bitmask &= ~bits[i];
-	  else			     bitmask |=  bits[i];
+	  if(FORT_LOGICAL(*flags)) bitmask |=  bits[i];
+	  else			       bitmask &= ~bits[i];
+	  flags++;
         }
         *buf++ = bitmask;
         len -= blen;
@@ -331,8 +329,7 @@ int offset,n,*flags,nsize;
   }
 }
 /************************************************************************/
-void mkflush_c(handle)
-char *handle;
+void mkflush_c(char *handle)
 /*
   Flush out the data in the buffer. A complication is that the last
   integer in the buffer may not be completely filled. In this case we
@@ -376,9 +373,7 @@ char *handle;
   mask->modified = FALSE;
 }
 /************************************************************************/
-private void mkfill(mask,offset)
-MASK_INFO *mask;
-int offset;
+private void mkfill(MASK_INFO *mask,int offset)
 /*
   We have to fill in some bits in the current buffer.
 

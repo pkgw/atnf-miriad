@@ -103,7 +103,8 @@ c    rjs  30aug95  Minor change of usage of optprsnt, to appease g77.
 c    bpw  27jun97  add options=verbose
 c    pjt  22mar99  fixed treating options(2) as integer in boolean expr
 c    pjt  22oct99  fixed initialization of opts(2)
-c
+c    rjs  08may00  Change incorrect keyf call to keya.
+c    rjs  18sep05  Correct argument types in call to boxint.
 c------------------------------------------------------------------------
 c
 c************************************************************************
@@ -267,8 +268,8 @@ c opts(2): Check if verbose=true
 
 c Read names of input, output and continuum dataset.
       call keyf( 'in',   inp, ' ' )
-      call keyf( 'out',  out, ' ' )
-      call keyf( 'cont', con, ' ' )
+      call keya( 'out',  out, ' ' )
+      call keya( 'cont', con, ' ' )
       call assertl( inp.ne.' ', 'You must specify an input file' )
       call assertl( out.ne.' ' .or. con.ne.' ',
      *                         'You must specify either out= or cont=' )
@@ -406,8 +407,8 @@ c must be 2.
       integer          k1, k2, n, i, len1
       integer          nchan
       integer          ch(2), nch
-      double precision coords(3,3)
-      data coords / 9*0.d0 /
+      integer coords(3)
+      data coords /3*0/
 
 c nranges counts number of ranges; nchan is total number of continuum
 c channels.
@@ -594,13 +595,13 @@ c Subtract the continuum from the spectrum.
             cont = 0.0
             xtothen = 1
             do i = 1, nterms
-               cont = cont + sngl(rhs(i)) * xtothen
+               cont = cont + rhs(i) * xtothen
                xtothen = xtothen * k
             enddo
             linedata(k) = data(k) - cont
             if( k.eq.nchan/2 ) then
               if( outopt(1).eq.-1 ) continuum = cont
-              if( outopt(1).ge.0  ) continuum = sngl(rhs(outopt(1)+1))
+              if( outopt(1).ge.0  ) continuum = rhs(outopt(1)+1)
             endif
          enddo
          cmask = .TRUE.

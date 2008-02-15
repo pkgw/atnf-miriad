@@ -50,6 +50,10 @@ c  History:
 c    04-jun-96 rjs  Preliminary version.
 c    20-jun-96 rjs  Bring it up to scratch.
 c    14-aug-96 rjs  Added ability to negate the output.
+c    09-jul-04 jwr  Renamed Unpack to Unpck to avoid compiler complaining
+c		    about unimplemented intrisics
+c    24-jan-07 rjs  Default linetype.
+c
 c  Bugs/Shortcomings:
 c    * Should handle the conjugate symmetry property, and match data over
 c      a wider range of HA.
@@ -59,9 +63,9 @@ c------------------------------------------------------------------------
 c
 	character version*(*)
 	integer MAXSELS
-	parameter(version='Uvdiff: version 1.0 4-Jun-96')
+	parameter(version='Uvdiff: version 1.0 24-Jan-07')
 	parameter(MAXSELS=1000)
-	character vis1*64,vis2*64,out*64
+	character vis1*64,vis2*64,out*64,ltype*16
 	complex data(MAXCHAN),mdata(MAXCHAN)
 	logical flags(MAXCHAN),mflags(MAXCHAN)
 	real tol,sels(MAXSELS)
@@ -73,6 +77,11 @@ c
 	character modes(NMODES)*12,mode*12,ctemp*12
 	logical negate
 	integer nout
+c
+c  Externals.
+c
+	logical hdprsnt
+c
 	data modes/'difference  ','one         ','two         ',
      *		   '-difference ','-one        ','-two        '/
 c
@@ -101,12 +110,25 @@ c
 c  Open the inputs and outputs.
 c
 	call uvopen(tIn,vis1,'old')
+        if(hdprsnt(tIn,'gains').or.hdprsnt(tIn,'leakage').or.
+     *	   hdprsnt(tIn,'bandpass'))then
+          call bug('w',
+     *      'Uvdiff does not apply pre-existing calibration tables')
+          if(hdprsnt(tIn,'gains'))
+     *      call bug('w','No antenna gain calibration applied')
+          if(hdprsnt(tIn,'leakage'))
+     *      call bug('w','No polarization calibration applied')
+          if(hdprsnt(tIn,'bandpass'))
+     *      call bug('w','No bandpass calibration applied')
+        endif
+c
 	call uvset(tIn,'preamble','uvw/time/baseline/pol/ra/lst',
      *							0,0.,0.,0.)
 	call SelApply(tIn,sels,.true.)
 c
 	call BInit(vis2)
-	call varInit(tIn,'channel')
+	call getltype(tIn,ltype)
+	call varInit(tIn,ltype)
 	call uvopen(tOut,out,'new')
 	call uvset(tOut,'preamble','uvw/time/baseline',0,0.,0.,0.)
 	call hdcopy(tIn,tOut,'history')
@@ -114,7 +136,7 @@ c
 	call hiswrite(tOut,'UVDIFF: Miriad '//version)
 	call hisinput(tOut,'UVDIFF')
 	call hisclose(tOut)
-	call varOnit(tIn,tOut,'channel')
+	call varOnit(tIn,tOut,ltype)
 c
 c  Loop over all the data.
 c	
@@ -167,6 +189,28 @@ c
 c
 	end
 c************************************************************************
+	subroutine getltype(lIn,ltype)
+c
+	implicit none
+	integer lIn
+	character ltype*(*)
+c
+c  Determine the default line type.
+c
+c------------------------------------------------------------------------
+	logical update
+	integer length
+	character type*4
+c
+	call uvprobvr(lIn,'corr',type,length,update)
+	if(type.eq.'j'.or.type.eq.'r'.or.type.eq.'c')then
+	  ltype = 'channel'
+	else
+	  ltype = 'wide'
+	endif
+c
+	end
+c************************************************************************
 	subroutine BGet(vars,rdata,rflags,nchan1,tol)
 c
 	implicit none
@@ -187,7 +231,7 @@ c------------------------------------------------------------------------
 	real w1,w2
 	double precision mha
 c
-	call Unpack(vars,mha,bl,ipol)
+	call Unpck(vars,mha,bl,ipol)
 c
 c  Go through the dataset until we find the right integrations.
 c
@@ -243,13 +287,13 @@ c
 c
 	end
 c************************************************************************
-	subroutine unpack(vars,mha,bl,ipol)
+	subroutine unpck(vars,mha,bl,ipol)
 c
 	implicit none
 	double precision vars(4),mha
 	integer bl,ipol
 c
-c  Unpack variables, in the order baseline,pol,ra,lst
+c  Unpck variables, in the order baseline,pol,ra,lst
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	include 'uvdiff.h'
@@ -292,9 +336,25 @@ c------------------------------------------------------------------------
 	include 'uvdiff.h'
 	integer i,j,k
 c
+c  Externals.
+c
+	logical hdprsnt
+c
 c  Open the dataset to be used as the template.
 c
 	call uvopen(tno,vis,'old')
+        if(hdprsnt(tno,'gains').or.hdprsnt(tno,'leakage').or.
+     *	   hdprsnt(tno,'bandpass'))then
+          call bug('w',
+     *      'Uvdiff does not apply pre-existing calibration tables')
+          if(hdprsnt(tno,'gains'))
+     *      call bug('w','No antenna gain calibration applied')
+          if(hdprsnt(tno,'leakage'))
+     *      call bug('w','No polarization calibration applied')
+          if(hdprsnt(tno,'bandpass'))
+     *      call bug('w','No bandpass calibration applied')
+        endif
+c
 	call uvset(tno,'preamble','baseline/pol/ra/lst',0,0.,0.,0.)
 c
 c  Get ready to do things.
@@ -358,7 +418,7 @@ c  Determine the polarisation and hour angle of the spare record.
 c
 	nchan(ipnt) = nspare
 	if(min(nchan(1),nchan(2)).le.0)return
-	call unpack(pspare,mha,bl,ipol)
+	call unpck(pspare,mha,bl,ipol)
 	ha(ipnt) = mha
 c
 	dowhile(abs(mha-ha(ipnt)).lt.1e-4.and.
@@ -383,7 +443,7 @@ c
 c  Get another record.
 c
 	  call uvread(tno,pspare,cspare,lspare,MAXCHAN,nspare)
-	  if(nspare.gt.0)call unpack(pspare,mha,bl,ipol)
+	  if(nspare.gt.0)call unpck(pspare,mha,bl,ipol)
 	enddo
 c
 	if(abs(mha-ha(ipnt)).lt.1e-4.and.nspare.ne.0)

@@ -5,16 +5,20 @@
 /*  History:								*/
 /*   rjs Dark-ages Original version.					*/
 /*   rjs   6nov94  Change item handle to an integer.			*/
+/*   rjs  26oct95  Better messages on errors.				*/
+/*   pjt  19jun02  MIR4 prototypes                                      */
+/*   jwr  05nov04  Change file offsets to type off_t			*/
+/*   rjs  03jan05  Include file rationalisation.			*/
 /************************************************************************/
 
+#include <stdio.h>
+#include "miriad.h"
 #include "io.h"
 
-char *sprintf();
 
 static int number=0;
 /************************************************************************/
-void scropen_c(handle)
-int *handle;
+void scropen_c(int *handle)
 /**scropen -- Open a scratch file.					*/
 /*:scratch-i/o								*/
 /*+  FORTRAN call sequence:
@@ -33,11 +37,13 @@ int *handle;
 
   (void)sprintf(name,"scratch%d",number++);
   haccess_c(0,handle,name,"scratch",&iostat);
-  if(iostat) bugno_c('f',iostat);
+  if(iostat){
+    bug_c(  'w',"Error opening scratch file");
+    bugno_c('f',iostat);
+  }
 }
 /************************************************************************/
-void scrclose_c(handle)
-int handle;
+void scrclose_c(int handle)
 /**scrclose -- Close and delete a scratch file.				*/
 /*:scratch-i/o								*/
 /*+  FORTRAN call sequence:
@@ -55,12 +61,13 @@ int handle;
   int iostat;
 
   hdaccess_c(handle,&iostat);
-  if(iostat) bugno_c('f',iostat);
+  if(iostat){
+    bug_c(  'w',"Error closing scratch file");
+    bugno_c('f',iostat);
+  }
 }
 /************************************************************************/
-void scrread_c(handle,buffer,offset,length)
-int handle,offset,length;
-float *buffer;
+void scrread_c(int handle,float *buffer,off_t offset,size_t length)
 /**scrread -- Read real data from a scratch file.			*/
 /*:scratch-i/o								*/
 /*+  FORTRAN call sequence:
@@ -83,13 +90,14 @@ float *buffer;
   int iostat;
 
   hreadb_c(handle,(char *)buffer,
-    sizeof(float)*offset,sizeof(float)*length,&iostat);
-  if(iostat) bugno_c('f',iostat);
+    (off_t)sizeof(float)*offset,sizeof(float)*length,&iostat);
+  if(iostat){
+    bug_c(  'w',"Error reading from scratch file");
+    bugno_c('f',iostat);
+  }
 }
 /************************************************************************/
-void scrwrite_c(handle,buffer,offset,length)
-int handle,offset,length;
-float *buffer;
+void scrwrite_c(int handle,Const float *buffer,off_t offset,size_t length)
 /**scrwrite -- Write real data to the scratch file.			*/
 /*:scratch-i/o								*/
 /*+  FORTRAN call sequence:
@@ -111,6 +119,9 @@ float *buffer;
   int iostat;
 
   hwriteb_c(handle,(char *)buffer,
-    sizeof(float)*offset,sizeof(float)*length,&iostat);
-  if(iostat) bugno_c('f',iostat);
+    (off_t)sizeof(float)*offset,sizeof(float)*length,&iostat);
+  if(iostat){
+    bug_c(  'w',"Error writing to scratch file");
+    bugno_c('f',iostat);
+  }
 }

@@ -35,6 +35,9 @@ c	written out and read in as ascii files.
 c
 c	An options menu provides a choice of display style, contour levels,
 c	and units. Further interactive help is available within the task.
+c
+c       For an interactive X windows interface, see VELPLOTC
+c       (limited distribution)
 c@ in
 c	Input image name. No default.
 c@ device
@@ -119,11 +122,18 @@ c    04sep97 mchw  Upgrading. Report absolute positions with cursor.
 c    10sep97 mchw  Fix new bug at exactly 45.0 position angle.
 c    08jul98 mchw  Improve code in spectra and Gaussian fits.
 c    16jul98 mchw  More robust interactive input; Elliminate ifdef's.
+c    05mar99 mchw  added logarithmic contour levels.
+c    05apr00 mchw  specify RA and DEC cuts with a range and increment.
+c    29aug00 mchw  Label RA, DEC on spectra and position-velocity plots.
+c    19sep00 pjt   increased filenames
+c    27jan01 pjt   fixed bug due to above
+c    22mar02 mchw  better logarithmic contour levels.
+c    26jun02 mchw  fixed bug due to longer filenames. (cf. 19sep00)
 c----------------------------------------------------------------------c
 	include 'velplot.h'
 	include 'mem.h'
 	character*(*) version
-	parameter(version='(version 3.0 16-Jul-98)')
+	parameter(version='(version 3.0 26-jun-2002)')
 	integer maxnax,maxboxes
 	parameter(maxnax=3,maxboxes=128)
 	integer boxes(maxboxes),nsize(maxnax),blc(maxnax),trc(maxnax)
@@ -543,8 +553,8 @@ c units
 c negative contours 
         write(line,'(''Negative contours [Y/N].....'',1x,A)') cneg 
         call output(line)
-c header
-        write(line,'(''Plot header [Y/N]...........'',1x,A)') alabel 
+c labels
+        write(line,'(''Plot labels [Y/N]...........'',1x,A)') alabel 
         call output(line)
 c Write map to file 
         write(line,'(''Write map to file [Y/N].....'',1x,A)') write 
@@ -756,7 +766,7 @@ c	Return number of plotting windows in x and y directions (windx,windy)
 c	imaps is the number of maps to be plotted
 c----------------------------------------------------------------------c
 	character msg*80, line*80
-	integer uwindx, uwindy, length
+	integer length
 	double precision dval(2)
 	logical ok
 c
@@ -786,8 +796,8 @@ c
         if(length.ne.0)then
           call matodf(line,dval,2,ok)
           if(ok)then
-	    if(uwindx.ne.0) windx=dval(1)
-	    if(uwindy.ne.0) windy=dval(2)
+	    if(dval(1).ne.0.d0) windx=dval(1)
+	    if(dval(2).ne.0.d0) windy=dval(2)
           endif
         endif
 	end
@@ -840,18 +850,18 @@ c  Type options
           call output(' D - clear spec/pos-vel stacks')
 	  call output(' E - exit from plot')
 	  call output(' X - exit from plot')
-          call output(' G - change grayscale')
+          call output(' G - grayscale')
           call output(' H - header label')
 	  call output(' J - Jy contours')
           call output(' K - Kelvin contours')
           call output(' N - negative contours')
 	  call output(' P - define pos-vel cut')
-	  call output(' Q - Plot spec/pos-vel positions')
+	  call output(' Q - plot spec/pos-vel positions')
 	  call output(' I - integral and rms in box')
           call output(' B - blc for integral')
 	  call output(' T - trc for integral')
 	  call output(' R - replot maps')
-          call output(' S - Spectra position')
+          call output(' S - spectra position')
           call output(' V - value and cursor position')
 	  call output(' W - write out this map')
 	  call output('(x,y) positions are in (HA,DEC) directions.')
@@ -1163,36 +1173,46 @@ c----------------------------------------------------------------------c
 c
 	call output(' ')
 	call prompt(percent,l,
-     *    '>Enter contours as % (Y), Absolute, [use previous levels] :')
+     *   '>Enter contours as % (Y), Absolute, Log, [previous levels] :')
 	if(l.eq.0)return
 	call ucase(percent)
-	call prompt(ans,l,'Enter contour List or Range (L/[R]) :')
-	call ucase(ans)
-	if(ans.eq.'L') then
-	  write(line, '(a)') '>Enter levels (max 10, end=-9999.):'
-	  call output(line)
-          do i=1,10
-            levels(i)=0.0
-          enddo
-          do i=1,10
-	   write(line,'(a,i2,a)') '>Enter: level(',i,')='
-           call output(line)
-           read(5,*) levels(i)
-           if(levels(i).eq.-9999. .or. i.eq.10)then
-             nlevels=i-1
-             goto 129
-           endif
-          enddo
+	if(percent.eq.'L')then
+	  write(line,'(a)') '>Enter lowest level:'
+          call output(line)
+          read(5,*) levels(1)
+	  nlevels=10
+	  do i=2,nlevels
+	    levels(i)=1.584893*levels(i-1)
+	  enddo
 	else
-	  write(line, '(a)') '>Enter min,max,interval :'
-	  call output(line)
-	  read(5,*) cmin,cmax,cint
-	  nlevels =1
-	  levels(1)=cmin
-	  do while(levels(nlevels).lt.cmax.and.nlevels.lt.10)
-	    nlevels = nlevels + 1
-	    levels(nlevels) = levels(nlevels-1) + cint
- 	  enddo
+	  call prompt(ans,l,'Enter contour List or Range (L/[R]) :')
+	  call ucase(ans)
+	  if(ans.eq.'L') then
+	    write(line, '(a)') '>Enter levels (max 10, end=-9999.):'
+	    call output(line)
+            do i=1,10
+              levels(i)=0.0
+            enddo
+            do i=1,10
+	     write(line,'(a,i2,a)') '>Enter: level(',i,')='
+             call output(line)
+             read(5,*) levels(i)
+             if(levels(i).eq.-9999. .or. i.eq.10)then
+               nlevels=i-1
+               goto 129
+             endif
+            enddo
+	  else
+	    write(line, '(a)') '>Enter min,max,interval :'
+	    call output(line)
+	    read(5,*) cmin,cmax,cint
+	    nlevels =1
+	    levels(1)=cmin
+	    do while(levels(nlevels).lt.cmax.and.nlevels.lt.10)
+	      nlevels = nlevels + 1
+	      levels(nlevels) = levels(nlevels-1) + cint
+ 	    enddo
+	  endif
 	endif
 129     end
 c********1*********2*********3*********4*********5*********6*********7**
@@ -1425,7 +1445,7 @@ c----------------------------------------------------------------------c
 	real rts,pi,yloc
 	character line*80
         character*13  ras, decs
-	integer i,j
+	integer i,j,len1
 	real scale,absmax
 	parameter (pi = 3.141592654, rts = 3600.*180./pi)
 c
@@ -1459,7 +1479,7 @@ c  delv
 	write(line,'(''Width:    '',F10.3,'' km/s'')') abs(delv)
         call pgtext(0.0,0.58,line)
 c  file
-        write(line,'(''filename:'',1x,A)') file
+        write(line,'(''filename:'',1x,A)') file(1:len1(file))
         call pgtext(0.0,0.54,line)
 c  beam
 	if(bmaj.gt.0.) then
@@ -1772,7 +1792,7 @@ c    vlsr	Array of velocities.
 c-------------------------------------------------------------------------c
 	include 'velplot.h'
 	real t(MAXDIM),tk(MAXDIM,49)
-	character*40 outfile
+	character*80 outfile
 	integer maxspec,ix,iy,lu,iostat
 	real ymin,ymax,cf,cmaj,cmin,cpa,xtlc,ytlc
 	real x0,y0,vmin,vmax,x,y,wt,pa,step,sum,sumc
@@ -2107,7 +2127,7 @@ c
 c
 c  Label spectra with offset coords.
 c
-          write(xchar,116) xc(spec)
+          write(xchar,116) -xc(spec)
           write(ychar,116) yc(spec)
           write(sym,115) char(spec+64)
 115       format(a)
@@ -2125,13 +2145,13 @@ c
 c
           xlabel='Velocity (km/s)'
           if (units.eq.'K') then
-            ylabel='Kelvin'
+            ylabel='K'
           else if (units.eq.'J') then
-            ylabel='Janskys'
+            ylabel='JY'
           else
             ylabel='Map units'
           endif
-          call pglab(xlabel,ylabel,label)
+	  if(alabel.eq.'Y') call pglab(xlabel,ylabel,label)
 
           if(windx*windy.eq.1 .and. alabel.eq.'Y')then
             call pgsvp(0.72,0.9,0.1,0.9)
@@ -3766,7 +3786,7 @@ c-----------------------------------------------------------------------
 	include 'velplot.h'
 	integer np,k,l,ncon
 	real xin,yin,pain,cmaj,cmin,cpa,cf
-	real xstart,xend,vstart,vend,xmin,xmax
+	real xstart,xend,vstart,vend,xmin,xmax,pstart,pend,pinc,pos
 c  convolution array maximum size
 	real con(99,99,4,4)
         real tr(6),ymax,ymin,xval(MAXDIM),xcoord(MAXDIM),xdelta
@@ -3883,22 +3903,48 @@ c
 c  RA-velocity maps.
 c
 	else if(ans.eq.'X') then
-	  ncut=ny
-	  do i=1,ncut
-	    xcut(i) = 0.0
-	    ycut(i) = (i-midx) * xy
-	    pa(i) = 90.0
-	  enddo
+          call prompt(line,length,
+     *      '>Enter starting DEC offset, ending DEC offset, interval:')
+          if(length.eq.0) goto 50
+          call matodf(line,dval,3,ok)
+          if(ok)then
+	    pstart = dval(1)
+	    pend   = dval(2)
+	    pinc   = dval(3)
+	    i = 1
+	    pos = pstart
+	    do while(i.le.128.and.pos.le.pend)
+	      ycut(i) = pos
+	      xcut(i) = 0.
+	      pa(i) = 90.
+	      pos = pos + pinc
+	      i = i + 1	
+	    enddo
+	    ncut = i - 1
+	  endif
 c
 c  DEC-velocity maps.
 c
 	else if (ans.eq.'Y') then
-	  ncut=nx
-	  do i=1,ncut
-	    xcut(i)=(i-midx) * xy
-	    ycut(i)=0.0
-	    pa(i)=0.0
-	  enddo
+          call prompt(line,length,
+     *      '>Enter starting X offset, ending X offset, interval:')
+          if(length.eq.0) goto 50
+          call matodf(line,dval,3,ok)
+          if(ok)then
+	    pstart = dval(1)
+	    pend   = dval(2)
+	    pinc   = dval(3)
+	    i = 1
+	    pos = pstart
+	    do while(i.le.128.and.pos.le.pend)
+	      xcut(i) = pos
+	      ycut(i) = 0.
+	      pa(i) = 0.001
+	      pos = pos + pinc
+	      i = i + 1	
+	    enddo
+	    ncut = i - 1
+	  endif
 	else 
 	  goto 9
 	endif	    
@@ -3996,14 +4042,14 @@ c
 c
 c  Set up parameters for plot labels.
 c
-          write(lab1,104) xcut(l)
+          write(lab1,104) -xcut(l)
           write(lab2,104) ycut(l)
           write(lab3,104) pa(l)
           lab4=char(l+96)
           if(pspec.eq. 'Y') then
-            label=lab4//' (x,y)=('//lab1//','//lab2//')   PA='//lab3
+            label=lab4//' ('//lab1//','//lab2//')   PA='//lab3
           else
-            label=' (x,y)=('//lab1//','//lab2//')   PA='//lab3
+            label=' ('//lab1//','//lab2//')   PA='//lab3
           endif
 104	  format (f8.2)
 c
@@ -4173,8 +4219,8 @@ c    nc*np	Dimensions of array.
 c----------------------------------------------------------------------c
 	include 'velplot.h'
 	real xcoord,xval(MAXDIM)
-	character text*64,line*64
-	character*40 outfile
+	character text*120,line*80
+	character*80 outfile
 c
 c  Write out channel values to ASCII file.
 c
@@ -4275,7 +4321,7 @@ c----------------------------------------------------------------------
       real tmod(MAXDIM,30)
       real vlsr2(5*MAXDIM),tmod2(5*MAXDIM,30),dv
       real arg1,term
-      character*40 outfile
+      character*80 outfile
       integer lu,iostat
       real cmaj,cmin,cpa
       integer i,j,k,length,ns

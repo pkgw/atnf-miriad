@@ -12,7 +12,7 @@ c  by tracing contours, proceeding to lower levels and following
 c  merging of said clumps. For full description/testing/application in
 c    Williams, J.P, de Geus, E.J. & Blitz, L., ApJ, 428, 693. (1994)
 c  Also see
-c    http://cfa-www.harvard.edu/~jpw/clfind.html
+c    http://www.ifa.hawaii.edu/~jpw/research/clfind/clfind.html
 c  for a general description and access to a postscript memo.
 c
 c
@@ -52,6 +52,7 @@ c   07/19/94 jpw dynamic memory (memalloc, etc)
 c   09/20/96 jpw/pjt   Formal miriad version (finally)
 c   18-may-98 rjs/pjt  Moved over to a single-source file
 c   13-jul-98 pjt linux/g77 cleanup, and fixed CntLevs counting bug
+c   09-nov-05 rjs Update link in documentation.
 c
 c  Note:
 c   This program comes with a testsuite dataset, which you should run
@@ -129,6 +130,7 @@ c.....Calculate the beam size in x and y
           beamx = abs(real(bmin/cdelt(1)))
           beamy = real(bmaj/cdelt(2))
         else
+            write (*,*) 'beam=', bmaj,bmin,cdelt(1),cdelt(2)
 	      beamx = abs(real(bmaj/cdelt(1)))
 	      beamy = real(bmin/cdelt(2))
         endif
@@ -258,7 +260,7 @@ c-----------------------------------------------------------------
       include 'clfind.h'
 
       integer nlevs,npx1,npx2
-      integer nps,npx,ngy,ngx
+      integer nps,npx,ngy
       real t(*)
 
       nlevs=-999
@@ -288,7 +290,7 @@ c     only count when in range, above the minimum (p1)
          if(ngy.gt.1 .and. npx.gt.maxpix)
      *       call bug('f','Too many pixels per level')
 
-c         print 1011, ngx
+c         print 1011, npx
 c 1011   format(' Number of pixels in level 1:                   ',i4)
 
          if(ngy.eq.1 .and. npx.gt.maxpix1)

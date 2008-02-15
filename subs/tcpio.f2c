@@ -8,23 +8,26 @@
 /*  rjs  25jan90   Changed "addr" to "adr" to avoid a conflict on Convex*/
 /*  rjs  23dec92   Rewrite in f2c format, mere all versions.		*/
 /*  mjs  21sep93   #define bcopy -> memcpy, bzero -> memset on sun.	*/
+/*  rjs  18sep05   Small change to stop lint whinges.			*/
+/*  mrc  14jul06   Get it to compile with 'gcc -Wall' without warnings. */
+/*  rjs  02jan07   Eliminate bcopy,bzero (deprecated long ago).		*/
 /*									*/
 /************************************************************************/
 
-#include <stddef.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <ctype.h>
 #include <errno.h>
+#include <netdb.h>
+#include <stddef.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #ifdef sun
-#define bcopy(a,b,c) memcpy((b),(a),(c))
-#define bzero(a,b)   memset((a),0,(b))
 #endif
-#ifdef vaxc
+#ifdef vms
 extern int vmserrno;
 #  define ERRNO vmserrno
 #else
@@ -58,12 +61,12 @@ fortran subroutine tcpnode(character name,integer inet)
 
   p = name.zterm;
   *(inet.addr) = 0;
-  if(isdigit(*p)){
+  if(isdigit((int)(*p))){
     s = inet_addr(p);
-    bcopy((char *)&s,(char *)inet.addr,sizeof(s));
+    memcpy((char *)inet.addr,(char *)&s,(size_t)sizeof(s));
   } else {
     h = gethostbyname(p);
-    if(h != NULL)bcopy(h->h_addr,(char *)inet.addr,h->h_length);
+    if(h != NULL)memcpy((char *)inet.addr,h->h_addr,h->h_length);
 #ifdef unicos
     *(inet.addr) >>= 32;
 #endif
@@ -89,7 +92,7 @@ fortran integer function tcpconn(integer handle,integer inet,integer port)
    sin.sin_family = AF_INET;
    sin.sin_addr.s_addr = *(inet.addr);
    sin.sin_port = htons(port.val);
-   bzero((char *)sin.sin_zero,sizeof(sin.sin_zero));
+   memset((char *)sin.sin_zero,0,sizeof(sin.sin_zero));
    if(connect(handle.val,(struct sockaddr *)&sin,sizeof(sin)) < 0)return(ERRNO);
    return(0);
 }
@@ -108,7 +111,7 @@ fortran integer function tcpwrite(integer handle,integer buff,
   Write some crap out to the socket.
 ------------------------------------------------------------------------*/
 {
-  return(*(length.addr) == write(handle.val,(char *)buff.addr,length.val)
+  return(*(length.addr) == write(handle.val,(char *)buff.addr,(size_t)length.val)
 	? 0 : ERRNO);
 }
 /************************************************************************/
@@ -118,6 +121,6 @@ fortran integer function tcpread(integer handle,integer buff,
   Read some crap from the socket. 
 ------------------------------------------------------------------------*/
 {
-  *(nread.addr) = read(handle.val,(char *)buff.addr,length.val);
+  *(nread.addr) = read(handle.val,(char *)buff.addr,(size_t)length.val);
   return(nread.val >= 0 ? 0 : ERRNO);
 }

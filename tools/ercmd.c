@@ -12,8 +12,11 @@
    History:
     rjs  16feb95 Derived from "er" command.
     rjs  23apr99 Bring it into line with modern UNIX.
+    rjs  02jan07 Some standardizing.
 
 ------------------------------------------------------------------------*/
+#include <string.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
