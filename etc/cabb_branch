@@ -1,0 +1,59 @@
+#!/bin/sh
+#-----------------------------------------------------------------------------
+# Usage: cabb_branch
+#-----------------------------------------------------------------------------
+# Create a branch in the Miriad RCS repository for CABB development.  The
+# branchpoint on the trunk is given the symbolic name "cabb_branchpoint" and
+# the branch itself "cabb".  The latter symbolic name may be used for example,
+# as 'co -lcabb <file>' and 'ci -rcabb <file>' 
+#
+# Alternatively, RCS transactions on the CABB development branch may be
+# effected conveniently by setting the RCSINIT environment variable to
+# '-rcabb'.  RCS commands such as 'co -l', 'ci', 'rcsdiff', and 'rlog' then
+# automatically access the CABB branch (unless another revision is specified
+# explicitly).  The RCSINIT setting also works transparently with the RCS
+# checkout rules in the Miriad makefiles, thereby providing a CABB development
+# environment automatically.  To override RCSINIT without having to unset it,
+# use '-r1' explicitly in RCS commands to get the most recent version on the
+# trunk.
+#
+# To create a new file in the CABB branch it is first necessary to check in an
+# empty file on the trunk as revision 1.0:
+#
+#   mv myNewFile myNewFile.tmp
+#   cat /dev/null > myNewFile
+#   ci -r1.0 -m"Empty revision." myNewFile
+#
+# enter an appropriate description as ci requests.  Then create symbolic
+# revision names:
+#
+#   rcs -ncabb_branchpoint:1.0 -ncabb:1.0.1 myNewFile
+#
+# Finally, create the initial revision on the branch:
+#
+#   mv myNewFile.tmp myNewFile
+#   ci -rcabb.1 myNewFile
+#
+# Original: 2008/12/15 MRC
+# $Id$
+#-----------------------------------------------------------------------------
+
+# Date when the Miriad RCS repository was mistakenly imported into subversion
+# for CABB development.
+  CABBDATE="2008/01/23"
+
+  find $MIR/.rcs -name '*,v' |
+  while read RCSFILE
+  do
+    # Since checkins have been made to Miriad since $CABBDATE, we need the
+    # RCS revision on the trunk when the split occurred (else, unsetting
+    # CABBREV would pick the latest).
+    CABBREV=`rlog -d"$CABBDATE" -r1 "$RCSFILE" |
+               awk '/^revision /{print $2; exit 0}'`
+
+    echo "$RCSFILE - $CABBREV"
+
+    rcs -q -Ncabb_branchpoint:"$CABBREV" -Ncabb:cabb_branchpoint.1 "$RCSFILE"
+    co  -q -rcabb_branchpoint "$RCSFILE"
+    ci  -q -fcabb -m'Base of the CABB development branch.' "$RCSFILE"
+  done
