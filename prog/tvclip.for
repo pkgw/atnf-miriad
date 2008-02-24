@@ -831,7 +831,6 @@ c  Start reading the data.
 c
 	offset = 0
 	length = 2*nchan + 3
-	pnt = 1
 	do k=1,nvis
 	  call scrread(lScr,buf,offset,length)
 	  offset = offset + length
@@ -839,25 +838,28 @@ c
 	  t = buf(2) + (dble(buf(3)) - day0)
 	  bl = bl2idx(bl)
 	  if(bl.gt.0)then
-	    dowhile(t1(pnt).lt.-1.or.t.lt.t1(pnt).or.t.gt.t2(pnt))
-	      pnt = pnt + 1
+	    do pnt = 1, ntime
+	      if (t1(pnt).gt.-1.0) then
+	        if (t1(pnt).le.t .and. t.le.t2(pnt)) goto 10
+	      endif
 	    enddo
-	    if(t1(pnt).gt.t.or.t.gt.t2(pnt))call bug('f','Inconsistent')
-	    i0 = 3
+ 	    call bug ('f', 'Time slot miscalculation')
+	
+ 10	    i0 = 3
 	    do i=1,nchan
 	      if(nint(buf(i0+2)).gt.0)then
-		if(iflag(i,pnt,bl).gt.0)then
-		  array(i,pnt,bl) = array(i,pnt,bl) + buf(i0+1)
-		  iflag(i,pnt,bl) = iflag(i,pnt,bl) + 1
-		else
-		  array(i,pnt,bl) = buf(i0+1)
-		  iflag(i,pnt,bl) = 1
-		endif
+	        if(iflag(i,pnt,bl).gt.0)then
+	          array(i,pnt,bl) = array(i,pnt,bl) + buf(i0+1)
+	          iflag(i,pnt,bl) = iflag(i,pnt,bl) + 1
+	        else
+	          array(i,pnt,bl) = buf(i0+1)
+	          iflag(i,pnt,bl) = 1
+	        endif
 	      else
-		if(iflag(i,pnt,bl).le.0)then
-		  array(i,pnt,bl) = array(i,pnt,bl) + buf(i0+1)
-		  iflag(i,pnt,bl) = iflag(i,pnt,bl) - 1
-		endif
+	        if(iflag(i,pnt,bl).le.0)then
+	          array(i,pnt,bl) = array(i,pnt,bl) + buf(i0+1)
+	          iflag(i,pnt,bl) = iflag(i,pnt,bl) - 1
+	        endif
 	      endif
 	      i0 = i0 + 2
 	    enddo
@@ -870,11 +872,11 @@ c
 	  do j=1,ntime
 	    do i=1,nchan
 	      if(iflag(i,j,k).gt.0)then
-		array(i,j,k) = array(i,j,k) / iflag(i,j,k)
-		iflag(i,j,k) = 1
+	        array(i,j,k) = array(i,j,k) / iflag(i,j,k)
+	        iflag(i,j,k) = 1
 	      else if(iflag(i,j,k).lt.0)then
-		array(i,j,k) = - array(i,j,k) / iflag(i,j,k)
-		iflag(i,j,k) = 0
+	        array(i,j,k) = - array(i,j,k) / iflag(i,j,k)
+	        iflag(i,j,k) = 0
 	      endif
 	    enddo
 	  enddo
@@ -1190,7 +1192,7 @@ c
 	    day0 = day1
 	  endif
 	  if(bl.gt.0.and.bl.lt.nbase)then
-	    if(abs(t-tprev).gt.ttol)then
+	    if(abs(t-tprev).gt.ttol/2.0)then
 	      if(t.lt.tprev)torder = .false.
 	      if(nosrc)then
 	        newsrc = .false.
