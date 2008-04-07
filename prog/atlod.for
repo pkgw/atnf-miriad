@@ -30,7 +30,7 @@ c	which is HI, and the second is continuum, use
 c	    restfreq=1.420405752,0
 c@ options
 c	This gives extra processing options. Several can be given,
-c	separated by comas.
+c	separated by commas.
 c	  'birdie'  ATCA self-interference can corrupt channels at integral
 c	            multiples of 128 MHz. The birdie option flags these
 c	            channels. Additionally, in continuum (33 channels/128MHz)
@@ -97,6 +97,11 @@ c	  'nocacal' Flag data that atlod suspects is taken during a CACAL scann.
 c		    There is potential for error in atlod determining which data
 c		    are and are not part of a cacal scan. Use this with caution.
 c         'nopol'   Discard data that is not "parallel hand" Stokes type.
+c         'rfiflag' Flag channels at frequencies that are known to be bad
+c                   This uses the file rfi.dat in the current directory or the
+c                   default version in MIRCAT. The file should contain 
+c                   2 frequencies per line, the lower and upper end of the rfi in
+c                   MHz.
 c@ nfiles
 c	This gives one or two numbers, being the number of files to skip,
 c	followed by the number of files to process. This is only
@@ -128,7 +133,7 @@ c	Poke1st (start an integration)
 c	PokeMisc,PokeAnt,PokeIF,PokeSrc (if these have changed)
 c	PokeSC (syscal info), PokeData (corr data).
 c	PokeFlsh (finish the integration)
-c    Prioir to calling the Poke routines, RPDISP discards unneeded
+c    Prior to calling the Poke routines, RPDISP discards unneeded
 c    data and maps the selected frequencies notional IFs.
 c    The RP layer is in charge of data selection.
 c
@@ -244,6 +249,9 @@ c		  Added nopol option.
 c    rjs  14jan06 Be relaxed about missing met data scans when applying
 c		  opacity correction.
 c    mhw  19oct07 Cope with new 3mm receiver on ca02 which has xyphase
+c    mhw  18dec07 Changes to read simulated CABB files with up to
+c                 16 IFs; avoid checking sampler stats for CABB files
+c    mhw  17jan08 Add options=rfiflag: flagging based on file with rfi ranges
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -256,7 +264,7 @@ c
 	double precision rfreq(2),times(2,MAXTIMES)
 	logical doauto,docross,docomp,dosam,relax,unflag,dohann
 	logical dobary,doif,birdie,dowt,dopmps,doxyp,doop
-	logical polflag,hires,sing,docaldat,nocacal,nopol
+	logical polflag,hires,sing,docaldat,nocacal,nopol,rfiflag
 	integer fileskip,fileproc,scanskip,scanproc
 c
 c  Externals.
@@ -281,7 +289,7 @@ c
      *	  relax,
      *	  sing,unflag,dohann,birdie,dobary,doif,dowt,dopmps,
      *	  nopol,polflag,
-     *	  hires,nocacal)
+     *	  hires,nocacal,rfiflag)
 	call keyi('nfiles',fileskip,0)
 	call keyi('nfiles',fileproc,nfiles-fileskip)
 	if(nfiles.gt.1.and.fileproc+fileskip.gt.nfiles)
@@ -295,6 +303,7 @@ c
 	call keyfin
 c
 	call cacalIni
+        call rfiIni(rfiflag)
 c
 c  Open the output and initialise it.
 c
@@ -415,11 +424,11 @@ c************************************************************************
 	subroutine GetOpt(doauto,docross,docaldat,docomp,dosam,doxyp,
      *	  doop,relax,sing,
      *	  unflag,dohann,birdie,dobary,doif,dowt,dopmps,
-     *	  nopol,polflag,hires,nocacal)
+     *	  nopol,polflag,hires,nocacal,rfiflag)
 c
 	logical doauto,docross,dosam,relax,unflag,dohann,dobary,doop
 	logical docomp,doif,birdie,dowt,dopmps,doxyp,polflag,hires,sing
-	logical docaldat,nocacal,nopol
+	logical docaldat,nocacal,nopol,rfiflag
 c
 c  Get the user options.
 c
@@ -444,17 +453,18 @@ c    nopol	Select only parallel-hand polarisations.
 c    polflag	Flag all polarisations if any are bad.
 c    hires      Convert bin-mode to high time resolution data.
 c    sing	Single dish mode.
+c    rfiflag    Flag known rfi sources
 c------------------------------------------------------------------------
 	integer nopt
-	parameter(nopt=21)
+	parameter(nopt=22)
 	character opts(nopt)*8
 	logical present(nopt)
 	data opts/'noauto  ','nocross ','compress','relax   ',
      *		  'unflag  ','samcorr ','hanning ','bary    ',
      *		  'noif    ','birdie  ','reweight','xycorr  ',
-     *		  'opcorr  ',
-     *		  'nopflag ','hires   ','pmps    ','mmrelax ',
-     *		  'single  ','caldata ','nocacal ','nopol   '/
+     *		  'opcorr  ','nopflag ','hires   ','pmps    ',
+     *            'mmrelax ','single  ','caldata ','nocacal ',
+     *            'nopol   ','rfiflag '/
 	call options('options',opts,present,nopt)
 	doauto = .not.present(1)
 	docross = .not.present(2)
@@ -479,6 +489,7 @@ c	mmrelax = present(16)
 	docaldat= present(19)
 	nocacal = present(20)
 	nopol   = present(21)
+        rfiflag = present(22)
 c
 	if((dosam.or.doxyp.or.doop).and.relax)call bug('f',
      *	  'You cannot use options samcorr, xycorr or opcorr with relax')
@@ -1573,6 +1584,8 @@ c
 		      call PolPut(tno,polcode(if,p),dosw(bl))
 		      call GetFlag(flag(if,p,bl,bin),nfreq(if),
      *						  bchan(if),flags)
+                      call rfiFlag(flags,NDATA,1,nfreq(if),
+     *                             sfreq(if),sdf(if))
 		      if(.not.hires)call uvputvri(tno,'bin',bin,1)
 		      call uvputvrr(tno,'inttime',inttime(bl),1)
 		      if(opcorr)
@@ -1593,7 +1606,7 @@ c
 	  if(newfreq.and.tbin.eq.1)then
 	    ischan(1) = 1
 	    do if=2,nifs
-	      ischan(if) = ischan(if-1) + nfreq(if)
+	      ischan(if) = ischan(if-1) + nfreq(if-1)
 	    enddo
 	    call uvputvri(tno,'nspect',nifs,1)
 	    call uvputvri(tno,'ischan',ischan,nifs)
@@ -1632,6 +1645,7 @@ c
      *			flag(1,p,bl,bin),nfreq,fac,bchan,nifs,
      *			vis,flags,NDATA,nchan)
 		    if(nchan.gt.0)then
+                      call rfiFlag(flags,NDATA,nifs,nfreq,sfreq,sdf)
 		      if(.not.hires)call uvputvri(tno,'bin',bin,1)
 		      call uvputvri(tno,'pol',polcode(1,p),1)
 		      call uvputvrr(tno,'inttime',inttime(bl),1)
@@ -2136,13 +2150,13 @@ c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mirconst.h'
 	integer MAXPOL,MAXSIM,MAXXYP,NDATA
-	parameter(MAXPOL=4,MAXSIM=4,MAXXYP=5,NDATA=MAXCHAN*MAXPOL)
+	parameter(MAXPOL=4,MAXSIM=16,MAXXYP=5,NDATA=MAXCHAN*MAXPOL)
 	double precision J01Jul04,J18Oct07
 	parameter(J01Jul04=2453187.5d0,J18Oct07=2454390.5d0)
 	include 'rpfits.inc'
 	integer scanno,i1,i2,baseln,i,id,j,wbandxy
 	logical NewScan,NewSrc,NewFreq,NewTime,Accum,ok,badbit
-	logical flags(MAXPOL),corrfud,kband,wband,flipper
+	logical flags(MAXPOL),corrfud,kband,wband,flipper,cabb
 	integer jstat,flag,bin,ifno,srcno,simno,Ssrcno,Ssimno
 	integer If2Sim(MAX_IF),nifs(MAX_IF),Sim2If(MAXSIM,MAX_IF)
 	integer Sif(MAX_IF)
@@ -2223,6 +2237,7 @@ c
 c
 	kband = .false.
 	wband = .false.
+        cabb = .false.
 c
 c  Initialise flagging information.
 c
@@ -2330,7 +2345,7 @@ c
      *		sc_cal,if_invert,polflag,
      *		xyphase,xyamp,xtsys,ytsys,xsamp,ysamp,
      *		chi,tcorr,pntrms,pntmax,
-     *		nxyp,xyp,ptag,xya,atag,MAXXYP,xflag,yflag,wband,
+     *		nxyp,xyp,ptag,xya,atag,MAXXYP,xflag,yflag,wband,cabb,
      *		mdata,mcount)
 c
 c  Data record. Check whether we want to accept it.
@@ -2371,7 +2386,7 @@ c
 c  Determine whether to flush the buffers.
 c
 	    simno = If2Sim(ifno)
-	    NewFreq = simno.ne.Ssimno
+	    NewFreq = simno.gt.0.and.simno.ne.Ssimno
 	    NewTime = abs(ut-utprev).gt.0.04
 	    NewSrc = srcno.ne.Ssrcno
 	    if(Accum.and.(NewScan.or.an_found.or.NewSrc.or.NewFreq.or.
@@ -2432,6 +2447,7 @@ c
 		    kband = kband.or.
      *			   (if_freq(id).gt.13e9.and.if_freq(id).lt.28e9)
 		    wband = wband.or.if_freq(id).gt.75e9
+                    cabb = if_bw(id).gt.3e8
 		    call PokeIF(i,if_nfreq(id),if_invert(id)*if_bw(id),
      *			if_freq(id),if_ref(id),rfreq,
      *			nstoke(id),cstoke(1,id))
@@ -2496,8 +2512,10 @@ c  Determine the flags for each polarisation based on the sampler
 c  statistics if the samplers have been initialised.
 c
 	      call GetFg(nstoke(ifno),cstoke(1,ifno),flag,
-     *		xflag(ifno,i1).or.relax,yflag(ifno,i1).or.relax,
-     *		xflag(ifno,i2).or.relax,yflag(ifno,i2).or.relax,
+     *		xflag(ifno,i1).or.relax.or.cabb,
+     *          yflag(ifno,i1).or.relax.or.cabb,
+     *		xflag(ifno,i2).or.relax.or.cabb,
+     *          yflag(ifno,i2).or.relax.or.cabb,
      *		flags,fgsam)
 c
 c  Send the data record to the Poke routines.
@@ -2803,12 +2821,12 @@ c
 	end
 c************************************************************************
 	subroutine syscflag(polflag,xsamp,ysamp,xyphase,xyamp,
-     *		nxyp,maxxyp,xyp,ptag,xya,atag,xflag,yflag,mmrelax)
+     *		nxyp,maxxyp,xyp,ptag,xya,atag,xflag,yflag,mmrelax,cabb)
 c
 	real xsamp(3),ysamp(3),xyphase,xyamp
 	integer nxyp,maxxyp,ptag(maxxyp),atag(maxxyp)
 	real xyp(maxxyp),xya(maxxyp)
-	logical polflag,xflag,yflag,mmrelax
+	logical polflag,xflag,yflag,mmrelax,cabb
 c
 c  Determine data flags based on the values of syscal statistics.
 c
@@ -2849,11 +2867,13 @@ c
 c  Flag both x and y as bad if there is a glitch in the xy phase.
 c  Otherwise flag according to the goodness of the sampler stats.
 c
+        xflag=.true.
+        yflag=.true.
 	if((abs(xyamp-mxya).gt.max(1.0,0.1*mxya).or.
      *	   abs(xyphase-mxyp).gt.10.*pi/180.).and..not.mmrelax)then
 	  xflag = .false.
 	  yflag = .false.
-	else
+	else if (.not.cabb) then
 	  xflag = abs(xsamp(2)-50.0).lt.0.5 .and.
      *		  abs(xsamp(1)-17.3).lt.3.0 .and.
      *		  abs(xsamp(3)-17.3).lt.3.0
@@ -2947,7 +2967,7 @@ c************************************************************************
      *		syscal,invert,polflag,
      *		xyphase,xyamp,xtsys,ytsys,xsamp,ysamp,
      *		chi,tcorr,pntrms,pntmax,nxyp,xyp,ptag,xya,atag,MAXXYP,
-     *		xflag,yflag,mmrelax,mdata,mcount)
+     *		xflag,yflag,mmrelax,cabb,mdata,mcount)
 c
 	integer MAXIF,MAXANT,MAXXYP,nq,nif,nant,invert(MAXIF)
 	integer tcorr,mcount
@@ -2963,7 +2983,7 @@ c
 	integer ptag(MAXXYP,MAXIF,MAXANT)
 	integer atag(MAXXYP,MAXIF,MAXANT)
 	integer nxyp(MAXIF,MAXANT)
-	logical xflag(MAXIF,MAXANT),yflag(MAXIF,MAXANT),mmrelax
+	logical xflag(MAXIF,MAXANT),yflag(MAXIF,MAXANT),mmrelax,cabb
 c
 c  Copy across SYSCAL records. Do any necessary fiddles on the way.
 c------------------------------------------------------------------------
@@ -3001,7 +3021,7 @@ c
 	      call syscflag(polflag,xsamp(1,ij,ik),ysamp(1,ij,ik),
      *		xyphase(ij,ik),xyamp(ij,ik),nxyp(ij,ik),maxxyp,
      *		xyp(1,ij,ik),ptag(1,ij,ik),xya(1,ij,ik),atag(1,ij,ik),
-     *		xflag(ij,ik),yflag(ij,ik),mmrelax)
+     *		xflag(ij,ik),yflag(ij,ik),mmrelax,cabb)
 	      if(.not.done.and.syscal(12,j,k).ne.0)then
 		chi = pi/180 * syscal(12,j,k) + pi/4
 		done = .true.
@@ -3237,6 +3257,87 @@ c
 c
 	end
 c************************************************************************
+	subroutine rfiIni(rfiflag)
+c
+        logical rfiflag
+c------------------------------------------------------------------------
+	double precision f1,f2
+        character*80 filename,string,stcat
+        integer lu,iostat,l
+	integer MAXRFI, nrfi
+        parameter(MAXRFI=50)
+	double precision rfifreq(2,MAXRFI)
+        common/rficom/rfifreq,nrfi
+        nrfi=0
+        if (.not.rfiflag) return
+c
+c  Read rfi.dat file from current directory or $MIRCAT
+c        
+        filename='./rfi.dat'
+        call txtopen(lu,filename,'old',iostat)
+        if (iostat.ne.0) then
+          call getenv('MIRCAT',filename)
+          filename = stcat(filename,'/rfi.dat')
+          call txtopen(lu,filename,'old',iostat)
+        endif
+        if (iostat.ne.0) then
+          call bug('w',
+     *      'File rfi.dat not found in current dir or $MIRCAT')
+          nrfi=0
+        else
+          call txtread(lu,string,l,iostat)
+          do while (iostat.eq.0)           
+            read(string,*,iostat=iostat) f1,f2
+            if (iostat.eq.0) then
+              nrfi=nrfi+1
+              rfifreq(1,nrfi)=f1/1000
+              rfifreq(2,nrfi)=f2/1000
+              call txtread(lu,string,l,iostat)
+            endif
+          enddo
+          call txtclose(lu)
+        endif
+        if (nrfi.gt.0) then
+          write(string,'(A,I3,A)') 'Flagging channels in ',nrfi,
+     *     ' frequency ranges'
+          call output(string)
+        endif
+        
+	end
+
+c************************************************************************
+	subroutine rfiFlag(flags,NDATA,nifs,nfreq,sfreq,sdf)
+c
+c------------------------------------------------------------------------
+	integer NDATA,nifs,nfreq(nifs)
+        logical flags(NDATA)
+        double precision sfreq(nifs),sdf(nifs),c1,c2,tmp
+	integer MAXRFI, nrfi,ch1,ch2,i,j,k,offset
+        parameter(MAXRFI=50)
+	double precision rfifreq(2,MAXRFI)
+        common/rficom/rfifreq,nrfi
+        if (nrfi.gt.0) then
+          offset=1
+          do i=1,nifs
+            do j=1,nrfi
+              c1=(rfifreq(1,j)-sfreq(i))/sdf(i)
+              c2=(rfifreq(2,j)-sfreq(i))/sdf(i)
+              if (c1.gt.c2) then
+                tmp=c1
+                c1=c2
+                c2=tmp
+              endif
+              ch1=nint(min(nfreq(i),max(0.0,c1)))
+              ch2=nint(max(-1,min(nfreq(i)-1,c2)))
+              do k=ch1,ch2
+                flags(offset+k)=.false.
+              enddo
+            enddo
+            offset=offset+nfreq(i)
+          enddo
+        endif
+        end
+
 c************************************************************************
 c
 c  The following code was contributed by WEW via NEBK.
