@@ -25,7 +25,7 @@ c     size that can be handled.
 
 c     Maximum number of antennae (HC=3/6/9/..., WSRT=14, VLA=27).
       INTEGER   MAXANT
-      PARAMETER(MAXANT=30)
+      PARAMETER(MAXANT=64)
 
 c     Maximum number of baselines.
       INTEGER   MAXBASE
