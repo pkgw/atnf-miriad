@@ -26,7 +26,7 @@
 #define MAXBUF  16777216
 
 /* Maximum number of pixels on an image axis. */
-#define MAXDIM  8192
+#define MAXDIM  16384
 
 /* Maximum number of image axes. */
 #define MAXNAX  7
