@@ -1,8 +1,8 @@
 c***************************************************************************
 c  These subroutines provide an interface between NEBK style coordinate
-c  handling (the 'hms', 'dms', 'arcsec', 'arcmin', 'reldeg', 'abspix', 
-c  'relpix', 'absghz', 'relghz', 'abskms', 'relkms', 'absnat', 
-c  'relnat', 'none') and RJS' new coordinate routines (co.for). 
+c  handling (the 'hms', 'dms', 'arcsec', 'arcmin', 'reldeg', 'abspix',
+c  'relpix', 'absghz', 'relghz', 'abskms', 'relkms', 'absnat',
+c  'relnat', 'none') and RJS' new coordinate routines (co.for).
 c
 c  Code that is known to use these routines is: cgdisp.for,
 c  cgcurs.for, cgslice.for, cgspec.for, maxfit.for, impos.for,
@@ -18,7 +18,7 @@ c   axfndco : Find axis of specified generic type
 c   axtypco : Return generic axis type
 c   chkaxco : Check axis CTYPE and axis label type for consistency
 c   ctypeco : Get axis CTYPE
-c   setoaco : Set default absolute or offset coordinate conversion 
+c   setoaco : Set default absolute or offset coordinate conversion
 c               string depending upon the axis CTYPE
 c   specco  : See if an axis is spectral and what type it is if so
 c
@@ -37,15 +37,18 @@ c    nebk   14nov95    Remove LINCO; its use has been eradicated, add
 c                      some new ones which have migrated from CGSUB.FOR
 c                      These are AXFNDCO, AXTYPCO, SUNITCO
 c    nebk   29nov95    Eliminate indexed searching of axis types so that
-c                      e.g. if CTYPE=RADIUS it is not treated as RA.  
+c                      e.g. if CTYPE=RADIUS it is not treated as RA.
 c                      Consolidate CTYPE searching into AXFNDCO and AXTYPCO
 c    nebk   03dec95    Declaration of TYPE in AXTYPCO was (n) not (*), and
-c	               removed useless access to multiple axes in CHKAXCO
+c                      removed useless access to multiple axes in CHKAXCO
 c    nebk   18dec95    Recognize new CTYPE "angle"
 c    rjs    06feb96    Increase ctype string in chkaxco.
 c    nebk   26apr96    Make AXTYPCO more flexible in recognizing velocity axes
 c    rjs    17jul97    Get rid of calls to rdhd, and just use coordinate
-c		       object as source of information.
+c                      object as source of information.
+c    rjs    10nov97    Make ctypeco robust to a blank axis.
+c
+c $Id$
 c******************************************************************************
 c
 c* axfndCO -- Find a specified generic axis in an image
@@ -72,10 +75,10 @@ c             LATI ->  ELAT, GLAT
 c             VELO ->  VELO, FELO
 c             FREQ ->  FREQ
 c             UV   ->  UU, VV
-c	      ANGL ->  ANGLE
+c             ANGL ->  ANGLE
 c             RAD  ->  An axis whose increment should be in
-c                      radians.  These are RA, DEC, LAT, LONG, 
-c		       ANGL axes as described by the LHS above.
+c                      radians.  These are RA, DEC, LAT, LONG,
+c                      ANGL axes as described by the LHS above.
 c           Other types are searched for exactly as specified
 c    n      Number of axes to search starting from 1
 c    iax    SPecific axis to match if N=0
@@ -104,7 +107,7 @@ c
         call ctypeco (lun, i, lctype, il)
 c
         if (ltype.eq.'RA') then
-          if (lctype(1:il).eq.'RA' .or.   
+          if (lctype(1:il).eq.'RA' .or.
      +        lctype(1:il).eq.'LL') then
             jax = 1
             if (n.ne.0) jax = i
@@ -118,7 +121,7 @@ c
             return
           end if
         else if (ltype.eq.'LONG') then
-          if (lctype(1:il).eq.'ELON' .or. 
+          if (lctype(1:il).eq.'ELON' .or.
      +        lctype(1:il).eq.'GLON') then
             jax = 1
             if (n.ne.0) jax = i
@@ -132,31 +135,31 @@ c
             return
           end if
         else if (ltype.eq.'VELO') then
-          if (lctype(1:il).eq.'VELO' .or. 
+          if (lctype(1:il).eq.'VELO' .or.
      +        lctype(1:il).eq.'FELO') then
             jax = 1
             if (n.ne.0) jax = i
-            return 
+            return
           end if
         else if (ltype.eq.'FREQ') then
           if (lctype(1:il).eq.'FREQ') then
             jax = 1
             if (n.ne.0) jax = i
             return
-          end if  
+          end if
         else if (ltype.eq.'ANGL') then
           if (lctype(1:il).eq.'ANGLE') then
             jax = 1
             if (n.ne.0) jax = i
             return
-          end if  
+          end if
         else if (ltype.eq.'UV') then
           if (lctype(1:il).eq.'UU' .or.
      +        lctype(1:il).eq.'VV') then
             jax = 1
             if (n.ne.0) jax = i
-            return 
-          end if  
+            return
+          end if
         else if (ltype.eq.'RAD') then
           if (lctype(1:il).eq.'RA'  .or.
      +        lctype(1:il).eq.'LL'  .or.
@@ -169,14 +172,14 @@ c
      +        lctype(1:il).eq.'ANGLE') then
             jax = 1
             if (n.ne.0) jax = i
-            return 
-          end if  
+            return
+          end if
         else
           if (index(lctype,ltype).ne.0) then
             jax = 1
             if (n.ne.0) jax = i
             return
-          end if   
+          end if
         end if
       end do
 c
@@ -212,7 +215,7 @@ c             LATI means CTYPE was one of   ELAT, GLAT
 c             VELO means CTYPE was one of   VELO, FELO
 c             FREQ means CTYPE was one of   FREQ
 c             UV   means CTYPE was one of   UU, VV
-c	      ANGL means CTYPE was          ANGLE
+c             ANGL means CTYPE was          ANGLE
 c             NONE means CTYPE was not recognized
 c
 c--
@@ -280,15 +283,15 @@ c+
       integer iax, lun
       character*(*) ltype, stype
 c
-c  Check axis type and desired coordinate type are compatible.  
+c  Check axis type and desired coordinate type are compatible.
 c
 c  Input
 c    lun    Image handle
 c    ltype  Coordinate type user has asked for; one of
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
-c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz',
 c               'abskms', 'relkms', 'absnat', 'relnat', none'
-c    iax    Axis of interest 
+c    iax    Axis of interest
 c    stype  Spectral axis descriptor.  If this is ' ', then
 c           the CTYPE must match the TYPE (i.e. VELO/abskms is
 c           good, FELO/absghz is bad).  Otherwise, it is assumed
@@ -321,13 +324,14 @@ c
       else if (ltype.eq.'dms') then
         if (gtype.ne.'DEC' .and. gtype.ne.'MM') bad = .true.
       else if (ltype.eq.'arcsec' .or. ltype.eq.'arcmin' .or.
-     +         ltype.eq.'absdeg' .or. ltype.eq.'reldeg') then          
+     +         ltype.eq.'arcmas' .or.
+     +         ltype.eq.'absdeg' .or. ltype.eq.'reldeg') then         
         call axfndco (lun, 'RAD', 0, iax, jax)
         if (jax.eq.0) bad = .true.
-      else if (ltype.eq.'abskms' .or. ltype.eq.'relkms') then     
+      else if (ltype.eq.'abskms' .or. ltype.eq.'relkms') then
         if (gtype.ne.'VELO' .and. gtype.ne.'FREQ') bad = .true.
         if (gtype.eq.'FREQ' .and. stype.eq.' ') bads = .true.
-      else if (ltype.eq.'absghz' .or. ltype.eq.'relghz') then     
+      else if (ltype.eq.'absghz' .or. ltype.eq.'relghz') then
         if (gtype.ne.'VELO' .and. gtype.ne.'FREQ') bad = .true.
         if (gtype.eq.'VELO' .and. stype.eq.' ') bads = .true.
       else if (ltype.eq.'absnat' .or. ltype.eq.'relnat') then
@@ -354,7 +358,7 @@ c
 c
       end
 c
-c 
+c
 c* ctypeCO -- Return CTYPE for one axis
 c& nebk
 c: coordinates
@@ -377,14 +381,11 @@ c    il     Length of string prior to project "--*" string
 c--
 c-----------------------------------------------------------------------
       integer len1, il2
-      character str*6, itoaf*2
+      character itoaf*2
       double precision crpix,crval,cdelt
-c----------------------------------------------------------------------- 
-      call coAxGet(lun,iax,ctype,crpix,crval,cdelt)      
-      if (ctype.eq.' ')then
-	str = 'ctype'//itoaf(iax)
-	call bug ('f', 'CTYPECO: '//str//' is blank')
-      endif
+c-----------------------------------------------------------------------
+      call coAxGet(lun,iax,ctype,crpix,crval,cdelt)
+      if (ctype.eq.' ')ctype = 'Axis '//itoaf(iax)
 c
       il2 = len1(ctype)
       il = 1
@@ -413,7 +414,7 @@ c-----------------------------------------------------------------------
       call cofin (lun)
 c
       end
-c  
+c
 c* initCO -- Initialize coordinate conversion routines
 c& nebk
 c: coordinates
@@ -443,8 +444,8 @@ c     where needed ready for cocvt
 c
 c  Input
 c    type   NEBK style type of world coordinate; one of
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
-c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz',
 c               'abskms', 'relkms', 'absnat', 'relnat', none'
 c  Input/output
 c    win    Coordinate value.  Any coordinate of an angular type
@@ -457,8 +458,6 @@ c-----------------------------------------------------------------------
       double precision win
 cc
       include 'mirconst.h'
-      double precision a2r, d2r
-      parameter (a2r = dpi/180.0d0/3600.0d0, d2r = dpi/180.0d0)
       character*132 str
 c-----------------------------------------------------------------------
 c
@@ -475,22 +474,25 @@ c
         cti = 'op'
       else if (type.eq.'arcsec') then
         cti = 'ow'
-        win = win * a2r
+        win = win * DAS2R
       else if (type.eq.'arcmin') then
         cti = 'ow'
-        win = win * a2r * 60.0d0
+        win = win * DAS2R * 60.0d0
+      else if (type.eq.'arcmas') then
+        cti = 'ow'
+        win = win * AS2R * 1.0d-3
       else if (type.eq.'absghz' .or. type.eq.'abskms' .or.
      +         type.eq.'absnat') then
         cti = 'aw'
-      else if (type.eq.'relghz' .or. type.eq.'relkms' .or. 
+      else if (type.eq.'relghz' .or. type.eq.'relkms' .or.
      +         type.eq.'relnat') then
         cti = 'ow'
       else if (type.eq.'absdeg') then
         cti = 'aw'
-        win = win * d2r
+        win = win * DD2R
       else if (type.eq.'reldeg') then
         cti = 'ow'
-        win = win * d2r
+        win = win * DD2R
       else
         str = 'SCTICO: Unrecognized axis type ('//type//')'
         call bug ('f', str)
@@ -501,19 +503,19 @@ c
 c
       subroutine sctoco (type, wout)
 c-----------------------------------------------------------------------
-c     Convert an angular coordinate after it has been returned by 
-c     RJS' cocvt into the units appropriate to NEBK style coordinates.  
+c     Convert an angular coordinate after it has been returned by
+c     RJS' cocvt into the units appropriate to NEBK style coordinates.
 c
-c  Input 
+c  Input
 c    type   NEBK style type of world coordinate that we want
 c           to convert to;
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg', 
-c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz',
 c               'abskms', 'relkms', 'absnat', 'relnat', 'none'
 c  Input/output
 c    wout   Coordinate value.  On input, all angular coordiantes are
 c           in radians, on exit, 'arcsec' in arcsec, '*deg" in degrees
-c	    'arcmin' in arcmin
+c           'arcmin' in arcmin
 c
 c-----------------------------------------------------------------------
       implicit none
@@ -521,15 +523,15 @@ c-----------------------------------------------------------------------
       double precision wout
 cc
       include 'mirconst.h'
-      double precision r2a, r2d
-      parameter (r2a = 180.0d0*3600.0d0/dpi, r2d = 180.0d0/dpi)
 c-----------------------------------------------------------------------
       if (type.eq.'arcsec') then
-        wout = wout * r2a
+        wout = wout * DR2AS
       else if (type.eq.'arcmin') then
-        wout = wout * r2a / 60.0d0
+        wout = wout * DR2D * 60D0
+      else if (type.eq.'arcmas') then
+        wout = wout * DR2AS * 1.0d3
       else if (type.eq.'absdeg' .or. type.eq.'reldeg') then
-        wout = wout * r2d
+        wout = wout * DR2D
       end if
 c
       end
@@ -556,8 +558,8 @@ c    n        Number of axes
 c    iax      SPecific axis if N=0
 c  Output
 c    types    Desired NEBK style coordinate types.  One of
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg', 
-c               'reldeg', 'absghz', 'relghz', 'abskms', 'relkms', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'absghz', 'relghz', 'abskms', 'relkms',
 c               'absnat', 'relnat', 'none'
 c--
 c-----------------------------------------------------------------------
@@ -572,7 +574,7 @@ c-----------------------------------------------------------------------
         i1 = 1
         i2 = n
       end if
-c      
+c
       do i = i1, i2
 c
 c Get generic axis type and set default
@@ -668,8 +670,8 @@ c
 c
       subroutine sunitco (lun, iax, type, units)
 c----------------------------------------------------------------------
-c  Set the units of a pixel based upon the requested type and the 
-c  axis type.  Used for ascii not graphical output so no PGPLOT escape 
+c  Set the units of a pixel based upon the requested type and the
+c  axis type.  Used for ascii not graphical output so no PGPLOT escape
 c  sequences.
 c
 c  Inputs:
@@ -693,6 +695,8 @@ c-----------------------------------------------------------------------
         units = 'arcsec'
       else if (type.eq.'arcmin') then
         units = 'arcmin'
+      else if (type.eq.'arcmas') then
+        units = 'mas'
       else if (type.eq.'absdeg') then
         units = 'degrees'
       else if (type.eq.'reldeg') then
@@ -717,11 +721,11 @@ c-----------------------------------------------------------------------
           units2 = 'GHz'
         else if (gtype.eq.'UV') then
           units = 'wavelengths'
-        else 
+        else
           call axfndco (lun, 'RAD', 0, iax, jax)
           if (jax.ne.0) then
             units2 = 'radians'
-          else 
+          else
             units2 = ' '
           end if
         end if
@@ -740,7 +744,7 @@ c
 c
 c
 c* w2wCO -- Convert an array of coordinates
-c& nebk
+c& mrc
 c: coordinates
 c+
       subroutine w2wco (lun, n, typei, stypei, win, typeo, stypeo, wout)
@@ -750,14 +754,43 @@ c
       double precision win(n), wout(n)
       character*(*) typei(n), typeo(n), stypei, stypeo
 c
-c  Convert an array of NEBK style coordinates with the COCVT routines.
+c  For backwards-compatibility, call w2wcov to convert an NEBK-style
+c  coordinate vector and go belly-up if the coordinate conversion fails.
+c  Refer to the prologue of w2wcov for usage information.
+c--
+c-----------------------------------------------------------------------
+      logical valid
+c-----------------------------------------------------------------------
+      call w2wcov (lun, n, typei, stypei, win, typeo, stypeo, wout,
+     :  valid)
+      if (.not.valid) then
+        call bug('f', 'Invalid coordinate conversion in coCvtv')
+      end if
+c
+      end
+c
+c
+c* w2wCOv -- Convert an array of coordinates, with validation.
+c& nebk
+c: coordinates
+c+
+      subroutine w2wcov (lun, n, typei, stypei, win, typeo, stypeo,
+     :  wout, valid)
+      implicit none
+c
+      logical valid
+      integer lun, n
+      double precision win(n), wout(n)
+      character*(*) typei(n), typeo(n), stypei, stypeo
+c
+c  Convert an NEBK-style coordinate vector using the CO routines.
 c
 c  Input
 c    lun     Handle of open file
 c    n       Number of axes to convert
 c    typei   Array of input coordinate types, Should be from list
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
-c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz',
 c               'abskms', 'relkms', 'absnat', 'relnat', 'none'
 c    stypei  'radio', 'optical', 'frequency'.  If a spectral coordinate
 c            is given, this indicates what convention it is in,
@@ -769,7 +802,7 @@ c    win     Array of coordinates to be converted
 c               'hms', 'dms' in radians
 c               '*  deg'     in degrees
 c               'arcsec'     in arcsec
-c	        'arcmin'     in arcmin
+c               'arcmin'     in arcmin
 c               '*  pix'     in pixels
 c               '*  ghz'     in GHz
 c               '*  kms'     in km/s
@@ -790,7 +823,7 @@ c--
 c-----------------------------------------------------------------------
       include 'maxnax.h'
       integer i, ip
-      character cti*21, cto*21, str*2 
+      character cti*21, cto*21, str*2
       character*9 sstype, lstype
       double precision wloc(maxnax), xdum
       logical done, nix(maxnax), none
@@ -816,12 +849,16 @@ c
             nix(i) = .true.
           end if
         end if
+
         if (.not.nix(i)) none = .false.
       end do
+
       if (none) then
         do i = 1, n
           wout(i) = win(i)
         end do
+
+        valid = .true.
         return
       end if
 c
@@ -856,7 +893,8 @@ c Now convert to pixels (pixels being converted to pixels here
 c will be done with no loss of precision so don't bother with
 c extra code to trap it
 c
-      call cocvt (lun, cti, wloc, cto, wout)
+      call cocvtv (lun, cti, wloc, cto, wout, valid)
+      if (.not.valid) return
 c
 c Now check that we need to go on.  The user may want absolute
 c pixels whereupon we are done.  Note that absolute pixels
@@ -873,10 +911,10 @@ c Having turned the coordinate into a pixel, we can now convert
 c it to the desired output coordinate type.  First, once again
 c switch the spectral axis if needed.
 c
-        if (sstype.ne.' ' .and. stypeo.ne.' ') 
+        if (sstype.ne.' ' .and. stypeo.ne.' ')
      +    call covelset (lun, stypeo)
 c
-c Loop over axes 
+c Loop over axes
 c
         cti = '  '
         cto = '  '
@@ -900,7 +938,7 @@ c Now convert the absolute pixels to the desired coordinate type
 c
         call cocvt (lun, cti, wloc, cto, wout)
 c
-c Now we must convert (some of the) coordinates given in radians to the 
+c Now we must convert (some of the) coordinates given in radians to the
 c appropriate output units (degrees, arcsec etc)
 c
         do i = 1, n
@@ -922,7 +960,7 @@ c
       end
 c
 c
-c* w2wfCO -- Convert an array of coordinates and format 
+c* w2wfCO -- Convert an array of coordinates and format
 c& nebk
 c: coordinates
 c+
@@ -935,15 +973,15 @@ c
       character*(*) typei(n), typeo(n), strout(n), stypei, stypeo
       logical nounit
 c
-c  Convert an array of NEBK style coordinates with the COCVT routines 
+c  Convert an array of NEBK style coordinates with the COCVT routines
 c  and format the results with units into strings
 c
 c  Input
 c    lun     Handle of open file
 c    n       Number of axes
 c    typei   Array of input coordinate types, Should be from list
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg', 
-c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz',
 c               'abskms', 'relkms', 'absnat', 'relnat', 'none'
 c    stypei  'radio', 'optical', 'frequency'.  If a spectral coordinate
 c            is given, this indicates what convention it is in,
@@ -955,7 +993,7 @@ c    win     Array of coordinates to be converted
 c               'hms', 'dms' in radians
 c               '*  deg'     in degrees
 c               'arcsec'     in arcsec
-c		'arcmin'     in arcmin
+c               'arcmin'     in arcmin
 c               '*  pix'     in pixels
 c               '*  ghz'     in GHz
 c               '*  kms'     in km/s
@@ -998,8 +1036,9 @@ c
         else if (typeo(i).eq.'absghz' .or. typeo(i).eq.'relghz') then
           call strfd (wout(i), '(1pe15.8)', strout(i), strlen(i))
         else if (typeo(i).eq.'absdeg' .or. typeo(i).eq.'reldeg') then
-          call strfd (wout(i), '(f8.3)', strout(i), strlen(i))  
-        else if (typeo(i).eq.'arcsec' .or. typeo(i).eq.'arcmin') then
+          call strfd (wout(i), '(f8.3)', strout(i), strlen(i)) 
+        else if (typeo(i).eq.'arcsec' .or. typeo(i).eq.'arcmin'
+     +           .or. typeo(i).eq.'arcmas') then
           call strfd (wout(i), '(1pe15.8)', strout(i), strlen(i))
         else if (typeo(i).eq.'absnat' .or. typeo(i).eq.'relnat') then
           call strfd (wout(i), '(1pe15.8)', strout(i), strlen(i))
@@ -1049,8 +1088,8 @@ c  Input
 c    lun     Handle of open file
 c    iax     Axis
 c    typei   Input coordinate type, Should be from list
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
-c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz',
 c               'abskms', 'relkms', 'absnat', 'relnat', 'none'
 c    stypei  'radio', 'optical', 'frequency'.  If a spectral coordinate
 c            is given, this indicates what convention it is in,
@@ -1062,7 +1101,7 @@ c    win     Coordinate to be converted
 c               'hms', 'dms' in radians
 c               '*  deg'     in degrees
 c               'arcsec'     in arcsec
-c		'arcmin'     in arcmin
+c               'arcmin'     in arcmin
 c               '*  pix'     in pixels
 c               '*  ghz'     in GHz
 c               '*  kms'     in km/s
@@ -1092,7 +1131,7 @@ c Load reference pixel for dummy locations
 c
       call cogetd(lun,'naxis',dtemp)
       naxis = nint(dtemp)
-      if (iax.le.0 .or. iax.gt.naxis)  
+      if (iax.le.0 .or. iax.gt.naxis)
      +  call bug ('f', 'W2WSCO: invalid axis number')
       do i = 1, naxis
         ltypei(i) = 'relpix'
@@ -1108,7 +1147,7 @@ c
 c
 c Convert
 c
-      call w2wco (lun, naxis, ltypei, stypei, lwin, ltypeo, 
+      call w2wco (lun, naxis, ltypei, stypei, lwin, ltypeo,
      +            stypeo, lwout)
 c
 c Fish out axis
@@ -1118,7 +1157,7 @@ c
       end
 c
 c
-c* w2wfsCO -- Convert a coordinate for a single axis and format 
+c* w2wfsCO -- Convert a coordinate for a single axis and format
 c& nebk
 c: coordinates
 c+
@@ -1139,8 +1178,8 @@ c  Input
 c    lun     Handle of open file
 c    iax     Axis of interest
 c    typei   Coordinate type, should be from list
-c	        'hms',    'dms',    'arcsec', 'arcmin', 'absdeg', 
-c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz', 
+c               'hms',    'dms',    'arcsec', 'arcmin', 'absdeg',
+c               'reldeg', 'abspix', 'relpix', 'absghz', 'relghz',
 c               'abskms', 'relkms', 'absnat', 'relnat', 'none'
 c    stypei  'radio', 'optical', 'frequency'.  If a spectral coordinate
 c            is given, this indicates what convention it is in,
@@ -1150,7 +1189,7 @@ c    win     Coordinate to be converted
 c               'hms', 'dms' in radians
 c               '*  deg'     in degrees
 c               'arcsec'     in arcsec
-c		'arcmin'     in arcmin
+c               'arcmin'     in arcmin
 c               '*  pix'     in pixels
 c               '*  ghz'     in GHz
 c               '*  kms'     in km/s
@@ -1180,7 +1219,7 @@ c Load dummy array values and actual value into conversion arrays
 c
       call cogetd(lun,'naxis',dtemp)
       naxis = nint(dtemp)
-      if (iax.le.0 .or. iax.gt.naxis)  
+      if (iax.le.0 .or. iax.gt.naxis)
      +  call bug ('f', 'W2WSFCO: invalid axis number')
       do i = 1, naxis
         lwin(i) = 0.0
@@ -1193,7 +1232,7 @@ c
 c
 c Convert and format
 c
-      call w2wfco (lun, iax, ltypei, stypei, lwin, ltypeo, stypeo, 
+      call w2wfco (lun, iax, ltypei, stypei, lwin, ltypeo, stypeo,
      +             nounit, lstrout, lstrlen)
 c
 c Return formatted string

@@ -131,6 +131,7 @@ c	"hms"       the label is in H M S (e.g. for RA)
 c	"dms"       the label is in D M S (e.g. for DEC)
 c	"arcsec"    the label is in arcsecond offsets
 c	"arcmin"    the label is in arcminute offsets
+c	"arcmas"    the label is in mas offsets
 c	"absdeg"    the label is in degrees
 c	"reldeg"    the label is in degree offsets
 c		    The above assume the  pixel increment is in radians.
@@ -149,7 +150,7 @@ c	All offsets are from the reference pixel.
 c	Defaults are "abspix", LABTYP(1) unless LABTYP(1)="hms"
 c	whereupon LABTYP(2) defaults to "dms" (for RA and DEC).
 c
-c       LABTYP(3) can only be "arcsec", "arcmin","reldeg" or
+c       LABTYP(3) can only be "arcsec", "arcmin","arcmas", "reldeg" or
 c       "relpix". Default is "arcsec" for RA, DEC, LAT or LONG axes.
 c       
 c
@@ -339,6 +340,7 @@ c    rjs  21jul97  Call initco earlier
 c    rjs   7may98  Change the bunit variable to be 16 char (not 8 char).
 c    rjs  08may00  Change incorrect keyf call to keya.
 c    dpr  18jan01  Add third laptyp
+c   nebk  14nov01  Track change to readimcg interface
 c
 c Notes:
 c
@@ -361,7 +363,7 @@ c
       integer maxlev, nxdef, nydef, maxnsl, nltype, nbins
       real grid, wedwid, tfdisp
       parameter (maxlev = 50, nxdef = 4, nydef = 4, maxnsl = 20,
-     +  nbins = 128, grid = 0.25, nltype = 17, wedwid = 0.05, 
+     +  nbins = 128, grid = 0.25, nltype = 18, wedwid = 0.05,
      +  tfdisp = 0.5)
 c
       integer ipim, ipp, ipims, ipnim, ipslx(maxnsl), ipsly(maxnsl),
@@ -369,7 +371,7 @@ c
 c
       real levs(maxlev), pixr(2), tr(6), cs(3), pixr2(2), scale(2),
      +  bound(4,maxnsl), vblc(2,2), vtrc(2,2), xrange(2), yrange(2),
-     +  tfvp(4), wdgvp(4), cumhis(nbins), dmm(2)
+     +  tfvp(4), wdgvp(4), cumhis(nbins), dmm(3)
       real slev, vx, vy, vxsize, vysize, ydispb, ydispbs, xdispl, 
      +  xdispls, groff, blank, sxmin, sxmax, symin, symax, vxgap, 
      +  vygap
@@ -395,17 +397,17 @@ c
 c
       integer len1
 c
-      data ltype  /'hms   ', 'dms   ', 'abspix', 'relpix', 
-     +            'arcsec', 'arcmin', 'absghz', 'relghz', 
-     +            'abskms', 'relkms', 'absnat', 'relnat', 
-     +            'absdeg', 'reldeg', 'none  ', 'abslin',
-     +            'rellin'/
+      data ltype  /'hms   ', 'dms   ', 'abspix', 'relpix',
+     +            'arcsec', 'arcmin', 'arcmas', 'absghz',
+     +            'relghz', 'abskms', 'relkms', 'absnat',
+     +            'relnat', 'absdeg', 'reldeg', 'none  ',
+     +            'abslin', 'rellin'/
       data ipage, scale /0, 0.0, 0.0/
       data xrange, yrange /0.0, 0.0, 0.0, 0.0/
-      data dmm, dunsl, gaps /1.0e30, -1.0e30, .false., .false./
+      data dmm, dunsl, gaps /1.0e30, -1.0e30, -1.0, .false., .false./
       data xdispls, ydispbs /3.5, 3.5/
 c-----------------------------------------------------------------------
-      call output ('CgSlice: version 1.0 18-JAN-2001')
+      call output ('CgSlice: version 14-Nov-2001')
       call output (' ')
 c
 c Get user inputs
@@ -487,6 +489,7 @@ c Set default
         if (labtyp(3).eq.'none') labtyp(3)='arcsec'
         if (labtyp(3).eq.'arcsec')  xlabel2 = 'offset (arcsec)'
         if (labtyp(3).eq.'arcmin')  xlabel2 = 'offset (arcmin)'
+        if (labtyp(3).eq.'arcmas')  xlabel2 = 'offset (mas)'
         if (labtyp(3).eq.'reldeg')  xlabel2 = 'offset (degrees)'
       else
         if ((labtyp(3).eq.'none').or.(labtyp(3).eq.'relpix')) then
@@ -1189,6 +1192,9 @@ c
       if (index(labtyp,'arcmin').ne.0) then
         lim(1)=lim(1)/60.0
         lim(3)=lim(3)/60.0
+      else if (index(labtyp,'arcmas').ne.0) then
+        lim(1)=lim(1)/1E-3
+        lim(3)=lim(3)/1E-3
       else if (index(labtyp,'reldeg').ne.0) then
         lim(1)=lim(1)/60.0/60.0
         lim(3)=lim(3)/60.0/60.0
@@ -1469,6 +1475,7 @@ c Scale x data accoring to labype
 c
         scafac=1
         if (index(labtyp,'arcmin').ne.0) scafac=60.0
+        if (index(labtyp,'arcmas').ne.0) scafac=1.0E-3
         if (index(labtyp,'reldeg').ne.0) scafac=60.0*60.0
       
         do sctr=2,4
@@ -1853,6 +1860,7 @@ c Scale x data accoring to labype
 c
         scafac=1
         if (index(labtyp,'arcmin').ne.0) scafac=60.0
+        if (index(labtyp,'arcmas').ne.0) scafac=1.0E-3
         if (index(labtyp,'reldeg').ne.0) scafac=60.0*60.0
 c
         x1=x1*scafac
@@ -2043,10 +2051,11 @@ c
       if (nlab.le.2) then
 c Default is set later, depending
 c on whether the axis is radian type
-        labtyp(3) = 'none'    
-      else 
-        if ((labtyp(3).ne.'arcsec') .and. (labtyp(3).ne.'arcmin') .and. 
-     - (labtyp(3).ne.'reldeg') .and. (labtyp(3).ne.'relpix')) then
+        labtyp(3) = 'none'   
+      else
+        if ((labtyp(3).ne.'arcsec') .and. (labtyp(3).ne.'arcmin') .and.
+     - (labtyp(3).ne.'arcmas') .and. (labtyp(3).ne.'reldeg') .and.
+     - (labtyp(3).ne.'relpix')) then
           call bug ('w', 'LABTYP(3) not recognized')
           labtyp(3) = 'none'
         end if
@@ -2247,6 +2256,10 @@ c
         do sctr=1,n
           x(sctr)=x(sctr)/60.0
         end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)/1E-3
+        end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)/60.0/60.0
@@ -2276,6 +2289,10 @@ c
       if (index(labtyp,'arcmin').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)*60.0
+        end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)*1E-3
         end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n
@@ -2920,6 +2937,9 @@ c
       if (index(labtyp,'arcmin').ne.0) then
         wblc(1)=wblc(1)*60.0
         wtrc(1)=wtrc(1)*60.0
+      else if (index(labtyp,'arcmas').ne.0) then
+        wblc(1)=wblc(1)*1E-3
+        wtrc(1)=wtrc(1)*1E-3
       else if (index(labtyp,'reldeg').ne.0) then
         wblc(1)=wblc(1)*60.0*60.0
         wtrc(1)=wtrc(1)*60.0*60.0
@@ -3161,6 +3181,10 @@ c
         do sctr=1,n
           x(sctr)=x(sctr)/60.0
         end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)/1E-3
+        end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)/60.0/60.0
@@ -3196,6 +3220,10 @@ c
       if (index(labtyp,'arcmin').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)*60.0
+        end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)*1E-3
         end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n

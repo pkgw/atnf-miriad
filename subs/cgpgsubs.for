@@ -137,6 +137,10 @@ c     nebk   14fen97     Add argumebnt val3form to LAB3CG
 c     rjs    15apr97     Mr K was not checking for ANGL axis type in
 c			 LAB3CG -- and causing things to vomit.
 c     rjs    10nov97     Make more robust to things missing from headers.
+c     jwr    08jul04     Replaced MemAlloc where MemFree was meant
+c     rgd    01aug08     Added the arcmas call for milliarcs
+c
+c $Id$
 c**********************************************************************
 c
 c* annboxCG -- Annotate plot with information from a box image 
@@ -1082,8 +1086,9 @@ c-----------------------------------------------------------------------
       real xline(n), yline(n)
       character*(*) type(3), axis
 cc
+      logical valid
+      integer i, naxis, npt
       double precision inc, wi(3), po(3)
-      integer i, naxis
       character typei(3)*6, typeo(3)*6
 c-----------------------------------------------------------------------
       inc = (p2-p1)/real(n-1)
@@ -1113,11 +1118,17 @@ c
       end if
       wi(3) = zp
 c
+      npt = 0
       do i = 1, n
-        call w2wco (lun, naxis, typei, ' ', wi, typeo, ' ', po)
+        call w2wcov (lun, naxis, typei, ' ', wi, typeo, ' ', po, valid)
+        if (.not.valid) then
+          if (npt.gt.1) call pgline (npt, xline, yline)
+          npt = 0
+        end if
 c
-        xline(i) = po(1)
-        yline(i) = po(2)
+        npt = npt + 1
+        xline(npt) = po(1)
+        yline(npt) = po(2)
 c
         if (axis.eq.'x') then
           wi(2) = wi(2) + inc 
@@ -1125,7 +1136,8 @@ c
           wi(1) = wi(1) + inc
         end if
       end do
-      call pgline (n, xline, yline)
+c
+      if (npt.gt.1) call pgline (npt, xline, yline)
 c
       end
 c
@@ -1342,11 +1354,13 @@ c
           if (types(1).eq.'DEC' .or. types(1).eq.'LATI') then
             ltype = 'hms'
             if (labtyp(1).eq.'arcsec' .or. labtyp(1).eq.'arcmin' .or.
-     +          labtyp(1)(4:6).eq.'deg') ltype = labtyp(1)
+     +          labtyp(1).eq.'arcmas' .or. labtyp(1)(4:6).eq.'deg')
+     +          ltype = labtyp(1)
           else if (types(2).eq.'DEC' .or. types(2).eq.'LATI') then
             ltype = 'hms'
             if (labtyp(2).eq.'arcsec' .or. labtyp(2).eq.'arcmin' .or.
-     +          labtyp(2)(4:6).eq.'deg') ltype = labtyp(2)
+     +          labtyp(2).eq.'arcmas' .or. labtyp(2)(4:6).eq.'deg')
+     +          ltype = labtyp(2)
           end if
         else if (types(3).eq.'DEC' .or. types(3).eq.'LATI') then
 c  
@@ -1356,11 +1370,13 @@ c
           if (types(1).eq.'RA' .or. types(1).eq.'LONG') then
             ltype = 'dms'
             if (labtyp(1).eq.'arcsec' .or. labtyp(1).eq.'arcmin' .or.
-     +          labtyp(1)(4:6).eq.'deg') ltype = labtyp(1)
+     +          labtyp(1).eq.'arcmas' .or. labtyp(1)(4:6).eq.'deg')
+     +          ltype = labtyp(1)
           else if (types(2).eq.'RA' .or. types(2).eq.'LONG') then
             ltype = 'dms'
             if (labtyp(2).eq.'arcsec' .or. labtyp(2).eq.'arcmin' .or.
-     +          labtyp(2)(4:6).eq.'deg') ltype = labtyp(2)
+     +          labtyp(2).eq.'arcmas' .or. labtyp(2)(4:6).eq.'deg')
+     +          ltype = labtyp(2)
           end if
         end if
 c
@@ -1459,8 +1475,8 @@ c--
 c-----------------------------------------------------------------------
       include 'mirconst.h'
 c
-      double precision as2r, st2r
-      parameter (as2r=dpi/3600.d0/180.d0, st2r=dpi/3600.d0/12.0d0)
+      double precision st2r
+      parameter (st2r=dpi/3600.d0/12.0d0)
 c
       double precision wwi(3), wblc(3), wtrc(3), wbrc(3), wtlc(3),
      + tickd(2), xmin, xmax, ymin, ymax, zp, ticklp(2), dp, dw, 
@@ -2528,7 +2544,7 @@ c
 c
 c Free up memory
 c
-      call memalloc (ipw, nbins2, 'r')
+      call memfree (ipw, nbins2, 'r')
 c
       end
 c
