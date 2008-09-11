@@ -66,6 +66,12 @@ c		     work around GILDAS flaw.
 c    rjs  21mar00    Transpose axes of visibility arrays on uvin where
 c		     necessary.
 c    rjs   4jun05    Fudges to help cope better with files > 2 Gbytes.
+c    rjs  18sep05    Fix up type inconsistency bug.
+c    rjs  20sep05    Correct handling of degenerate extension tables.
+c    rjs  01jan07    Added routines fantbas and fbasant to convert baseline
+c		     numbering convension.
+c    pjt  08mar07    Added support for reading bitpix=-64 images
+c    rjs  11sep08    More robust to truncated files
 c
 c  Bugs and Shortcomings:
 c    * IF frequency axis is not handled on output of uv data.
@@ -241,8 +247,13 @@ c
 	if(status.ne.'new')then
 	  call fitopen(lu,name,status)
 	  call fitrdhdi(lu,'BITPIX', bitpix,0)
-	  if(bitpix.ne.16.and.abs(bitpix).ne.32)
-     *		call bug('f','Unsupported value for BITPIX')
+	  if(bitpix.ne.16.and.abs(bitpix).ne.32) then
+             if (bitpix.eq.-64) then
+                call bug('w','Loosing precision for BITPIX=-64')
+             else
+                call bug('f','Unsupported value for BITPIX')
+             endif
+          endif
 	  Bytes = abs(BitPix)/8
 	  dofloat = BitPix.lt.0
 	  call fitrdhdi(lu,'NAXIS',ndim,0)
@@ -400,6 +411,7 @@ c------------------------------------------------------------------------
 	integer i,offset,length,iostat,blank
 	real bs,bz
 	include 'fitsio.h'
+        double precision data8(MAXDIM)
 c
 c  Check that it is the right sort of operation for this file.
 c
@@ -419,7 +431,14 @@ c
 c  Do the floating point case. Blank the data if needed.
 c
 	if(float(lu))then
-	  call hreadr(item(lu),data,offset,BypPix(lu)*length,iostat)
+          if (BypPix(lu).eq.4) then
+             call hreadr(item(lu),data,offset,BypPix(lu)*length,iostat)
+          else 
+             call hreadd(item(lu),data8,offset,BypPix(lu)*length,iostat)
+             do i=1,length
+                data(i) = data8(i)
+             enddo
+          endif
 	  if(iostat.ne.0)call bugno('f',iostat)
 c
 	  if(bs.ne.1.or.bz.ne.0)then
@@ -603,7 +622,7 @@ c------------------------------------------------------------------------
 c
 c  Externals.
 c
-	integer isrchieq
+	integer isrchl
 c
 c  Check that it is the right sort of operation for this file.
 c
@@ -629,9 +648,9 @@ c  the magic value blanked version.
 c
 	lmax = 0
 	kmax = axes(1,lu)
-	k = isrchieq(kmax,flags,1,.false.)
+	k = isrchl(kmax,flags,.false.)
 	dowhile(k.le.kmax)
-	  l = isrchieq(kmax-k+1,flags(k),1,.true.) - 1
+	  l = isrchl(kmax-k+1,flags(k),.true.) - 1
 	  if(l.gt.lmax)then
 	    do i=lmax+1,l
 	      array(i) = Blank
@@ -642,10 +661,24 @@ c
      *				      BypPix(lu)*l,iostat)
 	  if(iostat.ne.0)call bugno('f',iostat)
 	  k = k + l
-	  if(k.le.kmax)k = isrchieq(kmax-k+1,flags(k),1,.false.) + k - 1
+	  if(k.le.kmax)k = isrchl(kmax-k+1,flags(k),.false.) + k - 1
 	enddo
 c
 	end
+c************************************************************************
+	integer function isrchl(n,array,target)
+c
+	implicit none
+	integer n
+	logical array(n),target
+c
+c------------------------------------------------------------------------
+        integer i
+        do i=1,n
+          if(array(i).eqv.target)goto 200
+        enddo
+ 200    isrchl = i
+        end
 c************************************************************************
 c* FxyClose -- Close a FITS image file.
 c& rjs
@@ -2766,16 +2799,25 @@ c
 	       call fitrdhdi(lu,'NAXIS'//itoaf(i),axis,1)
 	       if(axis.lt.0)call bug('f',
      *	         'Bad value in fundamental parameter in FITS file')
-	       size = size * max(axis,1)
+	       if(i.eq.1)axis = max(axis,1)
+	       size = size * axis
 	     enddo
           end if
 c
 	  ncards(lu) = 0
 	  DatSize(lu) = abs(bitpix)/8 * (pcount + size)
-	  itemp = (totsize-DatOff(lu))/DatSize(lu)
+	  if(DatSize(lu).gt.0)then
+	    itemp = (totsize-DatOff(lu))/DatSize(lu)
+	  else
+	    itemp = 1
+	  endif
 	  if(itemp.lt.gcount)then
-	    if(itemp.eq.0)
-     *		call bug('f','Serious inconsistency in file size')
+	    if(itemp.eq.0)then
+	      call bug('w','Serious inconsistency in file size')
+	      call bug('w',
+     *		'An extension file has been trimmed or discarded')
+	      return
+	    endif
 	    call bug('w','File size inconsistency: '//
      *			 'Some data may be lost')
 	    gcount = itemp
@@ -4294,3 +4336,71 @@ c
           endif
         enddo
         end
+c***********************************************************************
+c* fBasAnt - determine antennas from baseline number.
+c& jm
+c: FITS i/o
+c+
+      subroutine fbasant(bl, ant1, ant2, config)
+      implicit none
+      integer ant1, ant2,config
+      real bl
+c
+c  fBasAnt is a Miriad routine that returns the antenna numbers that are
+c  required to produce the input baseline number. 
+c
+c  This uses an extension of the FITS convention to handle antenna numbers
+c  up to 2047.
+c  The relationship between the baseline and the antenna numbers is defined as either
+c    baseline = (Ant1 * 256) + Ant2.  (when ant1,ant2 < 256)
+c  or
+c    baseline = (Ant1 * 2048) + Ant2 + 65536. (otherwise)
+c
+c  See also: basant
+c
+c  Input:
+c    bl	      The baseline number.
+c  Output:
+c    ant1     The first antenna number.
+c    ant2     The second antenna number.
+c    config   Configuration number.
+c--
+c-----------------------------------------------------------------------
+      integer mant
+c
+      ant2 = int(bl + 0.01)
+      config = nint(100*(bl-ant2)) + 1
+      if(ant2.gt.65536)then
+	ant2 = ant2 - 65536
+	mant = 2048
+      else
+	mant = 256
+      endif
+      ant1 = ant2 / mant
+      ant2 = ant2 - (ant1 * mant)
+c
+      if (max(ant1,ant2).ge. mant) then
+	ant1 = 0
+	ant2 = 0
+	config = 0
+      endif
+c
+      end
+c************************************************************************
+	subroutine fantbas(i1,i2,config,bl)
+c
+	implicit none
+	integer i1,i2,config
+	real bl
+c
+c  Determine the baseline number of a pair of antennas.
+c
+c  See also: antbas
+c
+c------------------------------------------------------------------------
+	if(max(i1,i2).gt.255)then
+	  bl = 2048*i1 + i2 + 65536 + 0.01*(config-1)
+	else
+	  bl =  256*i1 + i2 + 0.01*(config-1)
+	endif
+	end
