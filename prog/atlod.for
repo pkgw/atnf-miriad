@@ -2237,8 +2237,8 @@ c
 c
 	kband = .false.
 	wband = .false.
-        cabb = .false.
-c
+        cabb = instrument(1:6).eq.'ATCABB'
+        if (cabb) call liner('CABB data detected')
 c  Initialise flagging information.
 c
 	nrec  = 0
@@ -2447,7 +2447,6 @@ c
 		    kband = kband.or.
      *			   (if_freq(id).gt.13e9.and.if_freq(id).lt.28e9)
 		    wband = wband.or.if_freq(id).gt.75e9
-                    cabb = if_bw(id).gt.3e8
 		    call PokeIF(i,if_nfreq(id),if_invert(id)*if_bw(id),
      *			if_freq(id),if_ref(id),rfreq,
      *			nstoke(id),cstoke(1,id))
