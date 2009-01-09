@@ -1205,6 +1205,11 @@ c
           call do8(vis,nstoke(if),nfreq(if),sfreq(if),sdf(if))
         endif
 c
+c  If CABB, apply optional scaling and XY phase correction with ON/OFF data 
+c   in autocorrelations
+c
+c        call cabbCal(vis,i1,i2,bin,if)
+c
 c  Allocate buffer slots for each polarisation. Save the flags, Copy the
 c  data to the output. Do sampler corrections.
 c
@@ -1596,6 +1601,7 @@ c
                       call PolPut(tno,polcode(if,p),dosw(bl))
                       call GetFlag(flag(if,p,bl,bin),nfreq(if),
      *                                            bchan(if),flags)
+                      call FlagNaN(data(ipnt),flags,nfreq(if))
                       call rfiFlag(flags,NDATA,1,nfreq(if),
      *                             sfreq(if),sdf(if))
                       if(.not.hires)call uvputvri(tno,'bin',bin,1)
@@ -1652,6 +1658,7 @@ c
                 if(npol.gt.0)then
                   call uvputvri(tno,'npol',npol,1)
                   do p=1,nstoke(1)
+c                    print *,'ant1=',i1,' ant2=',i2,' pol=',p,' bin=',bin
                     call GetDat(data,nused,pnt(1,p,bl,bin),
      *                  flag(1,p,bl,bin),nfreq,fac,bchan,nifs,
      *                  vis,flags,NDATA,nchan)
@@ -1695,6 +1702,33 @@ c
         newsc   = .false.
         newfreq = .false.
         newpnt  = .false.
+        end
+c************************************************************************
+        subroutine flagnan(data,flags,nchan)
+c
+        integer nchan
+        logical flags(nchan)
+        complex data(nchan)
+c------------------------------------------------------------------------
+        integer i,cnt
+        complex tmp
+        integer nantest(2)
+        equivalence(tmp,nantest(1))
+c
+        cnt=0
+        do i=1,nchan
+          tmp=data(i)
+c
+c         Flag all data in the 'quiet' NaN range
+c
+          if ((nantest(1).ge.-8388608 .and. nantest(1).le.-1) .or.
+     *     (nantest(1).ge.2139095040.and.nantest(1).le.2147483647)) then
+            flags(i)=.false.
+            data(i)=0.
+            cnt=cnt+1
+          endif
+        enddo
+c
         end
 c************************************************************************
         subroutine opapply(data,nchan,fac)
@@ -2007,6 +2041,7 @@ c
             endif
 c
             do i=nchan+1,nchan+nfreq(n)
+            
               vis(i) = fac(n)*data(ipnt)
               flags(i) = flag(n)
               ipnt = ipnt + 1
@@ -2025,6 +2060,8 @@ c
           enddo
           nchan = nchand
         endif
+        
+        call flagnan(vis,flags,nchan)
 c
         end
 c************************************************************************
@@ -2410,7 +2447,11 @@ c
 c
             i1 = baseln/256
             i2 = mod(baseln,256)
-            if(ok) ok = (i1.eq.i2.and.doauto).or.(i1.ne.i2.and.docross)
+c            
+c  Always need to store auto corr bin 1 and 2 for cabb data
+c
+            if(ok) ok = (i1.eq.i2.and.(doauto.or.cabb)).or.
+     *                  (i1.ne.i2.and.docross)
             if(ok)then
               ok = ifno.ge.1.and.ifno.le.n_if.and.
      *             min(i1,i2).ge.1.and.max(i1,i2).le.nant.and.
@@ -2430,6 +2471,7 @@ c
               else if(.not.(antvalid(i1).and.antvalid(i2)))then
                 flag = 1
                 fginvant = fginvant + nspec
+c NOTE -need options=relax to get past this for cabb data
               else if(.not.((scinit(ifno,i1).and.scinit(ifno,i2)).or.
      *          relax))then
                 flag = 1
@@ -2444,6 +2486,7 @@ c
 c
 c  Initialise the Poke routines with new info as required.
 c
+c              print *,i1,i2,bin,ut, vis(1), vis(1024)
               if(.not.Accum)then
                 time = ut / (3600.d0*24.d0) + jday0
                 call Poke1st(time,nifs(simno),nant)
