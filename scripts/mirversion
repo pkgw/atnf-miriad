@@ -15,4 +15,4 @@
     set hostupdate = "unknown"
   endif
 
-  echo "Miriad version date: $hostupdate"
+  echo "Miriad version date: $hostupdate (cabb branch)"
