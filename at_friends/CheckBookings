@@ -20,23 +20,25 @@
          $1 == ";" {arm = 1}' $file | sed -e 's/;//g' >> bookings.current
   end
 
-# Send mail if there is someone new.
+# Any new users?
   rm -f bookings.newusers
   sort -u bookings.current | comm -1 -3 bookings.users - > bookings.newusers
 
+  cat /dev/null > bookings.mail
+
   if (! -z bookings.newusers) then
-    rm -f bookings.mail
-    touch bookings.mail
     foreach user (`cat bookings.newusers`)
       grep -h $user $BOOK/DATA/*.DIARY >> bookings.mail
     end
 
-    echo " " >> bookings.mail
-    lynx -dump "http://www.atnf.csiro.au/people/current_visitors.html" | \
-      sed -e "s/\[[0-9]*\]//g" -e "/References/q" > $DIR/epp_visitors.txt
-    lynx -dump "http://www.narrabri.atnf.csiro.au/~rwark/visitors" > \
-      $DIR/nar_visitors.txt
-    cat $DIR/epp_visitors.txt >> bookings.mail
-    mail -s "New users with bookings" \
-      at_friends@atnf.csiro.au,mirmgr@atnf.csiro.au, < bookings.mail
+    echo >> bookings.mail
   endif
+
+# Append the visitor schedule.
+  setenv SCHEDULE=http://www.atnf.csiro.au/people/visitor_schedule.html
+  lynx -dump -width=110 "$SCHEDULE" | \
+    sed -n -e '{/staff/d;s/^        //p;}' >> bookings.mail
+
+# Mail it to interested parties.
+  mail -s "New users with bookings" \
+    at_friends@atnf.csiro.au,mirmgr@atnf.csiro.au, < bookings.mail
