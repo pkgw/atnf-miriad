@@ -13,7 +13,8 @@ MIRINCS  += $(patsubst %,-I %, $(MIRINCOD))
 MIRINCS  += -I $(MIRINCD)
 MIRLIBR  := $(MIRLIBD)/libmir.a
 XTRNLIBS := $(RPFITSLIB) $(LINPACKLIB) $(PGPLOTLIB) $(X11LIB) $(XTRALIBS)
-MIREXES  := $(basename $(filter %.for,$(MIRSRCS)))
+ZEROFORS := $(notdir $(shell find . -maxdepth 1 -size 0))
+MIREXES  := $(basename $(filter-out $(ZEROFORS),$(filter %.for,$(MIRSRCS))))
 
 show ::
 	-@ echo ""
@@ -23,6 +24,7 @@ show ::
 	-@ echo "MIRINCS  = $(MIRINCS)"
 	-@ echo "MIRLIBR  = $(MIRLIBR)"
 	-@ echo "XTRNLIBS = $(XTRNLIBS)"
+	-@ echo "ZEROFORS = $(ZEROFORS)"
 	-@ echo "MIREXES  = $(MIREXES)"
 
 
