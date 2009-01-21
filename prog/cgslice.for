@@ -1,320 +1,328 @@
       program cgslice
 c-----------------------------------------------------------------------
 c= CGSLICE - Display an image and interactively extract 1-D slices
-c          
+c
 c& nebk
 c: plotting
 c+
-c	CGSLICE displays an image via a contour plot or a pixel map
-c	representation on a PGPLOT device.  The cursor (or a text file 
-c	with slice positions) is then used to define the end points of 
-c	1-D slices which are marked on the image, and then plotted. 
+c       CGSLICE displays an image via a contour plot or a pixel map
+c       representation on a PGPLOT device.  The cursor (or a text file
+c       with slice positions) is then used to define the end points of
+c       1-D slices which are marked on the image, and then plotted.
 c
-c	After the image has been displayed, use the mouse (any button)
-c	or keyboard (enter any character) to define each end of the slice.
-c	You can define many slices if you wish.  When you have marked
-c	all the slices you want, click the right button of the mouse
-c	(or enter 'X' from the keyboard).  You are then offered the 
-c	choice to redo all the slices if you didn't like them (enter 
-c	'R' from the keyboard) or to continue on and display the slices
-c	(click the right button or enter 'X' from the keyboard).
+c       After the image has been displayed, use the mouse (any button)
+c       or keyboard (enter any character) to define each end of the
+c       slice.  You can define many slices if you wish.  When you have
+c       marked all the slices you want, click the right button of the
+c       mouse (or enter 'X' from the keyboard).  You are then offered
+c       the choice to redo all the slices if you didn't like them (enter
+c       'R' from the keyboard) or to continue on and display the slices
+c       (click the right button or enter 'X' from the keyboard).
 c
-c	Options to fit a Gaussian plus a baseline are available.  If
-c	you invoke the fitting, it is activated after each of all the
-c	slices defined is plotted.  With the cursor (any button of
-c	a mouse or any characer from the keyboard) you define the initial
-c	guesses for the Gaussian parameters.   The data, fitted model 
-c	and residual are then plotted.   You can the redo the fitting
-c	if you wish (right button of mouse or entering 'X' from keyboard)
-c	before proceeding to fit the next slice that you defined.
+c       Options to fit a Gaussian plus a baseline are available.  If
+c       you invoke the fitting, it is activated after each of all the
+c       slices defined is plotted.  With the cursor (any button of a
+c       mouse or any characer from the keyboard) you define the initial
+c       guesses for the Gaussian parameters.   The data, fitted model
+c       and residual are then plotted.   You can the redo the fitting if
+c       you wish (right button of mouse or entering 'X' from keyboard)
+c       before proceeding to fit the next slice that you defined.
 c
-c	Options to save the slice values, slice positions and slice
-c	models are available.
+c       Options to save the slice values, slice positions and slice
+c       models are available.
 c
-c	If you ask CGSLICE to display several sub-plots (e.g. each a
-c	different channel from a cube), the slicing is activated after
-c	each sub-plot is drawn.
+c       If you ask CGSLICE to display several sub-plots (e.g. each a
+c       different channel from a cube), the slicing is activated after
+c       each sub-plot is drawn.
 c
-c	Blanked pixels are not displayed (or saved) and each slice is 
-c	divided into segments with good points between blanked pixels. 
+c       Blanked pixels are not displayed (or saved) and each slice is
+c       divided into segments with good points between blanked pixels.
 c
-c	Manipulation of the device colour lookup table is available
-c	when you display with a pixel map representation (formerly
-c	called a "grey scale")
+c       Manipulation of the device colour lookup table is available
+c       when you display with a pixel map representation (formerly
+c       called a "grey scale")
 c
 c@ in
-c	The input image.
+c       The input image.
 c@ type
-c	Specifies the image type given, respectively, in the IN keyword.  
-c	Minimum match is supported (note that "pixel" was formerly "grey"
-c	which is still supported).     Choose from:
+c       Specifies the image type given, respectively, in the IN keyword.
+c       Minimum match is supported (note that "pixel" was formerly
+c       "grey" which is still supported).  Choose from:
 c
-c	"contour"  (contour)
-c	"pixel"    (pixel map)
+c       "contour"  (contour)
+c       "pixel"    (pixel map)
 c
-c	Default is "pixel"
+c       Default is "pixel"
 c@ region
-c	Region of interest.  Choose only one spatial region (bounding
-c	box only supported), but as many spectral regions (i.e., 
-c	multiple IMAGE specifications) as you like.  If you display 
-c	3-D image, the slicing option is activated after each sub-plot 
-c	(channel or group of channels; see CHAN below) is drawn.
-c	Default is full image
+c       Region of interest.  Choose only one spatial region (bounding
+c       box only supported), but as many spectral regions (i.e.,
+c       multiple IMAGE specifications) as you like.  If you display
+c       3-D image, the slicing option is activated after each sub-plot
+c       (channel or group of channels; see CHAN below) is drawn.
+c       Default is full image
 c@ xybin
-c	Upto 4 values.  These give the spatial increment and binning
-c	size in pixels for the x and y axes to be applied to the selected
-c	region.   If the binning size is not unity, it must equal the 
-c	increment.  For example, to bin up the image by 4 pixels in 
-c	the x direction and to pick out every third pixel in the y 
-c	direction, set XYBIN=4,4,3,1
-c	Defaults are 1,XYBIN(1),XYBIN(1),XYBIN(3)
+c       Upto 4 values.  These give the spatial increment and binning
+c       size in pixels for the x and y axes to be applied to the
+c       selected region.  If the binning size is not unity, it must
+c       equal the increment.  For example, to bin up the image by 4
+c       pixels in the x direction and to pick out every third pixel in
+c       the y direction, set XYBIN=4,4,3,1
+c       Defaults are 1,XYBIN(1),XYBIN(1),XYBIN(3)
 c@ chan
-c	2 values. The first is the channel increment, the second is
-c	the number of planes to average, for each sub-plot.  Thus
-c	CHAN=5,3  would average groups of 3 channels together, starting
-c	5 channels apart such as: 1:3, 6:8, 11:13 ...   The channels
-c	available are those designated by the REGION keyword.  A new
-c	group of channels (sub-plot) is started if there is a
-c	discontinuity in the REGION selected channels (such as
-c	IMAGE(10,20),IMAGE(22,30).
+c       2 values. The first is the channel increment, the second is
+c       the number of planes to average, for each sub-plot.  Thus
+c       CHAN=5,3  would average groups of 3 channels together, starting
+c       5 channels apart such as: 1:3, 6:8, 11:13 ...   The channels
+c       available are those designated by the REGION keyword.  A new
+c       group of channels (sub-plot) is started if there is a
+c       discontinuity in the REGION selected channels (such as
+c       IMAGE(10,20),IMAGE(22,30).
 c
-c	Defaults are 1,1
+c       Defaults are 1,1
 c@ slev
-c	2 values.   First value is the type of contour level scale
-c	factor.  "p" for percentage and "a" for absolute.   Second
-c	value is the level to scale LEVS by.  Thus  SLEV=p,1  would
-c	contour levels at LEVS * 1% of the image peak intensity.
-c	Similarly, SLEV=a,1.4e-2   would contour levels at LEVS * 1.4E-2
-c	Default is no additional scaling of LEVS
+c       2 values.   First value is the type of contour level scale
+c       factor.  "p" for percentage and "a" for absolute.   Second
+c       value is the level to scale LEVS by.  Thus  SLEV=p,1  would
+c       contour levels at LEVS * 1% of the image peak intensity.
+c       Similarly, SLEV=a,1.4e-2   would contour levels at LEVS * 1.4E-2
+c       Default is no additional scaling of LEVS
 c@ levs
-c	Levels to contour for first image, are LEVS times SLEV
-c	(either percentage of the image peak or absolute).
-c	Defaults try to choose something sensible
+c       Levels to contour for first image, are LEVS times SLEV
+c       (either percentage of the image peak or absolute).
+c       Defaults try to choose something sensible
 c@ range
-c       4 values. These are the image intensity range to display (min to max),
-c       the transfer function type and the colour lookup table for the displayed
-c       pixel map image.  The transfer function type can be one of "lin" (linear),
-c       "sqr" (square root), "log" (logarithmic), and "heq" (histogram
-c       equalization).  The colour lookup table is an integer from 1 to 8
-c       specifying a lookup table. Valid values are 1 (b&w), 2 (rainbow),
-c       3 (linear pseudo colour), 4 (floating zero colour contours), 5 (fixed
-c       zero colour contours), 6 (rgb), 7 (background), 8 (heat) and 
-c	9 (absolute b&w).  If you enter a negative integer, then the 
-c	reversed lookup table is displayed.
+c       4 values.  These are the image intensity range to display (min
+c       to max), the transfer function type and the colour lookup table
+c       for the displayed pixel map image.  The transfer function type
+c       can be one of "lin" (linear), "sqr" (square root), "log"
+c       (logarithmic), and "heq" (histogram equalization).  The colour
+c       lookup table is an integer from 1 to 8 specifying a lookup
+c       table.  Valid values are 1 (b&w), 2 (rainbow), 3 (linear pseudo
+c       colour), 4 (floating zero colour contours), 5 (fixed zero colour
+c       contours), 6 (rgb), 7 (background), 8 (heat) and 9 (absolute
+c       b&w).  If you enter a negative integer, then the reversed lookup
+c       table is displayed.
 c
-c       The transfer function changes available with OPTIONS=FIDDLE are in
-c       addition (on top of) to the selections here, but the colour lookup
-c       table selections will replace those selected here.
+c       The transfer function changes available with OPTIONS=FIDDLE are
+c       in addition (on top of) to the selections here, but the colour
+c       lookup table selections will replace those selected here.
 c
 c       Default is linear between the image minimum and maximum with
 c       a b&w lookup table.   You can default the intensity range with
 c       zeros, viz. "range=0,0,log,-2" say.
 c@ xrange
-c	The slice display x-axis range.  This may be useful if you use
-c	OPTIONS=accum (see below).  Default is autoscale.
+c       The slice display x-axis range.  This may be useful if you use
+c       OPTIONS=accum (see below).  Default is autoscale.
 c@ yrange
-c	The slice display y-axis range.  This may be useful if you use
-c	OPTIONS=accum (see below).  Default is autoscale.
+c       The slice display y-axis range.  This may be useful if you use
+c       OPTIONS=accum (see below).  Default is autoscale.
 c@ device
-c	The PGPLOT plot device, such as plot.plt/ps. No default.
+c       The PGPLOT plot device, such as plot.plt/ps. No default.
 c@ nxy
-c	Number of sub-plots in the x and y directions on the page.
-c	Defaults choose something sensible
+c       Number of sub-plots in the x and y directions on the page.
+c       Defaults choose something sensible
 c@ labtyp
-c       Up to three values.  The first two are the spatial label types 
-c       of the x and y axes of the image. The third is the label type for
-c        the x-axis of the slice plot. Minimum match is active.  
+c       Up to three values.  The first two are the spatial label types
+c       of the x and y axes of the image. The third is the label type
+c       for the x-axis of the slice plot. Minimum match is active.
 c
 c       Select from:
-c       
-c	"hms"       the label is in H M S (e.g. for RA)
-c	"dms"       the label is in D M S (e.g. for DEC)
-c	"arcsec"    the label is in arcsecond offsets
-c	"arcmin"    the label is in arcminute offsets
-c	"absdeg"    the label is in degrees
-c	"reldeg"    the label is in degree offsets
-c		    The above assume the  pixel increment is in radians.
-c	"abspix"    the label is in pixels
-c	"relpix"    the label is in pixel offsets
-c	"abskms"    the label is in Km/s
-c	"relkms"    the label is in Km/s offsets
-c	"absghz"    the label is in GHz
-c	"relghz"    the label is in GHz offsets
-c	"absnat"    the label is in natural coordinates as defined by 
-c	 	    the header.
-c	"relnat"    the label is in offset natural coordinates
-c	"none"      no labels or ticks on the axes
-c       
-c	All offsets are from the reference pixel.  
-c	Defaults are "abspix", LABTYP(1) unless LABTYP(1)="hms"
-c	whereupon LABTYP(2) defaults to "dms" (for RA and DEC).
 c
-c       LABTYP(3) can only be "arcsec", "arcmin","reldeg" or
+c       "hms"       the label is in H M S (e.g. for RA)
+c       "dms"       the label is in D M S (e.g. for DEC)
+c       "arcsec"    the label is in arcsecond offsets
+c       "arcmin"    the label is in arcminute offsets
+c       "arcmas"    the label is in mas offsets
+c       "absdeg"    the label is in degrees
+c       "reldeg"    the label is in degree offsets
+c                   The above assume the  pixel increment is in radians.
+c       "abspix"    the label is in pixels
+c       "relpix"    the label is in pixel offsets
+c       "abskms"    the label is in Km/s
+c       "relkms"    the label is in Km/s offsets
+c       "absghz"    the label is in GHz
+c       "relghz"    the label is in GHz offsets
+c       "absnat"    the label is in natural coordinates as defined by
+c                   the header.
+c       "relnat"    the label is in offset natural coordinates
+c       "none"      no labels or ticks on the axes
+c
+c       All offsets are from the reference pixel.
+c       Defaults are "abspix", LABTYP(1) unless LABTYP(1)="hms"
+c       whereupon LABTYP(2) defaults to "dms" (for RA and DEC).
+c
+c       LABTYP(3) can only be "arcsec", "arcmin","arcmas", "reldeg" or
 c       "relpix". Default is "arcsec" for RA, DEC, LAT or LONG axes.
-c       
+c
 c
 c
 c@ options
-c	Task enrichment options.  Minimum match is active.
+c       Task enrichment options.  Minimum match is active.
 c
-c	"accumulate" means accumulate slices from different sub-plots on 
-c	  the same display.  By default, the slice display is cleared 
-c	  before the slices from the current sub-plot are displayed.  
-c	  The initial slice window extrema are defined from the first 
-c	  sub-plot so slices from succeeding sub-plots may not fit 
-c	  unless you use keywords XRANGE and YRANGE.
-c	"baseline" means fit a baseline (offset and slope) as well as 
-c	  a Gaussian when OPTIONS=fit.
-c       "fiddle" means enter a routine to allow you to interactively change
-c         the display lookup table.  You can cycle through a variety of   
-c         colour lookup tables, as well as alter a linear transfer function
-c         by the cursor location, or by selecting predefined transfer
-c         functions (linear, square root, logarithmic, histogram equalization)
-c       
+c       "accumulate" means accumulate slices from different sub-plots on
+c         the same display.  By default, the slice display is cleared
+c         before the slices from the current sub-plot are displayed.
+c         The initial slice window extrema are defined from the first
+c         sub-plot so slices from succeeding sub-plots may not fit
+c         unless you use keywords XRANGE and YRANGE.
+c       "baseline" means fit a baseline (offset and slope) as well as
+c         a Gaussian when OPTIONS=fit.
+c       "fiddle" means enter a routine to allow you to interactively
+c         change the display lookup table.  You can cycle through a
+c         variety of colour lookup tables, as well as alter a linear
+c         transfer function by the cursor location, or by selecting
+c         predefined transfer functions (linear, square root,
+c         logarithmic, histogram equalization)
+c
 c         For hard copy devices (e.g. postscript), a keyboard driven
-c         fiddle is offered; you can cycle through different colour tables
-c         and invoke the predefined transfer functions, but the linear
-c         fiddler is not available.   In this way you can make colour
-c         hardcopy plots.
-c	"fit" means fit a Gaussian to each slice.  The cursor is used
-c	  to make the initial estimates of the Gaussian parameters.
-c	"grid" means overlay a  coordinate grid on the display	
-c	"noerase"  Don't erase a snugly fitting rectangle into which the 
-c	  "3-axis" value string is written.
-c	"noimage"  means do not generate the pixel map or contour plot
-c	  display of the image.   Useful if you have specified the slice
-c	  locations with a text file via the POSIN keyword and you don't
-c	  want to see the slice locations displayed on the image. The region
-c	  of the viewsurface used for the slice display is larger with 
-c	  this option active.
-c	"unequal"  means display image with unequal scales in x and y. The
-c	  default is that the scales are equal.
-c	"wedge" means that if you are drawing a pixel map, also draw
-c	  and label a wedge to the right of the plot, showing the map 
-c	  of intensity to colour.
-c	"xrange" means when OPTIONS=fit, use the cursor to define an x-range
-c	  outside of which pixels will be excluded from the fit.
-c	"3value"   means label each sub-plot with the appropriate value
-c	  of the third axis (e.g. velocity or frequency for an
-c	  xyv ordered cube, position for a vxy ordered cube).
-c	"3pixel"   means label each sub-plot with the pixel value of
-c	  the third axis.
+c         fiddle is offered; you can cycle through different colour
+c         tables and invoke the predefined transfer functions, but the
+c         linear fiddler is not available.  In this way you can make
+c         colour hardcopy plots.
+c       "fit" means fit a Gaussian to each slice.  The cursor is used
+c         to make the initial estimates of the Gaussian parameters.
+c       "grid" means overlay a  coordinate grid on the display
+c       "noerase"  Don't erase a snugly fitting rectangle into which the
+c         "3-axis" value string is written.
+c       "noimage"  means do not generate the pixel map or contour plot
+c         display of the image.   Useful if you have specified the slice
+c         locations with a text file via the POSIN keyword and you don't
+c         want to see the slice locations displayed on the image.  The
+c         region of the viewsurface used for the slice display is larger
+c         with this option active.
+c       "unequal"  means display image with unequal scales in x and y.
+c         The default is that the scales are equal.
+c       "wedge" means that if you are drawing a pixel map, also draw
+c         and label a wedge to the right of the plot, showing the map
+c         of intensity to colour.
+c       "xrange" means when OPTIONS=fit, use the cursor to define an
+c         x-range outside of which pixels will be excluded from the fit.
+c       "3value"   means label each sub-plot with the appropriate value
+c         of the third axis (e.g. velocity or frequency for an
+c         xyv ordered cube, position for a vxy ordered cube).
+c       "3pixel"   means label each sub-plot with the pixel value of
+c         the third axis.
 c
-c         Both "3pixel" and "3value" can appear, and both will be written
-c         on the plot.  They are the average values when the third axis is 
-c	  binned up with CHAN.  If the third axis is not velocity or 
-c	  frequency, the units type for "3VALUE" will be chosen to be the 
-c	  complement of any like axis in the first 2. E.g., the cube is 
-c	  in vxy order and LABTYP=abskms,arcsec the units for the "3VALUE" 
-c	  label will be arcsec.  If LABTYP=abskms,hms the "3VALUE" label 
-c	  will be DMS (if the third [y] axis is declination).
+c         Both "3pixel" and "3value" can appear, and both will be
+c         written on the plot.  They are the average values when the
+c         third axis is binned up with CHAN.  If the third axis is not
+c         velocity or frequency, the units type for "3VALUE" will be
+c         chosen to be the complement of any like axis in the first 2.
+c         E.g., the cube is in vxy order and LABTYP=abskms,arcsec the
+c         units for the "3VALUE" label will be arcsec.  If
+c         LABTYP=abskms,hms the "3VALUE" label will be DMS (if the third
+c         [y] axis is declination).
 c@ 3format
 c       If you ask for "3value" labelling, this keyword allows you
 c       specify the FORTRAN format of the labelling.  I have given
 c       up trying to invent a decent algorithm to choose this. Examples
-c       are "1pe12.6", or "f5.2" etc   If you leave this blank cgdisp 
+c       are "1pe12.6", or "f5.2" etc   If you leave this blank cgdisp
 c       will try something that you probably won't like.
 c@ csize
-c	Three values.  Character sizes in units of the PGPLOT default
-c	(which is ~ 1/40 of the view surface height) for the plot axis
-c	labels, the velocity/channel labels and the slice plot labels
-c	Defaults choose something sensible.
+c       Three values.  Character sizes in units of the PGPLOT default
+c       (which is ~ 1/40 of the view surface height) for the plot axis
+c       labels, the velocity/channel labels and the slice plot labels
+c       Defaults choose something sensible.
 c@ posin
-c	The BLC and TRC of the slices can be defined in this text file
-c	rather than being defined interactively with the cursor. The
-c	slices defined in this file will be marked on the 2-D image
-c	(unless you set OPTIONS=noimage) display and then the slices 
-c	extracted, displayed and optionally fitted and saved.
+c       The BLC and TRC of the slices can be defined in this text file
+c       rather than being defined interactively with the cursor. The
+c       slices defined in this file will be marked on the 2-D image
+c       (unless you set OPTIONS=noimage) display and then the slices
+c       extracted, displayed and optionally fitted and saved.
 c
-c	Entries in this file can be white space or comma delimitered or 
-c	both.  All lines beginning with # are ignored.
+c       Entries in this file can be white space or comma delimitered or
+c       both.  All lines beginning with # are ignored.
 c
-c	                **** DO NOT USE TABS **** 
+c                       **** DO NOT USE TABS ****
 c
-c	Double quotes " are used below to indicate a string.  The "
-c	should not be put in the file.   For the string parameters
-c	discussed below, you can abbreviate them with minimum match.
+c       Double quotes " are used below to indicate a string.  The "
+c       should not be put in the file.   For the string parameters
+c       discussed below, you can abbreviate them with minimum match.
 c
-c	Each line describes a slice and should be as follows:
+c       Each line describes a slice and should be as follows:
 c
-c	 ##### The columns in each line must be
+c        ##### The columns in each line must be
 c
-c	    1       2     3   4    5   6   7   8       Logical column
-c	-------------------------------------------
-c	 XOTYPE  YOTYPE   X1  Y1   X2  Y2  CS  CE      where
+c           1       2     3   4    5   6   7   8       Logical column
+c       -----------------------------------------
+c        XOTYPE  YOTYPE   X1  Y1   X2  Y2  CS  CE      where
 c
 c
-c	XOTYPE and YOTYPE  give the coordinate types of the slice BLC and
-c	TRC in the file for the x- and y-directions, respectively.  
-c	Choose from:
+c       XOTYPE and YOTYPE  give the coordinate types of the slice BLC
+c       and TRC in the file for the x- and y-directions, respectively.
+c       Choose from:
 c
-c	 "hms", "dms", "arcsec", "arcmin", "absdeg", "reldeg", "abspix", 
-c	 "relpix", "absnat", "relnat", "absghz", "relghz", "abskms", & 
-c	 "relkms"  as described in the keyword LABTYP.  
-c	Note that %OTYPE does not depend upon what you specified for LABTYP.
+c        "hms", "dms", "arcsec", "arcmin", "absdeg", "reldeg", "abspix",
+c        "relpix", "absnat", "relnat", "absghz", "relghz", "abskms", &
+c        "relkms"  as described in the keyword LABTYP.
+c       Note that %OTYPE does not depend upon what you specified for
+c       LABTYP.
 c
-c	X1,Y1 defines the BLC of the slice in the nominated OTYPE
-c	coordinate system (X- and Y-OTYPE can be different).  
-c	X2,Y2 defines the TRC of the slice in the nominated OTYPE
-c	coordinate system (X- and Y-OTYPE can be different).  
+c       X1,Y1 defines the BLC of the slice in the nominated OTYPE
+c       coordinate system (X- and Y-OTYPE can be different).
+c       X2,Y2 defines the TRC of the slice in the nominated OTYPE
+c       coordinate system (X- and Y-OTYPE can be different).
 c
-c	  For %OTYPE = "abspix ", "relpix", "arcsec", "arcmin", "absdeg",
-c		       "reldeg", "absghz", "relghz", "abskms", "relkms", 
-c		       "absnat" and "relnat"   X1,Y1 and X2,Y2 are all 
-c		        single numbers.
+c         For %OTYPE = "abspix ", "relpix", "arcsec", "arcmin",
+c                      "absdeg", "reldeg", "absghz", "relghz", "abskms",
+c                      "relkms", "absnat" and "relnat"   X1,Y1 and X2,Y2
+c                      are all single numbers.
 c
-c	  For %OTYPE = "hms" or "dms", the X and/or Y location is/are replaced
-c	  by three numbers such as  HH MM SS.S or DD MM SS.S.  Thus if
-c	  XOTYPE=hms & YOTYPE=dms then the line should be structured like
+c         For %OTYPE = "hms" or "dms", the X and/or Y location is/are
+c         replaced by three numbers such as  HH MM SS.S or DD MM SS.S.
+c         Thus if XOTYPE=hms & YOTYPE=dms then the line should be
+c         structured like
 c
-c	   hms  dms  HH MM SS.S DD MM SS.S   HH MM SS.S DD MM SS.S  CS  CE
-c	      or perhaps
-c	   hms  relpix HH MM SS.S Y1    HH MM SS.S Y2   CS  CE
+c          hms  dms  HH MM SS.S DD MM SS.S  HH MM SS.S DD MM SS.S  CS CE
+c             or perhaps
+c          hms  relpix HH MM SS.S Y1  HH MM SS.S Y2  CS CE
 c
-c	CS to CE is the channel range (image planes) from which the slice
-c	is to be extracted.  If you specify only CS than the slice is 
-c	extracted from that channel.  If CS=0 then the slice is extracted
-c	from all channels.  If CS and CE are both omitted, the default is
-c	to extract the slice from all channels.
+c       CS to CE is the channel range (image planes) from which the
+c       slice is to be extracted.  If you specify only CS than the slice
+c       is extracted from that channel.  If CS=0 then the slice is
+c       extracted from all channels.  If CS and CE are both omitted, the
+c       default is to extract the slice from all channels.
 c
 c@ posout
-c	An ascii file into which the BLC and TRC for each slice are saved.
-c	The columns are in the same format as is needed for the POSIN keyword.
+c       An ascii file into which the BLC and TRC for each slice are
+c       saved.  The columns are in the same format as is needed for the
+c       POSIN keyword.
 c@ valout
-c	An ascii file into which the slices are saved.  If the file already
-c	exists, new slices are appended to it.  The columns of the file are
-c	the slice number, the slice segment number, the slice segment point
-c	number, the slice abcissa and the slice value.    
+c       An ascii file into which the slices are saved.  If the file
+c       already exists, new slices are appended to it.  The columns of
+c       the file are the slice number, the slice segment number, the
+c       slice segment point number, the slice abcissa and the slice
+c       value.
 c@ modout
-c	An ascii file into which the Gaussian models for the slices  are
-c	saved (OPTIONS=fit or OPTIONS=fit,baseline).  If the file already
-c	exists, new models are appended to it.  The columns of the file
-c	are the slice number, the model peak, centre, FWHM, baseline offset 
-c	and baseline slope.
+c       An ascii file into which the Gaussian models for the slices are
+c       saved (OPTIONS=fit or OPTIONS=fit,baseline).  If the file
+c       already exists, new models are appended to it.  The columns of
+c       the file are the slice number, the model peak, centre, FWHM,
+c       baseline offset and baseline slope.
 c
 c--
 c
 c  History:
-c    nebk 16dec93  Original version. 
+c    nebk 16dec93  Original version.
 c    nebk 29jan94  Add "heq" and "sqr" to greyscale transfer functions.
-c	           Add options=wedge,fiddle. Add labtype=none.  Add 
+c                  Add options=wedge,fiddle. Add labtype=none.  Add
 c                  ability to delete both slice ends.
 c    nebk 02mar94  New call and location for SETLABCG
 c    nebk 11mar94  Add spatial binning
 c    nebk 03jun94  Clarify use of region keyword
 c    nebk 21jun94  Use OPIMCG to open files
 c    nebk 28aug94  Adapt to convert input true world coordinates (POSIN)
-c                  to linear world coordinates.  Convert output linear 
-c                  world coordinates (POSOUT) to true world coordinates.  
-c                  Also call new LAB3CG which now labels true world 
-c                  of third axis.    LInearize axis descriptors at 
+c                  to linear world coordinates.  Convert output linear
+c                  world coordinates (POSOUT) to true world coordinates.
+c                  Also call new LAB3CG which now labels true world
+c                  of third axis.    LInearize axis descriptors at
 c                  centre of displayed region
 c    nebk 14oct94  Better cursor positioning in gaussian fitting
 c    nebk 23dec94  Make sure selected region no bigger than image
-c    nebk 05jan95  Use new PGIMAG in favour of PGGRAY adding support   
+c    nebk 05jan95  Use new PGIMAG in favour of PGGRAY adding support
 c                  for fiddling of lookup table for hardcopy devices.
-c                  Make use of new PGBAND when defining slices.  Decouple
-c                  slice and image window label displacements
+c                  Make use of new PGBAND when defining slices.
+c                  Decouple slice and image window label displacements
 c    nebk 20feb95  Make sure PGIMAG writes black on white for hardcopy.
 c                  Ammend for new wedge call sequences.  Add lookuptable
 c                  to "range" keyword. Move to image type "pixel"
@@ -322,18 +330,19 @@ c                  instead of "grey"
 c    nebk 28mar95  Remove annoying restriction that slices cannot
 c                  begin and end on blanked pixels
 c    nebk 10apr95  Add doc for absolute b&w lookup table
-c    nebk 03sep95  Detect black/white background, add non-linear 
-c		   ticks and grid
-c    nebk 12nov95  Change to deal internally in absolute pixels 
+c    nebk 03sep95  Detect black/white background, add non-linear
+c                  ticks and grid
+c    nebk 12nov95  Change to deal internally in absolute pixels
 c    nebk 29nov95  New call for CONTURCG
 c    nebk 30jan96  Remove restrictions on CHAN so groups of channels
-c		   can now overlap
+c                  can now overlap
 c    nebk 05feb96  Make format of POSOUT file the same as that for POSIN
 c    nebk 28feb96  Was getting slice vectors wrong with keyword POSIN
-c		   when a subimage was displayed.
-c    nebk 24jun96  Set slice frame colour depening upon background colour
-c    nebk 01dec96  'absnat' and 'relnat' were given twice in allowed lists
-c                  of label types
+c                  when a subimage was displayed.
+c    nebk 24jun96  Set slice frame colour depening upon background
+c                  colour
+c    nebk 01dec96  'absnat' and 'relnat' were given twice in allowed
+c                  lists of label types
 c    nebk 13feb97  Add keyword "3format"
 c    rjs  21jul97  Call initco earlier
 c    rjs   7may98  Change the bunit variable to be 16 char (not 8 char).
@@ -354,6 +363,7 @@ c    cleverly
 c
 c  * Scale data before fitting
 c
+c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
@@ -362,7 +372,7 @@ c
       integer maxlev, nxdef, nydef, maxnsl, nltype, nbins
       real grid, wedwid, tfdisp
       parameter (maxlev = 50, nxdef = 4, nydef = 4, maxnsl = 20,
-     +  nbins = 128, grid = 0.25, nltype = 17, wedwid = 0.05, 
+     +  nbins = 128, grid = 0.25, nltype = 18, wedwid = 0.05,
      +  tfdisp = 0.5)
 c
       integer ipim, ipp, ipims, ipnim, ipslx(maxnsl), ipsly(maxnsl),
@@ -371,22 +381,22 @@ c
       real levs(maxlev), pixr(2), tr(6), cs(3), pixr2(2), scale(2),
      +  bound(4,maxnsl), vblc(2,2), vtrc(2,2), xrange(2), yrange(2),
      +  tfvp(4), wdgvp(4), cumhis(nbins), dmm(3)
-      real slev, vx, vy, vxsize, vysize, ydispb, ydispbs, xdispl, 
-     +  xdispls, groff, blank, sxmin, sxmax, symin, symax, vxgap, 
+      real slev, vx, vy, vxsize, vysize, ydispb, ydispbs, xdispl,
+     +  xdispls, groff, blank, sxmin, sxmax, symin, symax, vxgap,
      +  vygap
 c
-      integer blc(3), trc(3), size(maxnax), win(maxnax), 
-     +  grpbeg(maxchan), ngrp(maxchan), srtlev(maxlev), nslice, 
-     +  nslp(maxnsl), slsize(maxnsl), slpos(6,maxnsl), seg(2,maxdim), 
+      integer blc(3), trc(3), size(maxnax), win(maxnax),
+     +  grpbeg(maxchan), ngrp(maxchan), srtlev(maxlev), nslice,
+     +  nslp(maxnsl), slsize(maxnsl), slpos(6,maxnsl), seg(2,maxdim),
      +  nseg(maxnsl), his(nbins)
       integer nx, ny, nlevs, lin, naxis, ierr, pgbeg, iostat, ilen,
-     +  nlast, ngrps, lval, lposi, lposo, lmod, i, j, k, jj, icol, 
-     +  iax, ipage, wedcod, ibin(2), jbin(2), kbin(2), krng(2), 
+     +  nlast, ngrps, lval, lposi, lposo, lmod, i, j, k, jj, icol,
+     +  iax, ipage, wedcod, ibin(2), jbin(2), kbin(2), krng(2),
      +  coltab, concol, labcol, slbcol, bgcol
 c
-      character labtyp(3)*6, ltype(nltype)*6
-      character in*64, pdev*64, xlabel*40, ylabel*40, xlabel2*40, 
-     +  ylabel2*40, hard*20, trfun*3, levtyp*1, fslval*80, fslposo*80, 
+      character labtyp(3)*6, ltype(nltype)*6, versan*80, version*80
+      character in*64, pdev*64, xlabel*40, ylabel*40, xlabel2*40,
+     +  ylabel2*40, hard*20, trfun*3, levtyp*1, fslval*80, fslposo*80,
      +  fslposi*80, fslmod*80, units*16, val3form*20
 c
       logical do3val, do3pix, eqscale, doblnk, dopixel, doerase,
@@ -396,26 +406,26 @@ c
 c
       integer len1
 c
-      data ltype  /'hms   ', 'dms   ', 'abspix', 'relpix', 
-     +            'arcsec', 'arcmin', 'absghz', 'relghz', 
-     +            'abskms', 'relkms', 'absnat', 'relnat', 
-     +            'absdeg', 'reldeg', 'none  ', 'abslin',
-     +            'rellin'/
+      data ltype  /'hms   ', 'dms   ', 'abspix', 'relpix',
+     +            'arcsec', 'arcmin', 'arcmas', 'absghz',
+     +            'relghz', 'abskms', 'relkms', 'absnat',
+     +            'relnat', 'absdeg', 'reldeg', 'none  ',
+     +            'abslin', 'rellin'/
       data ipage, scale /0, 0.0, 0.0/
       data xrange, yrange /0.0, 0.0, 0.0, 0.0/
       data dmm, dunsl, gaps /1.0e30, -1.0e30, -1.0, .false., .false./
       data xdispls, ydispbs /3.5, 3.5/
 c-----------------------------------------------------------------------
-      call output ('CgSlice: version 14-Nov-2001')
-      call output (' ')
+      version = versan ('cgslice',
+     :  '$Id$')
 c
 c Get user inputs
 c
-      call inputs (nltype, ltype, maxlev, in, ibin, jbin, kbin, 
+      call inputs (nltype, ltype, maxlev, in, ibin, jbin, kbin,
      +   levtyp, slev, levs, nlevs, pixr, trfun, coltab, pdev, labtyp,
-     +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase, 
-     +   accum, noimage, dofit, dobase, fslval, fslposi, fslposo, 
-     +   fslmod, xrange, yrange, doxrng, dofid, dowedge, 
+     +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase,
+     +   accum, noimage, dofit, dobase, fslval, fslposi, fslposo,
+     +   fslmod, xrange, yrange, doxrng, dofid, dowedge,
      +   dogrid, val3form)
 c
 c Open image and see if axes in radians
@@ -437,12 +447,12 @@ c Try to allocate memory for image
 c
       call memalloc (ipim,  win(1)*win(2), 'r')
       call memalloc (ipnim, win(1)*win(2), 'i')
-      if (.not.noimage .and. dopixel .and. trfun.ne.'lin') 
+      if (.not.noimage .and. dopixel .and. trfun.ne.'lin')
      +  call memalloc (ipims, win(1)*win(2), 'r')
 c
 c Open output text files
 c
-      call opento (units, radians, fslval, fslposo, fslmod, lval, 
+      call opento (units, radians, fslval, fslposo, fslmod, lval,
      +             lposo, lmod)
 c
 c Compute contour levels or check pixel map for log/sqr offset
@@ -451,7 +461,7 @@ c
         call grfixcg (pixr, lin, naxis, size, trfun, pixr2,
      +                groff, blank)
       else
-        call conlevcg (.false., maxlev, lin, levtyp, slev, nlevs, 
+        call conlevcg (.false., maxlev, lin, levtyp, slev, nlevs,
      +                 levs, srtlev)
         blank = -99999999.0
       end if
@@ -473,7 +483,7 @@ c Set slice labels
 c
       if (units.eq.' ') then
         ylabel2 = 'Intensity'
-      else 
+      else
         ylabel2 = 'Intensity ('//units(1:len1(units))//')'
       end if
 c
@@ -488,11 +498,12 @@ c Set default
         if (labtyp(3).eq.'none') labtyp(3)='arcsec'
         if (labtyp(3).eq.'arcsec')  xlabel2 = 'offset (arcsec)'
         if (labtyp(3).eq.'arcmin')  xlabel2 = 'offset (arcmin)'
+        if (labtyp(3).eq.'arcmas')  xlabel2 = 'offset (mas)'
         if (labtyp(3).eq.'reldeg')  xlabel2 = 'offset (degrees)'
       else
         if ((labtyp(3).eq.'none').or.(labtyp(3).eq.'relpix')) then
           labtyp(3)='relpix'
-        else 
+        else
           call bug ('w', 'Cannot use labtyp(3) of '//labtyp(3))
           call bug ('w', 'Non-radian axis type.')
         end if
@@ -521,7 +532,7 @@ c
       call setlgc (bgcol, labcol, concol, slbcol)
 c
 c Init OFM routines
-c       
+c
       if (dopixel) call ofmini
 c
 c Work out if wedge outside or inside subplots. Also work out
@@ -533,7 +544,7 @@ c Set axis labels
 c
       call setdspcg (lin, labtyp, blc, trc, xdispl, ydispb)
 
-c Set label displacements 
+c Set label displacements
 c
       call setlabcg (lin, labtyp, .false., xlabel, ylabel)
 c
@@ -542,7 +553,7 @@ c that defines the slice plotting region.   Also return the
 c the viewport size of sub-plots, and the gap between sub-plots.
 c
       call vpsiz (noimage, dofid, nx, ny, cs, xdispl, ydispb, xdispls,
-     +  ydispbs, wedcod, wedwid, tfdisp, vblc, vtrc, vxsize, 
+     +  ydispbs, wedcod, wedwid, tfdisp, vblc, vtrc, vxsize,
      +  vysize, vxgap, vygap, tfvp, wdgvp)
 c
 c Adjust viewport increments and start locations if equal scales
@@ -573,7 +584,7 @@ c
            call pgswin (blc(1)-0.5, trc(1)+0.5, blc(2)-0.5, trc(2)+0.5)
          end if
 c
-c Read in image  
+c Read in image
 c
          call readimcg (.true., blank, lin, ibin, jbin, krng,
      +      blc, trc, .true., memi(ipnim), memr(ipim), doblnk, dmm)
@@ -584,12 +595,12 @@ c
 c
 c Save image if needed
 c
-           if (trfun.ne.'lin') call copyimcg (win(1)*win(2), 
+           if (trfun.ne.'lin') call copyimcg (win(1)*win(2),
      +                          memr(ipim), memr(ipims))
 c
 c Apply transfer function directly to image if desired
 c
-           if (trfun.ne.'lin') call apptrfcg (pixr, trfun, groff, 
+           if (trfun.ne.'lin') call apptrfcg (pixr, trfun, groff,
      +       win(1)*win(2), memi(ipnim), memr(ipim), nbins, his,
      +       cumhis)
 c
@@ -617,9 +628,9 @@ c
 c
 c Modify OFM for hardcopy devices here; must be done before PGIMAG
 c called. Take complement of b&w transfer functions if background white
-c 
+c
                if (hard.eq.'YES') then
-                 if (dofid) call ofmmod (tfvp, win(1)*win(2), 
+                 if (dofid) call ofmmod (tfvp, win(1)*win(2),
      +             memr(ipim), memi(ipnim), pixr2(1), pixr2(2))
                  if (bgcol.eq.1) call ofmcmp
                end if
@@ -628,18 +639,18 @@ c Draw pixel map and apply user given OFM
 c
                call pgimag (memr(ipim), win(1), win(2), 1, win(1), 1,
      +                      win(2), pixr2(1), pixr2(2), tr)
-               if (hard.eq.'NO') call ofmcol (coltab, pixr2(1), 
+               if (hard.eq.'NO') call ofmcol (coltab, pixr2(1),
      +                                        pixr2(2))
 c
 c Retake b&w complement for white background
 c
                if (hard.eq.'YES' .and. bgcol.eq.1) call ofmcmp
-             else 
+             else
 c
 c Draw contours
 c
                call pgsci (concol)
-               call conturcg (.false., blank, .false., win(1), win(2), 
+               call conturcg (.false., blank, .false., win(1), win(2),
      +                        doblnk, memr(ipim), nlevs, levs, tr, 0.0)
              end if
 c
@@ -653,14 +664,14 @@ c for this subplot
 c
              call dolabcg (gaps, .false., nx, ny, ngrps, nlast, k,
      +                     labtyp, doaxlab, doaylab, donxlab, donylab)
-c       
+c
 c Write on ascii axis labels
-c       
+c
              if (first) call aaxlabcg (doaxlab, doaylab, xdispl, ydispb,
      +                                 xlabel, ylabel)
-c       
+c
 c Draw frame, write numeric labels, ticks and optional grid
-c       
+c
              call naxlabcg (lin, first, blc, trc, krng, labtyp,
      +                      donxlab, donylab, .false., dogrid)
              call pgupdt
@@ -697,13 +708,13 @@ c Define slice ends with cursor or read from file
 c
            redisp = .false.
            if (fslposi.eq.' ' .and. .not.noimage) then
-             call curpos (win(1), win(2), ibin, jbin, blc, redisp, 
+             call curpos (win(1), win(2), ibin, jbin, blc, redisp,
      +                    maxnsl, nslice, slpos)
 c
 c Erase subplot or write positions file if desired
 c
              if (redisp) then
-               call erswincg (blc(1)-0.5, trc(1)+0.5, 
+               call erswincg (blc(1)-0.5, trc(1)+0.5,
      +                        blc(2)-0.5, trc(2)+0.5)
              else
                if (fslposo.ne.' ') call slposw (lin, lposo, krng,
@@ -714,17 +725,17 @@ c
 c Read positions from text file and decode
 c
              call txtopen (lposi, fslposi, 'old', iostat)
-             if (iostat.ne.0) 
+             if (iostat.ne.0)
      +       call bug ('f', 'Error opening input text file'//fslposi)
 c
-             call posdec (lin, krng, noimage, lposi, win(1), win(2), 
-     +         blc, trc, ibin, jbin, nltype, ltype, maxnsl, size, 
+             call posdec (lin, krng, noimage, lposi, win(1), win(2),
+     +         blc, trc, ibin, jbin, nltype, ltype, maxnsl, size,
      +         nslice, slpos)
              call txtclose (lposi)
            end if
          end do
 c
-c Generate slices 
+c Generate slices
 c
          if (nslice.gt.0) then
            if (.not.dunsl .or. .not.accum) then
@@ -747,7 +758,7 @@ c
                call slmark (blc, ibin, jbin, slpos(1,i))
              end if
 c
-c Allocate memory for slice 
+c Allocate memory for slice
 c
              call slsiz (slpos(1,i), grid, slsize(i))
              call memalloc (ipslx(i), slsize(i), 'r')
@@ -756,11 +767,11 @@ c
 c Generate slice. Use copy of image if transfer function applied.
 c
              ipp = ipim
-             if (.not.noimage .and. dopixel .and. trfun.ne.'lin') 
+             if (.not.noimage .and. dopixel .and. trfun.ne.'lin')
      +          ipp = ipims
-             call slice (lin, ibin, jbin, slpos(1,i), grid, win(1), 
-     +          win(2), memr(ipp), memi(ipnim), radians, slsize(i), 
-     +          memr(ipslx(i)), memr(ipsly(i)), nslp(i), bound(1,i), 
+             call slice (lin, ibin, jbin, slpos(1,i), grid, win(1),
+     +          win(2), memr(ipp), memi(ipnim), radians, slsize(i),
+     +          memr(ipslx(i)), memr(ipsly(i)), nslp(i), bound(1,i),
      +          nseg(i), seg)
 c
 c Allocate memory for slice segment pointers and copy in
@@ -777,7 +788,7 @@ c
 c
 c Update extrema
 c
-               if (.not.dunsl .or. .not.accum) call exup 
+               if (.not.dunsl .or. .not.accum) call exup
      +           (bound(1,i), sxmin, sxmax, symin, symax)
              else
 c
@@ -807,13 +818,13 @@ c
                dobord = (i.eq.1.and.(.not.dunsl .or. .not.accum))
      +                   .or. dofit
                if (dofit) then
-                 call drawbox (dobord, slbcol, vblc, vtrc, xrange, 
-     +              yrange, bound(1,i), bound(3,i), bound(2,i), 
+                 call drawbox (dobord, slbcol, vblc, vtrc, xrange,
+     +              yrange, bound(1,i), bound(3,i), bound(2,i),
      +              bound(4,i), xlabel2, ylabel2, xdispls, ydispb,
      +              labtyp(3))
                else
-                 call drawbox (dobord, slbcol, vblc, vtrc, xrange, 
-     +              yrange, sxmin, sxmax, symin, symax, xlabel2, 
+                 call drawbox (dobord, slbcol, vblc, vtrc, xrange,
+     +              yrange, sxmin, sxmax, symin, symax, xlabel2,
      +              ylabel2, xdispls, ydispbs,
      +              labtyp(3))
                end if
@@ -823,20 +834,20 @@ c
 c
 c Plot the slice
 c
-                 call slplot (i, nslp(i), nseg(i), memr(ipslx(i)), 
+                 call slplot (i, nslp(i), nseg(i), memr(ipslx(i)),
      +              memr(ipsly(i)), memi(ipsls(i)), memi(ipsle(i)),
      +              labtyp(3))
 c
 c Save the slice if desired
 c
-                 if (fslval.ne.' ') 
-     +             call slsave (lval, i, nseg(i), memr(ipslx(i)), 
+                 if (fslval.ne.' ')
+     +             call slsave (lval, i, nseg(i), memr(ipslx(i)),
      +               memr(ipsly(i)), memi(ipsls(i)), memi(ipsle(i)))
 c
 c Do Gaussian fit if desired
 c
-                 if (dofit) call gaufit (lmod, dobase, doxrng, i, 
-     +             nslp(i), nseg(i),ipslx(i), ipsly(i),  ipsls(i), 
+                 if (dofit) call gaufit (lmod, dobase, doxrng, i,
+     +             nslp(i), nseg(i),ipslx(i), ipsly(i),  ipsls(i),
      +             ipsle(i), xdispls, ydispbs, xlabel2, ylabel2, slbcol,
      +             labtyp(3))
                end if
@@ -844,7 +855,7 @@ c
            end if
          end if
 c
-c Free up memory. 
+c Free up memory.
 c
          do i = 1, nslice
            if (nslp(i).gt.0) then
@@ -855,9 +866,9 @@ c
            end if
          end do
 c
-c Increment sub-plot viewport locations 
+c Increment sub-plot viewport locations
 c
-         call subinccg (k, nx, ny, vblc(1,2), vtrc(2,2), vxsize, 
+         call subinccg (k, nx, ny, vblc(1,2), vtrc(2,2), vxsize,
      +                  vysize, vxgap, vygap, vx, vy)
 c
 c Page plot device
@@ -892,11 +903,10 @@ c    nx,ny   x and y sizes of displayed subimage
 c    ip      Number of points accumulated so far.  SHould be 0 or 1
 c  Output
 c    wpos    Position in world coordinates for the point under cursor
-c    ipos    Position in absolute binned subimage pixels for the point 
-c            under cursor 
-c    cch     Character read by cursor. 
+c    ipos    Position in absolute binned subimage pixels for the point
+c            under cursor
+c    cch     Character read by cursor.
 c-----------------------------------------------------------------------
-      implicit none
       integer nx, ny, blc(2), ibin, jbin, ipos(2), ip
       real wpos(2)
       character cch*1
@@ -949,7 +959,7 @@ c
       end
 c
 c
-      subroutine curpos (nx, ny, ibin, jbin, blc, redisp, maxnsl, 
+      subroutine curpos (nx, ny, ibin, jbin, blc, redisp, maxnsl,
      +                   nslice, slpos)
 c-----------------------------------------------------------------------
 c     Define slice locations with cursor
@@ -962,13 +972,11 @@ c     maxnsl  Maximum number of slices to make
 c Output:
 c     redisp  Redisplay subplot and redo slices
 c     nslice  Number of slices
-c     slpos   BLC (xyz) and TRC (xyz) of slices.  x and y in absolute 
-c             binned subimage pixels.  z in absolute image pixels. 
+c     slpos   BLC (xyz) and TRC (xyz) of slices.  x and y in absolute
+c             binned subimage pixels.  z in absolute image pixels.
 c
 c-----------------------------------------------------------------------
-      implicit none
-c
-      integer nx, ny, blc(2), maxnsl, nslice, slpos(6,maxnsl), 
+      integer nx, ny, blc(2), maxnsl, nslice, slpos(6,maxnsl),
      +  ibin, jbin
       logical redisp
 cc
@@ -977,13 +985,13 @@ cc
       character cch*1, aline*132
       data wldpos /0.0, 0.0/
 c-----------------------------------------------------------------------
-      call output (' ')  
+      call output (' ')
       call output ('Begin slicing')
-      call output 
+      call output
      +  ('To define slice end, click  left  button or enter "A"')
-      call output 
+      call output
      +  ('To delete slice end, click middle button or enter "D"')
-      call output 
+      call output
      +  ('To exit              click right  button or enter "X"')
       call output (' ')
 c
@@ -996,21 +1004,21 @@ c
       cch = ' '
       nslice = 0
       ip = 0
-      do while (cch.ne.'X') 
+      do while (cch.ne.'X')
 c
 c Make cursor selection
 c
         call curget (ibin, jbin, blc, nx, ny, ip, simpos, wldpos, cch)
         if (cch.eq.'A') then
           if (ip.eq.0) then
-            ip = ip + 1 
+            ip = ip + 1
             call slput (simpos, wldpos, ipos(1,ip), wpos(1,ip))
             call pgpt (1, wpos(1,ip), wpos(2,ip), 17)
           else if (ip.eq.1) then
             if (simpos(1).eq.ipos(1,1) .and. simpos(2).eq.ipos(2,1))then
               call output ('Degenerate slice, enter second point again')
             else
-              ip = ip + 1 
+              ip = ip + 1
               call slput (simpos, wldpos, ipos(1,ip), wpos(1,ip))
               call pgpt (1, wpos(1,ip), wpos(2,ip), 17)
             end if
@@ -1026,7 +1034,7 @@ c
             call pgarro (wpos(1,1), wpos(2,1), wpos(1,2), wpos(2,2))
 c
 c If we have run out of space for more slices, stop now
-c          
+c
             if (nslice.eq.maxnsl) then
               call output ('Maximum number of slices allowed reached')
               cch = 'X'
@@ -1080,9 +1088,9 @@ c
         call output (aline)
 
         call output (' ')
-        call output 
+        call output
      +    ('To display   the slices click right button or   enter "X"')
-        call output 
+        call output
      +    ('To redisplay the (sub)image and redo the slices enter "R"')
         call output (' ')
 c
@@ -1090,7 +1098,7 @@ c
         call ucase (cch)
         if (cch.eq.'R') then
           redisp = .true.
-        else 
+        else
           redisp = .false.
         end if
       else
@@ -1103,7 +1111,7 @@ c
 c
       subroutine decopt  (do3val, do3pix, eqscale, doerase, accum,
      +   noimage, dofit, dobase, doxrng, dofid, dowedge, grid)
-c----------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c     Decode options array into named variables.
 c
 c   Output:
@@ -1121,8 +1129,6 @@ c     dofid     FIddle lookup table
 c     dowedge   Draw pixel map wedge
 c     grid      Overlay coordinate grid
 c-----------------------------------------------------------------------
-      implicit none
-c
       logical do3val, do3pix, eqscale, doerase, accum, noimage, dofit,
      +  dobase, doxrng, dofid, dowedge, grid
 cc
@@ -1153,14 +1159,14 @@ c
       end
 c
 c
-      subroutine drawbox (dobord, slbcol, vblc, vtrc, xrange, yrange, 
+      subroutine drawbox (dobord, slbcol, vblc, vtrc, xrange, yrange,
      +   sxmin, sxmax, symin, symax, xlabel, ylabel, xdispl, ydispb,
      +     labtyp)
 c-----------------------------------------------------------------------
 c     Set the viewport and draw the box for the slice display
 c
 c  Input:
-c   dobord       Draw the border and label as well as setting 
+c   dobord       Draw the border and label as well as setting
 c                viewport and window
 c   slbcol       Colour index to draw frame with
 c   vblc,trc     Viewport
@@ -1172,7 +1178,6 @@ c                Y and x axis label offsets
 c   labtyp       x-axis label type
 c
 c-----------------------------------------------------------------------
-      implicit none
       real vblc(2), vtrc(2), xrange(2), yrange(2), sxmin, sxmax, symin,
      +  symax, ydispb, xdispl
       integer slbcol
@@ -1182,7 +1187,7 @@ cc
       real lim(4)
 c-----------------------------------------------------------------------
       call pgsvp (vblc(1), vtrc(1), vblc(2), vtrc(2))
-      call fixlim (.true., xrange, yrange, sxmin, sxmax, symin, 
+      call fixlim (.true., xrange, yrange, sxmin, sxmax, symin,
      +             symax, lim)
 c
 c Scale x range accoring to labype
@@ -1190,6 +1195,9 @@ c
       if (index(labtyp,'arcmin').ne.0) then
         lim(1)=lim(1)/60.0
         lim(3)=lim(3)/60.0
+      else if (index(labtyp,'arcmas').ne.0) then
+        lim(1)=lim(1)/1E-3
+        lim(3)=lim(3)/1E-3
       else if (index(labtyp,'reldeg').ne.0) then
         lim(1)=lim(1)/60.0/60.0
         lim(3)=lim(3)/60.0/60.0
@@ -1218,7 +1226,6 @@ c  Input/output
 c    sx,ymin,max     Extrema from all slices
 c
 c-----------------------------------------------------------------------
-      implicit none
       real sxmin, sxmax, symin, symax, bound(4)
 c-----------------------------------------------------------------------
       sxmin = min(sxmin,bound(1))
@@ -1238,7 +1245,6 @@ c   x1,x2,y1,y2   Auto scaled extrema
 c  Output
 c   lim           Extrema to use for plot
 c-----------------------------------------------------------------------
-      implicit none
       real x1, x2, y1, y2, lim(4), xrange(2), yrange(2)
       logical dostr
 c-----------------------------------------------------------------------
@@ -1253,7 +1259,7 @@ c
           lim(1) = x1
           lim(3) = x2
         end if
-        call fixlm3 (lim(1), lim(3))    
+        call fixlm3 (lim(1), lim(3))
       else
         lim(1) = xrange(1)
         lim(3) = xrange(2)
@@ -1279,11 +1285,10 @@ c
 c-----------------------------------------------------------------------
 c     Stretch extrema by 5%
 c-----------------------------------------------------------------------
-      implicit none
       real dmin, dmax, dmin2, dmax2
 cc
       real absmax, delta
-c     
+c
       delta = 0.05 * (dmax - dmin)
       absmax = max(abs(dmax),abs(dmin))
       if (delta.le.1.0e-5*absmax) delta = 0.01 * absmax
@@ -1297,7 +1302,6 @@ c
 c-----------------------------------------------------------------------
 c     Fix lim=max extrema
 c-----------------------------------------------------------------------
-      implicit none
       real dmin, dmax
 c
       if (dmin.eq.dmax) then
@@ -1329,7 +1333,6 @@ c     xsol    The current guess for the peak, pos'n and fwhm
 c     dfdx    The derivatives w.r.t. peak, pos'n and fwhm
 c
 c-----------------------------------------------------------------------
-      implicit none
       integer npar, npts
       real xsol(npar), dfdx(npar,npts)
 cc
@@ -1371,7 +1374,6 @@ c             and slope
 c     dfdx    The derivatives w.r.t. peak, pos'n, fwhm, offset and slope
 c
 c-----------------------------------------------------------------------
-      implicit none
       integer npar, npts
       real xsol(npar), dfdx(npar,npts)
 cc
@@ -1414,9 +1416,9 @@ c   n         Number of points in slice
 c   nseg      Number of segments in slice
 c   ipslx,y   Pointers to MEMR memory buffer for the x and y
 c             values of the slice
-c   ipsls     Pointer to MEMR buffer which gives index of first point of 
+c   ipsls     Pointer to MEMR buffer which gives index of first point of
 c             first segment of slice
-c   ipsle     Pointer to MEMR buffer which gives index of last point of 
+c   ipsle     Pointer to MEMR buffer which gives index of last point of
 c             first segment of slice
 c   x,ydispb,l
 c          Label displacements from axes
@@ -1425,7 +1427,6 @@ c          labels
 c   slbcol    Colour index for slice plot frame
 c   labtyp    x-axis label type for slice plot
 c-----------------------------------------------------------------------
-      implicit none
       real xdispl, ydispb
       integer n, ipslx, ipsly, ipsls, ipsle, nseg, islice, lmod, slbcol
       character*(*) xlabel, ylabel,labtyp
@@ -1470,8 +1471,9 @@ c Scale x data accoring to labype
 c
         scafac=1
         if (index(labtyp,'arcmin').ne.0) scafac=60.0
+        if (index(labtyp,'arcmas').ne.0) scafac=1.0E-3
         if (index(labtyp,'reldeg').ne.0) scafac=60.0*60.0
-      
+
         do sctr=2,4
           xsol(sctr)=xsol(sctr)*scafac
         end do
@@ -1482,7 +1484,7 @@ c
 c Optionally get x range and set pointers passed out in common
 c
         if (doxrng) then
-          call getxrng (wx1, wx2, wy1, wy2, n, memr(ipslx), 
+          call getxrng (wx1, wx2, wy1, wy2, n, memr(ipslx),
      +                  is, n2, xc, yc,labtyp)
           ipxx = ipslx + is - 1
           ipyy = ipsly + is - 1
@@ -1516,11 +1518,11 @@ c
 c
         if (.not.dobase) then
           call nllsqu (3, n2, xsol, h, itmax, eps1, eps2, .true.,
-     +                 ifail, gaufun, gauder, memr(ipf), 
+     +                 ifail, gaufun, gauder, memr(ipf),
      +                 memr(ipfp), dx, memr(ipdfdx), aa)
         else
-          call nllsqu (5, n2, xsol, h, itmax, eps1, eps2, .true., 
-     +                 ifail, gaufun2, gauder2, memr(ipf), 
+          call nllsqu (5, n2, xsol, h, itmax, eps1, eps2, .true.,
+     +                 ifail, gaufun2, gauder2, memr(ipf),
      +                 memr(ipfp), dx, memr(ipdfdx), aa)
         end if
         if (ifail.eq.1) call bug ('w', 'Fit failed: singular matrix')
@@ -1538,7 +1540,7 @@ c
 c Plot model and residual
 c
         if (ifail.ne.1)
-     +    call plotm (dobase, islice, n, nseg, ipslx, ipsly, ipsls, 
+     +    call plotm (dobase, islice, n, nseg, ipslx, ipsly, ipsls,
      +      ipsle, xsol, xdispl, ydispb, xlabel, ylabel, slbcol,labtyp)
 c
 c Tell user result; inside redo loop because they may fit multiple
@@ -1549,7 +1551,7 @@ c
         if (dobase) then
           call output ('   PEAK          POSITION         FWHM'//
      +                 '         OFFSET          SLOPE')
-          write (aline, 50) xsol(1), xsol(2), xsol(3), 
+          write (aline, 50) xsol(1), xsol(2), xsol(3),
      +                      xsol(4), xsol(5)
 50        format (5(1pe13.6,2x))
           call output (aline)
@@ -1565,20 +1567,20 @@ c Redraw data if redo
 c
         call redo (more)
         if (more) call slerdraw (ydispb, xdispl, xlabel, ylabel, islice,
-     +                           n, nseg, ipslx, ipsly, ipsls, ipsle, 
+     +                           n, nseg, ipslx, ipsly, ipsls, ipsle,
      +                           .true., wy1s, wy2s, slbcol,labtyp)
       end do
 c
 c Save model in text file
 c
       if (lmod.ne.0) then
-        write (aline, 100) islice, xsol(1), xsol(2), xsol(3), 
+        write (aline, 100) islice, xsol(1), xsol(2), xsol(3),
      +                     xsol(4), xsol(5)
 100     format (i3, 3x, 5(1pe13.6,1x))
         call txtwrite (lmod, aline, len1(aline), iostat)
         if (iostat.ne.0) then
           write (aline, 200) islice
-200       format ('Error writing model for slice # ', i3, 
+200       format ('Error writing model for slice # ', i3,
      +            ' to text file')
           call bug ('w', aline)
         end if
@@ -1600,9 +1602,8 @@ c     npts    The number of points in the slice
 c   Input/output
 c     xsol    The current guess for the peak, pos'n and FWHM
 c     y       The Y data points of the slice
-c     
+c
 c-----------------------------------------------------------------------
-      implicit none
       integer npar, npts
       real xsol(npar), y(npts)
 cc
@@ -1620,7 +1621,7 @@ c      write (*,*) 'iter, xsol=',iter,xsol
       fac = -4.0d0 * log(2.0d0)
 c
       do i = 1, npts
-        x = memr(ipx+i-1)        
+        x = memr(ipx+i-1)
         y(i) = memr(ipy+i-1) -
      +         (xsol(1) * dexpun(fac*dble((x-xsol(2))/xsol(3))**2))
       end do
@@ -1639,12 +1640,11 @@ c   Input
 c     npar    The number of parameters we are solving for
 c     npts    The number of points in the slice
 c   Input/output
-c     xsol    The current guess for the peak, pos'n and FWHM, offset 
+c     xsol    The current guess for the peak, pos'n and FWHM, offset
 c             and slope
 c     y       The Y data points of the slice
-c     
+c
 c-----------------------------------------------------------------------
-      implicit none
       integer npar, npts
       real xsol(npar), y(npts)
 cc
@@ -1662,8 +1662,8 @@ c      write (*,*) 'iter, xsol=',iter,xsol
       fac = -4.0d0 * log(2.0d0)
 c
       do i = 1, npts
-        x = memr(ipx+i-1)        
-        y(i) = memr(ipy+i-1) - 
+        x = memr(ipx+i-1)
+        y(i) = memr(ipy+i-1) -
      +         (xsol(1) * dexpun(fac*dble((x-xsol(2))/xsol(3))**2)) -
      +          xsol(4) - x*xsol(5)
       end do
@@ -1682,9 +1682,8 @@ c    xsol       Solution vector: peak, pos, fwhm, offset, slope
 c    xc,yc      ocation where cursor was last seen
 c
 c-----------------------------------------------------------------------
-      implicit none
       real xsol(5), wx1, wx2, wy1, wy2, xc, yc
-cc 
+cc
       real x, y, wx
       character cch*1
       logical more, in
@@ -1722,7 +1721,7 @@ c
           call output (' ')
         end if
         xc = x
-        yc = y     
+        yc = y
       end do
 c
       end
@@ -1732,7 +1731,6 @@ c
 c-----------------------------------------------------------------------
 c     Get an x limit with the cursor
 c-----------------------------------------------------------------------
-      implicit none
       real x1, wx1, wx2, wy1, wy2, x, xc, yc
 cc
       real xx(2), yy(2), y
@@ -1758,7 +1756,7 @@ c
             yy(2) = wy2
             call pgline (2, xx, yy)
             call pgupdt
-            more = .false. 
+            more = .false.
           end if
         else
           call output (' ')
@@ -1782,9 +1780,8 @@ c  Input/output
 c    xsol       Solution vector, peak, pos, fwhm, offset, slope
 c    xc,yc      Location where cursor was last seen
 c-----------------------------------------------------------------------
-      implicit none
       real xsol(5), wx1, wx2, wy1, wy2, xc, yc
-cc 
+cc
       real x, y
       character cch*1
       logical more, in
@@ -1814,7 +1811,7 @@ c
         end if
         xc = x
         yc = y
-      end do        
+      end do
 c
       end
 c
@@ -1830,19 +1827,18 @@ c    n          Number of points in slice
 c    x          Array of slice x values
 c    labtyp     Xaxis lable type
 c  Output
-c    is         Start index of first x value wanted in range 
+c    is         Start index of first x value wanted in range
 c               defined with cursor
 c    n2         Number of points in selected x range
 c-----------------------------------------------------------------------
-      implicit none
       integer is, n, n2
       real wx1, wx2, wy1, wy2, x(n), xc, yc
       character*(*)  labtyp
-cc 
+cc
       real x1, x2, xt, scafac
       integer i, ie
 c-----------------------------------------------------------------------
-      call output 
+      call output
      +   ('Mark x limits by clicking any button or entering "A"')
 c
       call getlim (-1.0e32, wx1, wx2, wy1, wy2, x1, xc, yc)
@@ -1854,6 +1850,7 @@ c Scale x data accoring to labype
 c
         scafac=1
         if (index(labtyp,'arcmin').ne.0) scafac=60.0
+        if (index(labtyp,'arcmas').ne.0) scafac=1.0E-3
         if (index(labtyp,'reldeg').ne.0) scafac=60.0*60.0
 c
         x1=x1*scafac
@@ -1887,8 +1884,8 @@ c
 c
       subroutine inputs (nltype, ltype, maxlev, in, ibin, jbin, kbin,
      +   levtyp, slev, levs, nlevs, pixr, trfun, coltab, pdev, labtyp,
-     +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase, accum, 
-     +   noimage,dofit, dobase, fslval, fslposi, fslposo, fslmod, 
+     +   do3val, do3pix, eqscale, nx, ny, cs, dopixel, doerase, accum,
+     +   noimage,dofit, dobase, fslval, fslposi, fslposo, fslmod,
      +   xrange, yrange, doxrng, dofid, dowedge, grid, val3form)
 c-----------------------------------------------------------------------
 c     Get the unfortunate user's long list of inputs
@@ -1935,8 +1932,6 @@ c   x,yrange   SLice display extrema
 c   grid       Overlay coordinate grid
 c   val3form   3value format
 c-----------------------------------------------------------------------
-      implicit none
-c
       integer maxlev, nx, ny, nlevs, ibin(2), jbin(2), kbin(2), nltype,
      +  coltab
       real levs(maxlev), pixr(2), cs(3), slev, xrange(2), yrange(2)
@@ -1973,8 +1968,8 @@ c
       jbin(1) = max(jbin(1), 1)
       jbin(2) = max(jbin(2), 1)
 c
-      call keyi ('chan', kbin(1), 1) 
-      call keyi ('chan', kbin(2), 1) 
+      call keyi ('chan', kbin(1), 1)
+      call keyi ('chan', kbin(2), 1)
       kbin(1) = max(kbin(1), 1)
       kbin(2) = max(kbin(2), 1)
 c
@@ -1991,7 +1986,7 @@ c
       call keya ('range', trfun, 'lin')
       call keyi ('range', coltab, 1)
       call lcase (trfun)
-      if (dopixel .and. trfun.ne.'lin' .and. trfun.ne.'log' .and. 
+      if (dopixel .and. trfun.ne.'lin' .and. trfun.ne.'log' .and.
      +    trfun.ne.'sqr' .and. trfun.ne.'heq') call bug ('f',
      +    'Unrecognized pixel map transfer function type')
 c
@@ -2032,7 +2027,7 @@ c
         labtyp(1)(4:6) = 'nat'
         call bug ('w', 'Axis label types abslin and rellin are ')
         call bug ('w', 'deprecated in favour of absnat and relnat')
-        dunw = .true. 
+        dunw = .true.
       end if
       if (labtyp(2)(4:6).eq.'lin') then
         labtyp(2)(4:6) = 'nat'
@@ -2040,22 +2035,23 @@ c
           call bug ('w', 'Axis label types abslin and rellin are ')
           call bug ('w', 'deprecated in favour of absnat and relnat')
         end if
-      end if  
+      end if
       if (nlab.le.2) then
 c Default is set later, depending
 c on whether the axis is radian type
-        labtyp(3) = 'none'    
-      else 
-        if ((labtyp(3).ne.'arcsec') .and. (labtyp(3).ne.'arcmin') .and. 
-     - (labtyp(3).ne.'reldeg') .and. (labtyp(3).ne.'relpix')) then
+        labtyp(3) = 'none'
+      else
+        if ((labtyp(3).ne.'arcsec') .and. (labtyp(3).ne.'arcmin') .and.
+     - (labtyp(3).ne.'arcmas') .and. (labtyp(3).ne.'reldeg') .and.
+     - (labtyp(3).ne.'relpix')) then
           call bug ('w', 'LABTYP(3) not recognized')
           labtyp(3) = 'none'
         end if
       end if
 c
-      if ( (index(labtyp(1),'nat').ne.0  .and. 
+      if ( (index(labtyp(1),'nat').ne.0  .and.
      +      index(labtyp(2),'nat').eq.0)) then
-        if (eqscale) call bug ('i', 
+        if (eqscale) call bug ('i',
      +  'You might consider options=unequal with these axis types')
       end if
 c
@@ -2086,7 +2082,6 @@ c
 c-----------------------------------------------------------------------
 c     See if a value is within a range
 c-----------------------------------------------------------------------
-      implicit none
       real x, x1,x2
       logical in
 c-----------------------------------------------------------------------
@@ -2104,9 +2099,9 @@ c     "Cubic Convolution", IEEE Trans ASSP, Dec, 1981
 c
 c  Input:
 c    x    Pixel value to intgerpolate to. Must be positive and can be
-c         fractional of course.  Pixels are treated as having their centre 
-c         at N.0  so that the left hand edge is M.5, the centre N.0 and 
-c         the right hand edge N.5 where N = M + 1
+c         fractional of course.  Pixels are treated as having their
+c         centre at N.0  so that the left hand edge is M.5, the centre
+c         N.0 and the right hand edge N.5 where N = M + 1
 c  Output:
 c    i1   The integer pixel value to which the first output
 c         weight applies.
@@ -2122,8 +2117,7 @@ c         This routine makes no attempt to deal with edges.  If you give
 c         it, say, x=1.3, then i1=0 is returned.  You must deal with the
 c         edges yourself in the calling routine
 c
-c------------------------------------------------------------------------
-      implicit none
+c-----------------------------------------------------------------------
       real x, w(4)
       integer i1
 cc
@@ -2136,7 +2130,7 @@ c-----------------------------------------------------------------------
       w(2) = (( 1.5*f-2.5)*f    )*f + 1.0
       w(3) = ((-1.5*f+2.0)*f+0.5)*f
       w(4) = (( 0.5*f-0.5)*f    )*f
-c  
+c
       i1 = jx - 1
 c
       end
@@ -2159,7 +2153,6 @@ c  Out:
 c    out     Interpolated value
 c    blanked Output pixel blanked if true
 c-----------------------------------------------------------------------
-      implicit none
       integer nx, ny, nim(nx,ny), i1, j1
       real im(nx,ny), wx(4), wy(4), out
       logical blanked
@@ -2176,7 +2169,7 @@ c
         do i = i1, i1+4-1
           io = i - i1 + 1
 c
-          if (i.lt.1 .or. j.lt.1 .or. 
+          if (i.lt.1 .or. j.lt.1 .or.
      +        i.gt.nx .or. j.gt.ny) then
             im2(io,jo) = 0.0
             w(io,jo) = 0.0
@@ -2204,10 +2197,9 @@ c
 c
       end
 c
-c      
+c
       subroutine intxy1 (im, w, out)
 c-----------------------------------------------------------------------
-      implicit none
       real im(16), w(16), out
 cc
       integer i
@@ -2234,7 +2226,6 @@ c   sege       End indices for segments
 c   labtyp     Xaxis label type
 c
 c-----------------------------------------------------------------------
-      implicit none
       integer n, nseg, segs(nseg), sege(nseg)
       real x(n), y(n)
       character*(*) labtyp
@@ -2247,6 +2238,10 @@ c
       if (index(labtyp,'arcmin').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)/60.0
+        end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)/1E-3
         end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n
@@ -2278,6 +2273,10 @@ c
         do sctr=1,n
           x(sctr)=x(sctr)*60.0
         end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)*1E-3
+        end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)*60.0*60.0
@@ -2296,14 +2295,13 @@ c  Input:
 c   vtrc     y-axis TRC  of viewport of slice display region
 c
 c-----------------------------------------------------------------------
-      implicit none
       real vtrc
 cc
       real xht, yht
 c-----------------------------------------------------------------------
       call pgqcs (0, xht, yht)
       call pgsvp (0.0, 1.0, 0.0, vtrc+yht)
-      call pgswin (0.0, 1.0, 0.0, 1.0)       
+      call pgswin (0.0, 1.0, 0.0, 1.0)
       call pgsci (0)
       call pgsfs (1)
       call pgrect (0.0, 1.0, 0.0, 1.0)
@@ -2312,13 +2310,12 @@ c
       end
 c
 c
-      subroutine opento (units, radians, fslval, fslposo, fslmod, lval, 
+      subroutine opento (units, radians, fslval, fslposo, fslmod, lval,
      +                   lposo, lmod)
 c-----------------------------------------------------------------------
 c     Open output text files
 c
 c-----------------------------------------------------------------------
-      implicit none
       character*(*) fslval, fslposo, fslmod, units
       integer lval, lposo, lmod
       logical radians
@@ -2408,7 +2405,7 @@ c
       end
 c
 c
-      subroutine plotm (dobase, islice, n, nseg, ipslx, ipsly, ipsls, 
+      subroutine plotm (dobase, islice, n, nseg, ipslx, ipsly, ipsls,
      +  ipsle, xsol, xdispl, ydispb, xlabel, ylabel, slbcol,labtyp)
 c-----------------------------------------------------------------------
 c     Plot data, model and residual
@@ -2420,9 +2417,9 @@ c   n          Number of points in slice
 c   nseg       Number of segments in slice
 c   ipslx      Pointer to MEMR buffer for first point of slice abcissa
 c   ipsly      Pointer to MEMR buffer for first point of slice ordinate
-c   ipsls      Pointer to MEMR buffer which gives index of first point of 
-c              first segment
-c   ipsle      Pointer to MEMR buffer which gives index of last point of 
+c   ipsls      Pointer to MEMR buffer which gives index of first point
+c              of first segment
+c   ipsle      Pointer to MEMR buffer which gives index of last point of
 c              first segment
 c   xsol       Solution vector: peak, pos, fwhm, offset, slope
 c   x,ydispl,b Label displacements
@@ -2430,7 +2427,6 @@ c   x,ylabel   Labels
 c   slbcol     Colour index for slice plot frame
 c   labtyp     x-axis label for slice plot
 c-----------------------------------------------------------------------
-      implicit none
       real xdispl, ydispb, xsol(5)
       integer n, ipslx, ipsly, ipsls, ipsle, nseg, islice, slbcol
       character*(*) xlabel, ylabel,labtyp
@@ -2450,17 +2446,17 @@ c-----------------------------------------------------------------------
       ymax = -1.0e32
 c
       do i = 1, n
-        x = memr(ipslx+i-1)        
+        x = memr(ipslx+i-1)
         y = memr(ipsly+i-1)
 c
 c Compute model and residual
 c
         if (dobase) then
-          memr(ipmy+i-1) = xsol(1) * 
-     +                     dexpun(fac*dble((x-xsol(2))/xsol(3))**2) 
+          memr(ipmy+i-1) = xsol(1) *
+     +                     dexpun(fac*dble((x-xsol(2))/xsol(3))**2)
      +                     + xsol(4) + xsol(5)*x
         else
-          memr(ipmy+i-1) = xsol(1) * 
+          memr(ipmy+i-1) = xsol(1) *
      +                     dexpun(fac*dble((x-xsol(2))/xsol(3))**2)
         end if
         memr(ipdy+i-1) = y - memr(ipmy+i-1)
@@ -2492,7 +2488,7 @@ c
       else
         ic1 = 2
         if (ics.eq.7) then
-          ic2 = 3   
+          ic2 = 3
         else
           ic2 = 7
         end if
@@ -2536,7 +2532,8 @@ c     Read slice positions list file and decode
 c
 c   Inputs:
 c     lun      Handle of image
-c     krng     STart plane and number of planes averaged for this subplot
+c     krng     Start plane and number of planes averaged for this
+c              subplot
 c     noimage  Image not displayed
 c     lpos     Handle for positions list file
 c     nx,ny    Size of subimage displayed
@@ -2549,11 +2546,10 @@ c     size     Size of image
 c  Outputs
 c     nslice   Number of slices
 c     slpos    BLC (xyz) and  TRC (xyz) of slices in absolute subimage
-c              binned pixels. If z=0 then extract slice from all z pixels
+c              binned pixels. If z=0 then extract slice from all z
+c              pixels
 c
-c------------------------------------------------------------------------
-      implicit none
-c
+c-----------------------------------------------------------------------
       integer lun, lpos, maxnsl, nltype, nslice, blc(3), trc(3), nx, ny,
      +  size(*), slpos(6,maxnsl), ibin, jbin, krng(2)
       character ltype(nltype)*(*)
@@ -2566,7 +2562,7 @@ cc
 c
       integer len1
       character itoaf*2
-c------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
 c Read and decode locations.  # means comment
 c
@@ -2577,7 +2573,7 @@ c
 c
       do while (iostat.ne.-1)
         aline = ' '
-        call txtread (lpos, aline, ilen, iostat) 
+        call txtread (lpos, aline, ilen, iostat)
         if (iostat.eq.0) then
           if (aline(1:1).ne.'#' .and. aline.ne.' ') then
 c
@@ -2591,7 +2587,7 @@ c
             else
               nslice = nslice + 1
               ilen = len1(aline)
-              call posdec2 (lun, pix3, nltype, ltype, nslice, 
+              call posdec2 (lun, pix3, nltype, ltype, nslice,
      +                      aline(1:ilen), pos)
 c
 c Convert to binned subimage pixels in x and y
@@ -2612,7 +2608,7 @@ c z direction binned differently
 c
               slpos(3,nslice) = nint(pos(5))
               slpos(6,nslice) = nint(pos(6))
-c 
+c
 c See if this one is on this subplot channel range
 c
               want = slwant (trc(3), krng(1), krng(2), slpos(3,nslice),
@@ -2651,18 +2647,18 @@ c
             end if
           end if
         else
-          if (iostat.ne.-1) call bug ('f', 
+          if (iostat.ne.-1) call bug ('f',
      +       'Error reading from input slice positions file')
         end if
       end do
-      if (nslice.eq.0) call bug ('f', 
+      if (nslice.eq.0) call bug ('f',
      +  'The input slice positions file had no valid locations')
 c
       end
 c
 c
       subroutine posdec2 (lun, pix3, nltype, ltype, nslice, aline, pos)
-c---------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c     Decode string into positions list
 c
 c     Input:
@@ -2674,15 +2670,13 @@ c       nslice   Number of slice being decoded
 c       aline    Input string
 c     Output
 c       pos      X1 Y1 X2 Y2  CS CE    where the locations are in
-c		 absolute image pixels
+c                absolute image pixels
 c
-c---------------------------------------------------------------------
-      implicit none
-c
+c-----------------------------------------------------------------------
       integer nslice, nltype, lun
       double precision pos(6), pix3
       character*(*) aline, ltype(nltype)
-cc 
+cc
       integer maxnum
       parameter (maxnum = 20)
 c
@@ -2694,7 +2688,7 @@ c
 c
       integer len1
       character itoaf*4
-c--------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
 c Prepare string for matodf
 c
@@ -2766,15 +2760,15 @@ c
       call ol2pixcg (lun, pix3, otype, off, dsign, nums(npt),
      +               pos, nuse)
       npt = nuse + 1
-      call ol2pixcg (lun, pix3, otype, off, dsign, nums(npt), 
+      call ol2pixcg (lun, pix3, otype, off, dsign, nums(npt),
      +               pos(3), nuse)
       npt = npt + nuse
 c
-c We have done the mandatory columns, now deal with the optional CS and CE
+c Done with the mandatory columns, now deal with the optional CS and CE.
 c
       nextra = ipres - inum
       emax = 2
-      if (nextra.gt.emax) call bug ('f', 
+      if (nextra.gt.emax) call bug ('f',
      +   'Too many fields for slice # '//str(1:slen))
 c
       if (nextra.eq.0) then
@@ -2817,7 +2811,7 @@ c
 c
       subroutine region (in, naxis, size, ibin, jbin, kbin, blc, trc,
      +                   win, ngrps, grpbeg, ngrp)
-c----------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c     Finish key routine inputs for region of interest now.
 c
 c  Input:
@@ -2837,10 +2831,8 @@ c    ngrps         Number of groups of channels.
 c    blc,trc       3-D Hyper-rectangle surrounding region of interest
 c    win           Size of region of interest for each of upto 3 Ds
 c
-c----------------------------------------------------------------------
-      implicit none
-c
-      integer naxis, size(naxis), blc(*), trc(*), win(*), 
+c-----------------------------------------------------------------------
+      integer naxis, size(naxis), blc(*), trc(*), win(*),
      +  ngrp(*), grpbeg(*), ngrps, ibin(2), jbin(2), kbin(2)
       character in*(*)
 cc
@@ -2849,7 +2841,7 @@ cc
       parameter (maxbox = 1024)
 c
       integer boxes(maxbox)
-c----------------------------------------------------------------------
+c-----------------------------------------------------------------------
       call boxinput ('region', in, boxes, maxbox)
       call boxset (boxes, naxis, size, 's')
       call keyfin
@@ -2877,7 +2869,7 @@ c
 c
 c
       subroutine slerdraw (ydispb, xdispl, xlabel, ylabel, islice,
-     +   n, nseg, ipslx, ipsly, ipsls, ipsle, usenew, ymin, ymax, 
+     +   n, nseg, ipslx, ipsly, ipsls, ipsle, usenew, ymin, ymax,
      +   slbcol,labtyp)
 c-----------------------------------------------------------------------
 c     Erase old slice display, redraw box and redraw slice
@@ -2891,9 +2883,9 @@ c   n          Number of points in slice
 c   nseg       Number of segments in slice
 c   ipslx      Pointer to MEMR buffer for first point of slice abcissa
 c   ipsly      Pointer to MEMR buffer for first point of slice ordinate
-c   ipsls      Pointer to MEMR buffer which gives index of first point of 
-c              first segment
-c   ipsle      Pointer to MEMR buffer which gives index of last point of 
+c   ipsls      Pointer to MEMR buffer which gives index of first point
+c              of first segment
+c   ipsle      Pointer to MEMR buffer which gives index of last point of
 c              first segment
 c   usenew     Use the given ymin and ymax else use what it was before
 c              These will be stretched 5% as usual
@@ -2901,7 +2893,6 @@ c   ymin,ymax  Optionally used Y extrema
 c   slbcol     COlour index for frame
 c   labtyp     x-axis label type for slice plot
 c-----------------------------------------------------------------------
-      implicit none
       real ydispb, xdispl, ymin, ymax
       integer islice, nseg, ipslx, ipsly, ipsls, ipsle, n, slbcol
       logical usenew
@@ -2921,6 +2912,9 @@ c
       if (index(labtyp,'arcmin').ne.0) then
         wblc(1)=wblc(1)*60.0
         wtrc(1)=wtrc(1)*60.0
+      else if (index(labtyp,'arcmas').ne.0) then
+        wblc(1)=wblc(1)*1E-3
+        wtrc(1)=wtrc(1)*1E-3
       else if (index(labtyp,'reldeg').ne.0) then
         wblc(1)=wblc(1)*60.0*60.0
         wtrc(1)=wtrc(1)*60.0*60.0
@@ -2953,14 +2947,14 @@ c
 c
 c Plot slice
 c
-      call slplot (islice, n, nseg, memr(ipslx), memr(ipsly), 
+      call slplot (islice, n, nseg, memr(ipslx), memr(ipsly),
      +             memi(ipsls), memi(ipsle),
      +              labtyp)
 c
       end
 c
 c
-      subroutine slice (lin, ibin, jbin, slpos, grid, nx, ny, im, nim, 
+      subroutine slice (lin, ibin, jbin, slpos, grid, nx, ny, im, nim,
      +   radians, slsize, slx, sly, ip, bound, nseg, seg)
 c-----------------------------------------------------------------------
 c     Generate the slice
@@ -2973,7 +2967,7 @@ c    grid     Increment along slice in pixels
 c    nx,ny    Size of image
 c    im,nim   Image and normalization image (0 -> blanked)
 c    radians  Axis increments both in radians
-c    slsize   Memory allocated for slice 
+c    slsize   Memory allocated for slice
 c Output:
 c    slx      Slice abcissa values
 c    sly      Slice ordinate values
@@ -2983,8 +2977,6 @@ c    nseg     Number of segments containing unblanked points in slice
 c    seg      The start and end points of each segment
 c
 c-----------------------------------------------------------------------
-      implicit none
-c
       include 'maxdim.h'
       integer nx, ny, ip, slsize, nseg, seg(2,maxdim),
      +  nim(nx,ny), slpos(6), ibin, jbin, lin
@@ -2994,7 +2986,7 @@ cc
       include 'mirconst.h'
       double precision rtoa
       parameter (rtoa = 3600.0d0 * 180.0d0 / dpi)
-      
+
       double precision theta, delx, dely, x, y, deld, d, facx, facy,
      +  dx, dy, cdelt(2)
       real wx(4), wy(4), out
@@ -3004,7 +2996,7 @@ c-----------------------------------------------------------------------
 c
 c Find pixel increments in x, y between slice points
 c
-      delx = slpos(4)-slpos(1) 
+      delx = slpos(4)-slpos(1)
       dely = slpos(5)-slpos(2)
       deld = sqrt(delx**2 + dely**2)
       theta = atan2(delx,dely)
@@ -3038,8 +3030,8 @@ c
       bound(3) = -1.0e32
       bound(4) = -1.0e32
 c
-      x = slpos(1) 
-      y = slpos(2) 
+      x = slpos(1)
+      y = slpos(2)
       dx = 0.0
       dy = 0.0
       d = 0.0
@@ -3054,7 +3046,7 @@ c
         call intxy (nx, ny, im, nim, wx, wy, i1, j1, out, bl)
 c
         if (.not.bl) then
-          if (ip.eq.slsize) call bug ('f', 
+          if (ip.eq.slsize) call bug ('f',
      +      'Logic error: insufficient memory allocated for slice')
           ip = ip + 1
 c
@@ -3105,7 +3097,6 @@ c
 c  Input
 c    slpos    SLice ends in absolute binned subimage pixels
 c-----------------------------------------------------------------------
-      implicit none
       integer slpos(6), blc(2), ibin, jbin
 cc
       double precision dp
@@ -3147,7 +3138,6 @@ c   segs       Segment start indices
 c   sege       Segment end indices
 c   labtyp     x-axis label-type for plot
 c-----------------------------------------------------------------------
-      implicit none
       integer n, nseg, segs(nseg), sege(nseg), islice
       real x(n), y(n)
       character*(*) labtyp
@@ -3162,15 +3152,20 @@ c
         do sctr=1,n
           x(sctr)=x(sctr)/60.0
         end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)/1E-3
+        end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)/60.0/60.0
         end do
       end if
 c
-c Set colour index for this slice.  All blanked slices do not appear, but
-c their colour is lost because it was used to mark the slice on the image
-c		
+c Set colour index for this slice.  All blanked slices do not appear,
+c but their colour is lost because it was used to mark the slice on the
+c image
+c
       call setcolcg (islice, icol)
       call pgsci (icol)
 c
@@ -3198,6 +3193,10 @@ c
         do sctr=1,n
           x(sctr)=x(sctr)*60.0
         end do
+      else if (index(labtyp,'arcmas').ne.0) then
+        do sctr=1,n
+          x(sctr)=x(sctr)*1E-3
+        end do
       else if (index(labtyp,'reldeg').ne.0) then
         do sctr=1,n
           x(sctr)=x(sctr)*60.0*60.0
@@ -3207,7 +3206,7 @@ c
       end
 c
 c
-      subroutine slposw (lin, lpos, krng, radians, blc, ibin, jbin, 
+      subroutine slposw (lin, lpos, krng, radians, blc, ibin, jbin,
      +                   maxnsl, nslice, slpos)
 c-----------------------------------------------------------------------
 c     Save the slice locations in a text file.  Coordinates
@@ -3216,7 +3215,6 @@ c
 c  Input
 c    slpos    SLice ends in absolute full image unbinned pixels
 c-----------------------------------------------------------------------
-      implicit none
       integer lin, lpos, krng(2), blc(2), maxnsl, nslice, ibin, jbin,
      +  slpos(6,maxnsl)
       logical radians
@@ -3238,7 +3236,7 @@ c-----------------------------------------------------------------------
         typeo(2) = 'abspix'
       end if
       typeo(3) = 'abspix'
-      win(3) = dble(2*krng(1)+krng(2)-1)/2.0 
+      win(3) = dble(2*krng(1)+krng(2)-1)/2.0
       call rdhdi (lin, 'naxis', naxis, 0)
       naxis = min(3,naxis)
 c
@@ -3262,12 +3260,12 @@ c
         trcx = wout(1)
         trcy = wout(2)
 c
-        write (aline,100) typeo(1), typeo(2), blcx, blcy, trcx, trcy, 
+        write (aline,100) typeo(1), typeo(2), blcx, blcy, trcx, trcy,
      +    krng(1), krng(1)+krng(2)-1
 100     format (a6, 1x, a6, 1x, 4(1pe13.6, 1x), i4, 1x, i4)
         ilen = len1(aline)
         call txtwrite (lpos, aline, ilen, iostat)
-        if (iostat.ne.0) call bug ('f', 
+        if (iostat.ne.0) call bug ('f',
      +     'Error writing slice positions file')
       end do
 c
@@ -3275,20 +3273,18 @@ c
 c
 c
       subroutine slput (simpos, wldpos, ipos, wpos)
-      implicit none
       integer simpos(2), ipos(2)
       real wldpos(2), wpos(2)
 c
       ipos(1) = simpos(1)
       ipos(2) = simpos(2)
-      wpos(1) = wldpos(1)       
+      wpos(1) = wldpos(1)
       wpos(2) = wldpos(2)
 c
       end
 c
 c
       subroutine slput2 (slpos, ipos)
-      implicit none
       integer slpos(6), ipos(2,2)
 c
       slpos(1) = ipos(1,1)
@@ -3303,7 +3299,7 @@ c
 c
       subroutine slsave (lval, islice, nseg, x, y, segs, sege)
 c-----------------------------------------------------------------------
-c     Save the segments of the slice that are unblanked.  
+c     Save the segments of the slice that are unblanked.
 c
 c  Input
 c   lval       Handle for text file
@@ -3313,7 +3309,6 @@ c   x,y        Slice
 c   segs,e     Segment start and end indices
 c
 c-----------------------------------------------------------------------
-      implicit none
       real x(*), y(*)
       integer nseg, segs(nseg), sege(nseg), islice, lval
 cc
@@ -3341,7 +3336,6 @@ c
 c
 c
       subroutine slsiz (slpos, grid, slsize)
-      implicit none
       integer slpos(6), slsize
       real grid
 
@@ -3364,7 +3358,6 @@ c
 c-----------------------------------------------------------------------
 c     Save the slice values into a text file
 c-----------------------------------------------------------------------
-      implicit none
       integer lval, islice, iseg, npnts
       real x(npnts), y(npnts)
 cc
@@ -3377,7 +3370,7 @@ c-----------------------------------------------------------------------
 c
         ilen = len1(aline)
         call txtwrite (lval, aline, ilen, iostat)
-        if (iostat.ne.0) call bug ('f', 
+        if (iostat.ne.0) call bug ('f',
      +     'Error writing slice values file')
       end do
 c
@@ -3392,7 +3385,6 @@ c     zs     Start z-pixel of displayed image
 c     nz     Number of z pixels in diaplayed image
 c     z1,z2  range of z-pixels on which this slice should be displayed
 c-----------------------------------------------------------------------
-      implicit none
       integer trc, zs, nz, z1, z2
 cc
       integer i, j, ze
@@ -3415,11 +3407,11 @@ c
       end
 c
 c
-      subroutine vpsiz (noimage, dofid, nx, ny, pcs, xdispl, ydispb, 
+      subroutine vpsiz (noimage, dofid, nx, ny, pcs, xdispl, ydispb,
      +  xdispls, ydispbs, wedcod, wedwid, tfdisp, vblc, vtrc, vxsize,
      +  vysize, vxgap, vygap, tfvp, wdgvp)
-c---------------------------------------------------------------------------
-c     Work out viewports for image and slice display for unequal scales 
+c-----------------------------------------------------------------------
+c     Work out viewports for image and slice display for unequal scales
 c     in x and y here. If user wants equal scales, adjust later.
 c
 c   Input
@@ -3440,8 +3432,8 @@ c     wedcod      1 -> one wedge to right of all subplots
 c                 2 -> one wedge to right per subplot
 c                 3 -> one wedge per subplot inside subplot
 c     wedwid      Width of wedge as a fraction of the full x viewport
-c	          for wedcod = 1
-c     tfdisp      Displacement of transfer function plot from right axis 
+c                 for wedcod = 1
+c     tfdisp      Displacement of transfer function plot from right axis
 c                 in char heights
 c   Output
 c     vblc        BLC of viewports; 1 is slice, 2 is image in ndc
@@ -3449,12 +3441,11 @@ c     vtrc        TRC of viewports; 1 is slice, 2 is image in ndc
 c                 The image view port encompasses all subplots
 c     vx,ysize    Size of viewport of each sub-plot in n.d.c.s in x & y
 c     vx,ygap     Leave a gap between sub-plots in ndc in x and y
-c     tfvp        Viewport coords in which to draw interactive fiddle plot
-c     wdgvp       Viewport for wedge if wedcod = 1.  Other wedge type 
-c                 viewports are worked out when the wedge is drawn in 
-c---------------------------------------------------------------------------
-      implicit none
-c
+c     tfvp        Viewport coords in which to draw interactive fiddle
+c                 plot
+c     wdgvp       Viewport for wedge if wedcod = 1.  Other wedge type
+c                 viewports are worked out when the wedge is drawn in
+c-----------------------------------------------------------------------
       real vblc(2,2), vtrc(2,2), vxsize, vysize, pcs(3), ydispb, xdispl,
      +  tfvp(4), wdgvp(4), wedwid, tfdisp, xdispls, ydispbs,
      +  vxgap, vygap
@@ -3472,11 +3463,11 @@ c
       real yfrac
       parameter (yfrac = 0.3)
 c
-      real xhti, yhti, xhts, yhts, dvx, dvy, dvww, dvwd, dvtd, asp, 
+      real xhti, yhti, xhts, yhts, dvx, dvy, dvww, dvwd, dvtd, asp,
      +  dvtfx, dvtfy, dvwl, dvltot, dvwtot, dvttot
       integer i
       logical dowedge
-c---------------------------------------------------------------------------
+c-----------------------------------------------------------------------
 c
 c Work out character heights in ndc
 c
@@ -3491,7 +3482,7 @@ c Define the slice and image display viewports
 c
       if (noimage) then
 c
-c Use a big chunk of the viewsurface for the slice if not 
+c Use a big chunk of the viewsurface for the slice if not
 c displaying the image
 c
         vblc(1,1) = (xdispls + 1.2) * xhts
@@ -3532,16 +3523,16 @@ c Set y-TRC of image viewport
 c
         vtrc(2,2) = 1.0 - 0.5*yhti
 c
-c Width of wedge and wedge label area in ndc. x-displacement in ndc 
+c Width of wedge and wedge label area in ndc. x-displacement in ndc
 c from right hand edge of image plots in ndc
-c 
+c
         dowedge = wedcod.eq.1 .or. wedcod.eq.2
-        if (dowedge) then        
+        if (dowedge) then
           dvww = wedwid
           dvwl = 2.0 * xhti
           dvwd = xhti
 c
-          dvwtot = dvwd + dvww + dvwl 
+          dvwtot = dvwd + dvww + dvwl
         else
           dvwtot = 0.0
           do i = 1, 4
@@ -3554,7 +3545,7 @@ c
         if (dofid) then
           dvtd = tfdisp * xhti
 c
-c We want the transfer function fiddle plot to be square on the 
+c We want the transfer function fiddle plot to be square on the
 c screen so find the width and height in ndc accordingly
 c
           asp = yhti / xhti
@@ -3562,7 +3553,7 @@ c
             dvtfx = tfvps / asp
             dvtfy = tfvps
           else
-            dvtfx = tfvps 
+            dvtfx = tfvps
             dvtfy = tfvps * asp
           end if
 c
@@ -3587,8 +3578,8 @@ c Now deal with y displacement of transfer function fiddle plot.
 c
         dvltot = ydispb*yhti
 c
-c If we are only drawing one image subplot per page, the slice 
-c display region will always overwrite the fiddle plot region 
+c If we are only drawing one image subplot per page, the slice
+c display region will always overwrite the fiddle plot region
 c and we don't need to waste Y space on the fiddle plot
 c
         if (nx*ny.gt.1) then
@@ -3599,7 +3590,7 @@ c
           end if
 c
 c Gap between slice plot and image plot boxes.  Allow 0.75 character
-c heights between slice plot and bottom of transfer function plot 
+c heights between slice plot and bottom of transfer function plot
 c or image label to make visual space and to accound for the fact
 c that SERASE, which erases the slice plot, lops off an extra 1/2
 c character height at the top for protruding labels
@@ -3607,7 +3598,7 @@ c
           dvy = max(dvttot,dvltot) + 0.75*yhti
 c
 c Distribute the gap to slice viewport y TRC and image
-c image viewport y BLC.  
+c image viewport y BLC.
 c
           vtrc(2,1) = yfrac - 0.25*dvy
           vblc(2,2) = yfrac + 0.75*dvy
@@ -3645,7 +3636,7 @@ c
           vxgap = xhti/3
           vxsize = ((vtrc(1,2) - vblc(1,2)) - ((nx - 1) * vxgap)) / nx
         else
-          vxgap = 0.0  
+          vxgap = 0.0
           vxsize = vtrc(1,2) - vblc(1,2)
         end if
 c
@@ -3668,14 +3659,13 @@ c     Set line graphics colours
 c
 c  Input
 c    bgcol  background colour. 0 -> black
-c			       1 -> white
-c			      -1 -> something else
+c                              1 -> white
+c                             -1 -> something else
 c  OUtput
 c    labcol labels
 c    concol contours
 c    slbcol slice plot borders
 c-----------------------------------------------------------------------
-      implicit none
       integer labcol, concol, slbcol, bgcol
 c-----------------------------------------------------------------------
 c
