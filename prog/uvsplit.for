@@ -357,6 +357,8 @@ c
                 nsub = max(1,nint(abs(sdf(i)*(nschan(i)+0.1)/maxwidth)))
               endif
               nindx1=nindx1+nsub-1
+	      if(nindx1.gt.MAXINDX)
+     *          call bug('f','Too many output windows')
               do j=1,nsub
                 ii=ii+1
                 ichan = nschan(i)*(2*j-1)/2/nsub
