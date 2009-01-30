@@ -2,8 +2,8 @@
 # It has no special work to do.
 #
 # CABB branch checkout and build
-00 21 * * 1-5 (/bin/sh /u/mci156/admin/projects/106/miriad-build.sh ) 2>&1 | \
-	       mailx -s "[mirmgr:draco] miriad build" mci156
+15 21 * * 1-5 (/bin/sh /u/mci156/admin/projects/106/miriad-build.sh ) 2>&1 | \
+	       mailx -s "[mirmgr:delphinus] miriad build" mci156
 #
 15 22 * * 1-5 . $HOME/.profile ; cd $MIR && make MIRATNF=1 allsys 2>&1 | tee $MIRARCH/gmake.log
 #
