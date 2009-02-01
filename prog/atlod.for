@@ -257,6 +257,7 @@ c    mhw  18dec07 Changes to read simulated CABB files with up to
 c                 16 IFs; avoid checking sampler stats for CABB files
 c    mhw  17jan08 Add options=rfiflag: flagging based on file with rfi ranges
 c    rjs  06nov08 Corrected CA02 xyphase handling and some minor tidying.
+c    mhw  09jan09 Add flagging of NaNs in CABB spectra 
 c
 c $Id$
 
@@ -1205,11 +1206,6 @@ c
           call do8(vis,nstoke(if),nfreq(if),sfreq(if),sdf(if))
         endif
 c
-c  If CABB, apply optional scaling and XY phase correction with ON/OFF data 
-c   in autocorrelations
-c
-c        call cabbCal(vis,i1,i2,bin,if)
-c
 c  Allocate buffer slots for each polarisation. Save the flags, Copy the
 c  data to the output. Do sampler corrections.
 c
@@ -1407,8 +1403,13 @@ c------------------------------------------------------------------------
 c
         call AsciiCpy(telescop,atemp,length)
         if(length.gt.0)then
-          call uvputvra(tno,'telescop',atemp(1:length))
-          call uvputvra(tno,'instrume',atemp(1:length))
+          if (atemp(1:length).eq.'ATCABB') then
+            call uvputvra(tno,'telescop',atemp(1:length-2))
+            call uvputvra(tno,'instrume',atemp(3:length))          
+          else
+            call uvputvra(tno,'telescop',atemp(1:length))
+            call uvputvra(tno,'instrume',atemp(1:length))
+          endif
         endif
 c
         call AsciiCpy(observer,atemp,length)
@@ -1560,6 +1561,11 @@ c
           call VelRad(.not.dobary,tdash,obsra,obsdec,ra,dec,lst,lat,vel)
           call uvputvrr(tno,'veldop',real(vel),1)
           call uvputvrr(tno,'jyperk',jyperk,1)
+          
+c          
+c          (Re)calibrate CABB data using on/off autocorrelations
+c
+c        call cabbCalib(docabbcal,hires,tbin)
 c
 c  Handle the case that we are writing the multiple IFs out as multiple
 c  records.
@@ -1725,6 +1731,13 @@ c
      *     (nantest(1).ge.2139095040.and.nantest(1).le.2147483647)) then
             flags(i)=.false.
             data(i)=0.
+            cnt=cnt+1
+          
+c
+c         Also flag all data that is exactly zero
+c
+          else if (data(i).eq.0) then
+            flags(i)=.false.
             cnt=cnt+1
           endif
         enddo
@@ -3369,7 +3382,6 @@ c
         endif
         
 	end
-
 c************************************************************************
 	subroutine rfiFlag(flags,NDATA,nifs,nfreq,sfreq,sdf)
 c
@@ -3402,6 +3414,7 @@ c------------------------------------------------------------------------
           enddo
         endif
         end
+        
 
 c************************************************************************
 c
