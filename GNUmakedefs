@@ -598,7 +598,6 @@ ifeq "$(MAKEMODE)" "system"
 
   # Rule for cleaning out system directories.
   cleansys ::
-	   $(RM) -r $(MIRTMPD)/*
 	-@ for i in $$SUBDIRS ; do \
            if [ "$Q" != "@" -o "$(MAKELEVEL)" = 0 ] ; then \
 	      echo "" ; \
