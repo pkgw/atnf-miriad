@@ -26,7 +26,7 @@ ifeq "$(MAKEMODE)" "system"
 
   # Static and static pattern rules.
   #---------------------------------
-  allsys :: $(MIRBIND)/xmtv.exe $(MIRBIND)/xmtv $(MIRCATD)/XMtv \
+  allsys :: $(MIRBIND)/xmtv.exe $(MIRBIND)/xmtv $(MIRLIBD)/XMtv \
     $(MIRDOCD)/xmtv.doc $(MIRSDOCD)/xmtv.doc
 
   $(MIRBIND)/xmtv.exe : $(XMTVSRCS) $(XMTVINCS)
@@ -41,7 +41,7 @@ ifeq "$(MAKEMODE)" "system"
 	   cp $< $@
 	-@ chmod 775 $@
 
-  $(MIRCATD)/XMtv : $(CODEDIR)/XMtv.ad
+  $(MIRLIBD)/XMtv : $(CODEDIR)/XMtv.ad
 	-@ $(RM) $@
 	   cp $< $@
 	-@ chmod 664 $@
