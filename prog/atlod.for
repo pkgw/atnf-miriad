@@ -2486,7 +2486,7 @@ c
                 fginvant = fginvant + nspec
 c NOTE -need options=relax to get past this for cabb data
               else if(.not.((scinit(ifno,i1).and.scinit(ifno,i2)).or.
-     *          relax))then
+     *          relax.or.cabb))then
                 flag = 1
                 fgsysc = fgsysc + nspec
               endif
