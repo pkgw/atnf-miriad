@@ -962,11 +962,14 @@ c
         end
 c************************************************************************
         subroutine PokeSC(ant,if,chi1,tcorr1,
-     *          xtsys1,ytsys1,xyphase1,xyamp1,xsamp,ysamp,pntrms,pntmax)
+     *          xtsys1,ytsys1,xyphase1,xyamp1,xsamp,ysamp,
+     *          xgain1,ygain1,xcaljy1,ycaljy1,pntrms,pntmax,cabb1)
 c
         integer ant,if,tcorr1
-        real chi1,xtsys1,ytsys1,xyphase1,xyamp1
+        real chi1,xtsys1,ytsys1,xyphase1,xyamp1,xgain1,ygain1
+        real xcaljy1,ycaljy1
         real xsamp(3),ysamp(3),pntrms,pntmax
+        logical cabb1
 c
 c  Save the SYSCAL group info.
 c------------------------------------------------------------------------
@@ -974,6 +977,7 @@ c------------------------------------------------------------------------
         if(ant.gt.nants.or.if.gt.nifs)call bug('f',
      *                          'Invalid Ant or IF in PokeSC')
 c
+        cabb = cabb1
         tcorr = tcorr1
         chi = chi1
         axisrms(ant)=pntrms
@@ -983,13 +987,22 @@ c
         xyphase(if,ant) = xyphase1
         xyamp(if,ant) = xyamp1
 c
-        xsampler(1,if,ant) = xsamp(1)
-        xsampler(2,if,ant) = xsamp(2)
-        xsampler(3,if,ant) = xsamp(3)
+c CABB
 c
-        ysampler(1,if,ant) = ysamp(1)
-        ysampler(2,if,ant) = ysamp(2)
-        ysampler(3,if,ant) = ysamp(3)
+        if (cabb) then
+          xgain(if,ant) = xgain1
+          ygain(if,ant) = ygain1
+          xcaljy(if,ant) = xcaljy1
+          ycaljy(if,ant) = ycaljy1
+        else
+          xsampler(1,if,ant) = xsamp(1)
+          xsampler(2,if,ant) = xsamp(2)
+          xsampler(3,if,ant) = xsamp(3)
+c
+          ysampler(1,if,ant) = ysamp(1)
+          ysampler(2,if,ant) = ysamp(2)
+          ysampler(3,if,ant) = ysamp(3)
+        endif
 c
         newsc = .true.
 c
@@ -1581,7 +1594,8 @@ c
             call uvputvrd(tno,'restfreq',restfreq(if),1)
             if(newsc)call ScOut(tno,chi,tcorr,
      *          xtsys,ytsys,xyphase,xyamp,
-     *          xsampler,ysampler,axisrms,axismax,
+     *          xsampler,ysampler,xgain,ygain,xcaljy,ycaljy,
+     *          axisrms,axismax,cabb,
      *          ATIF,ATANT,nants,if,if,buf)
             if(hires)then
               binlo = tbin
@@ -1641,8 +1655,8 @@ c
           endif
           if(newsc.and.tbin.eq.1)call ScOut(tno,chi,tcorr,
      *          xtsys,ytsys,xyphase,xyamp,
-     *          xsampler,ysampler,axisrms,axismax,
-     *          ATIF,ATANT,nants,1,nifs,buf)
+     *          xsampler,ysampler,xgain,ygain,xcaljy,ycaljy,
+     *          axisrms,axismax,cabb,ATIF,ATANT,nants,1,nifs,buf)
           if(hires)then
             binlo = tbin
             binhi = tbin
@@ -1908,14 +1922,18 @@ c
         end
 c************************************************************************
         subroutine ScOut(tno,chi,tcorr,xtsys,ytsys,xyphase,xyamp,
-     *          xsampler,ysampler,axisrms,axismax,
+     *          xsampler,ysampler,xgain,ygain,xcaljy,ycaljy,
+     *          axisrms,axismax,cabb,
      *          ATIF,ATANT,nants,if1,if2,buf)
 c
         integer tno,ATIF,ATANT,nants,if1,if2,tcorr
         real chi,xtsys(ATIF,ATANT),ytsys(ATIF,ATANT)
         real xyphase(ATIF,ATANT),xyamp(ATIF,ATANT)
         real xsampler(3,ATIF,ATANT),ysampler(3,ATIF,ATANT)
+        real xgain(ATIF,ATANT),ygain(ATIF,ATANT)
+        real xcaljy(ATIF,ATANT),ycaljy(ATIF,ATANT)
         real buf(3*ATIF*ATANT),axisrms(ATANT),axismax(ATANT)
+        logical cabb
 c
 c  Write out a syscal record into the appropriate Miriad variables.
 c
@@ -1934,8 +1952,17 @@ c------------------------------------------------------------------------
         call Sct(tno,'systemp',xtsys,ytsys,ATIF,ATANT,if1,if2,nants,buf)
         call Sco(tno,'xyphase', xyphase, 1,ATIF,ATANT,if1,if2,nants,buf)
         call Sco(tno,'xyamp',   xyamp,   1,ATIF,ATANT,if1,if2,nants,buf)
-        call Sco(tno,'xsampler',xsampler,3,ATIF,ATANT,if1,if2,nants,buf)
-        call Sco(tno,'ysampler',ysampler,3,ATIF,ATANT,if1,if2,nants,buf)
+        if (cabb) then
+          call Sco(tno,'xgain',xgain,1,ATIF,ATANT,if1,if2,nants,buf)
+          call Sco(tno,'ygain',ygain,1,ATIF,ATANT,if1,if2,nants,buf)
+          call Sco(tno,'xcaljy',xcaljy,1,ATIF,ATANT,if1,if2,nants,buf)
+          call Sco(tno,'ycaljy',ycaljy,1,ATIF,ATANT,if1,if2,nants,buf)
+        else
+          call Sco(tno,'xsampler',xsampler,3,ATIF,ATANT,
+     *             if1,if2,nants,buf)
+          call Sco(tno,'ysampler',ysampler,3,ATIF,ATANT,
+     *             if1,if2,nants,buf)
+        endif
         end
 c************************************************************************
         subroutine Sca(tno,var,axis,nants,buf)
@@ -2251,6 +2278,8 @@ c
         real pntrms(ANT_MAX),pntmax(ANT_MAX)
         real xsamp(3,MAX_IF,ANT_MAX),ysamp(3,MAX_IF,ANT_MAX)
         real xtsys(MAX_IF,ANT_MAX),ytsys(MAX_IF,ANT_MAX)
+        real xgain(MAX_IF,ANT_MAX),ygain(MAX_IF,ANT_MAX)
+        real xcaljy(MAX_IF,ANT_MAX),ycaljy(MAX_IF,ANT_MAX)
         real chi,tint,mdata(9)
 c
 c  Variables for reference pointing.
@@ -2406,6 +2435,7 @@ c
             call SetSC(scinit,scbuf,MAX_IF,ANT_MAX,sc_q,sc_if,sc_ant,
      *          sc_cal,if_invert,polflag,
      *          xyphase,xyamp,xtsys,ytsys,xsamp,ysamp,
+     *          xgain,ygain,xcaljy,ycaljy,
      *          chi,tcorr,pntrms,pntmax,
      *          nxyp,xyp,ptag,xya,atag,MAXXYP,xflag,yflag,wband,cabb,
      *          mdata,mcount)
@@ -2565,12 +2595,16 @@ c
      *          xtsys(ifno,i1),ytsys(ifno,i1),
      *          xyphase(ifno,i1),xyamp(ifno,i1),
      *          xsamp(1,ifno,i1),ysamp(1,ifno,i1),
-     *          pntrms(i1),pntmax(i1))
+     *          xgain(ifno,i1),ygain(ifno,i1),
+     *          xcaljy(ifno,i1),ycaljy(ifno,i1),
+     *          pntrms(i1),pntmax(i1),cabb)
               if(scbuf(ifno,i2))call PokeSC(i2,Sif(ifno),chi,tcorr,
      *          xtsys(ifno,i2),ytsys(ifno,i2),
      *          xyphase(ifno,i2),xyamp(ifno,i2),
      *          xsamp(1,ifno,i2),ysamp(1,ifno,i2),
-     *          pntrms(i2),pntmax(i2))
+     *          xgain(ifno,i1),ygain(ifno,i1),
+     *          xcaljy(ifno,i1),ycaljy(ifno,i1),
+     *          pntrms(i2),pntmax(i2),cabb)
 c
               scbuf(ifno,i1) = .false.
               scbuf(ifno,i2) = .false.
@@ -3044,6 +3078,7 @@ c************************************************************************
         subroutine SetSC(scinit,scbuf,MAXIF,MAXANT,nq,nif,nant,
      *          syscal,invert,polflag,
      *          xyphase,xyamp,xtsys,ytsys,xsamp,ysamp,
+     *          xgain,ygain,xcaljy,ycaljy,
      *          chi,tcorr,pntrms,pntmax,nxyp,xyp,ptag,xya,atag,MAXXYP,
      *          xflag,yflag,mmrelax,cabb,mdata,mcount)
 c
@@ -3055,6 +3090,8 @@ c
         real xyphase(MAXIF,MAXANT),xyamp(MAXIF,MAXANT)
         real xtsys(MAXIF,MAXANT),ytsys(MAXIF,MAXANT)
         real xsamp(3,MAXIF,MAXANT),ysamp(3,MAXIF,MAXANT)
+        real xgain(MAXIF, MAXANT), ygain(MAXIF, MAXANT)
+        real xcaljy(MAXIF, MAXANT), ycaljy(MAXIF, MAXANT)
         real pntrms(MAXANT),pntmax(MAXANT)
         real chi
         real xyp(MAXXYP,MAXIF,MAXANT),xya(MAXXYP,MAXIF,MAXANT)
@@ -3090,12 +3127,19 @@ c
               if(syscal(5,j,k).gt.0)tcorr = tcorr + 1
               xtsys(ij,ik) = 0.1* syscal(4,j,k) * syscal(4,j,k)
               ytsys(ij,ik) = 0.1* syscal(5,j,k) * syscal(5,j,k)
-              xsamp(1,ij,ik) = syscal(6,j,k)
-              xsamp(2,ij,ik) = syscal(7,j,k)
-              xsamp(3,ij,ik) = syscal(8,j,k)
-              ysamp(1,ij,ik) = syscal(9,j,k)
-              ysamp(2,ij,ik) = syscal(10,j,k)
-              ysamp(3,ij,ik) = syscal(11,j,k)
+              if (.not.cabb) then
+                xsamp(1,ij,ik) = syscal(6,j,k)
+                xsamp(2,ij,ik) = syscal(7,j,k)
+                xsamp(3,ij,ik) = syscal(8,j,k)
+                ysamp(1,ij,ik) = syscal(9,j,k)
+                ysamp(2,ij,ik) = syscal(10,j,k)
+                ysamp(3,ij,ik) = syscal(11,j,k)
+              else
+                xgain(ij,ik) = syscal(6,j,k)
+                xcaljy(ij,ik)  = syscal(7,j,k)
+                ygain(ij,ik) = syscal(9,j,k)
+                ycaljy(ij,ik)   = syscal(10,j,k)
+              endif
               call syscflag(polflag,xsamp(1,ij,ik),ysamp(1,ij,ik),
      *          xyphase(ij,ik),xyamp(ij,ik),nxyp(ij,ik),maxxyp,
      *          xyp(1,ij,ik),ptag(1,ij,ik),xya(1,ij,ik),atag(1,ij,ik),
@@ -3382,6 +3426,7 @@ c
         endif
         
 	end
+
 c************************************************************************
 	subroutine rfiFlag(flags,NDATA,nifs,nfreq,sfreq,sdf)
 c
@@ -3415,7 +3460,6 @@ c------------------------------------------------------------------------
         endif
         end
         
-
 c************************************************************************
 c
 c  The following code was contributed by WEW via NEBK.
