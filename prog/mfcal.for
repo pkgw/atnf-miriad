@@ -1,4 +1,4 @@
-c************************************************************************
+************************************************************************
 	program mfcal
 	implicit none
 c
@@ -103,6 +103,9 @@ c    rjs   7oct04 Set senmodel parameter.
 c    rjs   2jan06 Stokes selection. Weight by variance, push XY phase
 c		  into bandpass, duplicate gains when bandpass dual polarisation
 c		  and gains is single polarisation.
+c    rjs  15jan06 Improve weighting.
+c    rjs  08jan07 Use MAXWIN more rigorously.
+c    jhz  16jan07 set external unpack, pack, scale
 c
 c  Problems:
 c    * Should do simple spectral index fit.
@@ -111,11 +114,11 @@ c------------------------------------------------------------------------
 	parameter(PolXX=-5,PolYY=-6,PolRR=-1,PolLL=-2,PolI=1)
 	include 'maxdim.h'
 	integer MAXSPECT,MAXVIS,MAXSOLN,MAXITER,MAXPOL
-	parameter(MAXSPECT=33,MAXVIS=700000,MAXITER=30,MAXSOLN=1024)
-	parameter(MAXPOL=2)
+	parameter(MAXSPECT=3*MAXWIN,MAXVIS=7000000,MAXITER=30)
+	parameter(MAXSOLN=1024,MAXPOL=2)
 c
 	character version*(*)
-	parameter(version='MfCal: version 1.0 02-Jan-06')
+	parameter(version='MfCal: version 1.0 08-Jan-07')
 c
 	integer tno
 	integer pWGains,pFreq,pSource,pPass,pGains,pTau
@@ -1159,6 +1162,7 @@ c
 	integer i,j,k,i1,i2,bl,spect,chan,off,nbl,p
 	complex SumVM(MAXBASE,MAXWIN,MAXPOL)
 	real SumMM(MAXBASE,MAXWIN,MAXPOL),epsi
+        external unpack
 c
 	nbl = nants*(nants-1)/2
 c
@@ -1213,6 +1217,7 @@ c
 	real Wt(maxvis)
 	integer VID(maxvis),PolMap(*)
 	character Source*(*)
+        external pack
 c
 c  Read the data, and return information on what we have read.
 c
@@ -1256,7 +1261,7 @@ c
 	integer chan(MAXCHAN),spect(MAXCHAN),state(MAXCHAN)
 	integer Hash(2,MAXHASH),vupd
 	integer pols(PolMin:PolMax)
-	real w,rms2
+	real w
 c
 c  Externals.
 c
@@ -1365,21 +1370,13 @@ c
 	    call despect(updated,tno,nchan,edge,chan,spect,
      *		maxspect,nspect,sfreq,sdf,nschan,state)
 c
-c  Get the weighting.
-c
-            call uvDatGtr('variance',rms2)	
-            if(rms2.gt.0)then
-              W = 1/rms2
-            else
-              W = 1
-            endif
-c
 	    do i=1,nchan
 	      if(flags(i).and.chan(i).gt.0)then
 	        present(i1,p) = .true.
 	        present(i2,p) = .true.
 	        call pack(i1,i2,p,spect(i),chan(i),VisId)
 		ninter = ninter + 1
+		w = abs(sdf(spect(i)))
 		call Accum(Hash,Data(i),w,VisId,
      *			nsoln,nvis,Vis,Wt,VID,Count)
 	      else
@@ -1635,7 +1632,7 @@ c    spect
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer CHANNEL,WIDE,MSPECT
-	parameter(CHANNEL=1,WIDE=2,MSPECT=32)
+	parameter(CHANNEL=1,WIDE=2,MSPECT=MAXWIN)
 	integer i,j,n,ispect,ltype,start,nschan0(MSPECT),nspect0,nwide
 	integer chans,ibeg,iend,bdrop,edrop,nwidth,nstep
 	double precision line(6),sfreq0(MSPECT),sdf0(MSPECT),f
@@ -1758,6 +1755,10 @@ c------------------------------------------------------------------------
 	integer ispect,i
 	double precision f0
 c
+c  Externals.
+c
+	character itoaf*8
+c
 c  See if we have a match.
 c
 	f0 = f + bdrop * df
@@ -1804,8 +1805,11 @@ c
 	endif
 c
 	i = i + 1
-	if(i.gt.maxspect+2)
-     *	  call bug('f','Buffer overflow, in despect-2')
+	if(i.gt.maxspect+2)then
+	  call bug('w','Current value for MAXSPECT in despect-2: '
+     *						//itoaf(maxspect))
+	  call bug('f','Buffer overflow, in despect-2')
+	endif
 	state(1,i) = ispect
 	state(2,i) = 1
 	state(3,i) = nchan - bdrop - edrop
@@ -2245,6 +2249,7 @@ c------------------------------------------------------------------------
 	integer b1(MAXBASE),b2(MAXBASE)
 	complex ref,G(MAXANT),SVM(MAXBASE)
 	real SMM(MAXBASE)
+        external scale 
 c
 	do i=1,nants
 	  Idx(i) = 0
@@ -2533,6 +2538,7 @@ c------------------------------------------------------------------------
 	integer i,j,bl,off,spect,chan,i1,i2,p
 	real theta,W
 	complex V,Model
+        external unpack
 c
 	do p=1,npol
 	  do j=1,nchan
@@ -2649,7 +2655,7 @@ c
 c  Externals.
 c
 	character itoaf*4
-	external FUNC,DERIVE
+	external FUNC,DERIVE,unpack
 c
 c  Check we have enough space.
 c
@@ -2890,6 +2896,7 @@ c
 	integer nbl,bl,p,i,i1,i2,spect,chan
 	real SumMM(MAXBASE,MAXPOL),epsi
 	complex SumVM(MAXBASE,MAXPOL),Model
+        external unpack
 c
 c  Initialise the accumulators.
 c
