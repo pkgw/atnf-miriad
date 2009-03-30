@@ -195,7 +195,7 @@ c     Determine the default line type.
 c-----------------------------------------------------------------------
       logical update
       integer length
-      character type*4
+      character type*1
 
       call uvprobvr(lIn,'corr',type,length,update)
       if(type.eq.'j'.or.type.eq.'r'.or.type.eq.'c')then
