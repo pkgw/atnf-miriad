@@ -1,9 +1,12 @@
-	integer MAXCHAN,MAXBASE,MAXPOL
-	parameter(MAXCHAN=20,MAXBASE=15,MAXPOL=4)
-c
-	complex data(MAXCHAN,MAXPOL,MAXBASE,2),cspare(MAXCHAN)
-	logical flags(MAXCHAN,MAXPOL,MAXBASE,2),lspare(MAXCHAN)
-	double precision pspare(4),ha(2)
-	integer tno,nchan(2),nspare
-	common/uvdcom/pspare,ha,data,cspare,tno,nchan,nspare,
-     *		flags,lspare
+      include 'maxdim.h'
+      include 'mem.h'
+
+      integer MAXPOL, POLMIN, POLMAX
+      parameter (MAXPOL=4, POLMIN=-8, POLMAX=4)
+
+      integer cindices(MAXPOL,MAXBASE,2), findices(MAXPOL,MAXBASE,2),
+      *       iha, jha, nchan(2), npols, polindx(POLMIN:POLMAX), tno
+      double precision ha2(2)
+
+      common /uvdcom/ ha2, cindices, findices, iha, jha, nchan, npols,
+     *                polindx, tno
