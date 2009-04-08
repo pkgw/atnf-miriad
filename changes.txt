@@ -3997,3 +3997,11 @@ and in a way to be consistent with all the other changes happening.
 07mar09 rjs	ephem.for - Make the number of days in a Besselian century a 
 		double precision quantitiy.
 16jan07 jhz	mfcal.for - Declare some subroutines to be external.
+13mar09	rjs	ephem.for - Update leap second table
+27mar09 rjs	mp.for,mp.h - New routines to do extended precision integer arithmetic.
+01apr09 rjs	scrio.c,miriad.h,wrap.f2c - Added scrRecSz routine.
+02apr09 rjs	varsizes.c - Added several more datatypes.
+03apr09 rjs	uvmodel.for - Fix long-standing bug in options=flag
+03apr09	rjs	invert.for,mapper.for - Changes to make use of scrRecSz routine and
+		so relax largefile problems.
+06apr09 rjs	ellint.for,imcfn.for - Eliminate DO loops which are not integer valued.
