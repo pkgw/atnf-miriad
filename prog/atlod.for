@@ -1637,6 +1637,7 @@ c
               enddo
             enddo
           enddo
+c
 c  Handle the case were we are writing the multiple IFs out as a single record.
 c
         else
