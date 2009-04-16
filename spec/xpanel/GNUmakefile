@@ -7,18 +7,22 @@
 # Get common makefile variables and rules.
 include $(MIR)/GNUmakedefs
 
+ifneq "$(X11INCD)" ""
+  X11INC := -I$(X11INCD)
+endif
+
 show ::
 	-@ echo ""
 	-@ echo ""
 	-@ echo "Variables defined in the xpanel GNUmakefile"
 	-@ echo "==========================================="
 	-@ echo ""
-	-@ echo "(none)"
+	-@ echo "X11INC     = $(X11INC)"
 
 ifeq "$(MAKEMODE)" "system"
   # System-oriented rules.
   #-----------------------
-  CFLAGS   := $(CPPOPT) -I../xmtv -I$(X11INCD) $(CCOPT) $(LDOPT)
+  CFLAGS   := $(CPPOPT) -I../xmtv $(X11INC) $(CCOPT) $(LDOPT)
 
   # Static and static pattern rules.
   #---------------------------------
@@ -43,7 +47,7 @@ ifeq "$(MAKEMODE)" "system"
 else
   # Programmer-oriented rules.
   #---------------------------
-  CFLAGS   := $(CPPDBG) -I../xmtv -I$(CODEDIR)/../xmtv -I$(X11INCD) $(CCDBG)
+  CFLAGS   := $(CPPDBG) -I../xmtv -I$(CODEDIR)/../xmtv $(X11INC) $(CCDBG)
   CFLAGS   += $(LDDBG)
   VPATH    := .:$(CODEDIR)
 
