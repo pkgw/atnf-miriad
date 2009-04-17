@@ -26,9 +26,10 @@ C-----------------------------------------------------------------------
      :           pol_max  = 8)
 
 
-C     Error status value from ATIO I/O operation.
-      INTEGER   rp_iostat
-      COMMON /iostat/ rp_iostat
+C     Error handling.
+      INTEGER   errlun, rp_iostat
+      CHARACTER errmsg*80
+      COMMON /iostat/ rp_iostat, errlun
 
 C     -------- Parameter values obtained from the RPFITS header --------
 C                (except intbase which is a random parameter)
@@ -133,7 +134,7 @@ C     CHARACTER variables (declared in context above).
       COMMON /names/ object, instrument, cal, rp_observer, datobs,
      :          datwrit, file, datsys, version, coord, sta, feed_type,
      :          card, if_cstok, su_name, su_cal, fg_reason, nx_source,
-     :          nx_date, rpfitsversion, bunit, obstype
+     :          nx_date, rpfitsversion, bunit, obstype, errmsg
 
 C     -------------- Values obtained from the RPFITS data --------------
 
