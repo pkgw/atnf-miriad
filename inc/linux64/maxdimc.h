@@ -32,13 +32,13 @@
 #define MAXNAX  7
 
 /* Maximum number of antennas. */
-#define MAXANT  30
+#define MAXANT  64
 
 /* Maximum number of baselines. */
 #define MAXBASE ((MAXANT * (MAXANT + 1)) / 2)
 
 /* Maximum number of channels in spectral data. */
-#define MAXCHAN 4097
+#define MAXCHAN 70000
 
 /* Maximum number of windows in uv data. */
 #define MAXWIN  16

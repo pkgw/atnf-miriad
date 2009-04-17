@@ -25,7 +25,7 @@ c     size that can be handled.
 
 c     Maximum number of antennae (HC=3/6/9/..., WSRT=14, VLA=27).
       INTEGER   MAXANT
-      PARAMETER(MAXANT=30)
+      PARAMETER(MAXANT=64)
 
 c     Maximum number of baselines.
       INTEGER   MAXBASE
@@ -33,7 +33,7 @@ c     Maximum number of baselines.
 
 c     Maximum number of channels in spectral data.
       INTEGER   MAXCHAN
-      PARAMETER(MAXCHAN=4097)
+      PARAMETER(MAXCHAN=70000)
 
 c     Maximum number of windows in visibility data.
       INTEGER   MAXWIN
