@@ -58,11 +58,12 @@ static int masks[BITS_PER_INT+1]={
 #define MK_RUNS 2
 #define BUFFERSIZE 128
 #define OFFSET (((ITEM_HDR_SIZE-1)/H_INT_SIZE + 1)*BITS_PER_INT)
+/* off_t is used for size and length as well because mixed arithmetic with */
+/* size_t and off_t gives no end of trouble                                */
 typedef struct {
   int item;
   int buf[BUFFERSIZE];
-  off_t offset;
-  size_t length,size;
+  off_t offset,length,size;
   int modified,rdonly,tno;
   char name[32];
 } MASK_INFO;
@@ -146,7 +147,7 @@ void mkclose_c(char *handle)
   free((char *)mask);
 }
 /************************************************************************/
-int mkread_c(char *handle,int mode,int *flags,off_t offset,size_t n,size_t nsize)
+int mkread_c(char *handle,int mode,int *flags,off_t offset,int n,int nsize)
 /*
 ------------------------------------------------------------------------*/
 {
@@ -235,7 +236,7 @@ int mkread_c(char *handle,int mode,int *flags,off_t offset,size_t n,size_t nsize
 }
 /************************************************************************/
 void mkwrite_c(char *handle,int mode,Const int *flags,off_t offset,
-               size_t n,size_t nsize)
+               int n,int nsize)
 /*
 ------------------------------------------------------------------------*/
 {
@@ -348,7 +349,7 @@ void mkflush_c(char *handle)
 {
   MASK_INFO *mask;
   off_t offset;
-  size_t i;
+  int i;
   int t,*buf,iostat;
 
   mask = (MASK_INFO *)handle;
@@ -391,8 +392,7 @@ private void mkfill(MASK_INFO *mask, off_t offset)
 ------------------------------------------------------------------------*/
 {
   off_t off,len;
-  size_t i;
-  int t,*buf,iostat;
+  int i,t,*buf,iostat;
 
   if(mask->offset+mask->length < mask->size) {
     buf = mask->buf + mask->length/BITS_PER_INT;
