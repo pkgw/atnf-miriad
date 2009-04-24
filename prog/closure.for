@@ -93,6 +93,7 @@ c    rjs  20oct00 Print out number of points when giving stats.
 c    rjs  31jan01 Support other stokes types.
 c    rjs  08apr02 Allow negative values when taking cube roots.
 c    rjs  18jul04 Check for division by zero in quad quantities.
+c    rjs  23apr09 Increase buffer dimension to allow it to work on bigger problems.
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -100,7 +101,7 @@ c-----------------------------------------------------------------------
 	include 'mem.h'
 	integer MAXPNTS,MAXPLOTS,MAXTRIP
 	integer PolMin,PolMax,MAXPOL
-	parameter(MAXPNTS=5000,MAXPLOTS=120)
+	parameter(MAXPNTS=50000,MAXPLOTS=120)
 	parameter(MAXTRIP=(MAXANT*(MAXANT-1)*(MAXANT-2))/6)
 	parameter(PolMin=-8,PolMax=4,MAXPOL=2)
 c
