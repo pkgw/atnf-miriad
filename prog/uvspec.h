@@ -18,13 +18,13 @@ c  cnt		The number of things accumulated into the preambles.
 c  
 	include 'maxdim.h'
 	integer MAXAVER,MAXPOL
-	parameter(MAXAVER=81920,MAXPOL=4)
+	parameter(MAXAVER=200000,MAXPOL=4)
 	complex buf(MAXAVER)
         real    bufr(MAXAVER),buf2(MAXAVER)
 	integer count(MAXAVER)
 	integer pnt(MAXPOL,MAXBASE),nchan(MAXPOL,MAXBASE),free,mbase
 	integer npols(MAXBASE),pols(MAXPOL,MAXBASE),cnt(MAXBASE)
 	integer cntp(MAXPOL,MAXBASE)
-	double precision preamble(5,MAXBASE)
+	double precision preamble(6,MAXBASE)
 	common/uvavcom/preamble,buf,bufr,buf2,count,pnt,nchan,npols,
      *    pols,cnt,cntp,free,mbase

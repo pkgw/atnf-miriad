@@ -33,7 +33,7 @@ c     Maximum number of baselines.
 
 c     Maximum number of channels in spectral data.
       INTEGER   MAXCHAN
-      PARAMETER(MAXCHAN=16385)
+      PARAMETER(MAXCHAN=70000)
 
 c     Maximum number of windows in visibility data.
       INTEGER   MAXWIN

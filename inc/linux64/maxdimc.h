@@ -38,7 +38,7 @@
 #define MAXBASE ((MAXANT * (MAXANT + 1)) / 2)
 
 /* Maximum number of channels in spectral data. */
-#define MAXCHAN 16385
+#define MAXCHAN 70000
 
 /* Maximum number of windows in uv data. */
 #define MAXWIN  16
