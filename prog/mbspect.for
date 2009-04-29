@@ -176,7 +176,7 @@ c
 	real xv(2), yv(2), xw(2), yw(2), epoch, serr
 	real bmaj,bmin,bpa,cdelt1,cdelt2,cdelt3,cdeltr,cdeltd
 	integer lIn,lOut,raxis,daxis,vaxis,i,nsmth,nchan,iostat
-	integer width(2),poly,nmask,imax,jmax, ierr
+	integer width(2),poly,nmask,imax,jmax, ierr, j, k
         logical none, deriv1, deriv2, histo, measure
 	logical pstyle1, pstyle2, posfit, subpoly, minicube
 	character*132 in,out,logf
