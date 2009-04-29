@@ -2494,7 +2494,7 @@ c
 c            
 c  Always need to store auto corr bin 1 and 2 for cabb data
 c
-            if(ok) ok = (i1.eq.i2.and.(doauto.or.cabb)).or.
+            if(ok) ok = (i1.eq.i2.and.doauto).or.
      *                  (i1.ne.i2.and.docross)
             if(ok)then
               ok = ifno.ge.1.and.ifno.le.n_if.and.
