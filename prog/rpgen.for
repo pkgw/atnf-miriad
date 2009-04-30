@@ -374,9 +374,9 @@ c
                  do i=1,nchan(ifno)
                    do j=1,npol
                      if (j.le.2) then
-                       vis(k)=complex(1.0+srcno/100.0,0.0)
+                       vis(k)=cmplx(1.0+srcno/100.0,0.0)
                      else
-                       vis(k)=complex(0.001*j,1.e-7*i)
+                       vis(k)=cmplx(0.001*j,1.e-7*i)
                      endif
                      if (i.lt.dx)  vis(k)=vis(k)*sin(i/dx*PI_2)
                      if (nchan(ifno)-i.lt.dx) vis(k)=vis(k)*
