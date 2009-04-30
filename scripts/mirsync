@@ -156,7 +156,7 @@
   FILES="$FILES userguide.ps userguide_US.ps.gz"
 
   DIRS="config etc guides inc linpack prog scripts spec subs tests tools"
-  [ "$DOBIN" = 1 ] && DIRS="$DIRS darwin_ppc darwin_x86 linux linux64 sun4sol"
+  [ "$DOBIN" = 1 ] && DIRS="$DIRS darwin_x86 linux linux64 sun4sol"
 
 # Files that must be present.
   SRC="$ATMIR/DISCLAIMER"
