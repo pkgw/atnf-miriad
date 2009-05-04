@@ -1215,7 +1215,7 @@ c
 c
 c  Write the data to a scratch file (if one exists).
 c
-	    if(lScr.ne.0)then
+	    if(lScr.ge.0)then
 	      buf(1) = bl
 	      buf(2) = t
 	      buf(3) = day0
