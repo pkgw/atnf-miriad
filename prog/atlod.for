@@ -310,7 +310,7 @@ c
         call keyfin
 c
         call cacalIni
-	call cacalIni
+	call rfiIni(rfiflag)
 c
 c  Open the output and initialise it.
 c
