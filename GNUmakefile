@@ -213,7 +213,7 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo ""
 	-@ $(TIMER)
 	-@ echo "Checking for users needing help..."
-	 @ cd $(MIRROOT)/at_friends && ./CheckBookings.csh
+	 @ cd $(MIRROOT)/at_friends && ./CheckBookings
 
       updates :
 	-@ echo ""
