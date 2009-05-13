@@ -1,25 +1,6 @@
 c************************************************************************
 	program itemize
 c
-c History:
-c
-c  rjs        89
-c  nebk 5-may-89  change output text file name from OUT to LOG to avoid
-c                 conflicts with other tasks which use OUT
-c  rjs 27-apr-90  Better message for zero length items.
-c  ??? ??-???-??  inline doc - messed with un-necessary umsg's  (not PJT)
-c  pjt 26-nov-90  file scanner when multiple files used in 'in=', 
-c		  added scan= keyword
-c  rjs  4-mar-91  Corrected bug in handling "complex" items.
-c  pjt  4-mar-91  also used atoif instead of atoi
-c  pjt 10-mar-91  fixed empty strings bug (ANSI requires ' ', and not '')
-c		  and increase buffers for MAXFILES
-c  pjt  7-mar-92  deleted seemingly redundant code in info, doc repair
-c  mchw 29oct92	  If "scan=image" makes an index of image parameters.
-c  rjs  19mar93   Delete scanning mode.
-c  rjs  15aug94   Honour format if given, even if there is only 1 value.
-c  rjs  25jul97   Get rid of announcement header.
-c
 c= itemize - List information about MIRIAD dataset(s)
 c& pjt
 c: utility
@@ -56,58 +37,112 @@ c	When dumping an entire item, this gives the FORTRAN format specifier
 c	to be used. For example, when dumping a real item, you may set:
 c	  format=8e15.7
 c	The default varies according to the data type.
+c@ options
+c	Extra processing options. Several options can be given separated by
+c	commas. Minimum match is honoured.
+c	  nocompact  Normally itemize does not print blocks of identical lines.
+c	             Instead it gives a message indicating the number of repetitions
+c	             of a line. The "nocompact" option causes it to print the
+c	             repetitions. This is useful if the output is being parsed
+c	             by other software.
 c--
+c History:
+c
+c  rjs        89  Original version.
+c  nebk 5-may-89  change output text file name from OUT to LOG to avoid
+c                 conflicts with other tasks which use OUT
+c  rjs 27-apr-90  Better message for zero length items.
+c  ??? ??-???-??  inline doc - messed with un-necessary umsg's  (not PJT)
+c  pjt 26-nov-90  file scanner when multiple files used in 'in=', 
+c		  added scan= keyword
+c  rjs  4-mar-91  Corrected bug in handling "complex" items.
+c  pjt  4-mar-91  also used atoif instead of atoi
+c  pjt 10-mar-91  fixed empty strings bug (ANSI requires ' ', and not '')
+c		  and increase buffers for MAXFILES
+c  pjt  7-mar-92  deleted seemingly redundant code in info, doc repair
+c  mchw 29oct92	  If "scan=image" makes an index of image parameters.
+c  rjs  19mar93   Delete scanning mode.
+c  rjs  15aug94   Honour format if given, even if there is only 1 value.
+c  rjs  25jul97   Get rid of announcement header.
+c  rjs  01aug97   Support wildcards.
+c  rjs  29apr09   Added options=nocompact
 c------------------------------------------------------------------------
-	integer range1,range2,tno,iostat,lu
-	character in*128,item*16,format*16,outlog*64
+	implicit none
+	integer MAXIN
+	parameter(MAXIN=128)
+	integer range1,range2,tno,iostat,i,nin,l
+	character in(MAXIN)*128,item*16,format*16,outlog*64
+	logical more,nocom
+c
+c  Externals.
+c
+	integer len1
 c
 c  Get the input parameters.
 c
 	call keyini
-	call keya('in',in,' ')
+	call mkeyf('in',in,MAXIN,nin)
 	call keya('log',outlog,' ')
 	call keyi('index',range1,0)
 	call keyi('index',range2,range1)
 	call keya('format',format,' ')
+	call getopt(nocom)
 	call keyfin
+c
+c  Open the listing file, if one is required.
+c
+	call logopen(outlog,' ')
 c
 c  Attempt to open the input, as if it were a data set. If this fails,
 c  it must be an item. In this case open the higher level.
 c
-	call hopen(tno,in,'old',iostat)
+	do i=1,nin
+	item = ' '
+	call hopen(tno,in(i),'old',iostat)
+	if(iostat.ne.0.and.index(in(i),'/').ne.0)then
+	  call GetItem(in(i),item)
+	  call hopen(tno,in(i),'old',iostat)
+	endif
+	if(i.eq.1.and.item.eq.' ')
+     *	  call output( 'Itemize: Version 1.0 1-Aug-97' )
+	if(nin.gt.1)call logwrite(' ',more)
+c
+c  List the items.
+c
+	l = len1(in(i))
 	if(iostat.ne.0)then
-	  if(index(in,'/').eq.0) call bugno('f',iostat)
-	  call GetItem(in,item)
-	  call hopen(tno,in,'old',iostat)
-	  if(iostat.ne.0)call bugno('f',iostat)
-	else 
-	  item = ' '
-	  call output( 'Itemize: Version 1.1b 15-Aug-94' )
-	endif
-c
-c  Open the listing file, if one is required.
-c
-	if(outlog.eq.' ')then
-	  lu = 0
-	else
-	  call txtopen(lu,outlog,'new',iostat)
-	  if(iostat.ne.0)call bugno('f',iostat)
-	endif
-c
-c  Process the input. Either give a summary of the whole data set, or
-c  just give some info about a particular item.
-c
-	if(item.eq.' ')then
+	  call bug('w','Not a Miriad dataset: '//in(i)(1:l))
+	else if(item.eq.' ')then
 	  call hclose(tno)
-	  call ShowAll(lu,in)
+	  if(nin.gt.1)
+     *	    call logwrite('Items for dataset: '//in(i)(1:l),more)
+	  call ShowAll(in(i))
 	else
-	  call ShowItem(lu,tno,item,range1,range2,format)
+	  call ShowItem(tno,item,range1,range2,format,.not.nocom)
 	  call hclose(tno)
 	endif
 c
-c  Close the listing file, if required.
+	enddo
 c
-	if(lu.ne.0) call txtclose(lu)
+	call logclose
+	end
+c************************************************************************
+	subroutine getopt(nocom)
+c
+	implicit none
+	logical nocom
+c
+c  Get extra processing options.
+c
+c------------------------------------------------------------------------
+	integer NOPTS
+	parameter(NOPTS=1)
+	logical present(NOPTS)
+	character opts(NOPTS)*10
+	data opts/'nocompact '/
+c
+	call options('options',opts,present,NOPTS)
+	nocom = present(1)
 	end
 c********1*********2*********3*********4*********5*********6*********7*c
 	subroutine GetItem(in,item)
@@ -146,17 +181,15 @@ c
 c
 	end
 c************************************************************************
-	subroutine ShowAll(lu,in)
+	subroutine ShowAll(in)
 c
 	implicit none
 	character in*(*)
-	integer lu
 c
 c  This summarises all the items found in a particular dataset.
 c
 c  Input:
 c    in		Name of the dataset.
-c    lu		Handle of the output text file.
 c
 c------------------------------------------------------------------------
 	integer MAXDEPTH
@@ -179,11 +212,11 @@ c
 	    call bugno('f',iostat)
 	  else if(index(item,'/').ne.0)then
             umsg = blanks(1:2*depth)//item
-	    call out(lu,1, umsg )
+	    call out(1, umsg )
 	    call push(item,name,lname,tno,itno,depth,maxdepth)
 	  else
 	    call hdprobe(tno(depth),item,descr,type,n)
-	    call ItemSum(lu,blanks(1:2*depth),item,descr,type,n)
+	    call ItemSum(blanks(1:2*depth),item,descr,type,n)
 	  endif
 	enddo
 c
@@ -267,22 +300,23 @@ c
 	depth = depth - 1
 	end
 c************************************************************************
-	subroutine ShowItem(lu,tno,item,range1,range2,format)
+	subroutine ShowItem(tno,item,range1,range2,format,docomp)
 c
 	implicit none
-	integer tno,range1,range2,lu
+	integer tno,range1,range2
 	character item*(*),format*(*)
+	logical docomp
 c
 c  Print out some information about an item.
 c
 c  Input:
-c    lu		Handle of the output listing file.
 c    tno	Handle of the input dataset.
 c    item	Name of the item that we are interested in.
 c    range1,range2 The range of elements to print. if these are zero, then
 c		all the elements are printed.
 c    format	This gives the FORTRAN format to use in printing out the
 c		information.
+c    docomp	True if compacting of the output is to be attempted.
 c
 c------------------------------------------------------------------------
 	integer OFFI,OFFJ,OFFR,OFFD,OFFC,SIZEI,SIZEJ,SIZER,SIZED,SIZEC
@@ -319,7 +353,7 @@ c
 c  Output a summary.
 c
 	if((n.le.1.and.format.eq.' ').or.itype.eq.0)then
-	  call ItemSum(lu,'  ',item,descr,type,n)
+	  call ItemSum('  ',item,descr,type,n)
 c
 c  Prepare for a dump of some of the values of the item. First check
 c  out the format statement.
@@ -378,13 +412,13 @@ c  line, just remember it.
 c
 	    more = errno.eq.0
 	    if(more)then
-	      if(line.eq.previous)then
+	      if(docomp.and.line.eq.previous)then
 	        count = count + 1
 	      else
-	        if(count.gt.0)call out(lu,count,previous)
+	        if(count.gt.0)call out(count,previous)
 	        count = 0
 	        previous = line
-	        call out(lu,1,previous)
+	        call out(1,previous)
 	      endif
 	    endif
 c
@@ -393,17 +427,17 @@ c
 c
 c  Finish up.
 c
-	  if(count.gt.0)call out(lu,count,previous)
+	  if(count.gt.0)call out(count,previous)
 	  if(errno.ne.0.and.errno.ne.-1)call bugno('w',errno)
 	  call hdaccess(itno,errno)
 	endif
 c
 	end
 c************************************************************************
-	subroutine out(lu,count,line)
+	subroutine out(count,line)
 c
 	implicit none
-	integer lu,count
+	integer count
 	character line*(*)
 c
 c  Output a line. If the count is non-zero, this indicates that there are
@@ -415,8 +449,9 @@ c    count	The number of copies of the line.
 c    line	The line itself.
 c
 c------------------------------------------------------------------------
-	integer length,iostat
+	integer length
 	character num*8
+	logical more
 c
 c  Externals.
 c
@@ -426,29 +461,17 @@ c
 c
 	if(count.eq.1)then
 	  length = len1(line)
-	  if(lu.eq.0)then
-	    if(length.eq.0)then
-	      call output(' ')
-	    else
-	      call output(line(1:length))
-	    endif
+	  if(length.eq.0)then
+	    call logwrite(' ',more)
 	  else
-	    call txtwrite(lu,line,length,iostat)
-	    if(iostat.ne.0) call bugno('f',iostat)
+	    call logwrite(line(1:length),more)
 	  endif
 	else
 	  num = itoaf(count)
 	  length = len1(num)
-	  if(lu.eq.0)then
-            umsg = '   *** '//num(1:length)//
+          umsg = '   *** '//num(1:length)//
      *		   ' more identical lines ***'
-	    call output( umsg )
-	  else
-            umsg = '   *** '//num(1:length)//
-     *		   ' more identical lines ***'
-	    call txtwrite( lu, umsg , length+32 , iostat )
-	    if(iostat.ne.0)call bugno('f',iostat)
-	  endif
+	  call logwrite(umsg,more)
 	endif
 	end
 c************************************************************************
@@ -503,16 +526,15 @@ c
 	endif
 	end
 c************************************************************************
-	subroutine ItemSum(lu,indent,item,descr,type,n)
+	subroutine ItemSum(indent,item,descr,type,n)
 c
 	implicit none
 	character indent*(*),item*(*),descr*(*),type*(*)
-	integer n,lu
+	integer n
 c
 c  Output a summary about an item.
 c
 c  Input:
-c    lu		Handle of the output listing file.
 c    indent	Something to pad the start of each line with.
 c    item	The name of the item.
 c    descr	A description of the item, as returned by hdprobe.
@@ -540,5 +562,5 @@ c
 	  line = indent//it//'   ('//type(1:ltype)//
      *				' data, '//num(1:lnum)//' elements)'
 	endif
-	call out(lu,1,line)
+	call out(1,line)
 	end
