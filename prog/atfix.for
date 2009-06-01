@@ -1,4 +1,4 @@
-c************************************************************************
+c*************************************************************************
 	program atfix
 	implicit none
 c
@@ -75,8 +75,7 @@ c	              accounts for predicted changes in Tsys with elevation
 c	              and measured weather. This is the default.
 c@ options
 c	Extra processing options. Several options can be given,
-c	separated by commas. Minimum match is supported. There is only
-c	one possible option at the moment:
+c	separated by commas. Minimum match is supported.
 c	  nogainel  This disables applying a instrumental gain/elevation
 c	            correction to the data. Currently the gains of the
 c	            antennas are a function of elevation. By default,
@@ -129,12 +128,15 @@ c    12dec05 rjs  It failed to use the select keyword.
 c    29jan06 rjs  Major revisions.
 c    18feb06 rjs  Various tidy up and change in defaults.
 c    24feb06 rjs  Fix bug in tsyscal=none and some tidying.
+c    27feb06 rjs  Fix bug when there are multiple frequencies.
+c    25sep06 tw/rjs  Fix bug precluding inst phase correction without dantpos
+c    08jan07 rjs  Small documentation correction.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mirconst.h'
 	character version*(*)
 	integer MAXSELS,ATANT
-	parameter(version='AtFix: version 1.0 24-Feb-06')
+	parameter(version='AtFix: version 1.0 08-Jan-07')
 	parameter(MAXSELS=256,ATANT=6)
 c
 	real sels(MAXSELS),xyz(3*MAXANT)
@@ -237,7 +239,7 @@ c  Check and warn about calibration tables.
 c
         if(hdprsnt(lVis,'gains').or.hdprsnt(lVis,'leakage').or.
      *     hdprsnt(lVis,'bandpass'))
-     *     call bug('f','Calibration tables present: this looks bad')
+     *     call bug('f','Calibration tables present: please remove')
 c
 c  Get ready to handle the antenna location correction.
 c
@@ -923,7 +925,7 @@ c
 	delZ = xyz(3,ant2) - xyz(3,ant1)
 c
 c  The following is the model of the elevation dependence
-c  of the phase of CA01.
+c  of the phase of CA01 and CA05.
 c
 	if(doinst)then
 	  offset = 7.4563 - (15.2243 - 7.2267*el)*el
@@ -941,13 +943,15 @@ c
           sindec = sin(dec)
           antphz = 2*DPI*((delX*cosHA - delY*sinHA)*cosdec +
      *			   delZ*sindec + offset)
+        else
+          antphz = 2*DPI*offset
+        endif
 c
-	  do i=1,nchan
-	    theta = -antphz*freq(i)
-	    w = cmplx(cos(theta),sin(theta))
-	    data(i) = w*data(i)
-	  enddo
-	endif
+        do i=1,nchan
+          theta = -antphz*freq(i)
+          w = cmplx(cos(theta),sin(theta))
+          data(i) = w*data(i)
+        enddo
 c
 	end
 c************************************************************************
@@ -1015,6 +1019,7 @@ c------------------------------------------------------------------------
 c
 	logical neednew,needupd
 	character type*1
+	character line*80
 	logical updated,doatm
 	integer length
 c
@@ -1050,7 +1055,11 @@ c
 	needupd = uvvarUpd(vtcal1)
 	if(neednew.or.needupd)then
 	  ntcal = ntcal + 1
-	  if(ntcal.gt.MAXTCAL)call bug('f','Too many Tsys scans')
+	  if(ntcal.gt.MAXTCAL)then
+	    write(line,'(A,i5,A,i5,A)') 'Too many Tsys scans (',ntcal,
+     *         ' > ',MAXTCAL,')'
+            call bug('f',line)
+          endif
 	  call uvrdvrd(lVis,'time',ttime(ntcal),0.d0)
 	  tfreq(ntcal) = ifreq1
 	endif
@@ -1184,6 +1193,7 @@ c
 c  Otherwise work out what to apply and apply it.
 c
 	else
+	  call freqGet(lVis,ifreq)
 	  call freqDesc(ifreq,MAXWIN,nwin,nsc)
 	  k = 0
 	  do j=1,nwin
@@ -1211,7 +1221,6 @@ c
 	      fac = sqrt(num/denom)
 	    endif
 c
-	if(i1.eq.1.and.i2.eq.1)write(*,*)fac
 	    do i=1,nsc(j)
 	      k = k + 1
 	      data(k) = fac * data(k)
