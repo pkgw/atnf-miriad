@@ -1,44 +1,48 @@
-#! /bin/csh
+#!/bin/csh
 #-----------------------------------------------------------------------------
 # $Id$
 #-----------------------------------------------------------------------------
 
-  set DIR = $MIR/at_friends
-  source  /u/support/BOOK/BOOKENV.CSH
+  rm -f mail.txt
 
-# Generate a list of known users.
-  rm -f bookings.users
-  awk '{s = substr($1,0,1); if (s >= "a" && s <= "z") print $1;}' \
-    $DIR/users.txt | sort -u > bookings.users
+  if (-f /u/support/BOOK/BOOKENV.CSH) then
+    source /u/support/BOOK/BOOKENV.CSH
 
-# Generate a list of users with bookings.
-  rm -f bookings.current
-  touch bookings.current
-  foreach file ($BOOK/DATA/*.DIARY)
-    awk 'BEGIN {arm = 0} \
-               {if (arm && $1 != "#" && $4 != "" && $4 != ";") print $4} \
-         $1 == ";" {arm = 1}' $file | sed -e 's/;//g' >> bookings.current
-  end
+    # Generate a list of known users.
+    rm -f bookings.users
+    awk '{s = substr($1,0,1); if (s >= "a" && s <= "z") print $1;}' \
+      $MIR/at_friends/users.txt | sort -u > bookings.users
 
-# Any new users?
-  rm -f bookings.newusers
-  sort -u bookings.current | comm -1 -3 bookings.users - > bookings.newusers
-
-  cat /dev/null > bookings.mail
-
-  if (! -z bookings.newusers) then
-    foreach user (`cat bookings.newusers`)
-      grep -h $user $BOOK/DATA/*.DIARY >> bookings.mail
+    # Generate a list of users with bookings.
+    rm -f bookings.current
+    touch bookings.current
+    foreach file ($BOOK/DATA/*.DIARY)
+      awk 'BEGIN {arm = 0} \
+                 {if (arm && $1 != "#" && $4 != "" && $4 != ";") print $4} \
+           $1 == ";" {arm = 1}' $file | sed -e 's/;//g' >> bookings.current
     end
 
-    echo >> bookings.mail
+    # Any new users?
+    rm -f bookings.newusers
+    sort -u bookings.current | comm -1 -3 bookings.users - > bookings.newusers
+
+    if (! -z bookings.newusers) then
+      foreach user (`cat bookings.newusers`)
+        grep -h $user $BOOK/DATA/*.DIARY >> mail.txt
+      end
+    endif
+
+  else
+    echo '/u/support/BOOK/BOOKENV.CSH - file not found.' > mail.txt
   endif
 
+  echo >> mail.txt
+
 # Append the visitor schedule.
-  setenv SCHEDULE=http://www.atnf.csiro.au/people/visitor_schedule.html
+  setenv SCHEDULE http://www.atnf.csiro.au/people/visitor_schedule.html
   lynx -dump -width=110 "$SCHEDULE" | \
-    sed -n -e '{/staff/d;s/^        //p;}' >> bookings.mail
+    sed -n -e '{/staff/d;s/^        //p;}' >> mail.txt
 
 # Mail it to interested parties.
-  mail -s "New users with bookings" \
-    at_friends@atnf.csiro.au,mirmgr@atnf.csiro.au, < bookings.mail
+  mail -s "Disk bookings and visitor schedule" \
+    at_friends@atnf.csiro.au,mirmgr@atnf.csiro.au, < mail.txt
