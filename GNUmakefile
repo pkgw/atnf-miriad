@@ -40,6 +40,9 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo "Rebuilding/updating Miriad for $(MIRARCH) machines."
 	-@ $(TIMER)
 
+  cleansys ::
+	   $(RM) -r $(MIRTMPD)/*
+
   help ::
 	-@ echo ""
 	-@ echo "Targets defined in the top-level GNUmakefile"
@@ -210,7 +213,7 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo ""
 	-@ $(TIMER)
 	-@ echo "Checking for users needing help..."
-	 @ cd $(MIRROOT)/at_friends && ./CheckBookings.csh
+	 @ cd $(MIRROOT)/at_friends && ./CheckBookings
 
       updates :
 	-@ echo ""
