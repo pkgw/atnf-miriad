@@ -94,6 +94,7 @@ c    rjs  31jan01 Support other stokes types.
 c    rjs  08apr02 Allow negative values when taking cube roots.
 c    rjs  18jul04 Check for division by zero in quad quantities.
 c    rjs  23apr09 Increase buffer dimension to allow it to work on bigger problems.
+c    rjs  23jun09 Longer plot labels.
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -117,7 +118,7 @@ c
 c
 c  Plot buffers.
 c
-	character title(MAXPLOTS)*16
+	character title(MAXPLOTS)*20
 	real x(MAXPNTS*MAXPLOTS),y(MAXPNTS*MAXPLOTS)
 	real yerr(MAXPNTS*MAXPLOTS)
 	integer npnts(MAXPLOTS),nplots
