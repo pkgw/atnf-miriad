@@ -26,10 +26,10 @@ c    13sep99 rjs  Make jullst more robust.
 c    12may04 rjs  Make jullst more robust - again.
 c    26jul05 rjs  Added a new leap second.
 c    06mar08 rjs/dm David MacMahon noted that the number of days in a
-c                Besselian century were given in single precision (rather
-c                that double). Fix this.
+c		  Besselian century were given in single precision (rather
+c		  that double). Fix this.
 c    13mar09 rjs/pjt Peter noted the ATNF version had not updated the leap
-c                second table for the 1 Jan 2009 leap. Do this.
+c		  second table for the 1 Jan 2009 leap. Do this.
 c
 c  General Reference:
 c    Explanatory Supplement to the Astronomical Almanac. 1993.
