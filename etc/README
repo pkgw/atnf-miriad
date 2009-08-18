@@ -12,7 +12,7 @@ code and also binary installations for selected platforms.
 
   DISCLAIMER		    -- Standard GPL legal disclaimer.
   INSTALL.html		    -- Installation instructions (included in
-			       miriad-common.
+			       miriad-common.tar.gz).
   README		    -- This file.
 
 Installation from source code is based on GNU autoconf/make using the
@@ -43,8 +43,8 @@ The following subdirectories contain additional material:
   tutorials		    -- Overheads from data reduction symposia.
   updates		    -- Incremental source code updates.
 
-For convenience, the User and Programmer Guides contained in miriad-common
-are available separately:
+For convenience, the User and Programmer Guides contained in
+miriad-common.tar.gz are available separately:
 
   userguide.ps.gz	    -- Miriad User Guide, A4 paper.
   userguide_US.ps.gz	    --   do. for US letter size paper.
