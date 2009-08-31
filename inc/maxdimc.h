@@ -26,15 +26,15 @@
 #define MAXBUF  16777216
 
 /* Maximum number of pixels on an image axis. */
-#define MAXDIM 16384 
+#define MAXDIM  16384
 
 /* Maximum number of image axes. */
 #define MAXNAX  7
 
 /* Maximum number of antennas. */
-#define MAXANT  64
+#define MAXANT  96
 
-/* Maximum number of baselines. */
+/* Maximum number of baselines, including autocorrelations. */
 #define MAXBASE ((MAXANT * (MAXANT + 1)) / 2)
 
 /* Maximum number of channels in spectral data. */
