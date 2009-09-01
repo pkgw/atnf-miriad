@@ -24,9 +24,10 @@
   PGMRROOT=`echo "$MIR" | sed -e 's|.*/|./|'`
 
 # Create only relevant subdirectories.
-  SUBDIRS="cat etc guides guides/prog guides/user inc linpack prog scripts"
-  SUBDIRS="$SUBDIRS scripts/$MIRARCH spec spec/miriad spec/sxmtv spec/xmtv"
-  SUBDIRS="$SUBDIRS spec/xpanel subs subs/unix subs/unix/alpha_linux tools"
+  SUBDIRS="cat etc guides guides/prog guides/user inc inc/linux64 linpack "
+  SUBDIRS="$SUBDIRS prog scripts scripts/$MIRARCH
+  SUBDIRS="$SUBDIRS spec spec/miriad spec/sxmtv spec/xmtv spec/xpanel"
+  SUBDIRS="$SUBDIRS subs subs/unix subs/unix/alpha_linux tools"
 
   for SUBDIR in "" $SUBDIRS
   do
