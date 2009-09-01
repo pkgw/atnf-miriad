@@ -32,7 +32,7 @@
 #define MAXNAX  7
 
 /* Maximum number of antennas. */
-#define MAXANT  96
+#define MAXANT  64
 
 /* Maximum number of baselines, including autocorrelations. */
 #define MAXBASE ((MAXANT * (MAXANT + 1)) / 2)
