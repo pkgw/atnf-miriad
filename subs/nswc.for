@@ -2558,7 +2558,7 @@ C
   530 CONTINUE
   540 TEMP(IS) = COEF*(S1*SB-S2*SA)
       IF(IS.EQ.2) GO TO 560
-  550 FIDAL = FIDAL + 1.0E0
+      FIDAL = FIDAL + 1.0E0
       DALPHA = FIDAL + FNF
       IS = 2
       TB = SA
