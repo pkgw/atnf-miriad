@@ -144,9 +144,9 @@ c
           enddo
         endif
 
-        ant1=pream(2)/256
-        ant2=mod(pream(2),256)
-        pol= pream(3)
+        ant1=nint(pream(2))/256
+        ant2=mod(nint(pream(2)),256)
+        pol= nint(pream(3))
         ipol=0
         do i=1,npol
           if (pol.eq.polidx(i)) ipol=i
@@ -289,7 +289,6 @@ c
 c
 c Close up the files.
 c
- 400  continue
       call uvclose (lin)
       call scrclose (lins)
 c
