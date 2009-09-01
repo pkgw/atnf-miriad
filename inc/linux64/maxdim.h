@@ -23,9 +23,9 @@ C     size that can be handled.
       INTEGER   MAXDIM
       PARAMETER(MAXDIM = 16*1024)
 
-C     Maximum number of antennas (SCAMP=96).
+C     Maximum number of antennas (ATA=64).
       INTEGER   MAXANT
-      PARAMETER(MAXANT = 96)
+      PARAMETER(MAXANT = 64)
 
 C     Maximum number of baselines, including autocorrelations.
       INTEGER   MAXBASE
