@@ -37,6 +37,7 @@ c                    minus the second).  This is the default.
 c         two        Write the data from the second input, interpolated
 c                    to the first.
 c         one        Write the first dataset.
+c         ratio      Write the ratio of the two inputs
 c       With the exception of the visibility data itself, all three
 c       possibilities will produce identical datasets.  This includes
 c       identical flagging information.
@@ -54,6 +55,7 @@ c    14-aug-96 rjs  Added ability to negate the output.
 c    09-jul-04 jwr  Renamed Unpack to Unpck to avoid compiler
 c                   complaining about unimplemented intrisics
 c    24-jan-07 rjs  Default linetype.
+c    07-sep-09 mhw  Add ratio, useful to check corrected/raw data
 c
 c  Bugs/Shortcomings:
 c    * Should handle the conjugate symmetry property, and match data
@@ -65,7 +67,7 @@ c-----------------------------------------------------------------------
       include 'mirconst.h'
 
       integer MAXSELS, NMODES
-      parameter(MAXSELS=1000, NMODES=6)
+      parameter(MAXSELS=1000, NMODES=8)
 
       logical flags1(MAXCHAN), flags2(MAXCHAN), negate
       integer i, nchan, nout, npol, pol, tIn, tOut
@@ -80,7 +82,9 @@ c     Externals.
       character versan*80
 
       data modes/'difference  ','one         ','two         ',
-     *           '-difference ','-one        ','-two        '/
+     *           'ratio       ',
+     *           '-difference ','-one        ','-two        ',
+     *           '-ratio      '/
 c-----------------------------------------------------------------------
       version = versan('uvdiff',
      *  '$Id$')
@@ -154,9 +158,18 @@ c       Subtract if required.
             data1(i)  = data2(i)
             flags2(i) = flags1(i).and.flags2(i)
           enddo
-        else
+        else if(mode.eq.'difference') then
           do i=1,nchan
             data1(i)  = data1(i) - data2(i)
+            flags2(i) = flags1(i).and.flags2(i)
+          enddo
+        else
+          do i=1,nchan
+            if (data2(i).eq.0) then
+              flags2(i)=.false.
+            else 
+              data1(i)  = data1(i) / data2(i)
+            endif
             flags2(i) = flags1(i).and.flags2(i)
           enddo
         endif
