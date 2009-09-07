@@ -81,6 +81,7 @@ c    rjs     15jan06 Original version adapted from plboot.
 c    rjs     19jan06 Fix call to subroutine with //char*(*) arg.
 c    rjs     09may06 Increase size of MAXPNT.
 c    rjs     07jul06 Increase size of MAXPNT again.
+c    mhw     07sep09 Use central frequency for planet parameters
 c
 c  $Id$
 c------------------------------------------------------------------------
@@ -321,7 +322,7 @@ c
 c------------------------------------------------------------------------
 	include 'mirconst.h'
 	include 'maxdim.h'
-	double precision sfreq(MAXCHAN)
+	double precision sfreq(MAXCHAN),cfreq
 	real model(MAXCHAN)
 	integer i,ierr
 	real a,b,cospa,sinpa,pltb,bmaj,bmin,bpa,rms2
@@ -341,10 +342,11 @@ c  Work out the model of the visibility data.
 c
 	ok = .true.
 	if(iplanet.ne.0)then
+          cfreq = sfreq(nchan/2+1)
 	  if(uflux.gt.0)then
 	    pltb = uflux
 	  else
-	    pltb = pltbs(iplanet,real(sfreq(1)))
+	    pltb = pltbs(iplanet,real(cfreq))
 	  endif
 c
 	  call plpar(time+deltime(time,'tdb'),iplanet,sub,
@@ -352,7 +354,7 @@ c
 	  cospa = cos(bpa)
 	  sinpa = sin(bpa)
 	  b = PI * sqrt((bmaj*(uv(1)*cospa-uv(2)*sinpa))**2
-     *              + (bmin*(uv(1)*sinpa+uv(2)*cospa))**2)/sfreq(1)
+     *              + (bmin*(uv(1)*sinpa+uv(2)*cospa))**2)/cfreq
           a = 2 * pltb * (KMKS*1e18)/(CMKS*CMKS*1e-26)
      *          * 2 * PI/4 * bmaj*bmin
 	  do i=1,nchan
