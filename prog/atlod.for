@@ -1454,8 +1454,8 @@ c------------------------------------------------------------------------
         complex vis(NDATA)
         logical flags(NDATA),doopcorr,wband
         double precision preamble(5),vel,lst,tdash,az,el
-        real buf(3*ATANT*ATIF),fac(ATIF),freq0(ATIF),Tb(ATIF),tfac
-        real jyperk
+        real buf(3*ATANT*ATIF),fac(ATIF,2),freq0(ATIF,2),Tb(ATIF,2)
+        real jyperk(2),tfac
 c
 c  Externals.
 c
@@ -1540,9 +1540,10 @@ c
           jyperk = getjpk(real(sfreq(1)))
 
           do if=1,nifs
-            freq0(if) = (sfreq(if) + 0.5*(nfreq(if)-1)*sdf(if))*1e9
+            freq0(if,1) = sfreq(if)*1e9
+            freq0(if,2) = (sfreq(if) + (nfreq(if)-1)*sdf(if))*1e9
           enddo
-          wband = freq0(1).gt.75e9
+          wband = freq0(1,1).gt.75e9
           doopcorr = .false.
           if(opcorr.and..not.wband)then
             if(mcount.lt.3)then
@@ -1558,18 +1559,22 @@ c
               spress = 97.5*mdata(2)
               shumid = 0.01*mdata(3)
             endif
-            call opacGet(nifs,freq0,real(el),stemp,spress,shumid,
-     *                                                     fac,Tb)
+            call opacGet(nifs,freq0(1,1),real(el),stemp,spress,shumid,
+     *                                               fac(1,1),Tb(1,1))
+            call opacGet(nifs,freq0(1,2),real(el),stemp,spress,shumid,
+     *                                               fac(1,2),Tb(1,2))
             doopcorr = .true.
             tfac = 1
             do if=1,nifs
-              fac(if) = 1/fac(if)
-              tfac = tfac * fac(if)
+              fac(if,1) = 1/fac(if,1)
+              fac(if,2) = 1/fac(if,2)
+              tfac = tfac * fac(if,1)* fac(if,2)
             enddo
-            jyperk = jyperk * tfac**(1.0/real(nifs))
+            jyperk = jyperk * tfac**(1.0/real(2*nifs))
           else
             do if=1,nifs
-              fac(if) = 1
+              fac(if,1) = 1
+              fac(if,2) = 1
             enddo
           endif
 c
@@ -1631,7 +1636,8 @@ c
                       if(.not.hires)call uvputvri(tno,'bin',bin,1)
                       call uvputvrr(tno,'inttime',inttime(bl),1)
                       if(doopcorr)
-     *                  call opapply(data(ipnt),nfreq(if),fac(if))
+     *                  call opapply(data(ipnt),nfreq(if),fac(if,1),
+     *                               fac(if,2))
                       call uvwrite(tno,preamble,data(ipnt),flags,
      *                                                  nfreq(if))
 
@@ -1683,9 +1689,8 @@ c
                 if(npol.gt.0)then
                   call uvputvri(tno,'npol',npol,1)
                   do p=1,nstoke(1)
-c                    print *,'ant1=',i1,' ant2=',i2,' pol=',p,' bin=',bin
                     call GetDat(data,nused,pnt(1,p,bl,bin),
-     *                  flag(1,p,bl,bin),nfreq,fac,bchan,nifs,
+     *                  flag(1,p,bl,bin),nfreq,ATIF,fac,bchan,nifs,
      *                  vis,flags,NDATA,nchan)
                     if(nchan.gt.0)then
                       call rfiFlag(flags,NDATA,nifs,nfreq,sfreq,sdf)
@@ -1763,17 +1768,24 @@ c
 c
         end
 c************************************************************************
-        subroutine opapply(data,nchan,fac)
+        subroutine opapply(data,nchan,fac1,fac2)
 c
         integer nchan
-        real fac
+        real fac1,fac2
         complex data(nchan)
 c------------------------------------------------------------------------
         integer i
 c
-        do i=1,nchan
-          data(i) = fac*data(i)
-        enddo
+c       do linear interpolation across spectrum
+c
+        if (nchan.gt.1) then
+          do i=1,nchan
+            data(i) = (fac1*(nchan-i)/real(nchan-1)+
+     *                 fac2*i/real(nchan-1))*data(i)
+          enddo
+        else
+          data(1)=data(1)*fac1
+        endif
 c
         end
 c************************************************************************
@@ -2060,14 +2072,14 @@ c
 c
         end
 c************************************************************************
-        subroutine GetDat(data,nvis,pnt,flag,nfreq,fac,bchan,nifs,
+        subroutine GetDat(data,nvis,pnt,flag,nfreq,ATIF,fac,bchan,nifs,
      *                                  vis,flags,ndata,nchan)
 c
         integer nvis,nifs,pnt(nifs),nfreq(nifs),bchan(nifs),nchan
-        integer ndata
+        integer ndata,ATIF
         logical flag(nifs),flags(ndata)
         complex vis(ndata),data(nvis)
-        real fac(nifs)
+        real fac(ATIF,2)
 c
 c  Construct a visibility record constructed from multiple IFs.
 c------------------------------------------------------------------------
@@ -2088,12 +2100,21 @@ c
               nchan = nchand
             endif
 c
-            do i=nchan+1,nchan+nfreq(n)
+            if (nfreq(n).gt.1) then
+              do i=nchan+1,nchan+nfreq(n)
 
-              vis(i) = fac(n)*data(ipnt)
-              flags(i) = flag(n)
-              ipnt = ipnt + 1
-            enddo
+                vis(i) = (real(nchan+nfreq(n)-i)/real(nfreq(n)-1)
+     *                    *fac(n,1)+
+     *                    real(i-nchan-1)/real(nfreq(n)-1)
+     *                    *fac(n,2))*data(ipnt)
+                flags(i) = flag(n)
+                ipnt = ipnt + 1
+              enddo
+            else
+              vis(nchan+1)=fac(n,1)*data(ipnt)
+              flags(nchan+1)=flag(n)
+              ipnt=ipnt+1
+            endif
             if(bchan(n).ge.1.and.bchan(n).le.nfreq(n))
      *                  flags(nchan+bchan(n)) = .false.
             nchan = nchan + nfreq(n)
@@ -3463,7 +3484,7 @@ c------------------------------------------------------------------------
                 c1=c2
                 c2=tmp
               endif
-              ch1 = min(nfreq(i), nint(max(0.0,c1)))
+              ch1 = min(nfreq(i), max(0,nint(c1)))
               ch2 = max(-1, min(nfreq(i)-1, nint(c2)))
               do k=ch1,ch2
                 flags(offset+k)=.false.
