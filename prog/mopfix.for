@@ -426,9 +426,9 @@ c             if (nhead.eq.1.and.nsp.eq.3) write(45,*)j,xsp(j),rspec(j)
               rval2 = seval(nch1,uval,xsp,rspec,bsp,csp,dsp)
               avg2 = avg2 + rval2
               if (if_nstok(if_no) .eq. 2) then
-                 vis(2*j-(2-i)) = complex(rval2,0.)
+                 vis(2*j-(2-i)) = cmplx(rval2, 0.0)
               else
-                 vis(j) = complex(rval2,0.)
+                 vis(j) = cmplx(rval2, 0.0)
               endif
 c             if (nhead.eq.1.and.nsp.eq.3) write(46,*)j,uval,rval2
             enddo
