@@ -1180,7 +1180,7 @@ c
 	double precision sfreq(nspect),sdf(nspect)
         real factor
 	double precision sfreq0(nspect0),sdf0(nspect0),swidth0(nspect0)
-	complex Tab(nbpsols,nchan,ngains),Dat(nread,ngains)
+	complex Tab(nchan,ngains,nbpsols),Dat(nread,ngains)
 	logical flags(nread,ngains)
 c
 c  Match up the data with the measured bandpass functions.
@@ -1271,8 +1271,8 @@ c
 	          l = nint(chan-0.5)
 		  nearest = l.lt.0.or.l.ge.nschan(i0)-1
 		  l = l + ischan(i0)
-                  r11=tab(ib,l,k)
-                  r12=tab(ib,l+1,k)
+                  r11=tab(l,k,ib)
+                  r12=tab(l+1,k,ib)
 		  if(.not.nearest)nearest =
      *		      abs(real(r11))+ abs(aimag(r11)).eq.0.or.
      *		      abs(real(r12))+ abs(aimag(r12)).eq.0
@@ -1280,11 +1280,11 @@ c
 		    l = nint(chan)
 		    flags(off,k) = l.ge.0.and.l.lt.nschan(i0)
 		    l = l + ischan(i0)
-                    r11=tab(ib,l,k)
-                    r12=tab(ib,l+1,k)
+                    r11=tab(l,k,ib)
+                    r12=tab(l+1,k,ib)
                     if (ib.le.nbpsols) then
-                     r21=tab(ib+1,l,k)
-                     r22=tab(ib+1,l+1,k)
+                     r21=tab(l,k,ib+1)
+                     r22=tab(l+1,k,ib+1)
                     endif
 		    if(flags(off,k)) flags(off,k) =
      *		      real(r11).ne.0.or.aimag(r11).ne.0
@@ -1296,8 +1296,8 @@ c
 		      dat(off,k) = 0
 		    endif
 		  else              
-                    r21=tab(ib+1,l,k)
-                    r22=tab(ib+1,l+1,k)
+                    r21=tab(l,k,ib+1)
+                    r22=tab(l+1,k,ib+1)
                     fac=factor
                     if (abs(r21).eq.0.or.abs(r22).eq.0) fac=0
 		    epsi = chan + ischan(i0) - l
@@ -1320,8 +1320,8 @@ c
 	          n = 0
 	          dat(off,k) = 0
 		  do l=ibeg,iend
-                    r11=tab(ib,l,k)
-                    r21=tab(ib+1,l,k)
+                    r11=tab(l,k,ib)
+                    r21=tab(l,k,ib+1)
 	            if(real(r11).ne.0.or.aimag(r11).ne.0)then
                       fac=factor
                       if (abs(r21).eq.0) fac=0
