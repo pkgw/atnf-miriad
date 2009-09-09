@@ -1282,7 +1282,7 @@ c
 		    l = l + ischan(i0)
                     r11=tab(l,k,ib)
                     r12=tab(l+1,k,ib)
-                    if (ib.le.nbpsols) then
+                    if (ib.lt.nbpsols) then
                      r21=tab(l,k,ib+1)
                      r22=tab(l+1,k,ib+1)
                     endif
@@ -1295,9 +1295,11 @@ c
 		    else
 		      dat(off,k) = 0
 		    endif
-		  else              
-                    r21=tab(l,k,ib+1)
-                    r22=tab(l+1,k,ib+1)
+		  else 
+                    if (ib.lt.nbpsols) then             
+                      r21=tab(l,k,ib+1)
+                      r22=tab(l+1,k,ib+1)
+                    endif
                     fac=factor
                     if (abs(r21).eq.0.or.abs(r22).eq.0) fac=0
 		    epsi = chan + ischan(i0) - l
@@ -1321,7 +1323,7 @@ c
 	          dat(off,k) = 0
 		  do l=ibeg,iend
                     r11=tab(l,k,ib)
-                    r21=tab(l,k,ib+1)
+                    if (ib.lt.nbpsols) r21=tab(l,k,ib+1)
 	            if(real(r11).ne.0.or.aimag(r11).ne.0)then
                       fac=factor
                       if (abs(r21).eq.0) fac=0
