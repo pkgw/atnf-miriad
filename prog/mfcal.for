@@ -183,8 +183,6 @@ c
 	call keyd('interval',interval(1),5.0d0)
 	call keyd('interval',interval(2),interval(1))
         call keyd('interval',interval(3),0.d0)
-        if (interval(1).gt.0.d0.and.interval(3).lt.interval(1))
-     *    interval(3)=interval(1)
 	call keyr('tol',tol,0.001)
 	call keyfin
 c
@@ -1753,7 +1751,7 @@ c
 c  Now determine passband solution intervals
 c       
         npsoln=1
-        if (interval(3).lt.0.01) then
+        if (interval(3).lt.interval(1)) then
           Range(1,1)=1
           Range(2,1)=nsoln
         else
