@@ -561,6 +561,7 @@ c
 	  call bugno('f',iostat)
 	endif
         off=off+8*gainsize
+        time=0
         if (nbpsols.gt.1) then
           call hreadd(item,time,off,8,iostat)
 	  if(iostat.ne.0)then
@@ -894,7 +895,7 @@ c  Input:
 c    nfeeds	Number of polarization feeds.
 c    nants	Number of antennas.
 c    nchan	Number of channels.
-c    freq	The offset time of each solution.
+c    freq	The frequency axis of each solution.
 c    G		The gains
 c    T0         julian date of solution
 c    range	Range along Y axis for plots.
