@@ -172,6 +172,8 @@ c
 	      call hdcopy(tIn,tOut,'freqs')
 	      call hdcopy(tIn,tOut,'nspect0')
 	      call hdcopy(tIn,tOut,'nchan0')
+              if (hdprsnt(tIn,'nbpsols'))
+     *          call hdcopy(tIn,tOut,'nbpsols')
 	    endif
 	  else
 	    if(hdprsnt(tIn,'cgains'))then
