@@ -46,6 +46,11 @@ ifeq "$(MAKEMODE)" "system"
 	   cp $< $@
 	-@ chmod 775 $@
 
+  $(MIRBIND)/xmtv24 : $(CODEDIR)/xmtv24.sh
+	-@ $(RM) $@
+	   cp $< $@
+	-@ chmod 775 $@
+
   $(MIRLIBD)/XMtv : $(CODEDIR)/XMtv.ad
 	-@ $(RM) $@
 	   cp $< $@
