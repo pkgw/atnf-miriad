@@ -760,7 +760,8 @@ c
       data getvsc /.true./
 c-----------------------------------------------------------------------
       version = versan ('cgdisp',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c Get user inputs
 c

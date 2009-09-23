@@ -269,7 +269,8 @@ c-----------------------------------------------------------------------
 c  Announce program.
 c
       version = versan ('tvflag',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 c-----------------------------------------------------------------------
 c  Use the key routines to get the user input parameters.
 c

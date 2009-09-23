@@ -504,7 +504,8 @@ c
       data polmsk /13*0/
 c-----------------------------------------------------------------------
       version = versan ('uvplt',
-     +  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get the parameters given by the user and check them for blunders
 c

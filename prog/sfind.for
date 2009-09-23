@@ -594,8 +594,9 @@ c-----------------------------------------------------------------------
 
       character versan*80, version*80
 c-----------------------------------------------------------------------
-      version = versan('sfind',
-     +  '$Id$')
+      version = versan( 'sfind',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c Get user inputs
 c

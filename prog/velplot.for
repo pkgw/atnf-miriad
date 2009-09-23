@@ -149,7 +149,8 @@ c-----------------------------------------------------------------------
 	character versan*80, version*80
 c-----------------------------------------------------------------------
       version = versan ('velplot',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 
 c set default plotting parameters
 c

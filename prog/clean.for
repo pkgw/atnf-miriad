@@ -196,8 +196,9 @@ c  Externals.
 c
       character itoaf*8, versan*80
 c-----------------------------------------------------------------------
-      version = versan('clean',
-     *  '$Id$')
+      version = versan ('clean',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get the input parameters.
 c

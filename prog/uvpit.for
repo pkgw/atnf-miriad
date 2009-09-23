@@ -89,8 +89,9 @@ c  Dynamic memory commons.
 c
 	include 'mem.h'
 c-----------------------------------------------------------------------
-        version = versan ('uvpit',
-     :    '$Id$')
+      version = versan ('uvpit',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get the inputs.
 c

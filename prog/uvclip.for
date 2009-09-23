@@ -116,7 +116,8 @@ c     initialise some variables
      -            '  ', 'I ', 'Q ', 'U ', 'V ' /
 c-----------------------------------------------------------------------
       version = versan ('uvclip',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 
 c     +++ read inputs
 

@@ -67,7 +67,8 @@ c
 	character versan*80
 c-----------------------------------------------------------------------
       version = versan ('rpgen',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get the input parameters.
 c

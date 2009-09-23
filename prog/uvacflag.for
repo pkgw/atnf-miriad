@@ -50,8 +50,9 @@ c
       integer ntot,ngood,ngood2,ngood3,nflag
 c
 c-----------------------------------------------------------------------
-      version = versan('uvacflag',
-     +  '$Id$')
+      version = versan ('uvacflag',
+     :                  '$Revision$',
+     :                  '$Date$')
 
       ntot=0
       ngood=0

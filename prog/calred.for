@@ -86,8 +86,9 @@ c
 	logical uvDatOpn,uvVarUpd
 	character versan*80
 c-----------------------------------------------------------------------
-	version = versan ('calred',
-     :    '$Id$')
+      version = versan ('calred',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c Lets go! Get user inputs.
 c

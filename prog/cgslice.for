@@ -417,7 +417,8 @@ c
       data xdispls, ydispbs /3.5, 3.5/
 c-----------------------------------------------------------------------
       version = versan ('cgslice',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c Get user inputs
 c

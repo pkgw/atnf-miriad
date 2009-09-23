@@ -82,8 +82,9 @@ c     Externals.
       data modes/'difference  ','one         ','two         ',
      *           '-difference ','-one        ','-two        '/
 c-----------------------------------------------------------------------
-      version = versan('uvdiff',
-     *  '$Id$')
+      version = versan ('uvdiff',
+     :                  '$Revision$',
+     :                  '$Date$')
 
 c     Get the input parameters.
       call keyini

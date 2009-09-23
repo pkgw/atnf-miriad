@@ -67,8 +67,9 @@ c-----------------------------------------------------------------------
       character hangle*12, rangle*12, versan*80
 
 *--------------------------------------------------------------
-      versn = versan('fakeotf',
-     :  '$Id$')
+      versn = versan ('fakeotf',
+     :                '$Revision$',
+     :                '$Date$')
 
 c Get input parameters
       call keyini ()

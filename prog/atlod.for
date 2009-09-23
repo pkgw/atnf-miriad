@@ -283,7 +283,8 @@ c
         character itoaf*8, rperr*32, versan*80
 c-----------------------------------------------------------------------
       version = versan ('atlod',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get the input parameters.
 c

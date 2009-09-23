@@ -196,7 +196,8 @@ c----------------------------------------------------------------------c
 c
 c  Don't report the program ID so that gif and ps output can be piped.
       version = versan ('-mbspect',
-     :  '$Id$')
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get inputs
 c

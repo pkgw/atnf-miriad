@@ -87,8 +87,11 @@ c-----------------------------------------------------------------------
       brief = present(1)
       header = present(2)
 
-      if (.not.brief) versn = versan('rpfread',
-     :  '$Id$')
+      if (.not.brief) then
+        versn = versan ('rpfread',
+     :                  '$Revision$',
+     :                  '$Date$')
+      end if
 
       if (fitsfile.eq.' ') then
          call bug('f','Input file must be given (in=)')

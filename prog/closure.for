@@ -142,8 +142,9 @@ c
 	logical uvDatOpn
 	character versan*80
 c-----------------------------------------------------------------------
-	version = versan ('closure',
-     :    '$Id$')
+      version = versan ('closure',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c Lets go! Get user inputs.
 c

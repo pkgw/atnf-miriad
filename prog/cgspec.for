@@ -479,8 +479,9 @@ c
       data txtfill, tflen /'spectrum', 'derivative spectrum',
      +                     'derivative spectrum', 8, 19, 19/
 c-----------------------------------------------------------------------
-      version = versan('cgspec',
-     :  '$Id$')
+      version = versan ('cgspec',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c Get user inputs
 c

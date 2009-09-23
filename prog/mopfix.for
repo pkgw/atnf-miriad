@@ -97,8 +97,9 @@ c-----------------------------------------------------------------------
       character hangle*12, rangle*12, versan*80
 
 *--------------------------------------------------------------
-      versn = versan('mopfix',
-     :  '$Id$')
+      versn = versan ('mopfix',
+     :                '$Revision$',
+     :                '$Date$')
 
 c Get input parameters
       call keyini ()

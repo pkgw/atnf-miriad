@@ -307,8 +307,9 @@ c  End declarations.
 c-----------------------------------------------------------------------
 c  Announce program.
 c
-      version = versan('tvclip',
-     :  '$Id$')
+      version = versan ('tvclip',
+     :                  '$Revision$',
+     :                  '$Date$')
 c-----------------------------------------------------------------------
 c  Use the key routines to get the user input parameters.
 c

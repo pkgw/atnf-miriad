@@ -340,8 +340,9 @@ c
 c
 	data slops/'zero        ','interpolate '/
 c-----------------------------------------------------------------------
-        version = versan ('invert',
-     :    '$Id$')
+      version = versan ('invert',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get the input parameters. Convert all angular things into
 c  radians as soon as possible!!

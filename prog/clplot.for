@@ -92,8 +92,9 @@ c
 c  real ary(128*128*64)=1048576 reals = 4 MBytes
 c  real ary(256*256*128)=8388608 reals = 32 MBytes
 c-----------------------------------------------------------------------
-      version = versan('clplot',
-     +  '$Id$')
+      version = versan ('clplot',
+     :                  '$Revision$',
+     :                  '$Date$')
 c
 c  Get the input parameters.
 c
