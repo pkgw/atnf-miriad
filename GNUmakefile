@@ -129,21 +129,24 @@ ifeq "$(MAKEMODE)" "system"
 
     # Static and static pattern rules.
     #---------------------------------
-    .PHONY : bookings dist updates
+    .PHONY : bookings dist pgplot rpfits updates
 
     # Update the copy of the RPFITS library and include file via allsys.
     initial :: rpfits pgplot
       ifdef MIRRCS
         # Update local stuff and architecture-specific GNUmakedefs.
 	-@ echo ""
+	-@ echo gmake[0]: $(MAKE) -C cat chkout
+	-@ $(MAKE) -C cat chkout
+	-@ echo ""
 	-@ echo gmake[0]: $(MAKE) -C etc chkout
 	-@ $(MAKE) -C etc chkout
 	-@ echo ""
-	-@ echo gmake[0]: $(MAKE) -C scripts chkout
-	-@ $(MAKE) -C scripts chkout
-	-@ echo ""
 	-@ echo gmake[0]: $(MAKE) -C inc chkout
 	-@ $(MAKE) -C inc chkout
+	-@ echo ""
+	-@ echo gmake[0]: $(MAKE) -C scripts chkout
+	-@ $(MAKE) -C scripts chkout
       endif
 
     rpfits : $(MIRINCD)/rpfits.inc $(MIRLIBD)/librpfits.a
