@@ -129,9 +129,25 @@ AC_MSG_NOTICE([
 
 Looking for directories where third-party libraries may be found...])
 
+EXTDIRS=
+
+AC_ARG_WITH([pgplot], [AS_HELP_STRING([--with-pgplot=DIR],
+            [directory containing pgplot library])], [])
+if test "x$with_pgplot" != x ; then
+  EXTDIRS="$EXTDIRS $with_pgplot"
+fi
+
+AC_ARG_WITH([rpfits], [AS_HELP_STRING([--with-rpfits=DIR],
+            [directory containing rpfits library])], [])
+if test "x$with_rpfits" != x ; then
+  EXTDIRS="$EXTDIRS $with_rpfits"
+fi
+
 AC_PATH_X
-EXTDIRS="$MIRROOT/$MIRARCH/lib \
+EXTDIRS="$EXTDIRS              \
+         $MIRROOT/$MIRARCH/lib \
          /usr/local/pgplot     \
+         /usr/local/rpfits     \
          /usr/local/gnu/lib    \
          /usr/local/lib        \
          /local/pgplot         \
