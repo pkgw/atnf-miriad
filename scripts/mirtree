@@ -25,7 +25,7 @@
 
 # Create only relevant subdirectories.
   SUBDIRS="cat etc guides guides/prog guides/user inc inc/linux64 linpack "
-  SUBDIRS="$SUBDIRS prog scripts scripts/$MIRARCH
+  SUBDIRS="$SUBDIRS prog scripts scripts/$MIRARCH"
   SUBDIRS="$SUBDIRS spec spec/miriad spec/sxmtv spec/xmtv spec/xpanel"
   SUBDIRS="$SUBDIRS subs subs/unix subs/unix/alpha_linux tools"
 
