@@ -35,7 +35,8 @@ c	  gains	       Plot/list the gains vs time. This is the default if
 c		       nothing else is requested.
 c	  xygains      Plot/list the ratio of X gain to Y gain.
 c	  xbyygain     Plot/list the product of X gain by Y gain.
-c	  polarization Plot/list the polarizations vs antenna number.
+c	  polarization Plot/list the leakages vs antenna number.
+c	  2polarization Plot/list the second leakages vs antenna number.
 c	  delays       Plot/list the delays vs time.
 c	  speccor      Plot/list the spectral correction vs time.
 c	  bandpass     Plot/list the bandpass shape vs frequency.
@@ -99,20 +100,23 @@ c		  flagging wrong.
 c    rjs  10jun97 Correct amptiude to amplitude.
 c    rjs  09mar98 Trim the device name before passing it through to PGPLOT.
 c    rjs  13mar98 Change format statement.
+c    nebk 13jul04 More sig figs for leakages
+c    rjs  23jan07 Handle second leakage table.
+c    mhw  26aug09 Handle multiple bandpass solution intervals
 c  Bugs:
 c------------------------------------------------------------------------
 	integer MAXSELS
 	character version*(*)
 	parameter(MAXSELS=256)
-	parameter(version='GpPlt: version 13-Mar-98')
+	parameter(version='GpPlt: version 23-Jan-07')
 	include 'gpplt.h'
 	integer iostat,tIn,nx,ny,nfeeds,nants,nsols,ierr,symbol,nchan
-	integer ntau,length
+	integer ntau,length,i,off,nbpsols
 	character vis*64,device*64,logfile*64,BaseTime*20
 	double precision T0
 	logical doamp,dophase,doreal,doimag,dogains,dopol,dodtime,doxy
 	logical doxbyy,doplot,dolog,more,ltemp,dodots,dodelay,dopass
-	logical dospec,dowrap
+	logical dospec,dowrap,dopol2
 	complex G1(maxGains),G2(maxGains)
 	real alpha(maxGains)
 	real times(maxTimes),range(2)
@@ -139,7 +143,7 @@ c
 	if(.not.(dolog.or.doplot))
      *	  call bug('f','One of the device and log must be given')
 	call GetAxis(doamp,dophase,doreal,doimag)
-	call GetOpt(dogains,doxy,doxbyy,dopol,dodtime,dodots,
+	call GetOpt(dogains,doxy,doxbyy,dopol,dopol2,dodtime,dodots,
      *	  dodelay,dospec,dopass,dowrap)
 	call keyi('nxy',nx,0)
 	call keyi('nxy',ny,0)
@@ -163,7 +167,7 @@ c
 c
 c  Fill in the defaults.
 c
-	if(.not.(dogains.or.doxy.or.doxbyy.or.dopol.or.
+	if(.not.(dogains.or.doxy.or.doxbyy.or.dopol.or.dopol2.or.
      *		dodelay.or.dopass.or.dospec))dogains = .true.
 	if(.not.(doamp.or.dophase.or.doreal.or.doimag))doamp = .true.
 c
@@ -186,6 +190,11 @@ c
 	  dopol = hdprsnt(tIn,'leakage')
 	  if(.not.dopol)call bug('w',
      *		'Polarization leakage table not present')
+	endif
+	if(dopol2)then
+	  dopol2 = hdprsnt(tIn,'leakage2')
+	  if(.not.dopol2)call bug('w',
+     *		'Polarization second leakage table not present')
 	endif
 c
 	if(dogains.or.doxy.or.doxbyy.or.dodelay.or.dospec)then
@@ -215,8 +224,8 @@ c
 	    endif
 	  endif
 	endif
-	if(.not.(dodelay.or.dospec.or.dopol.or.doxy.or.doxbyy.or.
-     *	  dogains.or.dopass))
+	if(.not.(dodelay.or.dospec.or.dopol.or.dopol2.or.doxy.or.
+     *	  doxbyy.or.dogains.or.dopass))
      *	  call bug('f','Requested options cannot be performed')
 c
 c  Open up the other devices now that we think everything looks OK.
@@ -280,18 +289,32 @@ c
 c  Do the bandpass plots.
 c
 	if(dopass)then
-	  call BLoad(tIn,times,G1,nfeeds,nants,nchan,sels,
-     *		maxGains,maxTimes)
-	  call BPPlt(times,G1,nfeeds,nants,nchan,range,
+          off=0
+          i=1
+          nbpsols=1
+          do while (i.le.nbpsols)
+	    call BLoad(tIn,off,times,G1,T0,nfeeds,nants,nchan,
+     *		nbpsols,sels,maxGains,maxTimes)
+	    call BPPlt(times,G1,T0,nfeeds,nants,nchan,range,
      *		Feeds(nfeeds),doamp,dophase,dowrap,doreal,doimag,
      *		doplot,dolog,symbol,nx*ny)
-	endif
+            i=i+1
+	  enddo
+        endif
 c
 c  Do the polarization leakage term plots.
 c
 	if(dopol)then
-	  if(doLog)call LogWrite('# Polarization Information',more)
-	  call PLoad(tIn,G1,nfeeds,nants,maxGains)
+	  if(doLog)call LogWrite('# Polarization leakage table',more)
+	  call PLoad(tIn,G1,nfeeds,nants,maxGains,.false.)
+	  call PolPlt(G1,nfeeds,nants,range,Feeds(nfeeds),
+     *		doamp,dophase,doreal,doimag,doplot,dolog,symbol)
+	endif
+c
+	if(dopol2)then
+	  if(doLog)call LogWrite('# Second polarization leakage table',
+     *								   more)
+	  call PLoad(tIn,G1,nfeeds,nants,maxGains,.true.)
 	  call PolPlt(G1,nfeeds,nants,range,Feeds(nfeeds),
      *		doamp,dophase,doreal,doimag,doplot,dolog,symbol)
 	endif
@@ -437,13 +460,14 @@ c
 c
 	end
 c************************************************************************
-	subroutine BLoad(tIn,freq,Gains,nfeeds,nants,nchan,sels,
-     *	  maxPass,maxfreq)
+	subroutine BLoad(tIn,off,freq,Gains,time,nfeeds,nants,nchan,
+     *	  nbpsols,sels,maxPass,maxfreq)
 c
 	implicit none
-	integer tIn,nants,nchan,maxPass,maxfreq,nfeeds
+	integer tIn,off,nants,nchan,maxPass,maxfreq,nfeeds,nbpsols
 	real freq(maxfreq),sels(*)
 	complex Gains(maxPass)
+        double precision time
 c
 c  Load the bandpass shapes.
 c
@@ -455,12 +479,14 @@ c  Output:
 c    nants
 c    nfeeds
 c    nchan
+c    nbpols    The number of bandpass solutions (time intervals)
 c    freq
 c    Gains
+c    time      The bandpass sol time
 c------------------------------------------------------------------------
 	include 'gpplt.h'
-	integer ngains,nspect,item,iostat,n,off,nschan,i,j,k,offi,offo
-	integer ntau
+	integer ngains,nspect,item,iostat,n,nschan,i,j,k,offi,offo
+	integer ntau,gainsize,off2
 	double precision freqs(2)
 	logical doselect,select(maxtimes)
 c
@@ -473,11 +499,12 @@ c
 	call rdhdi(tIn,'ntau',ntau,0)
 	call rdhdi(tIn,'nchan0',nchan,0)
 	call rdhdi(tIn,'nspect0',nspect,0)
-	if(nfeeds.le.0.or.ngains.le.0)
+        call rdhdi(tIn,'nbpsols',nbpsols,1)
+	if(nfeeds.le.0.or.ngains.le.0.or.nbpsols.le.0)
      *	  call bug('f','Bad gain table size information')
 	nants = ngains / (nfeeds+ntau)
 	if(nants*(nfeeds+ntau).ne.ngains)
-     *	  call bug('f','Number of gains does equal nants*nfeeds')
+     *	  call bug('f','Number of gains does not equal nants*nfeeds')
 	if(nchan.gt.min(maxfreq,maxtimes).or.nchan.le.0)call bug('f',
      *	  'Bad number of frequencies')
 	if(nspect.le.0.or.nspect.gt.nchan)call bug('f',
@@ -496,12 +523,12 @@ c
 	endif
 c
 	n = 0
-	off = 8
+	off2 = 8
 	do i=1,nspect
-	  call hreadi(item,nschan,off,4,iostat)
-	  off = off + 8
-	  if(iostat.eq.0)call hreadd(item,freqs,off,2*8,iostat)
-	  off = off + 2*8
+	  call hreadi(item,nschan,off2,4,iostat)
+	  off2 = off2 + 8
+	  if(iostat.eq.0)call hreadd(item,freqs,off2,2*8,iostat)
+	  off2 = off2 + 2*8
 	  if(iostat.ne.0)then
 	    call bug('w','Error reading bandpass frequency table')
 	    call bugno('f',iostat)
@@ -525,12 +552,24 @@ c
 	  call bugno('f',iostat)
 	endif
 c
-	off = 8
-	call hreadr(item,Gains,off,8*nants*nfeeds*nchan,iostat)
+	if (off.eq.0) off = 8
+        gainsize = nants*nfeeds*nchan
+        
+	call hreadr(item,Gains,off,8*gainsize,iostat)
 	if(iostat.ne.0)then
 	  call bug('w','Error reading the bandpass table')
 	  call bugno('f',iostat)
 	endif
+        off=off+8*gainsize
+        time=0
+        if (nbpsols.gt.1) then
+          call hreadd(item,time,off,8,iostat)
+	  if(iostat.ne.0)then
+             call bug('w','Error reading the bandpass table')
+	     call bugno('f',iostat)
+	  endif
+          off=off+8
+        endif
 c
 	call hdaccess(item,iostat)
 	if(iostat.ne.0)call bugno('f',iostat)
@@ -619,11 +658,12 @@ c
 c
 	end
 c************************************************************************
-	subroutine PLoad(tIn,Leaks,nfeeds,nants,maxLeaks)
+	subroutine PLoad(tIn,Leaks,nfeeds,nants,maxLeaks,do2)
 c
 	implicit none
 	integer tIn,nfeeds,nants,maxLeaks
 	complex Leaks(2,maxLeaks)
+	logical do2
 c
 c  Load the polarisation leakage table.
 c
@@ -634,7 +674,11 @@ c  Externals.
 c
 	integer hsize
 c
-	call haccess(tIn,item,'leakage','read',iostat)
+	if(do2)then
+	  call haccess(tIn,item,'leakage2','read',iostat)
+	else
+	  call haccess(tIn,item,'leakage','read',iostat)
+	endif
 	if(iostat.ne.0)then
 	  call bug('w','Error accessing the leakage table')
 	  call bugno('f',iostat)
@@ -833,13 +877,14 @@ c
      *	  'Imag',Feeds,doplot,dolog,dodtime,symbol,GetImag,ppp)
 	end
 c************************************************************************
-	subroutine BpPlt(freq,G,nfeeds,nants,nchan,range,
+	subroutine BpPlt(freq,G,T0,nfeeds,nants,nchan,range,
      *	  Feeds,doamp,dophase,dowrap,doreal,doimag,doplot,dolog,
      *    symbol,ppp)
 c
 	implicit none
 	integer nfeeds,nants,nchan,ppp,symbol
 	complex G(nchan*nfeeds*nants)
+        double precision T0
 	real freq(nchan),range(2)
 	logical doamp,dophase,dowrap,doreal,doimag,doplot,dolog
 	character Feeds(nfeeds)*(*)
@@ -850,8 +895,9 @@ c  Input:
 c    nfeeds	Number of polarization feeds.
 c    nants	Number of antennas.
 c    nchan	Number of channels.
-c    freq	The offset time of each solution.
+c    freq	The frequency axis of each solution.
 c    G		The gains
+c    T0         julian date of solution
 c    range	Range along Y axis for plots.
 c    Feeds	Used to form labels and descriptions.
 c    doamp,dophase,doreal,doimag If true, the do the corresponding
@@ -867,20 +913,20 @@ c
 	real     GetAmp,GetPhasW,GetPhase,GetReal,GetImag
 	external GetAmp,GetPhasW,GetPhase,GetReal,GetImag
 c
-	if(doamp)  call BpPlt2(freq,G,nfeeds,nants,nchan,range,
+	if(doamp)  call BpPlt2(freq,G,T0,nfeeds,nants,nchan,range,
      *	  'Amp',Feeds,doplot,dolog,symbol,GetAmp,ppp)
 	if(dophase)then
 	  if(dowrap)then
-	    call BpPlt2(freq,G,nfeeds,nants,nchan,range,
+	    call BpPlt2(freq,G,T0,nfeeds,nants,nchan,range,
      *	      'Phase',Feeds,doplot,dolog,symbol,GetPhasW,ppp)
 	  else
-	    call BpPlt2(freq,G,nfeeds,nants,nchan,range,
+	    call BpPlt2(freq,G,T0,nfeeds,nants,nchan,range,
      *	      'Phase',Feeds,doplot,dolog,symbol,GetPhase,ppp)
 	  endif
 	endif
-	if(doreal) call BpPlt2(freq,G,nfeeds,nants,nchan,range,
+	if(doreal) call BpPlt2(freq,G,T0,nfeeds,nants,nchan,range,
      *	  'Real',Feeds,doplot,dolog,symbol,GetReal,ppp)
-	if(doimag) call BpPlt2(freq,G,nfeeds,nants,nchan,range,
+	if(doimag) call BpPlt2(freq,G,T0,nfeeds,nants,nchan,range,
      *	  'Imag',Feeds,doplot,dolog,symbol,GetImag,ppp)
 	end
 c************************************************************************
@@ -901,7 +947,7 @@ c------------------------------------------------------------------------
 	real x(2*MAXANT),y(2*MAXANT),Value
 	integer ifeed,iant,j,j1,j2
 	logical more
-	character line*80,Label*16
+	character line*132,Label*16
 c
 c  Externals.
 c
@@ -934,7 +980,7 @@ c
 	  call LogWrite(line,more)
 	  do j1=1,nfeeds*nants,6
 	    j2 = min(j1+5,nfeeds*nants)
-	    write(line,'(7f11.3)')(y(j),j=j1,j2)
+	    write(line, '(7f14.6)')(y(j),j=j1,j2)
 	    call LogWrite(line,more)
 	  enddo
 	endif
@@ -1045,13 +1091,14 @@ c
 	endif
 	end
 c************************************************************************
-	subroutine BpPlt2(freq,G,nfeeds,nants,nchan,range,
+	subroutine BpPlt2(freq,G,T0,nfeeds,nants,nchan,range,
      *	  type,Feeds,doplot,dolog,symbol,GetVal,ppp)
 c
 	implicit none
 	integer nfeeds,nants,nchan,ppp,symbol
 	real freq(nchan),range(2)
 	complex G(nchan*nfeeds*nants)
+        double precision T0
 	logical doplot,dolog
 	character Feeds(nfeeds)*(*),type*(*)
 	real GetVal
@@ -1064,7 +1111,7 @@ c	Similar to BpPlt, except ...
 c	GetVal	Routine used to convert to the desired quantity.
 c------------------------------------------------------------------------
 	include 'gpplt.h'
-	character line*80,Label*20,Title*12
+	character line*80,Label*20,Title*12, Time*20
 	logical more
 	real x(maxTimes),y(maxTimes),freqmin,freqmax
 	real Value(2*MAXANT)
@@ -1078,6 +1125,11 @@ c
 c  Do the plots.
 c
 	if(doplot)then
+        Time=' '
+        if (T0.gt.0) then 
+          call JulDay(T0,'H',Time)
+        endif
+
 c
 c  Determine the min and max frequencies.
 c
@@ -1106,8 +1158,8 @@ c
 		call SetPG(freqmin,freqmax,y,ng,range,.true.)
 		call pgpt(ng,x,y,symbol)
 	        Label = Feeds(ifeed)//'-BandPass-'//type
-	        Title = 'Antenna '//itoaf(iant)
-	        call pglab('Frequency (GHz)',Label,Title)
+	        Title = 'Antenna '//itoaf(iant)//' '
+	        call pglab('Frequency (GHz)',Label,Title//Time)
 		nres = nres + 1
 	      endif
 	    enddo
@@ -1402,12 +1454,12 @@ c
 	enddo
 	end
 c************************************************************************
-	subroutine GetOpt(dogains,doxy,doxbyy,dopol,dodtime,dodots,
-     *		          dodelay,dospec,dopass,dowrap)
+	subroutine GetOpt(dogains,doxy,doxbyy,dopol,dopol2,dodtime,
+     *			dodots,dodelay,dospec,dopass,dowrap)
 c
 	implicit none
 	logical dogains,dopol,dodtime,doxy,doxbyy,dodots,dodelay
-	logical dospec,dopass,dowrap
+	logical dospec,dopass,dowrap,dopol2
 c
 c  Get extra processing options.
 c
@@ -1415,7 +1467,8 @@ c  Output:
 c    dogains	If true, process the gains.
 c    doxy	If true, process the ratio of X/Y gains.
 c    doxbyy	If true, process the product of X*Y gains
-c    dopol	If true, process the polarizations.
+c    dopol	If true, process the leakage table.
+c    dopol2     If true, process the second leakage table.
 c    dodtime	If true, give time as day fractions.
 c    dodots	If true, plot small dots (rather than big circles).
 c    dodelay	If true, process the delays table.
@@ -1423,14 +1476,14 @@ c    dopass	If true, process the bandpass table.
 c    dowrap     If true, don't unwrap phases
 c------------------------------------------------------------------------
 	integer nopt
-	parameter(nopt=10)
+	parameter(nopt=11)
 	logical present(nopt)
-	character opts(nopt)*12
+	character opts(nopt)*14
 c
-	data opts/'gains       ','polarization','dtime       ',
-     *		  'xygains     ','xbyygains   ','dots        ',
-     *		  'delays      ','bandpass    ','speccor     ',
-     *            'wrap        '/
+	data opts/'gains         ','polarization  ','dtime         ',
+     *		  'xygains       ','xbyygains     ','dots          ',
+     *		  'delays        ','bandpass      ','speccor       ',
+     *            'wrap          ','2polarization '/
 c
 	call options('options',opts,present,nopt)
 	dogains = present(1)
@@ -1443,6 +1496,8 @@ c
 	dopass  = present(8)
 	dospec  = present(9)
         dowrap  = present(10)
+	dopol2  = present(11)
+
 	end
 c************************************************************************
 	subroutine GetAxis(doamp,dophase,doreal,doimag)
