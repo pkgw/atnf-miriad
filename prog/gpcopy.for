@@ -6,7 +6,7 @@ c= GpCopy -- Copy or merge gains, bandpass and polarization correction.
 c& rjs
 c: calibration
 c+
-c	GpCopy is a MIRIAD task which copies or merges calibration corrections 
+c	GpCopy is a MIRIAD task which copies or merges calibration corrections
 c	(antenna gains, polarization leakages, frequency table, bandpass item)
 c	from one data-set to another.
 c@ vis
@@ -61,11 +61,17 @@ c    rjs  24nov94 Implement merging of gain tables.
 c    rjs   3dec94 Implement applying of gain tables.
 c    mchw 04jan95 Doc change only.
 c    rjs  17aug95 More messages.
+c    rjs  10dec97 Change some fatal messages to warnings only, to
+c		  prevent tables getting corrupted. Add check for
+c		  apparently corrupt gain table.
+c    rjs  19sep04 Copy across sensitivity model.
+c    rjs  23jan07 Correct some logical errors and also copy "leakage2" table.
+c    mhw  02sep09 Handle multiple bandpass solution intervals
 c  Bugs:
 c    None?
 c------------------------------------------------------------------------
 	character version*(*)
-	parameter(version='GpCopy: version 3-Dec-94')
+	parameter(version='GpCopy: version 23-Jan-07')
 	logical dopol,docal,dopass,docopy
 	integer iostat,tIn,tOut
 	character vis*64,out*64,mode*8,line*64
@@ -109,13 +115,14 @@ c
 	if(dopol) dopol = hdprsnt(tIn,'leakage')
 	if(dopol)then
 	  dopol = .not.docopy.and.hdprsnt(tOut,'leakage')
-	  if(mode.eq.'merge'.and.dopass)then
+	  if(mode.eq.'merge'.and.dopol)then
 	    call bug('w','Merging of polarization table unimplemented')
-	  else if(mode.eq.'apply'.and.dopass)then
-	    call bug('f','Applying of polarization table unimplemented')
+	  else if(mode.eq.'apply'.and.dopol)then
+	    call bug('w','Applying of polarization table unimplemented')
 	  else
 	    call output('Copying leakage table')
 	    call hdcopy(tIn,tOut,'leakage')
+	    call hdcopy(tIn,tOut,'leakage2')
 	  endif
         end if
 c
@@ -144,6 +151,7 @@ c
 	    call hdcopy(tIn,tOut,'ntau')
 	    call hdcopy(tIn,tOut,'gains')
 	    call hdcopy(tIn,tOut,'freq0')
+	    call hdcopy(tIn,tOut,'senmodel')
 	  endif
 	endif
 c
@@ -151,7 +159,7 @@ c
 	  if(hdprsnt(tIn,'bandpass'))then
 	    dopass = .not.docopy.and.hdprsnt(tOut,'bandpass')
 	    if(mode.eq.'merge'.and.dopass)then
-	      call bug('f','Merging bandpasses is not implemented')
+	      call bug('w','Merging bandpasses is not implemented')
 	    else if(mode.eq.'apply'.and.dopass)then
 	      call output('Applying input bandpass table to output')
 	      call BpApply(tIn,tOut)
@@ -164,14 +172,16 @@ c
 	      call hdcopy(tIn,tOut,'freqs')
 	      call hdcopy(tIn,tOut,'nspect0')
 	      call hdcopy(tIn,tOut,'nchan0')
+              if (hdprsnt(tIn,'nbpsols'))
+     *          call hdcopy(tIn,tOut,'nbpsols')
 	    endif
 	  else
 	    if(hdprsnt(tIn,'cgains'))then
 	      dopass = .not.docopy.and.hdprsnt(tOut,'cgains')
 	      if(mode.eq.'merge'.and.dopass)then
-		call bug('f','Merging cgains is not implemented')
+		call bug('w','Merging cgains is not implemented')
 	      else if(mode.eq.'apply'.and.dopass)then
-		call bug('f','Applying cgains is not implemented')
+		call bug('w','Applying cgains is not implemented')
 	      else
 		call output('Copying cgains table')
 		call hdcopy(tIn,tOut,'cgains')
@@ -182,9 +192,9 @@ c
 	    if(hdprsnt(tIn,'wgains'))then
 	      dopass = .not.docopy.and.hdprsnt(tOut,'wgains')
 	      if(mode.eq.'merge'.and.dopass)then
-		call bug('f','Merging wgains is not implemented')
+		call bug('w','Merging wgains is not implemented')
 	      else if(mode.eq.'apply'.and.dopass)then
-		call bug('f','Applying wgains is not implemented')
+		call bug('w','Applying wgains is not implemented')
 	      else
 		call output('Copying wgains table')
 		call hdcopy(tIn,tOut,'wgains')
@@ -245,7 +255,7 @@ c------------------------------------------------------------------------
 	logical present(nopt)
 	character opts(nopt)*8
 c
-	data opts/'nopol   ','nocal   ','nopass   '/
+	data opts/'nopol   ','nocal   ','nopass  '/
 c
 	call options('options',opts,present,nopt)
 	dopol = .not.present(1)
@@ -271,7 +281,8 @@ c
 	complex Gains1(MAXPASS),Gains2(MAXPASS)
 	double precision freq1(2),freq2(2)
 	integer nants,nfeeds,nants2,nfeeds2,ntau,nspect,nspect2
-	integer item1,item2,nchan,off,nschan1,nschan2,iostat,i,j
+	integer item1,item2,nchan,off,nschan1,nschan2,iostat,i,j,k
+        integer nbpsols1,nbpsols2
 c
 c  Determine the number of antennas and feeds.
 c
@@ -325,6 +336,11 @@ c
 	call hdaccess(item1,iostat)
 	if(iostat.eq.0)call hdaccess(item2,iostat)
 	if(iostat.ne.0)call bugno('f',iostat)
+        
+        call rdhdi(tIn,'nbpsols',nbpsols1,0)
+        call rdhdi(tOut,'nbpsols',nbpsols2,0)
+        if (nbpsols1.ne.nbpsols2)
+     *    call bug('f', 'Number of bandpass solution intervals differs')
 c
 c  The bandpass tables for the two sets are identical in all respects.
 c  Apply the input bandpass to the output bandpass.
@@ -338,23 +354,28 @@ c
 	endif
 c
 	off = 8
-	do j=1,nants*nfeeds
-	  call hreadr(item1,Gains1,off,8*nchan,iostat)
-	  if(iostat.eq.0)call hreadr(item2,Gains2,off,8*nchan,iostat)
-	  if(iostat.ne.0)then
-	    call bug('w','Error reading bandpass table')
-	    call bugno('f',iostat)
-	  endif
-	  do i=1,nchan
-	    Gains2(i) = Gains1(i) * Gains2(i)
+        do k=1,max(1,nbpsols1)
+	  do j=1,nants*nfeeds
+	    call hreadr(item1,Gains1,off,8*nchan,iostat)
+	    if(iostat.eq.0)call hreadr(item2,Gains2,off,8*nchan,iostat)
+	    if(iostat.ne.0)then
+	      call bug('w','Error reading bandpass table')
+	      call bugno('f',iostat)
+	    endif
+	    do i=1,nchan
+	      Gains2(i) = Gains1(i) * Gains2(i)
+	    enddo
+	    call hwriter(item2,Gains2,off,8*nchan,iostat)
+	    if(iostat.ne.0)then
+	      call bug('w','Error writing bandpass table')
+	      call bugno('f',iostat)
+	    endif
+	    off = off + 8*nchan
 	  enddo
-	  call hwriter(item2,Gains2,off,8*nchan,iostat)
-	  if(iostat.ne.0)then
-	    call bug('w','Error writing bandpass table')
-	    call bugno('f',iostat)
-	  endif
-	  off = off + 8*nchan
-	enddo
+          if (nbpsols1.gt.0) then
+            off = off + 8
+          endif
+        enddo
 c
 c  Close up shop
 c
@@ -536,11 +557,20 @@ c  Load a gain table into memory.
 c------------------------------------------------------------------------
 	integer offset,iostat,i,git
 c
+c  Externals.
+c
+	integer hsize
+c
 	call haccess(tno,git,'gains','read',iostat)
 	if(iostat.ne.0)then
 	  call bug('w','Error opening gains table')
 	  call bugno('f',iostat)
 	endif
+c
+c  Check that its the right size.
+c
+	if(hsize(git).ne.8+8*(ngains+1)*nsols)call bug('f',
+     *	  'Gain table looks to be the wrong size.')
 c
 	offset = 8
 c
