@@ -100,7 +100,8 @@ c
       data nco, ipix /0, MAXNAX*1/
 c-----------------------------------------------------------------------
       version = versan ('impos',
-     +  '$Id$')
+     +                  '$Revision$',
+     +                  '$Date$')
 c
 c  Get inputs
 c
