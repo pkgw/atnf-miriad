@@ -423,28 +423,26 @@ c
                    ave = 0.0
                    rms = 0.0
                 endif
-                fsum = fsum + flux(ir)
-c
-c     scale intensity values.
-c
-                if (scale.ne.1.) then
+
+c               Scale intensity values.
+                if (scale.ne.1.0) then
                    ave = ave * scale
                    rms = rms * scale
                    flux(ir) = flux(ir) * scale
-                   fsum = fsum * scale
                 endif
-c
+                fsum = fsum + flux(ir)
+
                 if (domedian) then
                    call median (memr(ipm(ir)), nint(pixe(ir)), med)
                    if(scale.ne.1.) med = med * scale
                    fmed(ir)=med
                    write(line,'(6f11.3,1x)') r,pixe(ir),med,rms,
-     *                  flux(ir)/cbof,fsum/cbof
+     *                  flux(ir)/cbof, fsum/cbof
                 else
                    write(line,'(6f11.3,1x)') r,pixe(ir),ave,rms,
-     *                  flux(ir)/cbof,fsum/cbof
+     *                  flux(ir)/cbof, fsum/cbof
                 endif
-c
+
                 call logwrit(line(1:72))
              enddo
 c
@@ -462,7 +460,7 @@ c
      *                  ' Ann. Sum  ',' Cum. Sum '
                 endif
                 call logwrit(line(1:72))
-c
+
                 do ir = irmin,irmax
                    r = ir*rstep+rmin
                    if(pixe(ir).ne.0.) then
@@ -475,7 +473,7 @@ c
                       rms = 0.0
                    endif
                    fsum = fsum + flux(ir)
-c
+
                    if (domode) then
                       call mode (memr(ipm(ir)), nint(pixe(ir)), xmode)
                       write(line,'(6f11.3,1x)') r,pixe(ir),xmode,rms,
@@ -484,7 +482,7 @@ c
                       write(line,'(6f11.3,1x)') r,pixe(ir),ave,rms,
      *                     flux(ir)/cbof,fsum/cbof
                    endif
-c
+
                    call logwrit(line(1:72))
                 enddo
              endif
