@@ -1473,7 +1473,7 @@ c------------------------------------------------------------------------
         logical flags(NDATA),doopcorr,wband
         double precision preamble(5),vel,lst,tdash,az,el
         real buf(3*ATANT*ATIF),fac(ATIF,2),freq0(ATIF,2),Tb(ATIF,2)
-        real jyperk(2),tfac
+        real jyperk,tfac
 c
 c  Externals.
 c
