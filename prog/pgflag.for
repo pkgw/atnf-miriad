@@ -64,17 +64,17 @@ c                        last flagging action was an undo of a
 c                        previous flagging action, then the effect
 c                        will be to redo the flagging.
 c       1                Flag the selected range of data on all
-c                        baselines formed with the currently
-c                        displayed antenna 1.
+c                        baselines A-n formed with the currently
+c                        displayed antenna A.
 c       !                Unflag the selected range of data on all
-c                        baselines formed with the currently
-c                        displayed antenna 1.
+c                        baselines A-n formed with the currently
+c                        displayed antenna A.
 c       2                Flag the selected range of data on all
-c                        baselines formed with the currently
-c                        displayed antenna 2.
+c                        baselines n-B formed with the currently
+c                        displayed antenna B.
 c       @                Unflag the selected range of data on all
-c                        baselines formed with the currently
-c                        displayed antenna 2.
+c                        baselines n-B formed with the currently
+c                        displayed antenna B.
 c       rr               Remove all current user-specified flags
 c                        on this baseline; r must be pressed twice
 c                        in a row for safety as this procedure
@@ -83,6 +83,9 @@ c       RR               Remove all current user-specified flags
 c                        on all baselines; R must be pressed twice
 c                        in a row for safety as this procedure
 c                        cannot be undone.
+c       ?                Print some information about how many flagging
+c                        operations have been made so far in total
+c                        and on this baseline.
 c
 c     Manipulating the selection:
 c       c                Extend the selection box to include all
@@ -104,12 +107,20 @@ c       s                Unzoom to show all the available channels.
 c       S                Unzoom to show all the available times.
 c       h                Move the plot left by half the range shown
 c                        on the plot.
+c       H                Move the plot left by the range shown on the
+c                        plot.
 c       j                Move the plot down by half the range shown
 c                        on the plot.
+c       J                Move the plot down by the range shown on the
+c                        plot.
 c       k                Move the plot up by half the range shown
 c                        on the plot.
+c       K                Move the plot up by the range shown on the
+c                        plot.
 c       l                Move the plot right by half the range shown
 c                        on the plot.
+c       L                Move the plot right by the range shown on the
+c                        plot.
 c       n                Display the next selectable baseline in the
 c                        main plot, leaving the selection and zoom
 c                        as is.
@@ -117,9 +128,19 @@ c       p                Display the previous selectable baseline in
 c                        the main plot, leaving the selection and
 c                        zoom as is.
 c       x                Subtract the average channel value from each
-c                        channel value in the main plot.
+c                        channel value in the main plot. Pressing this
+c                        key again adds back the average channel value
+c                        to each channel value. When the channel average
+c                        is being subtracted, the channel average box
+c                        at the bottom of the plot will be outlined in
+c                        red, otherwise it will be outlined in white.
 c       d                Subtract the average time value from each
-c                        time value in the main plot.
+c                        time value in the main plot. Pressing this
+c                        key again adds back the average time value to
+c                        each time value. When the time average is being
+c                        subtracted, the time average box at the right
+c                        of the plot will be outlined in red, otherwise
+c                        it will be outlined in white.
 c       ,                Fiddle the amplitude scale; press this key
 c                        then click the left mouse button in the colour
 c                        wedge to set the maximum value, or the right
@@ -139,8 +160,13 @@ c                        underneath the cursor, including the channel
 c                        number (and associated frequency), the
 c                        time, and the amplitude (or phase depending
 c                        on the ``mode'' setting); all this information
-c                        is shown at the top left of the plot.
-c       L                Locate the sample with the maximum value on
+c                        is shown at the top left of the plot in the red
+c                        box.
+c       spacebar         Does the same thing as 'm', except it will show
+c                        the currently displayed value, which will be
+c                        different from the value displayed by 'm' if the
+c                        averages have been subtracted from the display.
+c       M                Locate the sample with the maximum value on
 c                        the currently displayed baseline, and print
 c                        information about it into the controlling
 c                        terminal. Pressing it twice in succession will
@@ -223,6 +249,31 @@ c                 was reporting data as day before. Fixed bug where
 c                 flagging was not applied as the last time sample to
 c                 be flagged was outside the range of the known time
 c                 samples.
+c    jbs 09Nov09  Added 'spacebar' function to make a measurement of
+c                 the currently displayed value, leaving 'm' to display
+c                 the original value. Changed some documentation based
+c                 on suggestions from Vince. PGFLAG now plots a red
+c                 box below the area of the top region that the
+c                 measurements are printed in. Can now use HJKL to move
+c                 zoom window faster. Changed max value finder key to
+c                 'M', and made it print out actual time instead of
+c                 time sample number. Average boxes are now recomputed
+c                 and display the average of what is shown instead of
+c                 only the average of the original array, so they
+c                 update when the averages are subtracted. The box
+c                 around each average is drawn in red whenever the
+c                 average in that direction is subtracted. Fixed a
+c                 bug that would cause the measured values (with
+c                 spacebar) to revert to the original values after
+c                 a few keypresses. The colour wedge now gets outlined
+c                 in light-blue after the ',' key is pressed, and in
+c                 purple if the scale has been fiddled, or white if it
+c                 has not been. Fix problem with incorrect flag numbers
+c                 being printed if we quit with no flagging to apply.
+c                 Added action on '?' to print out info about the number
+c                 of flagging actions made in total and on the current
+c                 baseline.
+c                 (version 1.4)
       implicit none
       include 'maxdim.h'
       include 'mirconst.h'
@@ -233,7 +284,7 @@ c
       parameter(MAXDAT=5000000,MAXTIME=10000,MAXEDIT=5000)
 c
       character version*(*)
-      parameter(version='PGFlag: version 1.3 08-Oct-09')
+      parameter(version='PGFlag: version 1.4 09-Nov-09')
       character device*80,xaxis*12,yaxis*12,uvflags*12,val*16
       logical selgen,noapply
       integer npol,tno,i,j,length
@@ -252,12 +303,12 @@ c
       character pressed*2,previous_pressed*2
       integer meas_channel,shift_x,shift_y,f_a1,f_a2,f_mode
       real meas_freq,meas_amp
-      character meas_time*20,yn*20
+      character meas_time*20,yn*20,status*60
       logical plot_top,plot_average,plot_main,plot_points
       logical do_flag,do_unflag,do_undoflag,subavgc,subavgt
       integer times(2,MAXEDIT)
-      integer chans(2,MAXEDIT),nflags,aflags
-      integer region_width
+      integer chans(2,MAXEDIT),nflags,aflags,nthis
+      integer region_width,meastype
       logical bases(MAXBASE,MAXEDIT)
       logical flagval(MAXEDIT),some_unflagged,scale_locked
       logical going_forward,going_backward,fiddle_active
@@ -404,7 +455,7 @@ c     Now plot the data.
      *           plot_top,plot_average,plot_main,points,plot_points,
      *           yaxis,chanoff,chanw,subavgc,subavgt,datamin,datamax,
      *           fiddle_min,fiddle_max,use_fiddle,colour_from_window,
-     *           colour_from_region)
+     *           colour_from_region,fiddle_active)
             needplot=.false.
             plot_top=.false.
             plot_average=.false.
@@ -462,9 +513,15 @@ c     previous baseline requested
                   plot_points=.true.
                endif
             endif
-         elseif (pressed(1:1).eq.'m') then
+         elseif ((pressed(1:1).eq.'m').or.
+     *           (pressed(1:1).eq.' ')) then
 c     make a measurement
 c     check that we are within the range of the plot
+            if (pressed(1:1).eq.'m') then
+               meastype=0
+            else
+               meastype=1
+            endif
             if (curs_x.gt.curr_zooms(1,1)) then
                if (curs_x.lt.curr_zooms(1,2)) then
                   if (curs_y.gt.curr_zooms(2,1)) then
@@ -472,7 +529,7 @@ c     check that we are within the range of the plot
                         call MakeMeasurement(memI(iFlg),memR(iDat),
      *                       nchan,ntime,curs_x,curs_y,day0,t1,
      *                       meas_channel,meas_freq,meas_time,
-     *                       meas_amp,chanoff,chanw,cfreq)
+     *                       meas_amp,chanoff,chanw,cfreq,meastype)
                         needplot=.true.
                         plot_top=.true.
                      endif
@@ -573,20 +630,28 @@ c     show all the times
             plot_top=.true.
             plot_points=.true.
          elseif ((pressed(1:1).eq.'h').or.(pressed(1:1).eq.'j').or.
-     *           (pressed(1:1).eq.'k').or.(pressed(1:1).eq.'l')) then
-c     move the window - each press moves the window half the
+     *           (pressed(1:1).eq.'k').or.(pressed(1:1).eq.'l').or.
+     *           (pressed(1:1).eq.'H').or.(pressed(1:1).eq.'J').or.
+     *           (pressed(1:1).eq.'K').or.(pressed(1:1).eq.'L')) then
+c     move the window - each press moves the window half/all the
 c     current size of the window in the appropriate direction
-            if ((pressed(1:1).eq.'h').or.(pressed(1:1).eq.'l')) then
+            if ((pressed(1:1).eq.'h').or.(pressed(1:1).eq.'l').or.
+     *          (pressed(1:1).eq.'H').or.(pressed(1:1).eq.'L')) then
 c     move right or left
-               shift_x=(curr_zooms(1,2)-curr_zooms(1,1))/2
-               if (pressed(1:1).eq.'h') then
+               if ((pressed(1:1).eq.'h').or.(pressed(1:1).eq.'l')) then
+                  shift_x=(curr_zooms(1,2)-curr_zooms(1,1))/2
+               else
+                  shift_x=curr_zooms(1,2)-curr_zooms(1,1)
+               endif
+               if ((pressed(1:1).eq.'h').or.(pressed(1:1).eq.'H')) then
 c     move left
                   if ((curr_zooms(1,1)-shift_x).lt.1) then
                      shift_x=curr_zooms(1,1)-1
                   endif
                   curr_zooms(1,1)=curr_zooms(1,1)-shift_x
                   curr_zooms(1,2)=curr_zooms(1,2)-shift_x
-               elseif (pressed(1:1).eq.'l') then
+               elseif ((pressed(1:1).eq.'l').or.
+     *                 (pressed(1:1).eq.'L')) then
 c     move right
                   if ((curr_zooms(1,2)+shift_x).gt.nchan) then
                      shift_x=nchan-curr_zooms(1,2)
@@ -596,15 +661,20 @@ c     move right
                endif
             else
 c     move up or down
-               shift_y=(curr_zooms(2,2)-curr_zooms(2,1))/2
-               if (pressed(1:1).eq.'j') then
+               if ((pressed(1:1).eq.'j').or.(pressed(1:1).eq.'k')) then
+                  shift_y=(curr_zooms(2,2)-curr_zooms(2,1))/2
+               else
+                  shift_y=curr_zooms(2,2)-curr_zooms(2,1)
+               endif
+               if ((pressed(1:1).eq.'j').or.(pressed(1:1).eq.'J')) then
 c     move down
                   if ((curr_zooms(2,1)-shift_y).lt.1) then
                      shift_y=curr_zooms(2,1)-1
                   endif
                   curr_zooms(2,1)=curr_zooms(2,1)-shift_y
                   curr_zooms(2,2)=curr_zooms(2,2)-shift_y
-               elseif (pressed(1:1).eq.'k') then
+               elseif ((pressed(1:1).eq.'k').or.
+     *                 (pressed(1:1).eq.'K')) then
 c     move up
                   if ((curr_zooms(2,2)+shift_y).gt.ntime) then
                      shift_y=ntime-curr_zooms(2,2)
@@ -710,16 +780,16 @@ c     clears the points - an expert option
             call reset_points(points)
             needplot=.true.
             plot_main=.true.
-         elseif (pressed(1:1).eq.'L') then
+         elseif (pressed(1:1).eq.'M') then
 c     locate the maximum value - an expert option
             region_width=10
-            if (previous_pressed.ne.'L') then
+            if (previous_pressed.ne.'M') then
                max_makeregion=.false.
             else
                max_makeregion=.true.
             endif
             call LocateMax(memi(iFlg),nchan,ntime,memr(iDat),chanoff,
-     *           chanw,region_width,max_makeregion,points)
+     *           chanw,region_width,max_makeregion,points,day0,t1)
             if (max_makeregion) then
                needplot=.true.
                plot_points=.true.
@@ -753,6 +823,8 @@ c     fiddle the colour amplitude scale
             fiddle_max=datamax
             colour_from_window=.false.
             scale_locked=.false.
+            needplot=.true.
+            plot_main=.true.
          elseif (pressed(1:1).eq.'.') then
             call output('Resetting colour amplitude scaling.')
             use_fiddle=.false.
@@ -766,6 +838,7 @@ c     fiddle the colour amplitude scale
          elseif (pressed(1:1).eq.'q') then
 c     quit, applying the flagging
             yn=' '
+            write(*,*) ''
             write(*,*) 'Really quit and apply flagging? y[n]'
             read(*,*) yn
             if (yn(1:1).eq.'y') then
@@ -774,6 +847,7 @@ c     quit, applying the flagging
          elseif (pressed(1:1).eq.'a') then
 c     abort, discarding all flags
             yn=' '
+            write(*,*) ''
             write(*,*) 'Really abort, discarding all flagging? y[n]'
             read(*,*) yn
             if (yn(1:1).eq.'y') then
@@ -853,6 +927,36 @@ c     remove flags from all baselines
             plot_points=.true.
             plot_top=.true.
             plot_average=.true.
+         elseif (pressed(1:1).eq.'?') then
+c     print some info on the flagging done so far
+            do i=1,60
+               status(i:i)=' '
+            enddo
+            call output(' ')
+            if (nflags.lt.0) then
+               aflags=abs(nflags)-1
+            else
+               aflags=nflags
+            endif
+            call output('Flagging info:')
+            if (aflags.eq.0) then
+               call output(' No flagging on any baseline.')
+            else
+               write(status,'(A,I6,A)') '                     Total: ',
+     *               aflags,' flags'
+               call output(status)
+            endif
+            nthis=0
+            do i=1,aflags
+               if (bases(cbl,i)) then
+                  nthis=nthis+1
+               endif
+            enddo
+            if (aflags.gt.0) then
+               write(status,'(A,I6,A)') ' Applying to this baseline: ',
+     *               nthis,' flags'
+               call output(status)
+            endif
          endif
          previous_pressed=pressed
       enddo
@@ -930,10 +1034,16 @@ c     Externals
 c
       integer len1
 c
+      oldflags_bad=0
+      oldflags_good=0
+      newflags_bad=0
+      newflags_good=0
+      flags_goodtobad=0
+      flags_badtogood=0
       if (nflags.lt.0) then
          nflags=abs(nflags)-1
       endif
-      if (nflags.gt.0) then
+      if (nflags.ge.0) then
          call output('Applying changes to dataset')
          call hisopen(tno,'append')
          call hiswrite(tno,'PGFLAG')
@@ -1049,12 +1159,6 @@ c     must be flagging based on one antenna; figure out which one
             endif
          enddo
 c     do the flagging
-         oldflags_bad=0
-         oldflags_good=0
-         newflags_bad=0
-         newflags_good=0
-         flags_goodtobad=0
-         flags_badtogood=0
          call uvread(tno,preamble,data,flags,MAXCHAN,nchan)
          do while (nchan.gt.0)
             do i=1,nchan
@@ -1120,20 +1224,21 @@ c     summary of flagging
       write(outline,'( ''Bad:   '', 3X, I10, 1X, I10 )')
      *     oldflags_bad,newflags_bad
       write(outline(len1(outline)+1:),
-     * '(4x, ''Changed to good: '', I10 )') flags_badtogood
+     * '(4x, ''Changed to good:'', I10 )') flags_badtogood
       call output(outline)
       
 c
       end
 c************************************************************************
       subroutine LocateMax(iflag,nchan,ntime,valarray,chanoff,chanw,
-     *     regwidth,makesel,points)
+     *     regwidth,makesel,points,day0,t1)
 c
       implicit none
       integer nchan,ntime,chanoff,chanw,regwidth
       integer iflag(nchan,ntime,2),points(2,2)
-      real valarray(nchan,ntime,2)
+      real valarray(nchan,ntime,2),t1(ntime)
       logical makesel
+      double precision day0
 c
 c  Locate the maximum value on this baseline, and output some info
 c  about its value and location.
@@ -1148,6 +1253,9 @@ c    chanoff   The channel offset as specified by the line parameter.
 c    chanw     The channel width as specified by the line parameter.
 c    regwidth  The width of the region to use for selection purposes.
 c    makesel   A switch to make this routine generate a selection box.
+c    t1        Array of times.
+c    day0      The Julian date at midnight UT on the day of the first
+c              time sample.
 c  Output:
 c    points    A selection centred on the maximum value, with as many
 c              as regwidth channels/time samples on each side.
@@ -1155,7 +1263,9 @@ c-----------------------------------------------------------------------
       integer i,j,xloc,yloc
       real maxval
       logical setval
-      character maxstatus*256
+      character maxstatus*256,maxtime*20,mon*3
+      integer day,month,year,ierr,hour,minute,startday
+      real second,thist
 c
 c     first find the maximum value
 c
@@ -1180,9 +1290,21 @@ c
       enddo
 c
       if (.not.makesel) then
-         write(maxstatus,'(A,F10.4,A,I6,A,I6)') 'maximum value ',
+         startday=int(day0+real(int(t1(int(yloc)))))+1
+         call julian_to_date(startday,day,month,year,ierr)
+         thist=t1(int(yloc))*24.0
+         hour=int(thist)
+         thist=(thist-int(hour))*60.0
+         minute=int(thist)
+         thist=(thist-int(minute))*60.0
+         second=thist
+         call monthstring(month,mon)
+         write(maxtime,'(I2.2,A3,I4.4,A1,I2.2,A1,I2.2,A1,F4.1)')
+     *     day,mon,year,'-',hour,':',minute,':',second
+         if (maxtime(17:17).eq.' ') maxtime(17:17)='0'
+         write(maxstatus,'(A,F10.4,A,I6,A,A)') 'maximum value ',
      *        valarray(xloc,yloc,1),' at chan = ',chanoff+xloc*chanw,
-     *        ' time = ',yloc
+     *        ' time = ',maxtime
          call output(maxstatus)
       else
          points(1,1)=max(1,xloc-regwidth)
@@ -1437,10 +1559,10 @@ c
 c************************************************************************
       subroutine MakeMeasurement(iflag,array,nchan,ntime,curs_x,curs_y,
      *  day0,t1,meas_channel,meas_frequency,meas_time,meas_amplitude,
-     *  chanoff,chanw,cfreq)
+     *  chanoff,chanw,cfreq,meastype)
 c
       implicit none
-      integer nchan,ntime,chanoff,chanw
+      integer nchan,ntime,chanoff,chanw,meastype
       real curs_x,curs_y
       real t1(ntime),array(nchan,ntime,2),thist
       integer iflag(nchan,ntime,2)
@@ -1471,6 +1593,8 @@ c    chanw           The channel width as specified by the line
 c                    parameter.
 c    cfreq           Array that specifies each channel's centre
 c                    frequency.
+c    meastype        Whether to display the original value (set to
+c                    0) or the currently displayed value (set to 1)
 c  Output:
 c    meas_channel    The sample's channel number.
 c    meas_frequency  The frequency (in MHz) of the sample.
@@ -1484,7 +1608,11 @@ c     check we have a valid time
          meas_channel=chanoff+int(curs_x)*chanw
          meas_frequency=cfreq(int(curs_x))*1000.0
          if (iflag(int(curs_x),int(curs_y),2).ge.1) then
-            meas_amplitude=array(int(curs_x),int(curs_y),1)
+            if (meastype.eq.0) then
+               meas_amplitude=array(int(curs_x),int(curs_y),1)
+            else
+               meas_amplitude=array(int(curs_x),int(curs_y),2)
+            endif
          else
             meas_amplitude=0.0
          endif
@@ -1508,7 +1636,7 @@ c************************************************************************
      *  meas_channel,meas_frequency,meas_time,meas_amplitude,plot_top,
      *  plot_averages,plot_main,points,plot_points,yaxis,chanoff,chanw,
      *  subavgc,subavgt,minval,maxval,fiddle_min,fiddle_max,
-     *  use_fiddle,colour_window,colour_region)
+     *  use_fiddle,colour_window,colour_region,fiddle_active)
 c
       implicit none
       integer nchan,ntime,bl,chanoff,chanw
@@ -1521,7 +1649,7 @@ c
       character meas_time*(*),yaxis*(*)
       logical plot_top,plot_averages,plot_main,plot_points
       logical subavgc,subavgt,use_fiddle,colour_window
-      logical colour_region
+      logical colour_region,fiddle_active
 c
 c  Top-level routine for generating the PGFLAG window.
 c
@@ -1572,6 +1700,8 @@ c    colour_window   Switch to use only the currently displayed range
 c                    when determining the colour amplitude scale.
 c    colour_region   Switch to use only the currently selected region
 c                    when determining the colour amplitude scale.
+c    fiddle_active   Switch to show when the user is being asked to
+c                    fiddle the colour amplitude scale.
 c  Output:
 c    minval          The minimum unflagged value in the data.
 c    maxval          The maximum unflagged value in the data.
@@ -1767,7 +1897,7 @@ c
      *  TOPBOX_WORLD_XRANGE,TOPBOX_WORLD_YRANGE,plot_top,plot_averages,
      *  plot_main,plot_points,points,iflag,chanoff,chanw,subavgc,
      *  subavgt,fiddle_min,fiddle_max,use_fiddle,colour_window,
-     *  colour_region)
+     *  colour_region,xcolumnbuffer,ylinespacing,fiddle_active)
 c
       end
 c************************************************************************
@@ -1777,7 +1907,7 @@ c************************************************************************
      *  TOPBOX_WORLD_XRANGE,TOPBOX_WORLD_YRANGE,plot_top,plot_averages,
      *  plot_main,plot_points,points,iflag,chanoff,chanw,subavgc,
      *  subavgt,fiddle_min,fiddle_max,use_fiddle,colour_window,
-     *  colour_region)
+     *  colour_region,xcolumnbuffer,ylinespacing,fiddle_active)
 c
       implicit none
       real xleft,xright,ybot,ytop,ybuffer,xbuffer
@@ -1789,9 +1919,10 @@ c
       integer curr_zooms(2,2)
       real TOPBOX_WORLD_XRANGE,TOPBOX_WORLD_YRANGE
       real valarray(xdim,ydim,2),fiddle_min,fiddle_max
+      real xcolumnbuffer,ylinespacing
       logical plot_top,plot_averages,plot_main,plot_points
       logical subavgc,subavgt,use_fiddle,colour_window
-      logical colour_region
+      logical colour_region,fiddle_active
       integer points(2,2)
 c
 c  Routine that does all the grunt work in making the PGFLAG
@@ -1872,19 +2003,27 @@ c    colour_window   Switch to use only the currently displayed range
 c                    when determining the colour amplitude scale.
 c    colour_region   Switch to use only the currently selected region
 c                    when determining the colour amplitude scale.
+c    xcolumnbuffer   Spacing between columns in the top region.
+c    ylinespacing    Spacing between rows in the top region.
+c    fiddle_active   Switch to show when the user is being asked to
+c                    fiddle the colour amplitude scale.
 c  Output:
 c    none
 c-----------------------------------------------------------------------
       integer i,j,average_box_width,normal_linewidth
-      integer point_linewidth
+      integer point_linewidth,measbox_colour,tcolour,twidth
       parameter(average_box_width=5)
       real xaverage(xdim,average_box_width)
       real yaverage(average_box_width,ydim)
+      real dxaverage(xdim,average_box_width)
+      real dyaverage(average_box_width,ydim)
       real VERTICAL_ARROW_LENGTH,HORIZONTAL_ARROW_LENGTH
       logical erasetop
 c
       VERTICAL_ARROW_LENGTH=TOPBOX_WORLD_YRANGE/10.0
       HORIZONTAL_ARROW_LENGTH=TOPBOX_WORLD_XRANGE/10.0
+c
+      measbox_colour=2
 c
       if ((plot_top).and.(plot_averages).and.(plot_main)) then
          call pgeras()
@@ -1898,10 +2037,25 @@ c
          endif
          call set_plot_top_info(ytop,ybuffer,TOPBOX_WORLD_XRANGE,
      *     TOPBOX_WORLD_YRANGE,erasetop)
+         call pgqci(tcolour)
+         call pgsci(measbox_colour)
+         call pgsfs(1)
+         call pgrect(colpos(1,1,1)-xcolumnbuffer/2.,
+     *               colpos(2,1,2)+xcolumnbuffer/2.,
+     *               ylinespacing/4.0,
+     *               TOPBOX_WORLD_YRANGE-ylinespacing/4.)
+         call pgsci(tcolour)
          do i=1,n_columns
             do j=1,n_toplines
+               if (i.le.2) then
+                  call pgqlw(twidth)
+                  call pgslw(min(twidth*5,201))
+               endif
                call pgptext(colpos(i,j,5),colpos(i,j,3),0.0,
      *           colpos(i,j,4),titles(i,j))
+               if (i.le.2) then
+                  call pgslw(twidth)
+               endif
             enddo
          enddo
       endif
@@ -1935,14 +2089,14 @@ c     can we move right?
      *    TOPBOX_WORLD_YRANGE/2.0,TOPBOX_WORLD_XRANGE,
      *    TOPBOX_WORLD_YRANGE/2.0)
       endif
-      if (plot_averages) then
-         call compute_average_spectrum(valarray,xdim,ydim,xaverage,
-     *        yaverage,average_box_width,iflag)
-      endif
+      call compute_average_spectrum(valarray,xdim,ydim,xaverage,
+     *     yaverage,average_box_width,iflag,dxaverage,dyaverage)
       call mask_and_range(iflag,valarray,xdim,ydim,subavgc,subavgt,
      *     minval,maxval,fiddle_min,fiddle_max,use_fiddle,
      *     curr_zooms,colour_window,xaverage,yaverage,
      *     average_box_width,points,colour_region)
+      call compute_average_spectrum(valarray,xdim,ydim,xaverage,
+     *     yaverage,average_box_width,iflag,dxaverage,dyaverage)
       if (plot_averages) then
 c     
 c     Draw the average spectra - on the bottom first
@@ -1951,17 +2105,41 @@ c
          call pgsvp(xleft,xright,0.0,ybot-arrowbox_frac_y)
          call pgswin(real(curr_zooms(1,1)),real(curr_zooms(1,2)),
      *     1.0,real(average_box_width))
+         if (subavgc) then
+            call pgsci(2)
+         endif
          call pgbox('BC',0.0,0,'BC',0.0,0)
-         call pggray(xaverage,xdim,average_box_width,curr_zooms(1,1),
-     *     curr_zooms(1,2),1,average_box_width,maxval,minval,tr)
+         if (subavgc) then
+            call pgsci(1)
+         endif
+         if ((subavgc).or.(subavgt)) then
+            call pggray(dxaverage,xdim,average_box_width,
+     *             curr_zooms(1,1),curr_zooms(1,2),1,average_box_width,
+     *             maxval,minval,tr)
+         else
+            call pggray(xaverage,xdim,average_box_width,curr_zooms(1,1),
+     *             curr_zooms(1,2),1,average_box_width,maxval,minval,tr)
+         endif
 c     and then on the right
          call pgsvp(xright+xbuffer,1.0,ybot,ytop)
          call pgswin(1.0,real(average_box_width),
      *        real(curr_zooms(2,1)),real(curr_zooms(2,2)))
+         if (subavgt) then
+            call pgsci(2)
+         endif
          call pgbox('BC',0.0,0,'BC',0.0,0)
-         call pggray(yaverage,average_box_width,ydim,1,
-     *     average_box_width,curr_zooms(2,1),curr_zooms(2,2),
-     *     maxval,minval,tr)
+         if (subavgt) then
+            call pgsci(1)
+         endif
+         if ((subavgc).or.(subavgt)) then
+            call pggray(dyaverage,average_box_width,ydim,1,
+     *             average_box_width,curr_zooms(2,1),curr_zooms(2,2),
+     *             maxval,minval,tr)
+         else
+            call pggray(yaverage,average_box_width,ydim,1,
+     *             average_box_width,curr_zooms(2,1),curr_zooms(2,2),
+     *             maxval,minval,tr)
+         endif
       endif
       call set_plot_main(xleft,xright,ybot,ytop,curr_zooms)
       if (plot_main) then
@@ -1976,7 +2154,15 @@ c
          call set_plot_main(xleft,xright,ybot,ytop,curr_zooms)
          call draw_waterfall(valarray,xdim,ydim,curr_zooms,maxval,
      *     minval,tr)
+         if (fiddle_active) then
+            call pgsci(5)
+         elseif (use_fiddle) then
+            call pgsci(6)
+         endif
          call pgwedg('R',1.0,3.0,maxval,minval,' ')
+         if ((fiddle_active).or.(use_fiddle)) then
+            call pgsci(1)
+         endif
       endif
       if (plot_points) then
          if (plot_main.eqv..false.) then
@@ -2200,15 +2386,44 @@ c
       end
 c************************************************************************
       subroutine compute_average_spectrum(valarray,xdim,ydim,
-     *  xaverage,yaverage,average_box_width,iflag)
+     *  xaverage,yaverage,average_box_width,iflag,dxaverage,
+     *  dyaverage)
 c
       implicit none
       integer xdim,ydim,average_box_width
       real xaverage(xdim,average_box_width)
       real yaverage(average_box_width,ydim)
+      real dxaverage(xdim,average_box_width)
+      real dyaverage(average_box_width,ydim)
       real valarray(xdim,ydim,2)
       integer iflag(xdim,ydim,2)
 c
+c  Routine to compute the average channel and time values for both
+c  the original data and the data to be displayed.
+c
+c  Input:
+c    valarray           The real values of the data (either amp or
+c                       phase) for the currently displayed baseline.
+c    xdim               The number of channels in valarray.
+c    ydim               The number of time samples in valarray.
+c    average_box_width  The number of times to copy the average value
+c                       for display purposes.
+c    iflag              Array of flags for the currently displayed
+c                       baseline.
+c  Output:
+c    xaverage           The average channel values of the original
+c                       values in a format suitable for displaying as 
+c                       a waterfall plot.
+c    yaverage           The average time values of the original values
+c                       in a format suitable for displaying as a
+c                       waterfall plot.
+c    dxaverage          The average channel values of the values to be
+c                       displayed in a format suitable for displaying
+c                       as a waterfall plot.
+c    dyaverage          The average time values of the values to be
+c                       displayed in a format suitable for displaying
+c                       as a waterfall plot.
+c-----------------------------------------------------------------------
       integer i,j,n
 c
 c     Initialise the arrays
@@ -2216,11 +2431,13 @@ c
       do i=1,xdim
          do j=1,average_box_width
             xaverage(i,j)=0.0
+            dxaverage(i,j)=0.0
          enddo
       enddo
       do i=1,average_box_width
          do j=1,ydim
             yaverage(i,j)=0.0
+            dyaverage(i,j)=0.0
          enddo
       enddo
 c
@@ -2231,13 +2448,16 @@ c
          do j=1,ydim
             if (iflag(i,j,2).ge.1) then
                xaverage(i,1)=xaverage(i,1)+valarray(i,j,1)
+               dxaverage(i,1)=dxaverage(i,1)+valarray(i,j,2)
                n=n+1
             endif
          enddo
          xaverage(i,1)=xaverage(i,1)/n
+         dxaverage(i,1)=dxaverage(i,1)/n
 c     copy this value a few times
          do j=2,average_box_width
             xaverage(i,j)=xaverage(i,1)
+            dxaverage(i,j)=dxaverage(i,1)
          enddo
       enddo
 c
@@ -2248,13 +2468,16 @@ c
          do j=1,xdim
             if (iflag(j,i,2).ge.1) then
                yaverage(1,i)=yaverage(1,i)+valarray(j,i,1)
+               dyaverage(1,i)=dyaverage(1,i)+valarray(j,i,2)
                n=n+1
             endif
          enddo
          yaverage(1,i)=yaverage(1,i)/n
+         dyaverage(1,i)=dyaverage(1,i)/n
 c     copy this value a few times
          do j=2,average_box_width
             yaverage(j,i)=yaverage(1,i)
+            dyaverage(j,i)=dyaverage(1,i)
          enddo
       enddo
 c
