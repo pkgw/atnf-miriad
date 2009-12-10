@@ -53,7 +53,7 @@ ifeq "$(MAKEMODE)" "system"
   # The following rules are for ATNF use only.
   ifdef MIRATNF
     # Files distributed separately.
-    MIRFTPS  := DISCLAIMER INSTALL.html README \
+    MIRFTPS  := DISCLAIMER INSTALL.html \
                 progguide.ps.gz progguide_US.ps.gz \
                 userguide.ps.gz userguide_US.ps.gz
 
