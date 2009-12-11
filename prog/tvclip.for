@@ -266,7 +266,7 @@ c
       character PROG*(*)
       parameter (PROG = 'TVCLIP: ')
       integer NMODE,MAXSELS,MAXEDIT,MAXCMD
-      parameter (NMODE=4,MAXCMD=10,MAXSELS=256,MAXEDIT=1000000)
+      parameter (NMODE=4,MAXCMD=10,MAXSELS=256,MAXEDIT=10000000)
 c
 c  Internal variables.
 c
@@ -545,7 +545,7 @@ c-----------------------------------------------------------------------
 	integer MAXTIME,MAXTIME2,MAXSAVE,MAXTREV
 	real ttol
 	parameter(MAXTIME=10000,MAXTIME2=MAXDIM,MAXTREV=128,
-     *			MAXSAVE=100000,ttol=1.0/86400.0)
+     *			MAXSAVE=1000000,ttol=1.0/86400.0)
 	integer i,j,k,i1,i2,iblok
 	integer lScr
 	real t1(MAXTIME),t2(MAXTIME)
@@ -2627,7 +2627,7 @@ c  and redisplay the necessary parts that need redisplaying.
 c
 c-----------------------------------------------------------------------
 	integer WIDTH, MAXSAVE, MAXX, MAXY
-	parameter(WIDTH=20, MAXSAVE=100000, MAXX=8192, MAXY=8640)
+	parameter(WIDTH=20, MAXSAVE=1000000, MAXX=8192, MAXY=8640)
         real omedian, chnmed(MAXX), timemed(MAXY), medchn,
      -   medtime, chndev, timedev, buf(MAXY)
         integer chncount(MAXX), timecnt(MAXY)
