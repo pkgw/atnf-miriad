@@ -80,6 +80,9 @@ c	  scalar  When processing spectra, blflag normally forms an
 c	          average value by vector averaging. The "scalar" option
 c	          causes it to generate the scalar average. This option
 c	          should be used with significant caution.
+c         nofqaver Do not average spectra - the resulting number of points
+c                 may be too large to handle. Use select to break the data up
+c                 in time ranges.
 c	The following options can be used to disable calibration.
 c	  nocal   Do not apply antenna gain calibration.
 c	  nopass  Do not apply bandpass correction.
@@ -89,8 +92,8 @@ c  History:
 c    26jun96 rjs  Original version.
 c    30jul96 rjs  Correct labelling of uvdist plots.
 c    26feb97 rjs  Fix bug in the dimensioning of ltemp.
-c     6may97 rjs  Better auto-range determination. Change zoom somewhat. Better
-c		  doc and help.
+c     6may97 rjs  Better auto-range determination. Change zoom somewhat.
+c		  Better doc and help.
 c    12may97 rjs  Check that linetype is OK for flagging.
 c    09nov98 rjs  Added "hangle" axis type.
 c    12jan99 rjs  Doc change only.
@@ -98,14 +101,16 @@ c    09apr99 rjs  Add an extra error check only.
 c    05oct99 rjs  Added options=scalar
 c    23apr09 rjs  Increase buffer sizes.
 c    02jun09 rjs  Flag by theoretical rms.
+c    27jan10 mhw  Add option nofqav and increase buffers some more
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)
 	integer MAXDAT,MAXPLT,MAXEDIT
 	parameter(version='BlFlag: version 23-Apr-09')
-	parameter(MAXDAT=5000000,MAXPLT=2000000,MAXEDIT=20000)
+	parameter(MAXDAT=50000000,MAXPLT=2000000,MAXEDIT=20000)
 c
-	logical present(MAXBASE),nobase,selgen,noapply,rms,scalar
+	logical present(MAXBASE),nobase,selgen,noapply,rms,scalar,
+     *    nofqaver
 	integer tno,i,j,k,length,npol
 	character xaxis*12,yaxis*12,title*32,device*64
 	character val*16,uvflags*12
@@ -130,7 +135,7 @@ c
 c
 c  Externals.
 c
-	character itoaf*4
+	character itoaf*8
 	integer pgbeg,len1
 	logical uvDatOpn
 c
@@ -141,7 +146,8 @@ c
 	call keya('device',device,' ')
 	if(device.eq.' ')call bug('f','A PGPLOT device must be given')
 	call GetAxis(xaxis,yaxis)
-	call GetOpt(nobase,selgen,noapply,rms,scalar,uvflags)
+	call GetOpt(nobase,selgen,noapply,rms,scalar,nofqaver,
+     *    uvflags)
 	call uvDatInp('vis',uvflags)
 	call keyfin
 c
@@ -166,7 +172,7 @@ c
 c
 c  Get the data.
 c
-	call GetDat(tno,rms,scalar,xaxis,yaxis,present,MAXBASE,
+	call GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,present,MAXBASE,
      *		xdat,ydat,bldat,timedat,ndat,MAXDAT)
 	if(ndat.eq.0)call bug('f','No points to flag')
 c
@@ -175,6 +181,7 @@ c
 	call output('Entering interactive mode ...')
 	nedit = 0
 	if(nobase)then
+          call output('Processing '//itoaf(ndat)//' points')
 	  call Edit(xdat,ydat,bldat,timedat,ltemp,ndat,
      *	    xaxis,yaxis,'All baselines',
      *	    timeedit,bledit,MAXEDIT,nedit)
@@ -693,13 +700,13 @@ c
 c
 	end	  
 c************************************************************************
-	subroutine GetDat(tno,rms,scalar,xaxis,yaxis,present,maxbase1,
-     *		xdat,ydat,bldat,timedat,ndat,MAXDAT)
+	subroutine GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,present,
+     *		maxbase1,xdat,ydat,bldat,timedat,ndat,MAXDAT)
 c
 	implicit none
 	integer tno,maxbase1,MAXDAT,ndat
 	integer bldat(MAXDAT)
-	logical present(maxbase1),rms,scalar
+	logical present(maxbase1),rms,scalar,nofqaver
 	double precision timedat(MAXDAT)
 	real xdat(MAXDAT),ydat(MAXDAT)
 	character xaxis*(*),yaxis*(*)
@@ -707,13 +714,18 @@ c------------------------------------------------------------------------
 	include 'maxdim.h'
 	double precision TTOL
 	parameter(TTOL=1d0/86400d0)
+        integer maxchan1
+        parameter (MAXCHAN1=4098)
 c
-	logical flags(MAXCHAN),ok
-	complex data(MAXCHAN)
+	logical flags(MAXCHAN1),ok
+	complex data(MAXCHAN1)
 	complex corr(MAXBASE),corr1(MAXBASE),corr2(MAXBASE)
+	complex fcorr(MAXBASE,MAXCHAN1),fcorr1(MAXBASE,MAXCHAN1),
+     *    fcorr2(MAXBASE,MAXCHAN1)
 	double precision preamble(4),time,time0,tprev,lst,ra
 	real uvdist2(MAXBASE),var(MAXBASE),temp
-	integer i,n,bl,i1,i2,nants,npnt(MAXBASE),mbase,nchan
+	integer i,j,n,bl,i1,i2,nants,npnt(MAXBASE),
+     *    fnpnt(MAXBASE,MAXCHAN1),mbase,nchan
 c
 c  Miscellaneous initialisation.
 c
@@ -729,14 +741,21 @@ c
 	  corr1(i)   = 0
 	  corr2(i)   = 0
 	  var(i) = 0
+          do j=1,maxchan1
+            fnpnt(i,j)  = 0
+            fcorr(i,j)  = 0
+            fcorr1(i,j) = 0
+            fcorr2(i,j) = 0
+          enddo
 	enddo
 	ndat = 0
 c
 c  Lets get going.
 c
 	call output('Reading the data ...')
-	call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
+	call uvDatRd(preamble,data,flags,MAXCHAN1,nchan)
 	if(nchan.eq.0)call bug('f','No visibility data found')
+        if (nchan.eq.MAXCHAN1) call bug('f','Too many channels for me')
 	call flagchk(tno)
 	nants = 0
 	tprev = preamble(3)
@@ -749,41 +768,74 @@ c
 	  ok = bl.lt.mbase
 	  if(ok)then
 	    time = preamble(3)
-	    if(abs(time-tprev).gt.TTOL)then
-	      if(nants.gt.0)call IntFlush(nants,rms,scalar,ra,lst,tprev,
-     *		uvdist2,var,corr,corr1,corr2,xaxis,yaxis,npnt,
-     *		time0,present,mbase,xdat,ydat,timedat,bldat,ndat,MAXDAT)
-	      nants = 0
-	      tprev = time
-	      call uvrdvrd(tno,'lst',lst,0.d0)
-	      call uvrdvrd(tno,'ra',ra,0.d0)
-	    endif
-	    n = 0
-	    do i=1,nchan
-	      if(flags(i))then
-		n = n + 1
-	        npnt(bl) = npnt(bl) + 1
-		corr(bl) = corr(bl) + data(i)
-		corr1(bl) = corr1(bl) + abs(data(i))
-		corr2(bl) = corr2(bl) +
-     *			    cmplx(real(data(i))**2,aimag(data(i))**2)
+            if (nofqaver) then
+	      if(abs(time-tprev).gt.TTOL)then
+	        if(nants.gt.0) call IntFlushF(nants,rms,scalar,ra,lst,
+     *		  tprev,uvdist2,var,fcorr,fcorr1,fcorr2,xaxis,yaxis,
+     *		  fnpnt,time0,present,mbase,xdat,ydat,timedat,bldat,
+     *            ndat,MAXDAT,nchan)
+	        nants = 0
+	        tprev = time
+	        call uvrdvrd(tno,'lst',lst,0.d0)
+	        call uvrdvrd(tno,'ra',ra,0.d0)
 	      endif
-	    enddo
+	      n = 0
+	      do i=1,nchan
+	        if(flags(i))then
+		  n = n + 1
+	          fnpnt(bl,i) = fnpnt(bl,i) + 1
+		  fcorr(bl,i) = fcorr(bl,i) + data(i)
+		  fcorr1(bl,i) = fcorr1(bl,i) + abs(data(i))
+		  fcorr2(bl,i) = fcorr2(bl,i) +
+     *			    cmplx(real(data(i))**2,aimag(data(i))**2)
+	        endif
+	      enddo
+            else
+	      if(abs(time-tprev).gt.TTOL)then
+	        if(nants.gt.0) call IntFlush(nants,rms,scalar,ra,lst,
+     *		  tprev,uvdist2,var,corr,corr1,corr2,xaxis,yaxis,npnt,
+     *		  time0,present,mbase,xdat,ydat,timedat,bldat,
+     *            ndat,MAXDAT)
+	        nants = 0
+	        tprev = time
+	        call uvrdvrd(tno,'lst',lst,0.d0)
+	        call uvrdvrd(tno,'ra',ra,0.d0)
+	      endif
+	      n = 0
+	      do i=1,nchan
+	        if(flags(i))then
+		  n = n + 1
+	          npnt(bl) = npnt(bl) + 1
+		  corr(bl) = corr(bl) + data(i)
+		  corr1(bl) = corr1(bl) + abs(data(i))
+		  corr2(bl) = corr2(bl) +
+     *			    cmplx(real(data(i))**2,aimag(data(i))**2)
+	        endif
+	      enddo
+	    endif
 	    if(n.gt.0)then
 	      call uvDatGtr('variance',temp)
-	      var(bl) = var(bl) + n*temp
+              var(bl) = var(bl) + n*temp
 	      uvdist2(bl) = uvdist2(bl) +
-     *	        n * (preamble(1)*preamble(1)+preamble(2)*preamble(2))
-	      nants = max(nants,i1,i2)
-	    endif
-	  endif
+     *         n * (preamble(1)*preamble(1)+preamble(2)*preamble(2))
+              nants = max(nants,i1,i2)
+            endif
+          endif
 	  call uvDatRd(preamble,data,flags,MAXCHAN,nchan)	  
 	enddo
 c
-	if(nants.gt.0)
-     *      call IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,var,
+	if(nants.gt.0) then
+          if (nofqaver) then
+            call IntFlushF(nants,rms,scalar,ra,lst,time,uvdist2,var,
+     *		fcorr,fcorr1,fcorr2,xaxis,yaxis,fnpnt,
+     *		time0,present,mbase,xdat,ydat,timedat,bldat,ndat,
+     *          MAXDAT,nchan)
+	  else
+            call IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,var,
      *		corr,corr1,corr2,xaxis,yaxis,npnt,
      *		time0,present,mbase,xdat,ydat,timedat,bldat,ndat,MAXDAT)
+          endif
+        endif
 c
 	end
 c************************************************************************
@@ -830,6 +882,57 @@ c
 	  enddo
 	enddo
 c
+	end
+c************************************************************************
+	subroutine IntFlushF(nants,rms,scalar,ra,lst,time,uvdist2,var,
+     *	  corr,corr1,corr2,xaxis,yaxis,npnt,
+     *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,ndat,MAXDAT,
+     *    nchan)
+c
+	implicit none
+	integer MAXBASE,MAXDAT,nants,nchan,npnt(MAXBASE,nchan),
+     *    bldat(MAXDAT),ndat
+	double precision ra,lst,time,time0,timedat(MAXDAT)
+	real uvdist2(MAXBASE),var(MAXBASE),xdat(MAXDAT),ydat(MAXDAT)
+	complex corr(MAXBASE,nchan),corr1(MAXBASE,nchan),
+     *    corr2(MAXBASE,nchan)
+	logical present(MAXBASE),rms,scalar
+	character xaxis*(*),yaxis*(*)
+c
+c------------------------------------------------------------------------
+	integer i,j,k,ic
+c
+c  Externals.
+c
+	real GetVal
+c
+	k = 0
+	do j=1,nants
+	  do i=1,j
+	    k = k + 1
+            do ic=1,nchan
+	      if(npnt(k,ic).gt.0)then
+	        ndat = ndat + 1
+	        if(ndat.gt.MAXDAT)call bug('f','Too many points')
+	        xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k,ic),
+     *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ra,time0,
+     *            rms,scalar)
+	        ydat(ndat) = GetVal(yaxis,uvdist2(k),var(k),corr(k,ic),
+     *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ra,time0,
+     *            rms,scalar)
+	        bldat(ndat) = k
+	        timedat(ndat) = time
+	        npnt(k,ic) = 0
+	        uvdist2(k) = 0
+	        corr(k,ic) = 0
+	        corr1(k,ic) = 0
+	        corr2(k,ic) = 0
+	      endif
+            enddo
+	    present(k) = .true.
+	    var(k) = 0
+	  enddo
+	enddo
 	end
 c************************************************************************
 	real function GetVal(axis,uvdist2,var,corr,corr1,corr2,npnt,
@@ -905,20 +1008,22 @@ c------------------------------------------------------------------------
 	if(n.eq.0)yaxis = 'amplitude'
 	end
 c************************************************************************
-	subroutine GetOpt(nobase,selgen,noapply,rms,scalar,uvflags)
+	subroutine GetOpt(nobase,selgen,noapply,rms,scalar,nofqaver,
+     *    uvflags)
 c
 	implicit none
-	logical nobase,selgen,noapply,rms,scalar
+	logical nobase,selgen,noapply,rms,scalar,nofqaver
 	character uvflags*(*)
 c
 c  Get extra processing options.
 c------------------------------------------------------------------------
 	integer NOPTS
-	parameter(NOPTS=8)
+	parameter(NOPTS=9)
 	logical present(NOPTS)
 	character opts(NOPTS)*8
 	data opts/'nobase  ','nocal   ','nopass  ','nopol   ',
-     *		  'selgen  ','noapply ','rms     ','scalar  '/
+     *		  'selgen  ','noapply ','rms     ','scalar  ',
+     *            'nofqaver'/
 c
 	call options('options',opts,present,NOPTS)
 c
@@ -927,6 +1032,7 @@ c
 	noapply= present(6)
 	rms    = present(7)
 	scalar = present(8)
+        nofqaver=present(9)
 	if(scalar.and.rms)
      *	  call bug('f','Options scalar and rms cannot be used together')
 	uvflags = 'sdlwb'
