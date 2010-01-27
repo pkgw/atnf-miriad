@@ -1473,7 +1473,7 @@ c------------------------------------------------------------------------
         logical flags(NDATA),doopcorr,wband
         double precision preamble(5),vel,lst,tdash,az,el
         real buf(3*ATANT*ATIF),fac(ATIF,2),freq0(ATIF,2),Tb(ATIF,2)
-        real jyperk(2),tfac
+        real jyperk,tfac
 c
 c  Externals.
 c
@@ -3545,7 +3545,7 @@ c             20cm band range 1131-1875, 13cm band range 1975-2675
 c
               cfreq=sfreq(i)+(nfreq(i)/2)*sdf(i)
               if (cfreq.gt.1.d0.and.cfreq.lt.3.0d0) then
-                if (cfreq.lt.1.807d0) then
+                if (cfreq.lt.2.0d0) then
                   c1=(1.131-sfreq(i))/sdf(i)
                   c2=(1.875-sfreq(i))/sdf(i)
                 else
