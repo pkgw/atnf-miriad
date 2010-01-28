@@ -821,8 +821,7 @@ c           Output values are zeroed and flagged by default.
      +         paline(i), paflags(i), epaline(i), epaflags(i))
 
 c           See what we can validly work out.
-            if (qline(i).ne.0.0 .and. uline(i).ne.0.0 .and.
-     +          qflags(i) .and. uflags(i)) then
+            if (qflags(i) .and. uflags(i)) then
 c             Square of the polarized intensity.
               psq = qline(i)**2 + uline(i)**2
 
