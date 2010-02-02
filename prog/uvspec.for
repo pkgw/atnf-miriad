@@ -47,6 +47,9 @@ c	   'ampscalar'   When plotting amplitude, this causes it to perform
 c	                 scalar averaging. By default it does vector averaging.
 c	   'rms'         When plotting amplitude, this causes it to plot
 c		         the rms amplitude. by default it does vector averaging.
+c          'sdo'         Plot the difference between bin 2 and bin 1 (these
+c                        contain the CABB noise cal source on and off 
+c                        autocorrelations, giving the Synchr. Detected Ouput)
 c	   'nobase'      Plot all the baselines on one plot.
 c	   'avall'       Average all the baselines together before plotting.
 c	   'dots'        Plot phases with dots instead of filled circles.
@@ -111,6 +114,7 @@ c    rjs  13sep99 Added Doppler corrected freq to possibilities to plot.
 c    rjs  29jun05 Use 3D shift algorithm.
 c    rjs  26jan07 Adjust size of title to prevent overflow on multipanel
 c	          plot.
+c    mhw  02feb10 Add sdo option to look at CABB autocorrelation data bins
 c  Bugs:
 c------------------------------------------------------------------------
 	include 'mirconst.h'
@@ -123,7 +127,7 @@ c
 	character uvflags*8,device*64,xaxis*12,yaxis*12,logf*64
 	character xtitle*64,ytitle*64
 	logical ampsc,rms,nobase,avall,first,buffered,doflush,dodots
-	logical doshift,doflag,doall,dolag
+	logical doshift,doflag,doall,dolag,dosdo
 	double precision interval,T0,T1,preamble(5),shift(2),lmn(3)
 	integer tIn,vupd
 	integer nxy(2),nchan,nread,nplot
@@ -131,7 +135,7 @@ c
 	double precision x(2*MAXCHAN-2)
 	complex data(MAXCHAN)
 	logical flags(MAXCHAN)
-	integer hann
+	integer hann,ibin
 	real hc(maxco),hw(maxco)
 c
 c  Externals.
@@ -143,7 +147,8 @@ c  Get the input parameters.
 c
 	call output(version)
 	call keyini
-	call GetOpt(uvflags,ampsc,rms,nobase,avall,dodots,doflag,doall)
+	call GetOpt(uvflags,ampsc,rms,nobase,avall,dodots,
+     *    doflag,doall,dosdo)
 	call GetAxis(xaxis,yaxis)
 	dolag = xaxis.eq.'lag'
 	call uvDatInp('vis',uvflags)
@@ -180,11 +185,13 @@ c
 c  Various initialisation.
 c
 	ytitle = yaxis
+        if (dosdo) ytitle = yaxis//' SDO'
 	call ucase(ytitle(1:1))
 	interval = interval/(24.*60.)
 	doflush = .false.
 	buffered = .false.
 	first = .true.
+        ibin=0
 	call BufIni
         if(hann.gt.1) call HCoeffs(hann,hc)
         if(logf.ne.' ') call LogOpen(logf,' ')
@@ -221,6 +228,7 @@ c
 c
 c  Determine if we need to flush out the averaged data.
 c
+            if (dosdo )call uvrdvri(tIn,'bin',ibin,0)
 	    doflush = uvVarUpd(vupd)
 	    doflush = nread.ne.nchan
 	    T0 = min(preamble(4),T0)
@@ -243,7 +251,8 @@ c
 	    if(.not.buffered)call GetXAxis(tIn,xaxis,xtitle,x,nplot)
 	    if(avall)preamble(5) = 257
 	    call uvrdvrr(tIn,'inttime',inttime,0.)
-	    call BufAcc(doflag,doall,preamble,inttime,data,flags,nread)
+	    call BufAcc(doflag,doall,preamble,inttime,data,flags,
+     *        nread,ibin)
 	    buffered = .true.
 	    nchan = nread
 c
@@ -416,10 +425,10 @@ c
 	end
 c************************************************************************
 	subroutine GetOpt(uvflags,ampsc,rms,nobase,avall,dodots,
-     *		doflag,doall)
+     *		doflag,doall,dosdo)
 c
 	implicit none
-        logical ampsc,rms,nobase,avall,dodots,doflag,doall
+        logical ampsc,rms,nobase,avall,dodots,doflag,doall,dosdo
 	character uvflags*(*)
 c
 c  Determine the flags to pass to the uvdat routines.
@@ -435,12 +444,12 @@ c    doflag
 c    doall
 c------------------------------------------------------------------------
 	integer nopts
-	parameter(nopts=10)
+	parameter(nopts=11)
 	character opts(nopts)*9
 	logical present(nopts),docal,dopol,dopass
 	data opts/'nocal    ','nopol    ','ampscalar','nopass   ',
      *		  'nobase   ','avall    ','dots     ','rms      ',
-     *            'flagged  ','all      '/
+     *            'flagged  ','all      ','sdo      '/
 c
 	call options('options',opts,present,nopts)
 	docal = .not.present(1)
@@ -455,6 +464,7 @@ c
         dodots =   present(7)
         doflag =   present(9)
 	doall  =   present(10)
+        dosdo  =   present(11)
 	if(doflag.and.doall)call bug('f',
      *	  'The "flagged" and "all" options are mutually exclusive')
 c
@@ -496,27 +506,28 @@ c------------------------------------------------------------------------
 	integer PolMin,PolMax
 	parameter(PolMin=-8,PolMax=4)
 	integer MAXPLT,MAXPNT
-	parameter(MAXPNT=100000,MAXPLT=1024)
+	parameter(MAXPNT=1000000,MAXPLT=1024)
 	real xp(MAXPNT),yp(MAXPNT),xrange(2),inttime
 	integer plot(MAXPLT+1)
 	double precision time
 	integer i,j,ngood,ng,ntime,npnts,nplts,nprev,p
 	logical doamp,doampsc,dorms,dophase,doreal,doimag,dopoint,dolag
-	logical Hit(PolMin:PolMax)
+	logical dosdo,Hit(PolMin:PolMax)
 	integer npol,pol(MAXPOL)
 c
 c  Determine the conversion of the data.
 c
-	doamp = ytitle.eq.'Amplitude'
+	doamp = ytitle(1:9).eq.'Amplitude'
 	dolag = xtitle.eq.'Lag Number'
 	doampsc = doamp.and.ampsc
 	dorms   = doamp.and.rms
 	if(doampsc)doamp = .false.
 	if(dorms)  doamp = .false.
-	dophase = ytitle.eq.'Phase'
+	dophase = ytitle(1:5).eq.'Phase'
 	dopoint = dophase
-	doreal  = ytitle.eq.'Real'
-	doimag  = ytitle.eq.'Imaginary'
+	doreal  = ytitle(1:4).eq.'Real'
+	doimag  = ytitle(1:9).eq.'Imaginary'
+        dosdo   = index(ytitle,'SDO').gt.0
 c
 c  Determine the number of good baselines.
 c
@@ -636,6 +647,10 @@ c------------------------------------------------------------------------
 	real temp
 	complex ctemp
 c
+c  Externals
+c
+        character*8 itoaf
+c
 	do k=1,nchan
 	  if(count(k).gt.0)then
 	    if(doamp)then
@@ -658,7 +673,8 @@ c
 	    endif
 	    npnts = npnts + 1
 	    if(npnts.gt.MAXPNT)call bug('f',
-     *	      'Buffer overflow(points), when accumulating plots')
+     *	      'Buffer overflow('//itoaf(npnts)//
+     *        '> MAXPNT), when accumulating plots')
 	    xp(npnts) = x(k)
 	    yp(npnts) = temp
 	  endif
@@ -708,10 +724,11 @@ c
 c
 	end
 c************************************************************************
-	subroutine BufAcc(doflag,doall,preambl,inttime,data,flags,nread)
+	subroutine BufAcc(doflag,doall,preambl,inttime,data,flags,nread,
+     *     ibin)
 c
 	implicit none
-	integer nread
+	integer nread,ibin
 	double precision preambl(5)
 	real inttime
 	complex data(nread)
@@ -722,6 +739,7 @@ c  in common.
 c
 c  Input
 c    doflag     Plot flagged data instead of unflagged
+c    ibin       Bin number of current block of data (or 0)
 c  Input/Output:
 c    preambl	Preamble. Destroyed on output.
 c    data	The correlation data to be averaged. Destroyed on output.
@@ -804,8 +822,9 @@ c
 	  p = pnt(p,bl) - 1
 	  do i=1,nread
 	    if(doall.or.(doflag.neqv.flags(i)))then
-	      buf(i+p) = data(i)
-	      t = abs(data(i))
+	      if(ibin.eq.0.or.ibin.eq.2) buf(i+p) = data(i)
+	      if (ibin.eq.1) buf(i+p) = -data(i)
+              t = abs(data(i))
               bufr(i+p) = t
 	      buf2(i+p) = t*t
 	      count(i+p) = 1
@@ -827,7 +846,8 @@ c
 	  do i=1,nread
 	    if(doall.or.(doflag.neqv.flags(i)))then
 	      t = abs(data(i))
-	      buf(i+p) = buf(i+p) + data(i)
+              if (ibin.eq.1) buf(i+p) = buf(i+p) - data(i)
+              if (ibin.eq.0.or.ibin.eq.2) buf(i+p) = buf(i+p) + data(i)
               bufr(i+p) = bufr(i+p) + t
 	      buf2(i+p) = buf2(i+p) + t*t
 	      count(i+p) = count(i+p) + 1
