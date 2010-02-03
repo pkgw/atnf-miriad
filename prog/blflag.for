@@ -58,6 +58,7 @@ c	  time         (the default for the X axis)
 c	  lst	       Local apparent sidereal time.
 c	  uvdistance   sqrt(u**2+v**2)
 c	  hangle       (hour angle)
+c         channel      (implies nofqav)
 c	  amplitude    (the default for the Y axis)
 c	  phase
 c	  real
@@ -102,12 +103,13 @@ c    05oct99 rjs  Added options=scalar
 c    23apr09 rjs  Increase buffer sizes.
 c    02jun09 rjs  Flag by theoretical rms.
 c    27jan10 mhw  Add option nofqav and increase buffers some more
+C    04feb10 mhw  Add channel as an axis value and increase MAXEDIT
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)
 	integer MAXDAT,MAXPLT,MAXEDIT
 	parameter(version='BlFlag: version 23-Apr-09')
-	parameter(MAXDAT=50000000,MAXPLT=2000000,MAXEDIT=20000)
+	parameter(MAXDAT=50000000,MAXPLT=2000000,MAXEDIT=200000)
 c
 	logical present(MAXBASE),nobase,selgen,noapply,rms,scalar,
      *    nofqaver
@@ -135,7 +137,7 @@ c
 c
 c  Externals.
 c
-	character itoaf*8
+	character itoaf*10
 	integer pgbeg,len1
 	logical uvDatOpn
 c
@@ -148,6 +150,7 @@ c
 	call GetAxis(xaxis,yaxis)
 	call GetOpt(nobase,selgen,noapply,rms,scalar,nofqaver,
      *    uvflags)
+        if (xaxis.eq.'channel'.or.yaxis.eq.'channel') nofqaver=.true.
 	call uvDatInp('vis',uvflags)
 	call keyfin
 c
@@ -320,7 +323,7 @@ c
 c
 c  Externals.
 c
-	character itoaf*8
+	character itoaf*10
 c
 	nflag = 0
 	ncorr = 0
@@ -506,7 +509,7 @@ c
 	      if(within)then
 		nedit = nedit + 1
 		if(nedit.gt.MAXEDIT)
-     *		  call bug('f','Too many editting ops')
+     *		  call bug('f','Too many editing ops')
 		bledit(nedit)   = blplt(i)
 		timeedit(nedit) = timeplt(i)
 		flag(i) = .false.
@@ -866,9 +869,11 @@ c
 	      ndat = ndat + 1
 	      if(ndat.gt.MAXDAT)call bug('f','Too many points')
 	      xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k),
-     *		corr1(k),corr2(k),npnt(k),lst,time,ra,time0,rms,scalar)
+     *		corr1(k),corr2(k),npnt(k),lst,time,ra,time0,0,
+     *          rms,scalar)
 	      ydat(ndat) = GetVal(yaxis,uvdist2(k),var(k),corr(k),
-     *		corr1(k),corr2(k),npnt(k),lst,time,ra,time0,rms,scalar)
+     *		corr1(k),corr2(k),npnt(k),lst,time,ra,time0,0,
+     *          rms,scalar)
 	      bldat(ndat) = k
 	      timedat(ndat) = time
 	      present(k) = .true.
@@ -915,11 +920,11 @@ c
 	        ndat = ndat + 1
 	        if(ndat.gt.MAXDAT)call bug('f','Too many points')
 	        xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k,ic),
-     *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ra,time0,
-     *            rms,scalar)
+     *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ic,ra,
+     *            time0,rms,scalar)
 	        ydat(ndat) = GetVal(yaxis,uvdist2(k),var(k),corr(k,ic),
-     *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ra,time0,
-     *            rms,scalar)
+     *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ic,ra,
+     *            time0,rms,scalar)
 	        bldat(ndat) = k
 	        timedat(ndat) = time
 	        npnt(k,ic) = 0
@@ -936,14 +941,14 @@ c
 	end
 c************************************************************************
 	real function GetVal(axis,uvdist2,var,corr,corr1,corr2,npnt,
-     *		lst,time,ra,time0,rms,scalar)
+     *		lst,time,chn,ra,time0,rms,scalar)
 c
 	implicit none
 	character axis*(*)
 	real uvdist2,var
 	complex corr,corr1,corr2
 	double precision time,time0,lst,ra
-	integer npnt
+	integer npnt,chn
 	logical rms,scalar
 c------------------------------------------------------------------------
 	include 'mirconst.h'
@@ -983,6 +988,8 @@ c
 	    dtemp = dtemp + 2*DPI
 	  endif
 	  GetVal = 86400d0*dtemp/(2*DPI)
+        else if(axis.eq.'channel') then
+          GetVal = chn
 	else
 	  call bug('f','I should never get here')
 	endif
@@ -994,14 +1001,14 @@ c
 	character xaxis*(*),yaxis*(*)
 c------------------------------------------------------------------------
 	integer NAX
-	parameter(NAX=9)
+	parameter(NAX=10)
 	integer n
 	character axes(NAX)*12
 	data axes/'amplitude   ','phase       ',
      *		  'real        ','imaginary   ',
      *		  'time        ','uvdistance  ',
      *		  'lst         ','hangle      ',
-     *		  'rms         '/
+     *		  'rms         ','channel     '/
 	call keymatch('axis',NAX,axes,1,xaxis,n)
 	if(n.eq.0)xaxis = 'time'
 	call keymatch('axis',NAX,axes,1,yaxis,n)
