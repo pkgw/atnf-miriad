@@ -107,9 +107,10 @@ C    04feb10 mhw  Add channel as an axis value and increase MAXEDIT
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)
-	integer MAXDAT,MAXPLT,MAXEDIT
+	integer MILLION,MAXDAT,MAXPLT,MAXEDIT
 	parameter(version='BlFlag: version 23-Apr-09')
-	parameter(MAXDAT=50000000,MAXPLT=2000000,MAXEDIT=200000)
+	parameter(MILLION=1000000,MAXDAT=50*MILLION,
+     *            MAXPLT=4*MILLION,MAXEDIT=MILLION)
 c
 	logical present(MAXBASE),nobase,selgen,noapply,rms,scalar,
      *    nofqaver
@@ -119,20 +120,20 @@ c
 c
 c  Store of all the data.
 c
-	integer ndat,bldat(MAXDAT)
+	integer ndat,bldat(MAXDAT),chdat(MAXDAT)
 	double precision timedat(MAXDAT)
 	real xdat(MAXDAT),ydat(MAXDAT)
 c
 c  Plot buffer.
 c
-	integer nplt,blplt(MAXPLT)
+	integer nplt,blplt(MAXPLT),chplt(MAXPLT)
 	double precision timeplt(MAXPLT)
 	real xplt(MAXPLT),yplt(MAXPLT)
 	logical ltemp(MAXDAT)
 c
 c  The editting buffer.
 c
-	integer nedit,bledit(MAXEDIT)
+	integer nedit,bledit(MAXEDIT),chedit(MAXEDIT)
 	double precision timeedit(MAXEDIT)
 c
 c  Externals.
@@ -176,7 +177,7 @@ c
 c  Get the data.
 c
 	call GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,present,MAXBASE,
-     *		xdat,ydat,bldat,timedat,ndat,MAXDAT)
+     *		xdat,ydat,bldat,chdat,timedat,ndat,MAXDAT)
 	if(ndat.eq.0)call bug('f','No points to flag')
 c
 c  Loop over the baselines.
@@ -185,9 +186,9 @@ c
 	nedit = 0
 	if(nobase)then
           call output('Processing '//itoaf(ndat)//' points')
-	  call Edit(xdat,ydat,bldat,timedat,ltemp,ndat,
+	  call Edit(xdat,ydat,bldat,chdat,timedat,ltemp,ndat,
      *	    xaxis,yaxis,'All baselines',
-     *	    timeedit,bledit,MAXEDIT,nedit)
+     *	    timeedit,bledit,chedit,MAXEDIT,nedit)
 	else
 	  k = 0
 	  do j=1,MAXANT
@@ -197,11 +198,12 @@ c
 	        title = 'Baseline '//itoaf(i)
 	        length = len1(title)
 		title(length+1:) = '-'//itoaf(j)
-	        call Extract(k,xdat,ydat,bldat,timedat,ndat,
-     *			     xplt,yplt,blplt,timeplt,MAXPLT,nplt)
-		call Edit(xplt,yplt,blplt,timeplt,ltemp,nplt,
-     *		  xaxis,yaxis,title,
-     *		  timeedit,bledit,MAXEDIT,nedit)
+	        call Extract(k,xdat,ydat,bldat,chdat,timedat,ndat,
+     *		  xplt,yplt,blplt,chplt,timeplt,MAXPLT,nplt)
+		if (nplt.gt.0) 
+     *            call Edit(xplt,yplt,blplt,chplt,timeplt,ltemp,nplt,
+     *		    xaxis,yaxis,title,timeedit,bledit,chedit,
+     *              MAXEDIT,nedit)
 	      endif
 	    enddo
 	  enddo
@@ -216,7 +218,7 @@ c
 	  if(nedit.eq.0)then
 	    call bug('w','No edit commands to write out!')
 	  else
-	    call doSelGen(timeedit,bledit,nedit)
+	    call doSelGen(timeedit,bledit,chedit,nedit)
 	  endif
 	endif
 c
@@ -227,18 +229,18 @@ c
 	  call uvDatRew
 	  call uvDatSet('disable',0)
 	  if(.not.uvDatOpn(tno))call bug('f','Error reopening input')
-	  call FlagApp(tno,timeedit,bledit,nedit,version)
+	  call FlagApp(tno,timeedit,bledit,chedit,nedit,version)
 	  call uvDatCls
 	endif
 c
 	end
 c************************************************************************
-	subroutine doSelGen(time,bl,n)
+	subroutine doSelGen(time,bl,chn,n)
 c
 	implicit none
 	integer n
 	double precision time(n)
-	integer bl(n)
+	integer bl(n),chn(n)
 c
 c  Generate a file of select commands.
 c------------------------------------------------------------------------
@@ -248,6 +250,7 @@ c------------------------------------------------------------------------
 	integer i,j,k,lu,iostat,length
 	integer i1(MAXBASE),i2(MAXBASE)
 	character line*80,time1*24,time2*24
+        logical warn
 c
 c  Externals.
 c
@@ -272,38 +275,47 @@ c
 	  call bugno('f',iostat)
 	endif
 c
+        warn=.true.
 	do i=1,n
-	  call julday(time(i)-TTOL,'H',time1)
-	  call julday(time(i)+TTOL,'H',time2)
-	  line = 'ant('//itoaf(i1(bl(i)))
-	  length = len1(line)
-	  line(length+1:) = ')('//itoaf(i2(bl(i)))
-	  length = len1(line)
-	  line(length+1:) = '),time('//time1
-	  length = len1(line)
-	  line(length+1:) = ','//time2
-	  length = len1(line)
-	  line(length+1:) = ')'
-	  length = length + 1
-	  if(i.ne.n)then
-	    line(length+1:length+3) = ',or'
-	    length = length + 3
-	  endif
-	  call txtwrite(lu,line,length,iostat)
-	  if(iostat.ne.0)then
-	    call bug('w','Error writing to text file blflag.select')
-	    call bugno('f',iostat)
-	  endif
+          if (chn(i).eq.0) then
+  	    call julday(time(i)-TTOL,'H',time1)
+	    call julday(time(i)+TTOL,'H',time2)
+	    line = 'ant('//itoaf(i1(bl(i)))
+	    length = len1(line)
+	    line(length+1:) = ')('//itoaf(i2(bl(i)))
+	    length = len1(line)
+	    line(length+1:) = '),time('//time1
+	    length = len1(line)
+	    line(length+1:) = ','//time2
+	    length = len1(line)
+	    line(length+1:) = ')'
+	    length = length + 1
+	    if(i.ne.n)then
+	      line(length+1:length+3) = ',or'
+	      length = length + 3
+	    endif
+	    call txtwrite(lu,line,length,iostat)
+	    if(iostat.ne.0)then
+	      call bug('w','Error writing to text file blflag.select')
+	      call bugno('f',iostat)
+	    endif
+          else
+            if (warn) then
+              call bug('w',
+     *         'Omitting channel specific flags in text file')
+              warn=.false.
+            endif
+          endif
 	enddo
 c
 	call txtclose(lu)
 	end
 c************************************************************************
-	subroutine FlagApp(tno,timeedit,bledit,nedit,version)
+	subroutine FlagApp(tno,timeedit,bledit,chedit,nedit,version)
 c
 	implicit none
 	integer tno,nedit
-	integer bledit(nedit)
+	integer bledit(nedit),chedit(nedit)
 	double precision timeedit(nedit)
 	character version*(*)
 c
@@ -314,10 +326,10 @@ c------------------------------------------------------------------------
 	double precision TTOL
 	parameter(TTOL=1.d0/86400.d0)
 c
-	integer nchan,bl,i1,i2,i
+	integer nchan,bl,i1,i2,i,k
 	double precision preamble(4),time
 	complex data(MAXCHAN)
-	logical flags(MAXCHAN),search
+	logical flags(MAXCHAN),match,chflag
 	integer nflag,ncorr
 	character line*64
 c
@@ -330,32 +342,39 @@ c
 c
 	call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
 	dowhile(nchan.gt.0)
-	  ncorr = ncorr + nchan
+          ncorr = ncorr + nchan
 	  time = preamble(3)
 	  call basant(preamble(4),i1,i2)
 	  bl = (i2*(i2-1))/2 + i1
+          chflag=.false.
 c
 c  Search for this integration.
 c
-	  i = 0
-	  search = .true.
-	  dowhile(search.and.i.lt.nedit)
-	    i = i + 1
-	    search = bledit(i).ne.bl.or.
-     *		     abs(timeedit(i)-time).gt.TTOL
-	  enddo
+  	  do i=1,nedit
+	    match = bledit(i).eq.bl.and.
+     *		       abs(timeedit(i)-time).le.TTOL
 c
-c  Flag it if found.
+c  Flag bad channels if found.
 c
-	  if(.not.search)then
-	    do i=1,nchan
-	      if(flags(i))then
-		flags(i) = .false.
-		nflag = nflag + 1
-	      endif
-	    enddo
-	    call uvflgwr(tno,flags)
-	  endif
+	    if(match)then
+              if (chedit(i).eq.0) then
+                do k=1,nchan
+	          if(flags(k))then
+	  	    flags(k) = .false.
+		    nflag = nflag + 1
+                    chflag=.true.
+	          endif
+	        enddo
+              else
+                if(flags(chedit(i)))then
+                  flags(chedit(i))=.false.
+                  nflag = nflag +1
+                  chflag=.true.
+                endif
+              endif
+            endif
+          enddo
+	  if (chflag) call uvflgwr(tno,flags)
 c
 c  Go back for more.
 c
@@ -379,12 +398,12 @@ c
 c
 	end
 c************************************************************************
-	subroutine Edit(xplt,yplt,blplt,timeplt,flag,nplt,
-     *		xaxis,yaxis,title,timeedit,bledit,MAXEDIT,nedit)
+	subroutine Edit(xplt,yplt,blplt,chplt,timeplt,flag,nplt,
+     *		xaxis,yaxis,title,timeedit,bledit,chedit,MAXEDIT,nedit)
 c
 	implicit none
 	integer nplt,MAXEDIT,nedit
-	integer blplt(nplt),bledit(MAXEDIT)
+	integer blplt(nplt),chplt(nplt),bledit(MAXEDIT),chedit(MAXEDIT)
 	logical flag(nplt)
 	double precision timeplt(nplt),timeedit(MAXEDIT)
 	real xplt(nplt),yplt(nplt)
@@ -447,11 +466,11 @@ c
 	    call Draw(xmin,xmax,xplt,yplt,flag,nplt,
      *			xaxis,yaxis,title,xs,ys)
 	  else if(mode.eq.'a')then
-	    call Nearest(xv,yv,xs,ys,xplt,yplt,blplt,timeplt,flag,nplt,
-     *	      bledit,timeedit,nedit,MAXEDIT)
+	    call Nearest(xv,yv,xs,ys,xplt,yplt,blplt,chplt,timeplt,
+     *	      flag,nplt,bledit,chedit,timeedit,nedit,MAXEDIT)
 	  else if(mode.eq.'p')then
-	    call Region(xplt,yplt,blplt,timeplt,flag,nplt,
-     *	      bledit,timeedit,nedit,MAXEDIT)
+	    call Region(xplt,yplt,blplt,chplt,timeplt,flag,nplt,
+     *	      bledit,chedit,timeedit,nedit,MAXEDIT)
 	  else
 	    call bug('w','Unrecognised keystroke - use h for help')
 	  endif
@@ -460,15 +479,15 @@ c
 c
 	end
 c************************************************************************
-	subroutine Region(xplt,yplt,blplt,timeplt,flag,nplt,
-     *	      bledit,timeedit,nedit,MAXEDIT)
+	subroutine Region(xplt,yplt,blplt,chplt,timeplt,flag,nplt,
+     *	      bledit,chedit,timeedit,nedit,MAXEDIT)
 c
 	implicit none
 	integer nplt,nedit,MAXEDIT
 	real xplt(nplt),yplt(nplt)
 	logical flag(nplt)
 	double precision timeplt(nplt),timeedit(MAXEDIT)
-	integer blplt(nplt),bledit(MAXEDIT)
+	integer blplt(nplt),chplt(nplt),bledit(MAXEDIT),chedit(MAXEDIT)
 c------------------------------------------------------------------------
 	integer MAXV
 	parameter(MAXV=100)
@@ -511,6 +530,7 @@ c
 		if(nedit.gt.MAXEDIT)
      *		  call bug('f','Too many editing ops')
 		bledit(nedit)   = blplt(i)
+                chedit(nedit)   = chplt(i)
 		timeedit(nedit) = timeplt(i)
 		flag(i) = .false.
 		call pgpt(1,xplt(i),yplt(i),1)
@@ -637,14 +657,15 @@ c
 	end
 c************************************************************************
 	subroutine Nearest(xv,yv,xs,ys,
-     *	      xplt,yplt,blplt,timeplt,flag,nplt,
-     *	      bledit,timeedit,nedit,MAXEDIT)
+     *	      xplt,yplt,blplt,chplt,timeplt,flag,nplt,
+     *	      bledit,chedit,timeedit,nedit,MAXEDIT)
 c
 	implicit none
 	integer nplt,nedit,MAXEDIT
 	real xv,yv,xs,ys,xplt(nplt),yplt(nplt)
 	logical flag(nplt)
-	integer blplt(nplt),bledit(MAXEDIT)
+	integer blplt(nplt),chplt(nplt)
+        integer bledit(MAXEDIT),chedit(MAXEDIT)
 	double precision timeplt(nplt),timeedit(MAXEDIT)
 c------------------------------------------------------------------------
 	integer i,k
@@ -671,18 +692,19 @@ c
 	  if(nedit.gt.MAXEDIT)call bug('f','Too many ops')
 	  bledit(nedit)   = blplt(k)
 	  timeedit(nedit) = timeplt(k)
+          chedit(nedit) = chplt(k)
 	  flag(k) = .false.
 	  call pgpt(1,xplt(k),yplt(k),1)
 	endif
 	end
 c************************************************************************
-	subroutine Extract(k,xdat,ydat,bldat,timedat,ndat,
-     *			     xplt,yplt,blplt,timeplt,MAXPLT,nplt)
+	subroutine Extract(k,xdat,ydat,bldat,chdat,timedat,ndat,
+     *			     xplt,yplt,blplt,chplt,timeplt,MAXPLT,nplt)
 c
 	implicit none
 	integer k,ndat,MAXPLT,nplt
 	real xdat(ndat),ydat(ndat),xplt(MAXPLT),yplt(MAXPLT)
-	integer bldat(ndat),blplt(MAXPLT)
+	integer bldat(ndat),blplt(MAXPLT),chdat(ndat),chplt(MAXPLT)
 	double precision timedat(ndat),timeplt(MAXPLT)
 c------------------------------------------------------------------------
 	integer i
@@ -696,6 +718,7 @@ c
 	    if(nplt.gt.MAXPLT)call bug('f','Too many points')
 	    blplt(nplt) = k
 	    timeplt(nplt) = timedat(i)
+            chplt(nplt) = chdat(i)
 	    xplt(nplt)    = xdat(i)
 	    yplt(nplt)    = ydat(i)
 	  endif
@@ -704,11 +727,11 @@ c
 	end	  
 c************************************************************************
 	subroutine GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,present,
-     *		maxbase1,xdat,ydat,bldat,timedat,ndat,MAXDAT)
+     *		maxbase1,xdat,ydat,bldat,chdat,timedat,ndat,MAXDAT)
 c
 	implicit none
 	integer tno,maxbase1,MAXDAT,ndat
-	integer bldat(MAXDAT)
+	integer bldat(MAXDAT),chdat(MAXDAT)
 	logical present(maxbase1),rms,scalar,nofqaver
 	double precision timedat(MAXDAT)
 	real xdat(MAXDAT),ydat(MAXDAT)
@@ -776,7 +799,7 @@ c
 	        if(nants.gt.0) call IntFlushF(nants,rms,scalar,ra,lst,
      *		  tprev,uvdist2,var,fcorr,fcorr1,fcorr2,xaxis,yaxis,
      *		  fnpnt,time0,present,mbase,xdat,ydat,timedat,bldat,
-     *            ndat,MAXDAT,nchan)
+     *            chdat,ndat,MAXDAT,nchan)
 	        nants = 0
 	        tprev = time
 	        call uvrdvrd(tno,'lst',lst,0.d0)
@@ -797,7 +820,7 @@ c
 	      if(abs(time-tprev).gt.TTOL)then
 	        if(nants.gt.0) call IntFlush(nants,rms,scalar,ra,lst,
      *		  tprev,uvdist2,var,corr,corr1,corr2,xaxis,yaxis,npnt,
-     *		  time0,present,mbase,xdat,ydat,timedat,bldat,
+     *		  time0,present,mbase,xdat,ydat,timedat,bldat,chdat,
      *            ndat,MAXDAT)
 	        nants = 0
 	        tprev = time
@@ -831,12 +854,13 @@ c
           if (nofqaver) then
             call IntFlushF(nants,rms,scalar,ra,lst,time,uvdist2,var,
      *		fcorr,fcorr1,fcorr2,xaxis,yaxis,fnpnt,
-     *		time0,present,mbase,xdat,ydat,timedat,bldat,ndat,
+     *		time0,present,mbase,xdat,ydat,timedat,bldat,chdat,ndat,
      *          MAXDAT,nchan)
 	  else
             call IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,var,
      *		corr,corr1,corr2,xaxis,yaxis,npnt,
-     *		time0,present,mbase,xdat,ydat,timedat,bldat,ndat,MAXDAT)
+     *		time0,present,mbase,xdat,ydat,timedat,bldat,chdat,
+     *          ndat,MAXDAT)
           endif
         endif
 c
@@ -844,10 +868,12 @@ c
 c************************************************************************
 	subroutine IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,var,
      *	  corr,corr1,corr2,xaxis,yaxis,npnt,
-     *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,ndat,MAXDAT)
+     *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,chdat,
+     *    ndat,MAXDAT)
 c
 	implicit none
-	integer MAXBASE,MAXDAT,nants,npnt(MAXBASE),bldat(MAXDAT),ndat
+	integer MAXBASE,MAXDAT,nants,npnt(MAXBASE),bldat(MAXDAT),
+     *    chdat(MAXDAT),ndat
 	double precision ra,lst,time,time0,timedat(MAXDAT)
 	real uvdist2(MAXBASE),var(MAXBASE),xdat(MAXDAT),ydat(MAXDAT)
 	complex corr(MAXBASE),corr1(MAXBASE),corr2(MAXBASE)
@@ -867,7 +893,7 @@ c
 	    k = k + 1
 	    if(npnt(k).gt.0)then
 	      ndat = ndat + 1
-	      if(ndat.gt.MAXDAT)call bug('f','Too many points')
+	      if(ndat.gt.MAXDAT)call bug('f','Too many points.')
 	      xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k),
      *		corr1(k),corr2(k),npnt(k),lst,time,ra,time0,0,
      *          rms,scalar)
@@ -876,6 +902,10 @@ c
      *          rms,scalar)
 	      bldat(ndat) = k
 	      timedat(ndat) = time
+c
+c   Use 0 to indicate whole spectrum
+c
+              chdat(ndat) = 0
 	      present(k) = .true.
 	      npnt(k) = 0
 	      uvdist2(k) = 0
@@ -891,12 +921,12 @@ c
 c************************************************************************
 	subroutine IntFlushF(nants,rms,scalar,ra,lst,time,uvdist2,var,
      *	  corr,corr1,corr2,xaxis,yaxis,npnt,
-     *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,ndat,MAXDAT,
-     *    nchan)
+     *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,chdat,
+     *    ndat,MAXDAT,nchan)
 c
 	implicit none
 	integer MAXBASE,MAXDAT,nants,nchan,npnt(MAXBASE,nchan),
-     *    bldat(MAXDAT),ndat
+     *    bldat(MAXDAT),chdat(MAXDAT),ndat
 	double precision ra,lst,time,time0,timedat(MAXDAT)
 	real uvdist2(MAXBASE),var(MAXBASE),xdat(MAXDAT),ydat(MAXDAT)
 	complex corr(MAXBASE,nchan),corr1(MAXBASE,nchan),
@@ -918,7 +948,7 @@ c
             do ic=1,nchan
 	      if(npnt(k,ic).gt.0)then
 	        ndat = ndat + 1
-	        if(ndat.gt.MAXDAT)call bug('f','Too many points')
+	        if(ndat.gt.MAXDAT)call bug('f','Too many points!')
 	        xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k,ic),
      *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ic,ra,
      *            time0,rms,scalar)
@@ -926,6 +956,7 @@ c
      *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ic,ra,
      *            time0,rms,scalar)
 	        bldat(ndat) = k
+                chdat(ndat) = ic
 	        timedat(ndat) = time
 	        npnt(k,ic) = 0
 	        uvdist2(k) = 0
