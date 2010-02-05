@@ -881,12 +881,13 @@ c
 	character xaxis*(*),yaxis*(*)
 c
 c------------------------------------------------------------------------
-	integer i,j,k
+	integer i,j,k,ic
 c
 c  Externals.
 c
 	real GetVal
 c
+        ic=0
 	k = 0
 	do j=1,nants
 	  do i=1,j
@@ -895,10 +896,10 @@ c
 	      ndat = ndat + 1
 	      if(ndat.gt.MAXDAT)call bug('f','Too many points.')
 	      xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k),
-     *		corr1(k),corr2(k),npnt(k),lst,time,ra,time0,0,
+     *		corr1(k),corr2(k),npnt(k),lst,time,ra,ic,time0,
      *          rms,scalar)
 	      ydat(ndat) = GetVal(yaxis,uvdist2(k),var(k),corr(k),
-     *		corr1(k),corr2(k),npnt(k),lst,time,ra,time0,0,
+     *		corr1(k),corr2(k),npnt(k),lst,time,ra,ic,time0,
      *          rms,scalar)
 	      bldat(ndat) = k
 	      timedat(ndat) = time
