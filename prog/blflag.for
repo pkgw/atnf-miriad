@@ -64,6 +64,38 @@ c	  phase
 c	  real
 c	  imaginary
 c	  rms          Theoretical rms noise.
+c@ xrange
+c       Plot range in the x-direction
+c         If axis = uvdistance            [kilo-lambda;   2 values]
+c         If axis = time                  [dd,hh,mm,ss.s; 8 values]
+c         If axis = amplitude, real, imag [natural units; 2 values]
+c         If axis = phase                 [degrees;       2 values]
+c         If axis = hangle                [hh,mm,ss.s;    6 values]
+c         If axis = rms                   [flux units;    2 values]
+c         If axis = lst                   [decimal hours; 2 values]
+c         If axis = freq                  [GHz;           2 values]
+c
+c       For axis types other than 'time' or 'hangle', one or other of
+c       the limits may be set with the other self-scaled by specifying
+c       the lower limit as 'min' and the upper as 'max' (or simply
+c       omitting it).  For example,
+c
+c         xrange=min,0
+c
+c       self-scales the lower limit while pinning the upper limit to
+c       zero, whereas either of the following
+c
+c         xrange=0,max
+c         xrange=0
+c
+c       set the lower limit to zero while self-scaling the upper limit.
+c
+c       Default is to self-scale both limits.
+c@ yrange
+c       Plot range for the y-axis as for the x-axis.  The default is to
+c       self-scale. For amplitude type plots you can greatly reduce the
+c       number of points to plot by using something like yrange=0.3 to 
+c       cut out noise.
 c@ options
 c	Task enrichment parameters. Several can be given, separated by
 c	commas. Minimum match is used. Possible values are:
@@ -83,7 +115,7 @@ c	          causes it to generate the scalar average. This option
 c	          should be used with significant caution.
 c         nofqaver Do not average spectra - the resulting number of points
 c                 may be too large to handle. Use select to break the data up
-c                 in time ranges.
+c                 in time ranges or use yrange to exclude noise.
 c	The following options can be used to disable calibration.
 c	  nocal   Do not apply antenna gain calibration.
 c	  nopass  Do not apply bandpass correction.
@@ -104,18 +136,20 @@ c    23apr09 rjs  Increase buffer sizes.
 c    02jun09 rjs  Flag by theoretical rms.
 c    27jan10 mhw  Add option nofqav and increase buffers some more
 C    04feb10 mhw  Add channel as an axis value and increase MAXEDIT
+c    24feb10 mhw  Add xrange, yrange; use MAXBUF for 64bit machines
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)
 	integer MILLION,MAXDAT,MAXPLT,MAXEDIT
 	parameter(version='BlFlag: version 23-Apr-09')
-	parameter(MILLION=1000000,MAXDAT=50*MILLION,
+	parameter(MILLION=1000000,MAXDAT=MAX(MAXBUF,5*MILLION),
      *            MAXPLT=4*MILLION,MAXEDIT=MILLION)
 c
 	logical present(MAXBASE),nobase,selgen,noapply,rms,scalar,
      *    nofqaver
 	integer tno,i,j,k,length,npol
-	character xaxis*12,yaxis*12,title*32,device*64
+        real xmin, xmax, ymin, ymax
+      	character xaxis*12,yaxis*12,title*32,device*64
 	character val*16,uvflags*12
 c
 c  Store of all the data.
@@ -152,6 +186,11 @@ c
 	call GetOpt(nobase,selgen,noapply,rms,scalar,nofqaver,
      *    uvflags)
         if (xaxis.eq.'channel'.or.yaxis.eq.'channel') nofqaver=.true.
+c
+c Get axis ranges
+c
+        call getrng ('xrange', xaxis, xmin, xmax)
+        call getrng ('yrange', yaxis, ymin, ymax)
 	call uvDatInp('vis',uvflags)
 	call keyfin
 c
@@ -176,8 +215,9 @@ c
 c
 c  Get the data.
 c
-	call GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,present,MAXBASE,
-     *		xdat,ydat,bldat,chdat,timedat,ndat,MAXDAT)
+	call GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,xmin,xmax,
+     *   ymin,ymax,present,MAXBASE, xdat,ydat,bldat,chdat,timedat,
+     *   ndat,MAXDAT)
 	if(ndat.eq.0)call bug('f','No points to flag')
 c
 c  Loop over the baselines.
@@ -726,15 +766,16 @@ c
 c
 	end	  
 c************************************************************************
-	subroutine GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,present,
-     *		maxbase1,xdat,ydat,bldat,chdat,timedat,ndat,MAXDAT)
+	subroutine GetDat(tno,rms,scalar,nofqaver,xaxis,yaxis,xmin,xmax,
+     *          ymin,ymax,present,maxbase1,xdat,ydat,bldat,chdat,
+     *          timedat,ndat,MAXDAT)
 c
 	implicit none
 	integer tno,maxbase1,MAXDAT,ndat
 	integer bldat(MAXDAT),chdat(MAXDAT)
 	logical present(maxbase1),rms,scalar,nofqaver
 	double precision timedat(MAXDAT)
-	real xdat(MAXDAT),ydat(MAXDAT)
+	real xdat(MAXDAT),ydat(MAXDAT),xmin,xmax,ymin,ymax
 	character xaxis*(*),yaxis*(*)
 c------------------------------------------------------------------------
 	include 'maxdim.h'
@@ -798,8 +839,8 @@ c
 	      if(abs(time-tprev).gt.TTOL)then
 	        if(nants.gt.0) call IntFlushF(nants,rms,scalar,ra,lst,
      *		  tprev,uvdist2,var,fcorr,fcorr1,fcorr2,xaxis,yaxis,
-     *		  fnpnt,time0,present,mbase,xdat,ydat,timedat,bldat,
-     *            chdat,ndat,MAXDAT,nchan)
+     *		  xmin,xmax,ymin,ymax,fnpnt,time0,present,mbase,
+     *            xdat,ydat,timedat,bldat,chdat,ndat,MAXDAT,nchan)
 	        nants = 0
 	        tprev = time
 	        call uvrdvrd(tno,'lst',lst,0.d0)
@@ -819,9 +860,9 @@ c
             else
 	      if(abs(time-tprev).gt.TTOL)then
 	        if(nants.gt.0) call IntFlush(nants,rms,scalar,ra,lst,
-     *		  tprev,uvdist2,var,corr,corr1,corr2,xaxis,yaxis,npnt,
-     *		  time0,present,mbase,xdat,ydat,timedat,bldat,chdat,
-     *            ndat,MAXDAT)
+     *		  tprev,uvdist2,var,corr,corr1,corr2,xaxis,yaxis,
+     *		  xmin,xmax,ymin,ymax,npnt,time0,present,mbase,
+     *            xdat,ydat,timedat,bldat,chdat,ndat,MAXDAT)
 	        nants = 0
 	        tprev = time
 	        call uvrdvrd(tno,'lst',lst,0.d0)
@@ -853,12 +894,12 @@ c
 	if(nants.gt.0) then
           if (nofqaver) then
             call IntFlushF(nants,rms,scalar,ra,lst,time,uvdist2,var,
-     *		fcorr,fcorr1,fcorr2,xaxis,yaxis,fnpnt,
-     *		time0,present,mbase,xdat,ydat,timedat,bldat,chdat,ndat,
-     *          MAXDAT,nchan)
+     *		fcorr,fcorr1,fcorr2,xaxis,yaxis,xmin,xmax,ymin,ymax,
+     *		fnpnt,time0,present,mbase,xdat,ydat,timedat,bldat,
+     *          chdat,ndat,MAXDAT,nchan)
 	  else
             call IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,var,
-     *		corr,corr1,corr2,xaxis,yaxis,npnt,
+     *		corr,corr1,corr2,xaxis,yaxis,xmin,xmax,ymin,ymax,npnt,
      *		time0,present,mbase,xdat,ydat,timedat,bldat,chdat,
      *          ndat,MAXDAT)
           endif
@@ -867,7 +908,7 @@ c
 	end
 c************************************************************************
 	subroutine IntFlush(nants,rms,scalar,ra,lst,time,uvdist2,var,
-     *	  corr,corr1,corr2,xaxis,yaxis,npnt,
+     *	  corr,corr1,corr2,xaxis,yaxis,xmin,xmax,ymin,ymax,npnt,
      *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,chdat,
      *    ndat,MAXDAT)
 c
@@ -876,12 +917,14 @@ c
      *    chdat(MAXDAT),ndat
 	double precision ra,lst,time,time0,timedat(MAXDAT)
 	real uvdist2(MAXBASE),var(MAXBASE),xdat(MAXDAT),ydat(MAXDAT)
+        real xmin,xmax,ymin,ymax
 	complex corr(MAXBASE),corr1(MAXBASE),corr2(MAXBASE)
 	logical present(MAXBASE),rms,scalar
 	character xaxis*(*),yaxis*(*)
 c
 c------------------------------------------------------------------------
 	integer i,j,k,ic
+        real x,y
 c
 c  Externals.
 c
@@ -893,20 +936,25 @@ c
 	  do i=1,j
 	    k = k + 1
 	    if(npnt(k).gt.0)then
-	      ndat = ndat + 1
-	      if(ndat.gt.MAXDAT)call bug('f','Too many points.')
-	      xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k),
+              x = GetVal(xaxis,uvdist2(k),var(k),corr(k),
      *		corr1(k),corr2(k),npnt(k),lst,time,ra,ic,time0,
      *          rms,scalar)
-	      ydat(ndat) = GetVal(yaxis,uvdist2(k),var(k),corr(k),
+              y = GetVal(yaxis,uvdist2(k),var(k),corr(k),
      *		corr1(k),corr2(k),npnt(k),lst,time,ra,ic,time0,
      *          rms,scalar)
-	      bldat(ndat) = k
-	      timedat(ndat) = time
+              if (x.ge.xmin.and.x.lt.xmax.and.y.gt.ymin.and.
+     *            y.lt.ymax) then
+                ndat = ndat + 1
+	        if(ndat.gt.MAXDAT)call bug('f','Too many points.')
+	        xdat(ndat) = x
+	        ydat(ndat) = y
+	        bldat(ndat) = k
+	        timedat(ndat) = time
 c
 c   Use 0 to indicate whole spectrum
 c
-              chdat(ndat) = 0
+                chdat(ndat) = 0
+              endif
 	      present(k) = .true.
 	      npnt(k) = 0
 	      uvdist2(k) = 0
@@ -921,7 +969,7 @@ c
 	end
 c************************************************************************
 	subroutine IntFlushF(nants,rms,scalar,ra,lst,time,uvdist2,var,
-     *	  corr,corr1,corr2,xaxis,yaxis,npnt,
+     *	  corr,corr1,corr2,xaxis,yaxis,xmin,xmax,ymin,ymax,npnt,
      *	  time0,present,MAXBASE,xdat,ydat,timedat,bldat,chdat,
      *    ndat,MAXDAT,nchan)
 c
@@ -930,6 +978,7 @@ c
      *    bldat(MAXDAT),chdat(MAXDAT),ndat
 	double precision ra,lst,time,time0,timedat(MAXDAT)
 	real uvdist2(MAXBASE),var(MAXBASE),xdat(MAXDAT),ydat(MAXDAT)
+        real xmin,xmax,ymin,ymax
 	complex corr(MAXBASE,nchan),corr1(MAXBASE,nchan),
      *    corr2(MAXBASE,nchan)
 	logical present(MAXBASE),rms,scalar
@@ -937,6 +986,7 @@ c
 c
 c------------------------------------------------------------------------
 	integer i,j,k,ic
+        real x,y
 c
 c  Externals.
 c
@@ -948,17 +998,22 @@ c
 	    k = k + 1
             do ic=1,nchan
 	      if(npnt(k,ic).gt.0)then
-	        ndat = ndat + 1
-	        if(ndat.gt.MAXDAT)call bug('f','Too many points!')
-	        xdat(ndat) = GetVal(xaxis,uvdist2(k),var(k),corr(k,ic),
+                x = GetVal(xaxis,uvdist2(k),var(k),corr(k,ic),
      *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ic,ra,
      *            time0,rms,scalar)
-	        ydat(ndat) = GetVal(yaxis,uvdist2(k),var(k),corr(k,ic),
+                y = GetVal(yaxis,uvdist2(k),var(k),corr(k,ic),
      *		  corr1(k,ic),corr2(k,ic),npnt(k,ic),lst,time,ic,ra,
      *            time0,rms,scalar)
-	        bldat(ndat) = k
-                chdat(ndat) = ic
-	        timedat(ndat) = time
+                if (x.ge.xmin.and.x.lt.xmax.and.y.gt.ymin.and.
+     *              y.lt.ymax) then
+	          ndat = ndat + 1
+	          if(ndat.gt.MAXDAT)call bug('f','Too many points!')
+	          xdat(ndat) = x
+	          ydat(ndat) = y
+	          bldat(ndat) = k
+                  chdat(ndat) = ic
+	          timedat(ndat) = time
+                endif
 	        npnt(k,ic) = 0
 	        uvdist2(k) = 0
 	        corr(k,ic) = 0
@@ -1100,3 +1155,102 @@ c
      *	  call bug('f','Cannot flag when the linetype width is not 1')
 c
 	end
+
+c
+      subroutine getrng (keyw, axis, rmin, rmax)
+c-----------------------------------------------------------------------
+c     Get the axis ranges given by the user
+c
+c  Input
+c    keyw     Keyword to get from user
+c    axis     Axis type
+c  Output
+c    rmin,max Range in appropriate units
+c
+c-----------------------------------------------------------------------
+      character*(*) axis, keyw
+      real rmin, rmax
+cc
+      logical ok
+      integer il, len1, nt, s
+      real trange(8)
+      character cval*64
+c-----------------------------------------------------------------------
+      il = len1(keyw)
+      if (axis.eq.'time') then
+        call mkeyr (keyw(1:il), trange, 8, nt)
+        if (nt.gt.0) then
+          if (nt.ne.8) then
+            call bug ('f',
+     +        'You must specify 8 numbers for the time range')
+          else
+
+c           Convert to seconds.
+            rmin = 24.0*3600.0*trange(1) + 3600.0*trange(2) +
+     +                    60.0*trange(3) + trange(4)
+            rmax = 24.0*3600.0*trange(5) + 3600.0*trange(6) +
+     +                    60.0*trange(7) + trange(8)
+          end if
+        else
+          rmin = -1.0e32
+          rmax =  1.0e32
+        end if
+      else if (axis.eq.'hangle') then
+        call mkeyr (keyw(1:il), trange, 6, nt)
+        if (nt.gt.0) then
+          if (nt.ne.6) then
+            call bug ('f',
+     +        'You must specify 6 numbers for the hangle range')
+          else
+
+c           Convert to seconds.
+            s = 1
+            if (trange(1).lt.0.0) s = -1
+            rmin = 3600.0*abs(trange(1)) + 60.0*trange(2) + trange(3)
+            rmin = s * rmin
+
+            s = 1
+            if (trange(4).lt.0.0) s = -1
+            rmax = 3600.0*abs(trange(4)) + 60.0*trange(5) + trange(6)
+            rmax = s * rmax
+          end if
+        else
+          rmin = -1.0e32
+          rmax =  1.0e32
+        end if
+
+      else
+        call keya (keyw(:il), cval, 'min')
+        if (cval.eq.'min') then
+          rmin = -1.0e32
+        else
+          call atorf(cval, rmin, ok)
+          if (.not.ok) then
+            cval = 'Conversion error decoding parameter ' // keyw(:il)
+            call bug('f', cval)
+          end if
+        end if
+
+        call keya (keyw(:il), cval, 'max')
+        if (cval.eq.'max') then
+          rmax = 1.0e32
+        else
+          call atorf(cval, rmax, ok)
+          if (.not.ok) then
+            cval = 'Conversion error decoding parameter ' // keyw(:il)
+            call bug('f',cval)
+          end if
+        end if
+
+c       Because atorf actually uses atodf and conversion between
+c       double and real may introduce rounding errors.
+        if (-1.000001e32.lt.rmin .and. rmin.lt.-0.999999e32) then
+          rmin = -1.0e32
+        end if
+
+        if ( 0.999999e32.lt.rmax .and. rmax.lt. 1.000001e32) then
+          rmax =  1.0e32
+        end if
+      end if
+
+      end
