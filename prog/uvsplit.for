@@ -277,9 +277,10 @@ c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character base*32,source*32,c*1
 	integer maxi,n,nchan,ichan,nwide,length,lenb,i,ii,nsub,j,nindx1
+        integer k
 	double precision sdf(MAXWIN),sfreq(MAXWIN)
 	real wfreq(MAXWIN)
-	logical discard,duplicate
+	logical discard,duplicate,submhz
 c
 c  Externals.
 c
@@ -374,6 +375,10 @@ c Optional subdivision of spectra based on maxwidth
 c onschan = # output channels for each output spectrum
 c chan = channel offset in input spectrum for current output spectrum
 c
+c We try hard to split apart data with identical frequencies from different IF chains and
+c data that are less than 1 MHz apart in central frequency.
+c
+            
 	    do i=1,nindx
               nsub=1
               if (maxwidth.gt.0.0.and.
@@ -389,10 +394,18 @@ c
                 ichan = nschan(i)*(2*j-1)/2/nsub
                 onchan(ii) = nschan(i)/nsub
                 if (j.gt.1) oschan(ii) = oschan(ii-1)+onchan(ii-1)
-                n = nint(1000*(sfreq(i) +  sdf(i) * ichan))
-                if (duplicate) then
+                n = nint(10000*(sfreq(i) +  sdf(i) * ichan))
+                k = n - 10*(n/10)
+                n = n/10
+                if (k.eq.0) then
+                  submhz=.false.
+                  k=i
+                else 
+                  submhz=.true.
+                endif
+                if (duplicate.or.submhz) then
                   call FileIndx(base(1:length)//'.'//
-     *              stcat(itoaf(n),'.'//itoaf(i)),i,indx(ii),clobber)
+     *              stcat(itoaf(n),'.'//itoaf(k)),i,indx(ii),clobber)
                 else
                   call FileIndx(base(1:length)//'.'//itoaf(n),i,
      *              indx(ii),clobber)
