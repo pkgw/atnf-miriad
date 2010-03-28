@@ -18,7 +18,9 @@ c@ ifsel
 c       IF number to select.  Default is all IFs.  For example,
 c       if you observed with 5 GHz (frequency 1) and 8 GHz (frequency 2)
 c       simultaneously, IF 1 would be the 5 GHz data and IF 2 would
-c       be the 8 GHz data.
+c       be the 8 GHz data. This now also lets you select zoom bands
+c       using values greater than 2. The freq 1 zoom bands come before 
+c       the freq 2 ones.
 c@ restfreq
 c       The rest frequency, in GHz, for line observations.  By default,
 c       the value in the RPFITS file is used.  Giving a value for the
@@ -3301,7 +3303,8 @@ c
         nsimgrp = 0
         do i=1,nif
           If2Sim(i) = 0
-          if(ifsel.eq.0.or.ifsel.eq.ifchain(i))then
+c          if(ifsel.eq.0.or.ifsel.eq.ifchain(i))then
+          if(ifsel.eq.0.or.ifsel.eq.i) then
             do j=1,i-1
               if(ifsimul(i).eq.ifsimul(j).and.If2Sim(j).gt.0)
      *          If2Sim(i) = If2Sim(j)
