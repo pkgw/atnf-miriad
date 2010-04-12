@@ -360,8 +360,8 @@ c       Velocity needed.
             call bug('f','restfreq not present in header.')
           endif
 
-          offset = crpix - crval / cdelt
-          scale  = CMKS * (cdelt / restfreq) * 1e-3
+          offset = crpix - (crval - restfreq) / cdelt
+          scale  = -CMKS * (cdelt / restfreq) * 1e-3
         else
           scale  = cdelt
         endif
