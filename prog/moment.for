@@ -367,21 +367,25 @@ c         Special cases: the crpix change for a subcube.
         endif
       enddo
 
-      if (mom.le.-1) then
+      if (mom.eq.-3) then
+        call wrhda(lOut,'bunit','km/s')
+        call wrbtype(lOut,'velocity')
+      else if (mom.le.-1) then
         call hdcopy(lIn,lOut,'bunit')
       else if (mom.eq.0) then
         call rdhda(lIn,'bunit',atemp,' ')
         l = len1(atemp)
         if (l.gt.0) then
-          atemp(l+1:) = '.KM/S'
+          atemp(l+1:) = '.km/s'
           call wrhda(lOut,'bunit',atemp)
         endif
-      else if (mom.eq.1) then
-        call wrhda(lOut,'bunit','KM/S')
-        call wrbtype(lOut,'velocity')
       else
-        call wrhda(lOut,'bunit','KM/S')
-        call wrbtype(lOut,'velocity_dispersion')
+        call wrhda(lOut,'bunit','km/s')
+        if (mom.eq.1) then
+          call wrbtype(lOut,'velocity')
+        else
+          call wrbtype(lOut,'velocity_dispersion')
+        endif
       endif
 
 c     Record additional information about the ``third'' dummy axis.
