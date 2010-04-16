@@ -280,7 +280,7 @@ c    mhw  28mar10 Use IF number instead of IF chain for ifsel
 c    mhw  13apr10 Record ifchain in file, allow multiple values for ifsel
 c $Id$
 c-----------------------------------------------------------------------
-        integer MAXFILES,MAXTIMES
+        integer MAXFILES,MAXTIMES,MAXSIM
         parameter(MAXFILES=128,MAXTIMES=32,MAXSIM=16)
 c
         character in(MAXFILES)*128,line*64,out*64,t1*18,t2*18,version*80
