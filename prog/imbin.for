@@ -175,8 +175,8 @@ c       Bin up next subcube.
         mm(2) = -1e32
         call readimcg (.true., 0.0, lin, bin(1,1), bin(1,2), krng,
      :    blc, trc, aver, memi(ipn), memr(ip), blanks, mm)
-        dmm(1) = min(dmm(1), mm(1))
-        dmm(2) = max(dmm(2), mm(2))
+        if (mm(1).lt.dmm(1)) dmm(1) = mm(1)
+        if (mm(2).gt.dmm(2)) dmm(2) = mm(2)
         krng(1) = krng(1) + bin(1,3)
 
 c       Write out plane of new image.
