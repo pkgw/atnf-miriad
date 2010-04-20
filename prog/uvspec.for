@@ -115,6 +115,7 @@ c    rjs  29jun05 Use 3D shift algorithm.
 c    rjs  26jan07 Adjust size of title to prevent overflow on multipanel
 c	          plot.
 c    mhw  02feb10 Add sdo option to look at CABB autocorrelation data bins
+c    mhw  20apr10 Fix axis label and plot accuracy issues for high res data
 c  Bugs:
 c------------------------------------------------------------------------
 	include 'mirconst.h'
@@ -123,7 +124,7 @@ c------------------------------------------------------------------------
         parameter (maxco=15)
 c
 	character version*(*)
-	parameter(version='UvSpec: version 1.0 26-Jan-07')
+	parameter(version='UvSpec: version 1.0 20-Apr-10')
 	character uvflags*8,device*64,xaxis*12,yaxis*12,logf*64
 	character xtitle*64,ytitle*64
 	logical ampsc,rms,nobase,avall,first,buffered,doflush,dodots
@@ -507,7 +508,8 @@ c------------------------------------------------------------------------
 	parameter(PolMin=-8,PolMax=4)
 	integer MAXPLT,MAXPNT
 	parameter(MAXPNT=1000000,MAXPLT=1024)
-	real xp(MAXPNT),yp(MAXPNT),xrange(2),inttime
+        double precision xp(MAXPNT)
+	real xrange(2),inttime,yp(MAXPNT)
 	integer plot(MAXPLT+1)
 	double precision time
 	integer i,j,ngood,ng,ntime,npnts,nplts,nprev,p
@@ -603,7 +605,7 @@ c
 	    if(.not.nobase.and.npnts.gt.0)then
 	      call Plotit(npnts,xp,yp,xrange,yrange,dodots,plot,nplts,
      *		xtitle,ytitle,j,time/ntime,inttime/nplts,pol,npol,
-     *		dopoint,hann,hc,hw,logf)
+     *		dopoint,hann,hc,hw,logf,MAXPNT)
 c
 	      npol = 0
 	      do i=PolMin,PolMax
@@ -622,7 +624,7 @@ c  Do the final plot.
 c
 	if(npnts.gt.0)call Plotit(npnts,xp,yp,xrange,yrange,dodots,
      *	  plot,nplts,xtitle,ytitle,0,time/ntime,inttime/nplts,
-     *	  pol,npol,dopoint,hann,hc,hw,logf)
+     *	  pol,npol,dopoint,hann,hc,hw,logf,MAXPNT)
 c
 c  Reset the counters.
 c
@@ -638,8 +640,8 @@ c
 	implicit none
 	integer nchan,npnts,MAXPNT,count(nchan)
 	logical doamp,doampsc,dorms,dophase,doreal,doimag
-	real buf2(nchan),bufr(nchan),xp(MAXPNT),yp(MAXPNT)
-	double precision x(nchan)
+	real buf2(nchan),bufr(nchan),yp(MAXPNT)
+	double precision x(nchan),xp(MAXPNT)
 	complex buf(nchan)
 c------------------------------------------------------------------------
 	include 'mirconst.h'
@@ -687,8 +689,8 @@ c************************************************************************
 c
 	implicit none
 	integer nchan,n,npnts,MAXPNT,count(nchan)
-	double precision x(n)
-	real xp(MAXPNT),yp(MAXPNT)
+	double precision x(n),xp(MAXPNT)
+        real yp(MAXPNT)
 	complex buf(nchan)
 c------------------------------------------------------------------------
 	include 'maxdim.h'
@@ -957,12 +959,13 @@ c
 c************************************************************************
 	subroutine Plotit(npnts,xp,yp,xrange,yrange,dodots,
      *		  plot,nplts,xtitle,ytitle,bl,time,inttime,
-     *		  pol,npol,dopoint,hann,hc,hw,logf)
+     *		  pol,npol,dopoint,hann,hc,hw,logf,MAXPNT)
 c
 	implicit none
 	integer npnts,bl,nplts,plot(nplts+1),npol,pol(npol),hann
-	double precision time
-	real xp(npnts),yp(npnts),xrange(2),yrange(2),inttime,hc(*),hw(*)
+	double precision time,xp(npnts)
+        real x(MAXPNT),y(MAXPNT)
+	real inttime,hc(*),hw(*),xrange(2),yrange(2),yp(npnts)
 	logical dopoint,dodots
 	character xtitle*(*),ytitle*(*),logf*(*)
 c
@@ -970,11 +973,13 @@ c  Draw a plot
 c------------------------------------------------------------------------
 	integer NCOL
 	parameter(NCOL=12)
+        real TOL1,TOL2
+        parameter(TOL1=1.e-5,TOL2=5.e-7)
 	integer hr,mins,sec,b1,b2,l,i,j,xl,yl,symbol,lp,lt
 	character title*64,baseline*12,tau*16,line*80
-	character pollab*32
+	character pollab*32,xtitle2*80
 	double precision T0
-	real yranged(2)
+	real yranged(2),xoff,delta1,delta2
 	real xlen,ylen,xloc,size
 	integer k1,k2
 c
@@ -989,22 +994,38 @@ c
 c
 	call pgpage
 	call pgvstd
+c
+        xoff = 0
+        delta1 = abs((xrange(2)-xrange(1))/max(xrange(1),xrange(2)))
+        delta2 = delta1
+        if (npnts.gt.0) delta2=delta1/npnts*nplts
+c
+c  Check for potential axis labeling and plot accuracy issues, use offset 
+c
+        if (delta1.lt.TOL1.or.delta2.lt.TOL2) then
+          xoff=(xrange(1)+xrange(2))/2
+          xoff=int(xoff*1000)/1000.0
+          xrange(1)=xrange(1)-xoff
+          xrange(2)=xrange(2)-xoff
+        endif
+        do i=1,npnts
+          x(i)=xp(i)-xoff
+        enddo
 	if(yrange(2).le.yrange(1))then
 	  call SetAxisR(yp,npnts,yranged)
 	  call pgswin(xrange(1),xrange(2),yranged(1),yranged(2))
 	else
 	  call pgswin(xrange(1),xrange(2),yrange(1),yrange(2))
 	endif
-c
 	call pgbox('BCNST',0.,0.,'BCNST',0.,0.)
 	do i=1,nplts
 	  call pgsci(mod(i-1,NCOL)+1)
 	  if(dopoint)then
-	    call pgpt(plot(i+1)-plot(i),xp(plot(i)),yp(plot(i)),symbol)
+	    call pgpt(plot(i+1)-plot(i),x(plot(i)),yp(plot(i)),symbol)
 	  else
 	    if (hann.gt.1) call hannsm(hann,hc,plot(i+1)-plot(i),
      *                  yp(plot(i)),hw)
-	    call pghline(plot(i+1)-plot(i),xp(plot(i)),yp(plot(i)),2.0)
+	    call pghline(plot(i+1)-plot(i),x(plot(i)),yp(plot(i)),2.0)
 	  endif
           if (logf.ne.' ') then
   	    do j = 1, plot(i+1)-plot(i)
@@ -1073,7 +1094,16 @@ c
 	xl = len1(xtitle)
 	yl = len1(ytitle)
 c
-	call pglab(xtitle(1:xl),ytitle(1:yl),' ')
+        xtitle2=xtitle
+        if (xoff.gt.0) then
+          i=index(xtitle,' (')
+          if (i.gt.0) then
+            write(xtitle2(i+1:i+8),'(a,F7.3)') '-',xoff
+            xtitle2(i+9:xl+9)=xtitle(i:xl)
+            xl=xl+9
+          endif
+        endif
+	call pglab(xtitle2(1:xl),ytitle(1:yl),' ')
 	call pglen(5,title(1:l),xlen,ylen)
 	xloc = 0.5 - 0.5*xlen
 	call pgqch(size)
