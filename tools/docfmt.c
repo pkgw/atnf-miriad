@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define VERSION "docfmt: Revision 1.4, 2010/04/28"
 #define private static
