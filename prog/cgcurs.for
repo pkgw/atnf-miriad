@@ -194,6 +194,8 @@ c       Two values.  Character sizes in units of the PGPLOT default
 c       (which is ~ 1/40 of the view surface height) for the plot axis
 c       labels and the velocity/channel labels.
 c       Defaults choose something sensible.
+c
+c$Id$
 c--
 c
 c  History:
@@ -301,8 +303,6 @@ c    nebk 11jun99  Some hacks to handle /BEAM or /B and following
 c                  strings
 c    rjs  08may00  Change incorrect keyf call to keya.
 c   nebk  14nov01  Track change to readimcg interface
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

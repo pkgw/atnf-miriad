@@ -100,6 +100,8 @@ c	noise, you will need to be patient.  You can just make this bias
 c	plot without actually working on any data if you wish. See also
 c	VLA memo no. 161 by Patrick Leahy.
 c	Default is no plot.
+c
+c$Id$
 c--
 c  History:
 c    nebk 21may92 Original version.
@@ -122,8 +124,6 @@ c    rjs  23jul97 added pbtype.
 c    nebk 13mar98 position angle error was factor of 2 too big
 c    nebk 27jul00 as above but in another location.  thanks Bryan
 c    mchw 14may02 added bunit to polarized intensity.
-c
-c $Id$
 c------------------------------------------------------------------------
       implicit none
 c

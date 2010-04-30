@@ -97,15 +97,14 @@ c	and un-normalized source count functions.  You can specify
 c	a plot device but not an output or beam image if you just 
 c	want to see the plots but don't want to spend ages computing
 c	the beam integral.
-c	
+c
+c$Id$
 c--
 c  History:
 c    nebk 13sep95 Original version
 c    rjs   2jul98 Increase ize of pbtype variable.
 c    rjs  08may00 Change incorrect call to keyf to keya.
 c    rjs  06apr09 Make sure do loop parameters are integer valued.
-c
-c $Id$
 c------------------------------------------------------------------------
       implicit none
 c

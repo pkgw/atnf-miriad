@@ -23,14 +23,14 @@ c@ log
 c	Output log file. Default is "hermes.log".
 c@ out
 c	Output image. Units JY/PIXEL. No default.
+c
+c$Id$
 c--
 c  History:
 c    D.Mitchell 01Jun89	 Initial version.
 c	        23sep90  Revised revision.
 c		10dec90	 Miriad version.
 c    nebk       26nov92  Add btype
-c
-c $Id$
 c-----------------------------------------------------------------------
 	include 'hermes.h'
 	include 'maxdim.h'

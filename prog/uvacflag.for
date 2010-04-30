@@ -21,11 +21,11 @@ c       Task enrichment options.  Minimum match is active.
 c
 c       full    Instructs UVACFLAG to tell you about every record
 c               it flags.  The default is a summary at the end.
+c
+c$Id$
 c--
 c
 c     mhw  19nov07 Original version, adapted uvpflag into uvacflag
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       integer maxpol,maxbin,maxrec,maxtime,maxfreq,ntime,nfreq

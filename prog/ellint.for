@@ -85,6 +85,8 @@ c        in residual map computation. Default: 0
 c
 c@ log
 c       The output log file. The default is the terminal.
+c
+c$Id$
 c--
 c  History:
 c    mchw  aug 1982     Original version.
@@ -130,8 +132,6 @@ c    pjt   13dec03      Documented the previous, add output history,
 c                       fixed residual map computation
 c    pjt   15dec03      make sure median .or. mode is selected, not both
 c    rjs   06apr09      Make sure do loop parameters are integer valued.
-c
-c $Id$
 c-----------------------------------------------------------------------
         include 'mirconst.h'
         include 'maxdim.h'

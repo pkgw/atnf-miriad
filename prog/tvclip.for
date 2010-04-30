@@ -174,6 +174,8 @@ c     keyboard if "commands" is set.
 c
 c< select
 c     NOTE: The default is to use all visibilities.
+c
+c$Id$
 c--
 c
 c  History:
@@ -256,8 +258,6 @@ c    smw   30aug99    Submitted!
 c    rjs   21sep00    options=nosrc
 c    jwr   16jun04    initialize nedit=0 in doEdit
 c    jwr   16jun04    increased MAXEDIT
-c
-c $Id$
 c-----------------------------------------------------------------------
 c
 c  Internal parameters.

@@ -300,6 +300,7 @@ c       already exists, new models are appended to it.  The columns of
 c       the file are the slice number, the model peak, centre, FWHM,
 c       baseline offset and baseline slope.
 c
+c$Id$
 c--
 c
 c  History:
@@ -362,8 +363,6 @@ c  * When slice horizontal or vertical can set abcissa units more
 c    cleverly
 c
 c  * Scale data before fitting
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

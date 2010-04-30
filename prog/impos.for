@@ -46,7 +46,8 @@ c	coordinate, this indicates what convention it is in.  For example,
 c	you might give an optical velocity with "type=abskms", but the header
 c	indicates a frequency axis.  If unset, it is assumed the coordinate
 c	is in the convention defined by the image header.
-c	
+c
+c$Id$
 c--
 c
 c  History:
@@ -64,8 +65,6 @@ c    nebk 13nov95  Better non-coordinate checking
 c    nebk 29nov95  New call for CTYPECO
 c    rjs  17jul97  Get it to work on uv datasets as well.
 c    rjs  19may00  Make the default "type" abspix.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

@@ -30,12 +30,12 @@ c       Default is 3.
 c
 c@ log
 c	The list output file name. The default is the terminal.
+c
+c$Id$
 c--
 c
 c  History:
 c   09sep94 njt  - Created
-c
-c $Id$
 c-----------------------------------------------------------------------
 
       include 'maxdim.h'

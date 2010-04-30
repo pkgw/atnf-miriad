@@ -51,14 +51,14 @@ c
 c       Lines beginning with "#" are ignored.
 c@ out
 c       The name of the output visibility data set (no default).
+c
+c$Id$
 c--
 c  History:
 c    05jan94 nebk  Original version.
 c    12jan94 nebk  Convert to use velocity line type
 c    17aug94 rjs   Fiddle offsets to give better results.
 c    14nov95 nebk  Remove dependence on cgsubs.for
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'mirconst.h'

@@ -39,6 +39,8 @@ c                   above.
 c       'doextrap'  Use linear extrapolation if gap between flanking
 c                   position stamps exceeds maxgap.
 c       'noref'     Eliminate the reference scans from the file.
+c
+c$Id$
 c--
 c 28jun04 - tw - created from rpfread and mapread
 c 13jul04 - tw - write OBSTYPE card for LiveData
@@ -55,8 +57,6 @@ c 20jul06 - tw - remove polflag parameter (didn't work); tidy for miriad
 c 21jul06 - tw - fixed subtle error in cos(dc) correction
 c 16may07 - tw - detab; change label 900 from GOTO to CONTINUE
 c 29aug09 - tw - resample option; convert bunit to 'K'
-c
-c $Id$
 c-----------------------------------------------------------------------
 
       program mopfix

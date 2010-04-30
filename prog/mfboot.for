@@ -80,6 +80,8 @@ c	Extra processing options. Several can be given, separated by commas.
 c	  noapply Do not apply the scale factor - just evaluate it.
 c         nospec Do not try to determine and correct the spectral index across
 c                the band
+c
+c$Id$
 c--
 c  History:
 c    rjs     15jan06 Original version adapted from plboot.
@@ -88,8 +90,6 @@ c    rjs     09may06 Increase size of MAXPNT.
 c    rjs     07jul06 Increase size of MAXPNT again.
 c    mhw     07sep09 Use central frequency for planet parameters
 c    mhw     24mar10 Correct spectral index too
-c
-c  $Id$
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*(*)

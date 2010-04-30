@@ -137,6 +137,8 @@ c     commas. Minimum match is used. Possible values are:
 c       nosrc   Do not cause a break in the display when the source
 c               changes. Normally TVFLAG puts a gap in the display
 c               whenever the source changes.
+c
+c$Id$
 c--
 c
 c  History:
@@ -223,8 +225,6 @@ c    rjs   20may96    Change way maxgap is determined.
 c    rjs   12may97    Check that linetype is compatible with flagging.
 c    rjs    5oct97    Relax restriction that linetype width and step
 c                     must be 1.
-c
-c $Id$
 c-----------------------------------------------------------------------
 c
 c  Internal parameters.

@@ -54,6 +54,8 @@ c                   default behaviour is to apply bandpass calibration.
 c@ log
 c       File in which to write the data, if y-axis is amplitude.
 c       The default is no logfile.
+c
+c$Id$
 c--
 c  History:
 c    rjs  03jun96 Original version.
@@ -62,8 +64,6 @@ c    bmg  26nov97 Added log keyword
 c    rjs  29feb00 mode keyword to allow plots of real/imag/amp.
 c    rjs  08may00 Change incorrect call of keyf to keya.
 c    rjs  03may01 Added mode=phase.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'mirconst.h'

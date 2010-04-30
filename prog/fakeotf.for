@@ -31,12 +31,12 @@ c       System temps for channels A and B respectively.  If only one
 c       value is given, this is used for both channels.  This is also
 c       used to determine the amount of noise in each spectrum.  Default
 c       is to use the original Tsys measurements from the input file.
+c
+c$Id$
 c--
 c 21jun05 - tw - created
 c 20jul06 - tw - clean up for MOPS and miriad
 c 16may07 - tw - detab; change label 900 from GOTO to CONTINUE
-c
-c $Id$
 c-----------------------------------------------------------------------
 
       program fakeotf

@@ -93,6 +93,8 @@ c	is "any".
 c@ clip
 c	This sets the relative clip level in Steer mode. Values are
 c	typically 0.75 to 0.9. The default is image dependent.
+c
+c$Id$
 c--
 c
 c  History:
@@ -162,8 +164,6 @@ c               disconnected ranges of i to process (there is no overlap
 c               between runs).  Specifying boxes in this way is
 c               reasonably concise for the programmer, and yet makes
 c               vectorisable code straightforward to write.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       integer MaxBeam,maxCmp1,maxCmp2,MaxBox,MaxRun,MaxP

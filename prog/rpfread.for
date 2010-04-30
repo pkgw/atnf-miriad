@@ -20,6 +20,8 @@ c@ options
 c       Extra processing options.
 c       'brief'  Output a one-line summary for each scan.
 c       'header' Output only the source/frequency header information.
+c
+c$Id$
 c--
 c History:
 c 19 Feb 2004 by tw.
@@ -36,8 +38,6 @@ c 27jul06 - tw - fix bug in output call
 c 02aug06 - tw - accommodate Parkes MB data, report obstype
 c 25sep06 - tw - output az/el every cycle (Mopra)
 c 16may07 - tw - detab; change label 900 from GOTO to CONTINUE
-c
-c $Id$
 c-----------------------------------------------------------------------
 
       program rpfread

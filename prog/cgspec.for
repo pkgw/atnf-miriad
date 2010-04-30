@@ -333,6 +333,7 @@ c       XSIZ and YSIZ are the spatial half-sizes in ARCSEC over which
 c       each spectrum is spatially averaged.  These are optional and
 c       default to 0 (no binning, just a spectrum at each spatial pixel)
 c
+c$Id$
 c--
 c
 c  History:
@@ -415,8 +416,6 @@ c  * Remove need for equal sized contour/pixel map images if I can get
 c    Bob to play ball with BOXES code.
 c  * Try to swap line colour index to get white lines on black
 c    and vice versa.  Have this vary over the image as appropriate.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

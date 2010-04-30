@@ -46,6 +46,8 @@ c@ tol
 c       Interpolation tolerance, in minutes.  This gives the maximum gap
 c       between two integrations to interpolate across.  The default is
 c       2 minutes.
+c
+c$Id$
 c--
 c  History:
 c    04-jun-96 rjs  Preliminary version.
@@ -58,8 +60,6 @@ c
 c  Bugs/Shortcomings:
 c    * Should handle the conjugate symmetry property, and match data
 c      over a wider range of HA.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'mirconst.h'

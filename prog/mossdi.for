@@ -34,6 +34,8 @@ c@ options
 c	Extra processing options:
 c	  positive   Constrain the deconvolved image to be positive
 c	             valued.
+c
+c$Id$
 c--
 c  History:
 c    rjs 31oct94 - Original version.
@@ -46,8 +48,6 @@ c    rjs 28nov97 - Increase max number of boxes.
 c    rjs 29jan99 - Correct user message only.
 c    gmx 07mar04 - Changed optimum gain determination to handle
 c                   negative components
-c
-c $Id$
 c-----------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'

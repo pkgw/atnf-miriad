@@ -78,6 +78,8 @@ c	phase!
 c	  nocal     Do not perform gain calibration.
 c	  nopol     Do not perform polarisation calibration on the data.
 c	  nopass    Do not perform bandpass calibration on the data.
+c
+c$Id$
 c--
 c  History:
 c    rjs   7sep94 Original version.
@@ -95,8 +97,6 @@ c    rjs  08apr02 Allow negative values when taking cube roots.
 c    rjs  18jul04 Check for division by zero in quad quantities.
 c    rjs  23apr09 Increase buffer dimension to allow it to work on bigger problems.
 c    rjs  23jun09 Longer plot labels.
-c
-c $Id$
 c-----------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mem.h'

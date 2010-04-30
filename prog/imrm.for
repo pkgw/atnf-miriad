@@ -180,6 +180,8 @@ c	"yindependent"
 c		     By default, the sub-plots are all drawn with the same
 c		     Y-axis scale, that embraces all sub-plots.  This option
 c		     forces each sub-plot to be scaled independently.
+c
+c$Id$
 c--
 c  History:
 c    nebk 22may92   Original version.
@@ -199,8 +201,6 @@ c    rjs  02jul97   cellscal change.
 c    rjs  23jul97   added pbtype.
 c    nebk 25aug00   bump to 20 image.  subroutine chkdes should not
 c                   be checking cdelt/crpix on frequency axis
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

@@ -548,6 +548,7 @@ c       The OFFSET line is not applied to ANY position fields in
 c       succeeding lines that have %OTYPEs that are "hms" or "dms".
 c       I am too lazy to code it.
 c
+c$Id$
 c--
 c
 c  History:
@@ -720,8 +721,6 @@ c                  image
 c    pjt  19jan02  retrofitted options=corner introduced in 14feb01/BIMA
 c                  version
 c    pjt  29jan02  documented beamtyp=n, worked around a miriadB bug
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

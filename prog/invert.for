@@ -182,6 +182,8 @@ c	indicating that the bad channels are either to be replaced with
 c	0, or to be estimated by linear interpolation of two adjacent good
 c	channels. See the Users Guide for the merits and evils of the two
 c	approaches. The default is `zero'.
+c
+c$Id$
 c--
 c  History
 c    rjs        89  Initial version
@@ -300,8 +302,6 @@ c    rjs   01jul99  CHanges in call sequence to hdfiddle.
 c    rjs   29jun05  Handle changes in calling sequence to mostab/hdtab routines.
 c    rjs   03apr09  Change way of accessing scrio to help access larger files.
 c  Bugs:
-c
-c $Id$
 c-----------------------------------------------------------------------
 	include 'mirconst.h'
 	include 'maxdim.h'

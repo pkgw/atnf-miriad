@@ -43,12 +43,12 @@ c@ options
 c	Task enrichment options.  Minimum match is active.
 c	  natural   Assume keywords "center" and "radius" are in natural
 c	            units rather than arcsec.
+c
+c$Id$
 c--
 c  History:
 c    rjs   06mar97	Adapted from ellint.
 c    rjs   18sep05      Corrected incorrect type.
-c
-c $Id$
 c-----------------------------------------------------------------------
 	include 'mirconst.h'
 	include 'maxdim.h'

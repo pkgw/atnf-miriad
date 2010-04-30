@@ -73,6 +73,8 @@ c       warning and uses a scale factor of 1.
 c@ sigma
 c       When doing devonvolution (options=divide), this gives a noise
 c       parameter. Default is 0.
+c
+c$Id$
 c--
 c  History:
 c    rjs,mchw 18aug89 Converted from RESTORE.
@@ -100,8 +102,6 @@ c    bpw   12mar99 Increase size of map/beam/out to 512 to allow
 c                  directories.
 c    dpr   21jun01 Doc change only
 c  Bugs:
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

@@ -43,11 +43,11 @@ c@ stokes
 c       List of stokes parameters, default is xx,xy,yx,yy
 c@ options
 c       cabb - interpret spwin to match CABB output (combine overlaps)
+c
+c$Id$
 c--
 c The program rpgen is roughly based on uvgen but currently
 c dummy fills most of the data fields.
-c
-c $Id$
 c-----------------------------------------------------------------------
 	integer MAXSRC,MAXPOL,MAXWIN
 	parameter(MAXSRC=32,MAXPOL=4,MAXWIN=18)

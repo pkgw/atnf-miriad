@@ -50,6 +50,8 @@ c     any dimension. (see parameter maxdim in clplot.h)
 c@ log
 c     The output log file. The default filename is clplot.log
 c     Results from image analysis are written into the log file.
+c
+c$Id$
 c--
 c     reads and writes 3D arrays of channel maps
 c     generates: 1) spectra
@@ -61,8 +63,6 @@ c    20jan94 jpw   Copied from MIRIAD program velplot
 c    13jul98 pjt   linux/g77 cleanup
 c    26aug98 pjt   fixed bug with long words in history file of .cf file
 c    02jan05 rjs   fix misdeclaration.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'clplot.h'
 

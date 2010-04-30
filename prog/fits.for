@@ -128,6 +128,8 @@ c       Alternately:
 c         velocity=lsr
 c       indicates that fits is to determine the observatory velocity
 c       wrt the LSR frame using an appropriate model.
+c
+c$Id$
 c--
 c
 c  Bugs:
@@ -375,8 +377,6 @@ c                    can read SMA FITS output data from IDL.
 c    rjs  09-apr-09  Apply AIPS baseline dependent calibration and
 c                    various cosmetic changes.
 c    rjs  20-jul-09  Slight changes to messages about extension files.
-c
-c $Id$
 c-----------------------------------------------------------------------
 	integer maxboxes
 	parameter(maxboxes=2048)

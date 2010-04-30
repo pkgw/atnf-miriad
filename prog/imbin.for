@@ -34,6 +34,8 @@ c       Extra processing options.  Only the minimum characters to avoid
 c       ambiguity is needed.
 c         sum       Produce sum rather than average of pixels in
 c                   each bin
+c
+c$Id$
 c--
 c
 c  History:
@@ -47,8 +49,6 @@ c                  images.
 c    bmg  11may01  Added options=sum
 c   nebk  14nov01  Track change to readimcg interface
 c    rjs  19jan06  Fortran standardisation.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

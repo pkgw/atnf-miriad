@@ -238,6 +238,8 @@ c@ log
 c       The output logfile name. The default is the terminal.
 c@ comment
 c       A one line comment which is written into the logfile.
+c
+c$Id$
 c--
 c
 c  History:
@@ -427,8 +429,6 @@ c       points are put in the same FILE lcoation in BUFFER.  In this
 c       way the available space is better used.  MAXFILE is set to
 c       be much bigger than any number of files the user is ever
 c       likely to input.
-c
-c  $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'mirconst.h'

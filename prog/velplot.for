@@ -58,6 +58,8 @@ c       If the array is larger than memory, then VELPLOT may run slowly.
 c@ log
 c       The output log file. The default filename is velplot.log
 c       Results from image analysis are written into the log file.
+c
+c$Id$
 c--
 c  History:
 c       reads and writes 3D arrays of channel maps
@@ -133,8 +135,6 @@ c    19sep00 pjt   increased filenames
 c    27jan01 pjt   fixed bug due to above
 c    22mar02 mchw  better logarithmic contour levels.
 c    26jun02 mchw  fixed bug due to longer filenames. (cf. 19sep00)
-c
-c $Id$
 c-----------------------------------------------------------------------
 	include 'velplot.h'
 	include 'mem.h'

@@ -213,6 +213,8 @@ c     The following options can be used to disable calibration.
 c       nocal   Do not apply antenna gain calibration.
 c       nopass  Do not apply bandpass correction.
 c       nopol   Do not apply polarisation leakage correction.
+c
+c$Id$
 c--
 c
 c  History:
@@ -277,8 +279,6 @@ c                 baseline.
 c                 (version 1.4)
 c    vjm 09Dec09  Merge to mainline. Remove the eol characters. Add RCS
 c                 tags.
-c
-c $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'mirconst.h'

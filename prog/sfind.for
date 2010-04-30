@@ -448,6 +448,8 @@ c          and the source is probably not real.
 c       3) Check the rms of the background. If this is high then firstly
 c          the fit may not be good (as per 1), and secondly the source is in
 c          a noisy area and should be treated with caution anyway.
+c
+c$Id$
 c--
 c
 c  History:
@@ -555,8 +557,6 @@ c       criterion, perhaps the brightest pixel in a 10x10 box centred on the
 c       cursor). This could be used as well as or instead of the current
 c       method. Think about two seperate options to indicate user's desire
 c       of which.
-c
-c  $Id$
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'

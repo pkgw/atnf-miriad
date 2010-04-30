@@ -96,6 +96,8 @@ c       commas.  Minimum match is used.  Possible values are:
 c	  residual The output data-set is the residual image.
 c	           If an output is being created, the default is to make
 c	           this the fitted model.
+c
+c$Id$
 c--
 c  History:
 c    mchw 22apr94 new task.
@@ -119,8 +121,6 @@ c    rjs  27apr98 Merge above two sets of changes.
 c    rjs  27oct98 Improved format statements.
 c    rjs  30jun99 Ditto.
 c    paj  28Mar03 Fix bug in uncertainty estimates
-c
-c $Id$
 c-----------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'maxnax.h'

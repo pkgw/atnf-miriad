@@ -137,6 +137,8 @@ c       Write spectrum to this ascii file. Spectral axis units are as
 c       specified by the xaxis keyword. Default is no output file.
 c@ comment
 c	A one-line comment which is written into the logfile and any plot.
+c
+c$Id$
 c--
 c
 c  History:
@@ -154,8 +156,6 @@ c    lss  14jun02  added a position-fitting option
 c    nebk 12nov03  in subroutine pfit, declare xmom and coord to be of
 c                  size maxnax, not of passed in naxis (illegal fortran)
 c    lss  28apr09  minicube option
-c
-c $Id$
 c----------------------------------------------------------------------c
 	include 'maxdim.h'
 	integer maxco,maxnax,naxis,maxch
