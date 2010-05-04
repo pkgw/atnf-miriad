@@ -437,18 +437,19 @@ c Radix 4 iterations.
 c
 c-----------------------------------------------------------------------
       integer k
-      complex t1, t2, t3, t4
+      complex t1, t2, t3, t4, t5
 c-----------------------------------------------------------------------
       do k = 1, nthpo, 4
         t1 = c0(k) + c2(k)
         t2 = c0(k) - c2(k)
         t3 = c1(k) + c3(k)
         t4 = c1(k) - c3(k)
-        t4 = cmplx(-aimag(t4),real(t4))
+        t5 = cmplx(-aimag(t4),real(t4))
+
         c0(k) = t1 + t3
         c1(k) = t1 - t3
-        c2(k) = t2 + t4
-        c3(k) = t2 - t4
+        c2(k) = t2 + t5
+        c3(k) = t2 - t5
       enddo
 
       end
