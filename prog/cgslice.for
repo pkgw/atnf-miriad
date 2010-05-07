@@ -651,7 +651,7 @@ c Draw contours
 c
                call pgsci (concol)
                call conturcg (.false., blank, .false., win(1), win(2),
-     +                        doblnk, memr(ipim), nlevs, levs, tr, 0.0)
+     +           doblnk, memr(ipim), nlevs, levs, tr, 0.0, 0, 0)
              end if
 c
 c Label if first time through redisplay loop; axes not erased

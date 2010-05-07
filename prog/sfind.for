@@ -764,7 +764,7 @@ c
 c Draw contours
 c
            call conturcg (.false., blank, .false., win(1), win(2),
-     +                    doblnk, memr(ipim), nlevs, levs, tr, 0.0)
+     +       doblnk, memr(ipim), nlevs, levs, tr, 0.0, 0, 0)
          end if
 c
 c Determine if the axes need ascii or numeric labelling
@@ -774,9 +774,8 @@ c
          call dolabcg (gaps, dotr, nx, ny, ngrps, nlast, k,
      +                 labtyp, doaxlab, doaylab, donxlab, donylab)
 c
-c Write on ascii axis labels
+c Write ascii axis labels
 c
-
          call aaxlabcg (doaxlab, doaylab, xdispl, ydispb,
      +                             xlabel, ylabel)
 c

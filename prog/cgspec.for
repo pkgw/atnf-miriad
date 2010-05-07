@@ -780,8 +780,7 @@ c
           call pgslw (clines(i))
           call pgsci (7+i-1)
           call conturcg (.false., blankc, solneg(i), win(1), win(2),
-     +                   doblnkc, memr(ipim), nlevs(i), levs(1,i),
-     +                   tr, break(i))
+     +      doblnkc, memr(ipim), nlevs(i), levs(1,i), tr, break(i), 0,0)
 c
 c Save normalization image if there are some blanks
 c

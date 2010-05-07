@@ -573,7 +573,7 @@ c            Render pixel map; set default b&w colour table first.
            if (docont) then
 c            Draw contours.
              call conturcg (.false., blank, .false., win(1), win(2),
-     +                      doblnk, memr(ipim2), nlevs, levs, tr, 0.0)
+     +         doblnk, memr(ipim2), nlevs, levs, tr, 0.0, 0, 0)
            end if
 c
 c Label and draw axes
