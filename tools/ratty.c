@@ -920,21 +920,28 @@ char *name,*pathname;
   Attempt to open an include file.
 ------------------------------------------------------------------------*/
 {
-  FILE *fd;
-  char c,*s;
+  char c, *s;
+  int  i;
   struct link_list *t;
+  FILE *fd;
 
-/* Try the plain, unadulterated name. */
-
-  if((fd = fopen(name,"r")) != NULL) {
+  /* Try the plain, unadulterated name. */
+  if ((fd = fopen(name,"r")) != NULL) {
     getcwd(pathname,MAXLINE);
+    if (strncmp(pathname, "/private", 8) == 0) {
+      /* Strip off MacOSX automounter mount point. */
+      s = pathname;
+      for (i = 8; i < MAXLINE; i++, s++) {
+        *s = pathname[i];
+        if (*s == '\0') break;
+      }
+    }
     strcat(pathname,"/");
     strcat(pathname,name);
     return(fd);
   }
 
-/* Otherwise try appending it to the list of include file directories. */
-
+  /* Otherwise try appending it to the list of include directories. */
   for(t = incdir; t != NULL; t = t->fwd){
     s = t->name;
     Strcpy(pathname,s);
@@ -943,6 +950,7 @@ char *name,*pathname;
     strcat(pathname,name);
     if((fd = fopen(pathname,"r")) != NULL) break;
   }
+
   return(fd);
 }
 /************************************************************************/
