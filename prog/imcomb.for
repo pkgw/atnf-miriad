@@ -63,7 +63,7 @@ c-----------------------------------------------------------------------
       include 'mem.h'
 
       integer MAXIN, MAXOPEN
-      parameter(MAXIN=500, MAXOPEN=6)
+      parameter(MAXIN=1024, MAXOPEN=6)
 
       logical equal, interp, mosaic, nonorm, relax
       integer i, k, maxpix, minpix, nOpen, nOut(MAXNAX), naxis, nin,
