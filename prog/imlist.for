@@ -466,43 +466,39 @@ c    ave,rms    Average and rms of unflagged pixels within region.
 c    pmax,pmin  Maximum and minimum of unflagged pixels.
 c-----------------------------------------------------------------------
       include 'maxdim.h'
-      real data(MAXDIM)
+
       logical flags(MAXDIM)
-      integer i,j,num
-      real sumsq
+      integer i, j, num
+      real    image(MAXDIM)
+      double precision dsum, ssq
 c-----------------------------------------------------------------------
-c
-c  Initialize statistics for each plane.
-c
-      sum = 0.
-      sumsq = 0.
-      num = 0
-      ave = 0.
-      rms = 0.
-      pmax = -1.e12
-      pmin = 1.e12
-c
-c  Accumulate statistics for unflagged data.
-c
-      do j = trc(2),blc(2),-1
-        call xyread (lIn,j,data)
-        call xyflgrd (lIn,j,flags)
-        do i = blc(1),trc(1)
-          if(flags(i)) then
-            sum = sum + data(i)
-            sumsq = sumsq + data(i)*data(i)
-            num = num + 1
-            pmax=max(pmax,data(i))
-            pmin=min(pmin,data(i))
+      num  = 0
+      dsum = 0d0
+      ssq  = 0d0
+      pmax = -1e12
+      pmin =  1e12
+
+c     Accumulate unflagged data.
+      do j = trc(2), blc(2), -1
+        call xyread (lIn, j, image)
+        call xyflgrd (lIn, j, flags)
+
+        do i = blc(1), trc(1)
+          if (flags(i)) then
+            num  = num  + 1
+            dsum = dsum + image(i)
+            ssq  = ssq  + image(i)*image(i)
+            pmax = max(pmax, image(i))
+            pmin = min(pmin, image(i))
           endif
         end do
       end do
-c
-c  Calculate average and rms.
-c
-      if(num.ne.0)then
-        ave = sum/num
-        rms = sqrt(sumsq/num - ave*ave)
-      endif
+
+c     Calculate statistics.
+      if (num.eq.0) num = 1
+
+      sum = dsum
+      ave = dsum/num
+      rms = sqrt(ssq/num - ave*ave)
 
       end
