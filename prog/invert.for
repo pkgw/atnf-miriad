@@ -156,10 +156,18 @@ c         amplitude Produce a image using the data amplitudes only.  The
 c                   phases of the data are set to zero.
 c         phase     Produce an image using the data phase only.  The
 c                   amplitudes of the data are set to 1.
-c         sin       Force use of the SIN projection for the output map
-c                   and beam.  Default is NCP unless non-east-west
-c                   baselines are present or the field centre is within
-c                   3 deg of the celestial equator.
+c         sin       Label the output map and beam as a SIN projection.
+c                   Default is NCP unless non-east-west baselines are
+c                   present or the field centre is within 3 deg of the
+c                   celestial equator (because NCP blows up near the
+c                   equator).  Note that this option simply changes
+c                   ctype1 and ctype2 in the header, the translation
+c                   only being correct to first order about the field
+c                   centre.  A similar result could be obtained by
+c                   running 'puthd' on the output map, e.g.
+c                     puthd in=<map>/ctype1 value=RA---SIN
+c                     puthd in=<map>/ctype2 value=DEC--SIN
+c                   and likewise for the beam.
 c@ mode
 c       This determines the algorithm to be used in imaging.
 c       Possible values are:
