@@ -383,6 +383,7 @@ c                    cards.
 c    rjs  23-apr-10  Handle antenna tables with compacted entries in a
 c                    fashion to preserve antenna numbers (rather than
 c                    re-numbering).  Improve frequency precision.
+c    rjs  18-may-10  Make sure RA in uvin is in the range 0 - 2*pi.
 c-----------------------------------------------------------------------
 	integer maxboxes
 	parameter(maxboxes=2048)
@@ -1966,6 +1967,10 @@ c
 	    badepo = .true.
 	    epoch(i) = defepoch
 	  endif
+	  raepo(i) = mod(raepo(i),360.d0)
+	  if(raepo(i).lt.0)raepo(i) = raepo(i) + 360.d0
+	  raapp(i) = mod(raapp(i),360.d0)
+	  if(raapp(i).lt.0)raapp(i) = raapp(i) + 360.d0
 	  diff = max( abs(raapp(i)-raepo(i)),abs(decapp(i)-decepo(i)) )
 	  raepo(i)  = dpi/180 * raepo(i)
 	  decepo(i) = dpi/180 * decepo(i)
