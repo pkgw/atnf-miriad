@@ -657,7 +657,7 @@ c
 	  else
 	    vary = ' '
 	  endif
-	  write(line,'(i17,f14.5,f13.6,a,a)')
+	  write(line,'(i17,f14.5,f13.7,a,a)')
      *		nschan(i),sfreqs(i,1),sfreqs(i,2),' GHz',vary
 	  call logwrit(line)
 	enddo
