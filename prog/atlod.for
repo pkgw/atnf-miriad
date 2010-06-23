@@ -3585,11 +3585,11 @@ c
         if (birdie) then
           offset=1
           do i=1,nifs
+            if (nfreq(i).eq.2049.and.
+     *          abs(abs(sdf(i))-0.001).lt.1.e-4) then
 c          
 c             CABB Mode 2048*1MHz
 c
-            if (nfreq(i).eq.2049.and.
-     *          abs(abs(sdf(i))-0.001).lt.1.e-4) then
               do j=1,NBIRDIE1
                 flags(offset+b1(j))=.false.
               enddo
@@ -3616,6 +3616,19 @@ c
               do j=ch2,nfreq(i)-1
                   flags(offset+j)=.false.
               enddo
+            else if (nfreq(i).ge.2049.and.
+     *          abs(abs(sdf(i))-0.5e-6).lt.1.e-7) then
+c
+c             CABB zoom mode 2049*0.5kHz, or >2049 (blended zooms)
+c  
+              ch1=99
+              ch2=nfreq(i)-100
+              do j=0,ch1
+                flags(offset+j)=.false.
+              enddo
+              do j=ch2,nfreq(i)-1
+                  flags(offset+j)=.false.
+              enddo                      
             endif
             offset=offset+nfreq(i)
           enddo
