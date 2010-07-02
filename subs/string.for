@@ -28,6 +28,8 @@ c   rjs     03aug98 Included updated version of matodf and matorf.
 c   rjs     05feb01 Added st routines.
 c   rjs     07may10 Increase precision in atodf - there was some real number
 c		    arithmetic being used.
+c   rjs     02jul10 Have atodf handle an exponent when "E" or "D" is missing
+c		    (eg 1.234+5 is equivalent to 1.234E+05)
 c
 c $Id$
 c************************************************************************
@@ -255,6 +257,9 @@ c
 	  else if(string(l:l).eq.'e'.or.string(l:l).eq.'E'.or.
      *		  string(l:l).eq.'d'.or.string(l:l).eq.'D')then
 	    state = expon
+	  else if(string(l:l).eq.'+'.or.string(l:l).eq.'-')then
+	    state = expon
+	    l = l - 1
 	  else
 	    state = bad
 	  endif
