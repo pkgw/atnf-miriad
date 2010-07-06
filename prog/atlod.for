@@ -2824,7 +2824,7 @@ c
 c
               call PokeData(u,v,w,baseln,Sif(ifno),bin,
      *          vis,if_nfreq(ifno),nstoke(ifno),flags,
-     *          tint,if_invert(ifno).lt.0,flipper,xymode,dopack,dotsys)
+     *          tint,if_invert(ifno).lt.0,flipper,xymode)
 c
 c  Reinitialise things.
 c
