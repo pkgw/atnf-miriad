@@ -143,11 +143,18 @@ if test "x$with_rpfits" != x ; then
   EXTDIRS="$EXTDIRS $with_rpfits"
 fi
 
+AC_ARG_WITH([wcslib], [AS_HELP_STRING([--with-wcslib=DIR],
+            [directory containing wcslib library])], [])
+if test "x$with_wcslib" != x ; then
+  EXTDIRS="$EXTDIRS $with_wcslib"
+fi
+
 AC_PATH_X
 EXTDIRS="$EXTDIRS              \
          $MIRROOT/$MIRARCH/lib \
          /usr/local/pgplot     \
          /usr/local/rpfits     \
+         /usr/local/wcslib     \
          /usr/local/gnu/lib    \
          /usr/local/lib        \
          /local/pgplot         \
@@ -269,6 +276,25 @@ else
 fi
 
 AC_SUBST([RPFITSLIB])
+
+
+# Search for WCSLIB, we need the full pathname.
+AC_MSG_NOTICE([
+
+Looking for the full pathname of the WCSLIB library...])
+
+for EXTDIR in $EXTDIRS ; do
+  AC_CHECK_FILES([$EXTDIR/libwcs.$SO $EXTDIR/libwcs.a],
+                 [WCSLIB="$EXTDIR/libwcs.a" ; break])
+done
+
+if test "x$WCSLIB" = x ; then
+  AC_MSG_WARN([WCSLIB not found.  Many tasks will fail to link.])
+else
+  AC_MSG_NOTICE([WCSLIB appears to be available.])
+fi
+
+AC_SUBST([WCSLIB])
 
 
 # Search for PGPLOT.  Other libraries may be required depending on what

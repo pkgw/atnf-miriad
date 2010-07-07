@@ -41,11 +41,14 @@ STRIP := @STRIP@
 # How to regenerate the man page index database.
 MANDB := @MANDB@
 
+# PGPLOT library.
+PGPLOTLIB := @PGPLOTLIB@
+
 # RPFITS library.
 RPFITSLIB := @RPFITSLIB@
 
-# PGPLOT library.
-PGPLOTLIB := @PGPLOTLIB@
+# WCSLIB library.
+WCSLIB    := @WCSLIB@
 
 # X11 (just the basic X11 library, needed to satisfy PGPLOT dependencies).
 # Also used to build sxmtv if xmtv fails to compile.
