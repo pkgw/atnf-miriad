@@ -2488,7 +2488,7 @@ c
 c
 c  Convert from x,y to RA,DEC.
 c
-      if (x1pix.eqv.x2pix .and. y1pix.eqv.y2pix) then
+      if ((x1pix.eqv.x2pix) .and. (y1pix.eqv.y2pix)) then
         continue
 
       else if (x1pix .and. y1pix) then
