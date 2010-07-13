@@ -1,59 +1,12 @@
-------------------------------------------------------------------------------
- Welcome to the Miriad ftp area at the Australia Telescope National Facility
-                 ftp://ftp.atnf.csiro.au/pub/software/miriad/
-------------------------------------------------------------------------------
+This is the 'CABB' branch of miriad - a version of Miriad that will work
+with the new Compact Array Broad Band correlator, CABB. You can view the
+state of this software in the tracking system at [1].
+See [2] for CABB history and developments. 
 
-Miriad is a radio-astronomy data reduction package used at the ATNF to process
-aperture-synthesis observations, primarily from the Australia Telescope
-Compact Array (ATCA) at Narrabri.
+Please report bugs using the bug tracker [3], or to miriad@atnf.csiro.au.
 
-This directory contains distribution tar files for installation from source
-code and also binary installations for selected platforms.
+[1] https://svn.atnf.csiro.au/trac/miriad/wiki/Development/cabb-upgrade
+[2] http://www.narrabri.atnf.csiro.au/observing/CABB.html
+[3] https://svn.atnf.csiro.au/trac/miriad/newticket
 
-  DISCLAIMER		    -- Standard GPL legal disclaimer.
-  INSTALL.html		    -- Installation instructions (included in
-			       miriad-common.
-  README		    -- This file.
-
-Installation from source code is based on GNU autoconf/make using the
-following two tar files:
-
-  miriad-code.tar.gz	    -- Miriad source code.
-  miriad-common.tar.gz	    -- Common runtime files, including installation
-			       instructions and compiled documentation.
-
-For a binary installation you need miriad-common.tar.gz and one of the
-following tar files:
-
-  miriad-darwin_ppc.tar.gz  -- Binaries for PowerPC Macs (Mac OS X 10.4.8,
-			         Darwin 8.8.0, gfortran 4.1.0, gcc 4.1.0).
-  miriad-darwin_x86.tar.gz  -- Binaries for Intel Macs (Mac OS X 10.4.8,
-			         Darwin 8.8.1, gfortran 4.2.0, gcc 4.2.0).
-  miriad-linux.tar.gz	    -- Binaries for 32-bit Linux systems (Linux
-			         2.4.18-1-686-smp, g77 3.2.3, gcc 3.2.3).
-  miriad-linux64.tar.gz	    -- Binaries for 64-bit Linux systems (Linux
-			         2.6.8-11-amd64-k8-smp, g77 3.3.5, gcc 3.3.5).
-  miriad-sun4sol.tar.gz	    -- Binaries for Sun Solaris systems (SunOS 5.6,
-			         Sun WS6U2 f77 5.3, cc 5.3).
-
-If you are interested in recent changes:
-
-  miriad-rcs.tar.gz	    -- Miriad RCS version files.
-
-The following subdirectories contain additional material:
-
-  tutorials		    -- Overheads from data reduction symposia.
-  updates		    -- Incremental source code updates.
-
-For convenience, the User and Programmer Guides contained in miriad-common
-are available separately:
-
-  userguide.ps.gz	    -- Miriad User Guide, A4 paper.
-  userguide_US.ps.gz	    --   do. for US letter size paper.
-  progguide.ps.gz	    -- Miriad Programmer Guide, A4 paper.
-  progguide_US.ps.gz	    --   do. for US letter size paper.
-
-Enquiries may be addressed to miriad@atnf.csiro.au
-
-------------------------------------------------------------------------------
-$Id$
+ $Id$
