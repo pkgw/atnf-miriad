@@ -193,7 +193,7 @@ RPFITSLIB  := $(MIRLIBD)/librpfits.a
 # WCSLIB, required by the many tasks (>90) that deal with image coordinates.
 # It is supplied with Miriad in the binary distribution kit available for some
 # platforms.  The full pathname must be specified because this library is
-# listed as an explicit prerequisite of some tasks (i.e. they will be
+# listed as an explicit prerequisite of all tasks (i.e. they will be
 # recompiled if it changes).
 WCSLIB     := $(MIRLIBD)/libwcs.a
 
