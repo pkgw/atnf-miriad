@@ -342,8 +342,8 @@ c
       data gaps, doabut /.false., .false./
 c-----------------------------------------------------------------------
       version = versan ('cgcurs',
-     +                  '$Revision',
-     +                  '$Date')
+     +                  '$Revision$',
+     +                  '$Date$')
 
 c     Get user inputs.
       call inputs (maxlev, img, ibin, jbin, kbin, levtyp, slev, levs,
