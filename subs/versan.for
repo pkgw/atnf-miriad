@@ -65,7 +65,7 @@ c         Time.
         end if
 
       else
-        versan(i0:) = ' (not recorded)'
+        versan(i0:) = '(not recorded)'
       endif
 
       if (.not.quiet) then
