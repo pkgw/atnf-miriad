@@ -44,10 +44,10 @@ MANDB := @MANDB@
 # PGPLOT library.
 PGPLOTLIB := @PGPLOTLIB@
 
-# RPFITS library.
+# RPFITS library (full pathname required).
 RPFITSLIB := @RPFITSLIB@
 
-# WCSLIB library.
+# WCSLIB library (full pathname required).
 WCSLIB    := @WCSLIB@
 
 # X11 (just the basic X11 library, needed to satisfy PGPLOT dependencies).
