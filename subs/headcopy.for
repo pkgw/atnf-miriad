@@ -40,9 +40,9 @@ c   trc for reversed axes.  Often one can use the output of subroutine
 c   boxinfo to get blc and trc.
 c
 c As xyopen and xyzopen maintain the naxis and naxis# items, they are
-c not copied by headcopy.  datamin and datamax are also not copied.
-c They must be recalculated explicitly for the output image and updated
-c with wrhdr.
+c not copied here.  datamin, datamax, and rms are also not copied but
+c must be recalculated explicitly for the output image and updated with
+c wrhdr.
 c
 c   Input:
 c      tnoinp     handle of input image
@@ -59,7 +59,7 @@ c***********************************************************************
       parameter (CRPIX = 1, CDELT = 2, CRVAL = 3, CROTA = 4, CTYPE = 5)
 
       integer   NKEYS
-      parameter (NKEYS = 31)
+      parameter (NKEYS = 32)
 
       logical   hdprsnt
       integer   n, k
@@ -69,15 +69,14 @@ c***********************************************************************
       character itoaf*1
       external  itoaf
 
-      data keyw/
+      data keyw /
      *    'crpix   ', 'cdelt   ', 'crval   ', 'crota   ', 'ctype   ',
-     *    'history ', 'cellscal',
-     *    'bmaj    ', 'bmin    ', 'bpa     ', 'bunit   ',
-     *    'obstime ', 'epoch   ', 'instrume', 'mostable',
-     *    'ltype   ', 'lstart  ', 'lwidth  ', 'lstep   ',
-     *    'niters  ', 'object  ', 'observer', 'obsdec  ', 'obsra   ',
-     *    'pbfwhm  ', 'restfreq', 'telescop', 'vobs    ',
-     *    'btype   ', 'pbtype  ', 'llrot   '/
+     *    'bmaj    ', 'bmin    ', 'bpa     ', 'btype   ', 'bunit   ',
+     *    'cellscal', 'date-obs', 'epoch   ', 'instrume', 'llrot   ',
+     *    'ltype   ', 'lstart  ', 'lstep   ', 'lwidth  ', 'mostable',
+     *    'niters  ', 'object  ', 'observer', 'obsra   ', 'obsdec  ',
+     *    'obstime ', 'pbfwhm  ', 'pbtype  ', 'restfreq', 'telescop',
+     *    'vobs    ', 'history '/
 c-----------------------------------------------------------------------
 c     Handle crpix, crval, cdelt, crota, and ctype.
       do k = 1, 5
