@@ -504,45 +504,34 @@ c-----------------------------------------------------------------------
 c***********************************************************************
       subroutine MkHead(lIn,lOut,off,version)
 
-      integer lIn,lOut,off
+      integer   lIn, lOut, off
       character version*(*)
 
 c  Make the header of the output image.
 c-----------------------------------------------------------------------
-      integer i
       double precision crpix3
       character umsg*64
-      integer nkeys
-      parameter (nkeys=43)
-      character keyw(nkeys)*8
 
 c     Externals.
       logical hdprsnt
-
-      data keyw/   'bmaj    ','bmin    ','bpa     ','bunit   ',
-     *  'crval1  ','crval2  ','crval3  ','crval4  ','crval5  ',
-     *  'cdelt1  ','cdelt2  ','cdelt3  ','cdelt4  ','cdelt5  ',
-     *  'ctype1  ','ctype2  ','ctype3  ','ctype4  ','ctype5  ',
-     *  'crpix1  ','crpix2  ',           'crpix4  ','crpix5  ',
-     *  'obstime ','epoch   ','history ','instrume','niters  ',
-     *  'object  ','observer','obsra   ','obsdec  ','pbfwhm  ',
-     *  'restfreq','telescop','vobs    ','cellscal','pbtype  ',
-     *  'ltype   ','lstart  ','lwidth  ','lstep   ','btype   '/
 c-----------------------------------------------------------------------
-      do i = 1, nkeys
-        call hdcopy(lIn,lOut,keyw(i))
-      enddo
+c     Copy header verbatim.
+      call headcopy(lIn, lOut, 0, 0, 0, 0)
 
-      if (hdprsnt(lIn,'crpix3')) then
-        call rdhdd(lIn,'crpix3',crpix3,0d0)
-        crpix3 = crpix3 - off
-        call wrhdd(lOut,'crpix3',crpix3)
+c     Update crpix3.
+      if (hdprsnt(lIn, 'crpix3')) then
+        call rdhdd(lIn, 'crpix3', crpix3, 0d0)
+        crpix3 = crpix3 - dble(off)
+        call wrhdd(lOut, 'crpix3', crpix3)
       endif
+
+c     Write history.
       call hisopen(lOut,'append')
-      umsg = 'IMFIT: Miriad '//version
+      umsg = 'IMFIT: Miriad ' // version
       call hiswrite (lOut, umsg)
       call hisinput(lOut,'IMFIT')
       call hisclose(lOut)
+
       end
 c***********************************************************************
       subroutine LoadDat(lIn,Boxes,k,n1,n2,clip,inten,m)
