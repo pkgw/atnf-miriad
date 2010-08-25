@@ -1016,7 +1016,6 @@ c     Copy the header.
       call headcopy(lin, lout, 0, 3, 0, 0)
 
 c     Update history.
-      call hdcopy(lin,lout,'history')
       call hisopen(lout,'append')
       lversion=version
       call hiswrite(lout,'CLFIND: Miriad ' // lversion)
