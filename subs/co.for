@@ -1117,7 +1117,7 @@ c                                  wcoeff(3)*w(raw)
 c-----------------------------------------------------------------------
       include 'co.h'
 
-      integer   icrd, ilng, status
+      integer   icrd, ilng
       double precision clat, clat0, clng, fac, lat, lat0, lng, lng0,
      *          slat, slat0, slng, x2(MAXNAX)
       character dummy*8, pcode*3
@@ -2032,7 +2032,7 @@ c--
 c-----------------------------------------------------------------------
       include 'co.h'
 
-      integer   iax, icrd, status
+      integer   iax, icrd
       character ctypei*16, pcode*3
 
 c     External.
