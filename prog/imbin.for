@@ -137,7 +137,7 @@ c     binning factors integrally.
 
 c     Open output image and write header.
       call xyopen (lout, out, 'new', naxis, sizout)
-      call headcopy (lin, lout, 0, naxis, 0, 0)
+      call headcopy (lin, lout, 0, 0, 0, 0)
 
       call hisopen  (lout,'append')
       call hiswrite (lout, 'IMBIN: Miriad '//version)
