@@ -150,7 +150,7 @@ c
 c Open output image and copy header keywords.
 c
       call xyopen (lout, out, 'new', naxis, size)
-      call headcopy (lin, lout, 0, naxis, 0, 0)
+      call headcopy (lin, lout, 0, 0, 0, 0)
 c
 c  Write the history.
 c
