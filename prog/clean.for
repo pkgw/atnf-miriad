@@ -662,7 +662,7 @@ c-----------------------------------------------------------------------
       external  itoaf
 c-----------------------------------------------------------------------
 c     Copy all header keywords.
-      call headcopy(lIn, lOut, 0, 4, 0, 0)
+      call headcopy(lIn, lOut, 0, 0, 0, 0)
 
 c     Update keywords that have changed.
       call rdhdd(lIn,  'crpix1', crpix1, 1d0)
