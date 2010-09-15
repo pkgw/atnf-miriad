@@ -538,7 +538,7 @@ c Open and get dimension of input dataset: naxis.
       endif
       if( status.eq.'new' ) then
          call xyzopen(  unit, name, 'new', naxis, axlen )
-         call headcopy( prfinfo(1), unit, 0, naxis, 0,0 )
+         call headcopy(prfinfo(1), unit, 0, 0, 0,0)
       endif
 
 c Find out which axis is to be fit. First read keyword, then call fndaxnum

@@ -953,15 +953,16 @@ c-----------------------------------------------------------------------
 
 
       subroutine testbad(nmin,nstop,nclump,a)
+
+      integer nmin,nstop,nclump
+      integer a(*)
 c-----------------------------------------------------------------------
 c     checks for bad clumps and deassigns them
 c
 c     clumps must have at least nmin pixels
 c-----------------------------------------------------------------------
       include 'clfind.h'
-      integer nmin,nstop,nclump
       integer ncl,nps
-      integer a(*)
 c-----------------------------------------------------------------------
       do ncl = 1, nclump
          if (clump(ncl,4).lt.nmin) then
@@ -978,6 +979,7 @@ c-----------------------------------------------------------------------
 
 
       subroutine wrgrdclf(heap)
+
       integer heap(*)
 c-----------------------------------------------------------------------
 c     Write out clump assignment array.
@@ -1003,21 +1005,19 @@ c-----------------------------------------------------------------------
 
 
       subroutine wrhd(lIn, lOut, version)
+
       integer  lIn, lOut
-      character version*(*)
+      character version*72
 c-----------------------------------------------------------------------
 c     Write header for the output cube.
 c-----------------------------------------------------------------------
-      character lversion*32
-c-----------------------------------------------------------------------
 c     Copy the header.
-      call headcopy(lin, lout, 0, 3, 0, 0)
+      call headcopy(lin, lout, 0, 0, 0, 0)
 
 c     Update history.
-      call hisopen(lout,'append')
-      lversion=version
-      call hiswrite(lout,'CLFIND: Miriad ' // lversion)
-      call hisinput(lout,'CLFIND')
+      call hisopen (lout, 'append')
+      call hiswrite(lout, 'CLFIND: Miriad ' // version)
+      call hisinput(lout, 'CLFIND')
       call hisclose(lout)
 
       return
