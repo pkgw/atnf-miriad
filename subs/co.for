@@ -671,17 +671,17 @@ c             Convert NCP to SIN.
               endif
 
               status = prjput(prj, prj_code, 3HSIN, 0)
-              darg = 0d0
+              darg   = 0d0
               status = prjput(prj, prj_pv, iarg, 1)
-              darg = cos(lat0)/sin(lat0)
+              darg   = cos(lat0)/sin(lat0)
               status = prjput(prj, prj_pv, iarg, 2)
 
             else if (pcode1.eq.'GLS') then
 c             Convert GLS to SFL.
               status = celput(cel(1,icrd), cel_offset, 1, 0)
-              darg = crval(ilng,icrd)*DR2D
+              darg   = 0d0
               status = celput(cel(1,icrd), cel_phi0,   iarg, 0)
-              darg = crval(ilat,icrd)*DR2D
+              darg   = crval(ilat,icrd)*DR2D
               status = celput(cel(1,icrd), cel_theta0, iarg, 0)
               status = prjput(prj, prj_code, 3HSFL, 0)
 
