@@ -161,7 +161,8 @@ ifeq "$(MAKEMODE)" "system"
 	   cp $< $@
 	 @ ci -u -m"Updated from /usr/local/include/rpfits.inc." $@
 
-    wcslib : $(MIRINCD)/wcslib $(MIRLIBD)/libwcs.a
+    wcslib : $(MIRINCD)/wcslib $(MIRLIBD)/libwcs.a \
+      $(addprefix $(MIRBIND)/,HPXcvt fitshdr wcsgrid wcsware)
 
     $(MIRINCD)/wcslib : /usr/local/include/wcslib
 	-@ mkdir -m 2775 -p -v $@
