@@ -97,8 +97,13 @@ c     Determine portion of image to copy.
         nOut(i) = (trc(i) - blc(i) + incr(i))/incr(i)
       enddo
 
-c     Create the output image, and make its header.
+c     Create the output image.
       call xyopen(lOut,outNam,'new',naxis,nOut)
+
+c     Start with a verbatim copy of the input header.
+      call headcopy(lIn, lOut, 0, 0, 0, 0)
+
+c     Update changed keywords.
       do i = 1, naxis
         keyw = 'crpix' // itoaf(i)
         call rdhdd(lIn, keyw, crpix, 1d0)
@@ -111,11 +116,12 @@ c     Create the output image, and make its header.
         call wrhdd(lOut,keyw, cdelt)
       enddo
 
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
       call hdcopy(lIn, lOut, 'rms')
-      call hisopen(lOut,'append')
-      call hiswrite (lOut, 'IMSUB: Miriad ' // version)
-      call hisinput(lOut,'IMSUB')
+
+c     Update history.
+      call hisopen (lOut, 'append')
+      call hiswrite(lOut, 'IMSUB: Miriad ' // version)
+      call hisinput(lOut, 'IMSUB')
       call hisclose(lOut)
 
 c     Initialise the plane indices.
