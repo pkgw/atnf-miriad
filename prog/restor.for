@@ -333,7 +333,7 @@ c-----------------------------------------------------------------------
      *    call bug('f', 'Map and model increments differ')
 
 c       Linear (small-field) approximation unless crvalM == crvalD.
-        temp = (crvalM - crvalD)/cdeltD + (crpixM - crpixD)
+        temp = (crpixM - crpixD) - (crvalM - crvalD)/cdeltM
         offset(iax) = nint(temp)
 
         if (abs(offset(iax)-temp).gt.0.05d0)
