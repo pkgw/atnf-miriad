@@ -318,6 +318,7 @@ c                 ifsel
 c    mhw  28jun10 Add options nopack, notsys, process auto corr bins
 c    mhw  22jul10 Fix ischan calculation.
 c    mhw  19oct10 Update 20/13 band - now 1-3 GHz
+c    mhw  26oct10 Fix birdie flagging in 20/13 cm band
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -3645,6 +3646,7 @@ c
         data b1/640,256,768,1408,1280,1920,1792,1176,156,128,1152/
 c        
         if (nrfi.gt.0) then
+          write(*,*) 'flagging ',nrfi,' ranges'
           offset=1
           do i=1,nifs
             do j=1,nrfi
@@ -3691,9 +3693,9 @@ c
                     c1=(1.975-sfreq(i))/sdf(i)
                     c2=(2.675-sfreq(i))/sdf(i)
                   endif
+                  ch1=min(nint(c1),nint(c2))
+                  ch2=max(nint(c1),nint(c2))
                 endif
-                ch1=min(nint(c1),nint(c2))
-                ch2=max(nint(c1),nint(c2))
               endif
               do j=0,ch1
                 flags(offset+j)=.false.
