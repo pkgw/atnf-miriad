@@ -3646,7 +3646,6 @@ c
         data b1/640,256,768,1408,1280,1920,1792,1176,156,128,1152/
 c        
         if (nrfi.gt.0) then
-          write(*,*) 'flagging ',nrfi,' ranges'
           offset=1
           do i=1,nifs
             do j=1,nrfi
