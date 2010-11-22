@@ -506,7 +506,7 @@ c-----------------------------------------------------------------------
       external  itoaf
 c-----------------------------------------------------------------------
 c     Start with a verbatim copy of the input keywords.
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
+      call headcp(lIn, lOut, 0, 0, 0, 0)
 
 c     Adjust the reference pixel for subimaging.
       do iax = 1, naxis
@@ -527,9 +527,9 @@ c     Adjust the reference pixel for subimaging.
 
 c     Update changed keywords.
       if (op.eq.'temp') then
-        call wrbtype (lOut, 'rotational_temperature')
+        call wrbtype(lOut, 'rotational_temperature')
       else
-        call wrbtype (lOut, 'optical_depth')
+        call wrbtype(lOut, 'optical_depth')
       endif
 
 c     Write history.

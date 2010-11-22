@@ -429,10 +429,10 @@ c     Compute results; assume 2-D images only.
       do j = 1, axLen(2)
 c       Read lines from each image.
         do k = 1, nIn
-          call xyread (lIn(k), j,   row(1,k))
+          call xyread(lIn(k), j,   row(1,k))
           call xyflgrd(lIn(k), j, flags(1,k))
           if (nInE.gt.0) then
-            call xyread (lInE(k), j,   rowE(1,k))
+            call xyread(lInE(k), j,   rowE(1,k))
             call xyflgrd(lInE(k), j, flagsE(1,k))
           endif
         enddo
@@ -876,7 +876,7 @@ c               header keywords.
 c    lOut       Handleof open output image.
 c    version    Version of task.
 c-----------------------------------------------------------------------
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
+      call headcp(lIn, lOut, 0, 0, 0, 0)
 
       call hisopen(lOut, 'append')
       call hiswrite(lOut, 'IMRM Miriad' // version)

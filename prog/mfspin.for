@@ -703,7 +703,7 @@ c     Write out the data.
       call putruns(lOut,Runs,nRuns,0,0,nx,ny)
 
 c     Make a verbatim copy of the header.
-      call headcopy(lModel, lOut, 0, 0, 0, 0)
+      call headcp(lModel, lOut, 0, 0, 0, 0)
 
 c     Update items that have changed.
       if (si) then
@@ -722,8 +722,8 @@ c     Write the history file.
       call wrhdr(lOut,'bmaj', fwhm1)
       call wrhdr(lOut,'bmin', fwhm2)
       call wrhdr(lOut,'bpa',  pa)
-      write (line, 100) fwhm1*R2AS, fwhm2*R2AS, pa
-100   format ('MFSPIN: Beam = ', 1pe10.3, ' x ', 1pe10.3,
+      write(line, 100) fwhm1*R2AS, fwhm2*R2AS, pa
+100   format('MFSPIN: Beam = ', 1pe10.3, ' x ', 1pe10.3,
      *        ' arcsec, pa = ', 1pe10.3, ' degrees')
       call hiswrite(lOut,line)
 

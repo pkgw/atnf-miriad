@@ -380,7 +380,7 @@ c-----------------------------------------------------------------------
       character text*72
 c-----------------------------------------------------------------------
 c     Start with a verbatim copy of the model header.
-      call headcopy(lModel, lOut, 0, 0, 0, 0)
+      call headcp(lModel, lOut, 0, 0, 0, 0)
 
 c     Update keywords that may have changed.
       call rdhdd(lModel, 'crpix1', crpix, dble(modLen(1)/2+1))

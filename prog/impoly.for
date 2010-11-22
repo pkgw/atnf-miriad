@@ -105,7 +105,7 @@ c     Open files, copy relevant header items, and get the ref pixel.
       CALL rdhdi(lin, 'naxis', naxis, 1)
       naxis = min(naxis,MAXNAX)
       CALL xyopen(lout, out, 'new', naxis, nin)
-      CALL headcopy(lin, lout, 0, 0, 0, 0)
+      CALL headcp(lin, lout, 0, 0, 0, 0)
       CALL boxmask(lin, boxes, MAXBOXES)
       CALL boxset(boxes, MAXNAX, nin, ' ')
       CALL rdhdr(lin,'crpix1',x0,1.0)

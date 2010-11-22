@@ -959,7 +959,7 @@ c     Externals.
       character itoaf*8
 c-----------------------------------------------------------------------
 c     Start with a verbatim copy of the input keywords.
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
+      call headcp(lIn, lOut, 0, 0, 0, 0)
 
 c     Adjust the reference pixel for subimaging.
       do iax = 1, 2

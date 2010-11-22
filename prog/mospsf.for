@@ -141,14 +141,14 @@ c-----------------------------------------------------------------------
       external  itoaf
 c-----------------------------------------------------------------------
 c     Make a verbatim copy of the input header.
-      call headcopy(tIn, tOut, 0, 0, 0, 0)
+      call headcp(tIn, tOut, 0, 0, 0, 0)
 
 c     Delete header parameters that shouldn't have been copied.
       call hdelete(tIn, tOut, 'bmaj')
       call hdelete(tIn, tOut, 'bmin')
       call hdelete(tIn, tOut, 'bpa')
 
-c     Copy the mask (not done by headcopy).
+c     Copy the mask (not done by headcp).
       call hdcopy(tIn, tOut, 'mask')
 
 c     Handle the history.

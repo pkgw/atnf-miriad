@@ -448,7 +448,7 @@ c     Set up to copy input keywords with subimaging.
         ltrc(iax) = 0
       enddo
 
-      call headcopy(lIn, lOut, axmap, MAXNAX, lblc, ltrc)
+      call headcp(lIn, lOut, MAXNAX, axmap, lblc, ltrc)
 
 c     Update parameters that will have changed.
       call wrhda(lOut, 'bunit', 'JY/PIXEL')

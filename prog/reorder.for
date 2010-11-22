@@ -264,7 +264,7 @@ c     Copy the input header with axis permutation.
         blc(iax) = 1
       enddo
 
-      call headcopy(lIn, lOut, axMap, nAxis, blc, iAxLen)
+      call headcp(lIn, lOut, nAxis, axMap, blc, iAxLen)
 
 c     Update history.
       call hisopen (lOut, 'append')

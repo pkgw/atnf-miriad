@@ -779,7 +779,7 @@ c-----------------------------------------------------------------------
       character ctype*16
 c-----------------------------------------------------------------------
 c     Start with a verbatim copy of the input header.
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
+      call headcp(lIn, lOut, 0, 0, 0, 0)
 
 c     Apply sub-imaging.
       call rdhdd(lIn,  'crpix1', crpix, dble(axLen(1)/2+1))

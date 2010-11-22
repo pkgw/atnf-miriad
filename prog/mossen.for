@@ -241,7 +241,7 @@ c     Open the output.
       call xyopen(tOut, outnam, 'new', naxis, nout)
 
 c     Start with a verbatim copy of the input keywords.
-      call headcopy(tIn, tOut, 0, 0, 0, 0)
+      call headcp(tIn, tOut, 0, 0, 0, 0)
 
 c     Adjust the reference pixel for subimaging.
       do iax = 1, naxis
