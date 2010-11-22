@@ -227,8 +227,8 @@ c
 
         bmaj = (bmaj*R2D) * 3600.0
         bmin = (bmin*R2D) * 3600.0
-        write (text, 10) bmaj, bmin, bpa
- 10     format ('Convolving Gaussian FWHM:',f5.1,' x',f5.1,
+        write(text, 10) bmaj, bmin, bpa
+ 10     format('Convolving Gaussian FWHM:',f5.1,' x',f5.1,
      *          ' arcsec, PA',f6.1,' deg.')
         call output(text)
       endif
@@ -267,9 +267,8 @@ c
         flags(l:l) = 'x'
       endif
       if (doGaus) then
-        call CnvlIniG (handle, n1, n2, iref, jref,
-     *                 bmaj1, bmin1, bpa1, cdelt1, cdelt2,
-     *                 sigma, flags)
+        call CnvlIniG(handle, n1, n2, iref, jref, bmaj1, bmin1, bpa1,
+     *                cdelt1, cdelt2, sigma, flags)
       else
         call CnvlIniF(handle,lBeam,n1,n2,iref,jref,sigma,flags)
         call xyclose(lBeam)
@@ -409,7 +408,7 @@ c-----------------------------------------------------------------------
       external  itoaf
 c-----------------------------------------------------------------------
 c     Start by making a verbatim copy of the input image header.
-      call headcopy(lMap, lOut, 0, 0, 0, 0)
+      call headcp(lMap, lOut, 0, 0, 0, 0)
 
 c     Update the reference pixels.
       do iax = 1, naxis
