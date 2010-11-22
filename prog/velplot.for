@@ -4415,7 +4415,7 @@ c     Open output file and write header from values in common.
       call xyopen(lOut, filename, 'new', 3, nsize)
 
 c     Copy the header verbatim then apply updates.
-      call headcopy(lIn, lOut, 0, 3, blc, 0)
+      call headcp(lIn, lOut, 3, 0, blc, 0)
       call wrhdd(lOut, 'crpix1', dble(brpix(1)))
       call wrhdd(lOut, 'crpix2', dble(brpix(2)))
       call wrhdd(lOut, 'crpix3', 1d0)
