@@ -1617,9 +1617,9 @@ c
 c --- maps available ---
 c
       print 110,vlsr(1),vlsr(nc),vlsr(2)-vlsr(1)
-110   format (/,' Velocity of first map:',F12.3,
-     *          '  Velocity of last map:',F12.3/
-     *          '    Velocity increment:',F12.3)
+110   format(/,' Velocity of first map:',F12.3,
+     *         '  Velocity of last map:',F12.3/
+     *         '    Velocity increment:',F12.3)
 c
 c --- current selection of maps ---
 c
@@ -2741,7 +2741,7 @@ c-----------------------------------------------------------------------
 
       if (cdelt1.eq.0.0 .or. cdelt2.eq.0.0)
      *  call bug('f', 'Coordinate increment missing (cdelt).')
-      if (abs(cdelt1).ne.abs(cdelt2)) 
+      if (abs(cdelt1).ne.abs(cdelt2))
      *  call bug('f', 'Unequal coordinate increments (cdelt).')
 
       xy = abs(cdelt1)
@@ -4395,7 +4395,7 @@ c     Open output file and write header from values in common.
       call xyopen(lOut, filename, 'new', 3, nsize)
 
 c     Copy the header verbatim then apply updates.
-      call headcopy(lIn, lOut, 0, 3, blc, 0)
+      call headcp(lIn, lOut, 3, 0, blc, 0)
       call wrhdd(lOut, 'crpix1', dble(brpix(1)))
       call wrhdd(lOut, 'crpix2', dble(brpix(2)))
       call wrhdd(lOut, 'crpix3', 1d0)
@@ -4494,7 +4494,7 @@ c     Write it.
       enddo
 
 c     Write the history.
-      call hisopen (lOut, 'append')
+      call hisopen(lOut, 'append')
       call hiswrite(lOut, 'CLPLOT:')
       call hisinput(lOut, 'CLPLOT')
 

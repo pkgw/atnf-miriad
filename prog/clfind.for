@@ -134,7 +134,7 @@ c     Calculate the beam size in x and y.
           beamx = abs(real(bmin/cdelt1))
           beamy = real(bmaj/cdelt2)
         else
-          write (*,*) 'beam=', bmaj,bmin,cdelt1,cdelt2
+          write(*,*) 'beam=', bmaj,bmin,cdelt1,cdelt2
           beamx = abs(real(bmaj/cdelt1))
           beamy = real(bmin/cdelt2)
         endif
@@ -1012,7 +1012,7 @@ c-----------------------------------------------------------------------
 c     Write header for the output cube.
 c-----------------------------------------------------------------------
 c     Copy the header.
-      call headcopy(lin, lout, 0, 0, 0, 0)
+      call headcp(lin, lout, 0, 0, 0, 0)
 
 c     Update history.
       call hisopen (lout, 'append')
