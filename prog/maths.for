@@ -76,24 +76,24 @@ c@ out
 c       The name of the output image.
 c@ imsize
 c       The output image size. This is used only if there is no input
-c       images (i.e. the expression consists of a function of ``x'' and
-c       ``y'' only). No default.
+c       images (i.e. the expression consists of a function of "x" and
+c       "y" only). No default.
 c@ xrange
-c       When ``x'' is present in the input expression, the x variable
+c       When "x" is present in the input expression, the x variable
 c       is varied linearly between the two limits set by XRANGE.  The
 c       default is -0.5,0.5.
 c@ yrange
-c       When ``y'' is present in the input expression, the y variable
+c       When "y" is present in the input expression, the y variable
 c       is varied linearly between the two limits set by YRANGE.  The
 c       default is -0.5,0.5
 c@ zrange
-c       When ``z'' is present in the input expression, the z variable
+c       When "z" is present in the input expression, the z variable
 c       is varied linearly between the two limits set br ZRANGE.  The
 c       default is 0,1.
 c@ options
 c       Extra processing options.  Several can be given, separated by
 c       commas.  Minimum match is used.
-c         grow    Allow inputs to ``grow'' extra axes, if needed,
+c         grow    Allow inputs to "grow" extra axes, if needed,
 c                 through replication.  For example, if the expression
 c                 subtracts a single-plane image from a cube,
 c                 options=grow allows the operation to proceed by first
@@ -480,7 +480,7 @@ c-----------------------------------------------------------------------
       external  itoaf
 c-----------------------------------------------------------------------
 c     Copy the header from the input map.
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
+      call headcp(lIn, lOut, 0, 0, 0, 0)
 
 c     Rewrite the reference pixel location.
       do iax = 1, naxis
