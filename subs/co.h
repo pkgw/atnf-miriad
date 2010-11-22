@@ -17,14 +17,22 @@ c     Coordinate types.
       integer MAXCRD
       parameter (MAXCRD = 16)
 
+c     WCSLIB, currently, is only used for celestial coordinates with
+c     entry at the celprm level.  Thus, CEL stores phi0, theta0, lng0,
+c     lat0, phiP, and thetaP as well as the projection parameters and
+c     there is no need to duplicate them in separate variables, except
+c     for the two crval values that correspond to lng0 and lat0.  Once
+c     WCSLIB is used for all coordinates, celprm and most of the
+c     remaining variables will be replaced by wcsprm.
+
       logical   frqscl(MAXCRD)
       integer   cel(CELLEN,MAXCRD), cotype(MAXNAX,MAXCRD),
      *          frqax(MAXCRD), latax(MAXCRD), lngax(MAXCRD),
      *          lus(MAXCRD), nalloc(MAXCRD), naxis(MAXCRD)
-      double precision cdelt(MAXNAX,MAXCRD), crpix(MAXNAX,MAXCRD),
-     *          crval(MAXNAX,MAXCRD), eqnox(MAXCRD), cosrot(MAXCRD),
-     *          sinrot(MAXCRD), obstime(MAXCRD), restfrq(MAXCRD),
-     *          vobs(MAXCRD)
+      double precision cdelt(MAXNAX,MAXCRD), cosrot(MAXCRD),
+     *          crpix(MAXNAX,MAXCRD), crval(MAXNAX,MAXCRD),
+     *          eqnox(MAXCRD), obstime(MAXCRD), restfrq(MAXCRD),
+     *          sinrot(MAXCRD), vobs(MAXCRD)
       character ctype(MAXNAX,MAXCRD)*16
 
 c     N.B. though declared as an integer array, cel must be aligned on
