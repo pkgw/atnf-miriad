@@ -173,7 +173,7 @@ c           circumstances cdelt and crval should not differ.
 c     Open the output and make its header from the first input image.
       call xyopen(lIn,In(1),'old',axis,axLen)
       call xyopen(lOut,Out,'new',naxis1,axLen1)
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
+      call headcp(lIn, lOut, 0, 0, 0, 0)
 
 c     Update history.
       call hisopen (lOut, 'append')
