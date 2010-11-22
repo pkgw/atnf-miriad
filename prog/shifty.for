@@ -72,7 +72,7 @@ c     Open an output image and apply the shift.
      *              shift(1),shift(2))
 
 c     Copy the output header verbatim from the master input image.
-      call headcopy(lIn1, lOut, 0, 0, 0, 0)
+      call headcp(lIn1, lOut, 0, 0, 0, 0)
 
 c     Update history.
       call hisopen (lOut, 'append')
