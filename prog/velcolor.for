@@ -146,7 +146,7 @@ c     Copy the input header with sub-imaging.
         axMap(iax) = iax
       enddo
 
-      call headcopy(lIn, lOut, axMap, naxis, blc, trc)
+      call headcp(lIn, lOut, naxis, axMap, blc, trc)
 
 c     Fix up the third (colour) axis.
       call rdhdr(lin, 'crpix3', crpix, 1.0)

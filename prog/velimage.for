@@ -149,7 +149,7 @@ c     Open the output image and write its header.
       axLen(2) = trc(2)-blc(2)+1
       axLen(3) = nchan
       call xyopen(lOut, outNam, 'new', 3, axLen)
-      call headcopy(lIn, lOut, 0, 2, blc, trc)
+      call headcp(lIn, lOut, 2, 0, blc, trc)
       call wrhdd(lOut, 'crpix3', 1d0)
       call wrhdd(lOut, 'cdelt3', dble(step))
       call wrhdd(lOut, 'crval3', dble(start))
@@ -210,7 +210,7 @@ c-----------------------------------------------------------------------
       logical present(maxopt)
       data ops /'relax'/
 c-----------------------------------------------------------------------
-      call options ('options', ops, present, maxopt)
+      call options('options', ops, present, maxopt)
       relax = present(1)
 
       end
