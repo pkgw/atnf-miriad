@@ -101,7 +101,7 @@ c     Create the output image.
       call xyopen(lOut,outNam,'new',naxis,nOut)
 
 c     Start with a verbatim copy of the input header.
-      call headcopy(lIn, lOut, 0, 0, 0, 0)
+      call headcp(lIn, lOut, 0, 0, 0, 0)
 
 c     Update changed keywords.
       do i = 1, naxis
