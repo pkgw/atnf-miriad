@@ -56,7 +56,7 @@ c
 c $Id$
 c-----------------------------------------------------------------------
       integer   CRPIX, CDELT, CRVAL, CROTA, CTYPE
-      parameter (CRPIX = 1, CDELT = 2, CRVAL = 3, CROTA = 4, CTYPE = 5)
+      parameter (CRPIX = 1, CDELT = 2, CRVAL = 3, CTYPE = 4, CROTA = 5)
 
       integer   NKEYS
       parameter (NKEYS = 38)
