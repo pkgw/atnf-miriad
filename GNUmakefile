@@ -183,7 +183,8 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo ""
 	-@ $(TIMER)
 	-@ $(RM) .tarX
-	 @ cd .. ; find miriad -name RCS | sort > miriad/.tarX
+	 @ cd .. ; find miriad -path miriad/.mirsync -prune -o -name RCS | \
+	             sort > miriad/.tarX
 	 @ cd .. ; ls miriad/*/GNUmakedefs >> miriad/.tarX
 	   cd .. ; tar cXf miriad/.tarX miriad/miriad-code.tar $(DISTCODE:%=miriad/%)
 	   gzip miriad-code.tar
