@@ -105,6 +105,8 @@ c    rjs  02jul97 cellscal change.
 c    rjs  23jul97 pbtype change.
 c    rjs  04aug97 Doc change only.
 c    rjs  25aug97 Doc change and an extra error message.
+c    mhw  25nov10 Cope with OTF mosaics using extra parameters in
+c                 mosaic table
 c
 c  Bugs:
 c    * Blanked images are not handled when interpolation is necessary.
@@ -376,10 +378,10 @@ c-----------------------------------------------------------------------
       real      TOL
       parameter (TOL=0.01)
 
-      logical interp, mask
+      logical interp, mask, dootf
       integer i, j, k, pbObj, xhi, xlo, xoff, yhi, ylo, yoff
       real    In(MAXDIM), pBeam(MAXDIM), Sect(4), sigma, xinc, yinc, wgt
-      double precision x(3)
+      double precision x(3),xn(2),pra(2),pdec(2)
       character pbtype*16
 
       logical  hdprsnt
@@ -426,14 +428,27 @@ c     Is there a mask file associated with this image?
       mask = hdprsnt(lIn,'mask')
       if (mask .and. interp) call bug('f',
      *  'Blanked pixels cannot be used when interpolating')
-
+c
 c     Ready to construct the primary beam object.
-      call pntCent(lIn,pbtype,x(1),x(2))
+      call pntCent(lIn,pbtype,pra,pdec)
+      x(1)=pra(1)
+      x(2)=pdec(1)
+      if (abs(pra(2)).gt.0.or.abs(pdec(2)).gt.0) then
+        dootf=.true.
+        xn(1)=pra(2)
+        xn(2)=pdec(2)
+      else
+        dootf=.false.
+      endif
 
 c     Loop over all planes.
       do k = 1, n3
         x(3) = k
-        call pbInitc(pbObj,pbtype,lOut,'aw/aw/ap',x)
+        if (dootf) then
+          call pbInitcc(pbObj,pbtype,lOut,'aw/aw/ap',x,xn)
+        else
+          call pbInitc(pbObj,pbtype,lOut,'aw/aw/ap',x)
+        endif
         call xysetpl(lIn,1,k)
         if (interp) call IntpRIni
 
@@ -927,7 +942,7 @@ c       Update the extent.
       subroutine pntCent(lIn,pbtype,pra,pdec)
 
       integer lIn
-      double precision pra,pdec
+      double precision pra(2),pdec(2)
       character pbtype*(*)
 c-----------------------------------------------------------------------
 c  Determine the pointing centre and the primary beam type.
@@ -935,7 +950,8 @@ c
 c  Inputs:
 c    lIn        Handle of the input image dataset
 c  Output:
-c    pra,pdec   Pointing centre RA and DEC, in radians.
+c    pra,pdec   1:Pointing centre RA and DEC, in radians.
+c               2:Pointing centre for next or prev otf mosaic position
 c    pbtype     Primary beam type. This will normally just be the
 c               name of a telescope (e.g. 'HATCREEK' or 'ATCA'), but it
 c               can also be 'GAUS(xxx)', where xxx is a Gaussian primary
@@ -943,13 +959,16 @@ c               beam size, with its FWHM given in arcseconds.  For
 c               example 'GAUS(120)' is a Gaussian primary beam with
 c               FWHM 120 arcsec.
 c-----------------------------------------------------------------------
-      integer mit,size,iostat
+      integer mit,size,iostat,ival(2)
       character string*16
 
-      logical  hdprsnt
+      logical  hdprsnt,otf
       integer  hsize
       external hdprsnt, hsize
 c-----------------------------------------------------------------------
+c     Zero the otf parameters
+      pra(2)=0
+      pdec(2)=0
 c     Is the mosaic table present?
       if (hdprsnt(lIn, 'mostable')) then
 c       Yes, read it.
@@ -958,23 +977,37 @@ c       Yes, read it.
 
 c       Check its size.
         size = hsize(mit)
-        if (size.ne.56) call bug('f','Bad size for mosaic table')
+
+c       Check version
+        call hreadi(mit,ival,0,8,iostat)
+        otf = ival(2).eq.2
+        
+        if ((size.ne.56.and..not.otf).or.(size.ne.72.and.otf))
+     *    call bug('f','Bad size for mosaic table')
 
 c       Read (RA,Dec).
-        call hreadd(mit,pra,16,8,iostat)
-        if (iostat.eq.0) call hreadd(mit,pdec,24,8,iostat)
+        call hreadd(mit,pra(1),16,8,iostat)
+        if (iostat.eq.0) call hreadd(mit,pdec(1),24,8,iostat)
 
 c       Read the primary beam type.
         if (iostat.eq.0) call hreadb(mit,string,32,16,iostat)
+        pbtype = string
+        
+c       Read the otf parameters
+        if (otf) then
+          if (iostat.eq.0) call hreadd(mit,pra(2),56,8,iostat)
+          if (iostat.eq.0) call hreadd(mit,pdec(2),64,8,iostat)        
+        endif
+        
         call hdaccess(mit,iostat)
         if (iostat.ne.0) call bugno('f',iostat)
-        pbtype = string
 
       else
 c       No, treat a regular synthesis image.
-        call rdhdd(lIn, 'crval1', pra,  0d0)
-        call rdhdd(lIn, 'crval2', pdec, 0d0)
+        call rdhdd(lIn,'crval1',pra(1), 0.d0)
+        call rdhdd(lIn,'crval2',pdec(1),0.d0)
         call pbRead(lIn, pbtype)
       endif
 
+c
       end
