@@ -326,7 +326,7 @@ c $Id$
 c-----------------------------------------------------------------------
 
         integer MAXFILES,MAXTIMES,MAXSIM
-        parameter(MAXFILES=128,MAXTIMES=32,MAXSIM=16)
+        parameter(MAXFILES=128,MAXTIMES=32,MAXSIM=34)
 c
         character in(MAXFILES)*128,line*64,out*64,t1*18,t2*18,version*80
         integer tno,ntimes
@@ -2406,7 +2406,7 @@ c-----------------------------------------------------------------------
         include 'maxdim.h'
         include 'mirconst.h'
         integer MAXPOL,MAXSIM,MAXXYP,NDATA
-        parameter(MAXPOL=4,MAXSIM=16,MAXXYP=5,NDATA=MAXCHAN*MAXPOL)
+        parameter(MAXPOL=4,MAXSIM=34,MAXXYP=5,NDATA=MAXCHAN*MAXPOL)
         double precision J01Jul04,J18Oct07
         parameter(J01Jul04=2453187.5d0,J18Oct07=2454390.5d0)
         include 'rpfits.inc'
