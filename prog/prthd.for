@@ -184,7 +184,7 @@ c     Min, max values and units.
       call rdhdr(tno,'datamin',rval2,rval1+1.0)
       call rdhda(tno,'bunit',aval1, ' ')
       if (rval1.ge.rval2) then
-        write(line, 10) rval1, rval2, aval1
+        write(line, 10) rval1, rval2, aval1(:16)
  10     format('Maximum: ',1pe15.8,4x,'Minimum: ',1pe15.8,2x,a)
         call logwrite(line,more)
       else
