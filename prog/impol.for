@@ -315,27 +315,30 @@ c       Open output images starting with polarized intensity...
         if (npout.gt.0) then
           call openout(tIn, naxes, naxis, axmap, pout(1),
      *      'polarized_intensity', version, lpout(1))
-        else if (npout.eq.2) then
-          call openout(tIn, naxes, naxis, axmap, pout(2),
-     *      'polarized_intensity', version, lpout(2))
+          if (npout.eq.2) then
+            call openout(tIn, naxes, naxis, axmap, pout(2),
+     *        'polarized_intensity', version, lpout(2))
+          endif
         endif
 
 c       ...fractional polarization...
         if (nmout.gt.0) then
           call openout(tIn, naxes, naxis, axmap, mout(1),
      *      'fractional_polarization', version, lmout(1))
-        else if (nmout.eq.2) then
-          call openout(tIn, naxes, naxis, axmap, mout(2),
-     *      'fractional_polarization', version, lmout(2))
+          if (nmout.eq.2) then
+            call openout(tIn, naxes, naxis, axmap, mout(2),
+     *        'fractional_polarization', version, lmout(2))
+          endif
         endif
 
 c       ...position angle.
         if (npaout.gt.0) then
           call openout(tIn, naxes, naxis, axmap, paout(1),
      *      'position_angle', version, lpaout(1))
-        else if (npaout.eq.2) then
-          call openout(tIn, naxes, naxis, axmap, paout(2),
-     *      'position_angle', version, lpaout(2))
+          if (npaout.eq.2) then
+            call openout(tIn, naxes, naxis, axmap, paout(2),
+     *        'position_angle', version, lpaout(2))
+          endif
         endif
 
 c       Compute and write out the output image(s).
