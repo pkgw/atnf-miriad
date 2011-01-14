@@ -1,4 +1,4 @@
-# Build host: cetus
+# Build host: lynx
 #
 # The nightly sun4sol build runs last, it creates the update ftp files and
 # also checks disk bookings.
