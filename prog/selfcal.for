@@ -155,7 +155,7 @@ c   * It would be desirable to apply bandpasses, and merge gain tables,
 c     apply polarisation calibration, etc.
 c-----------------------------------------------------------------------
       integer   MAXMOD, MAXSELS, NHEAD
-      parameter (MAXMOD=128, MAXSELS=1024, NHEAD=3)
+      parameter (MAXMOD=1024, MAXSELS=1024, NHEAD=3)
 
       logical   amp, doim, doline, mfs, noscale, phase, relax, selradec
       integer   i, minants, nModel, nchan, nvis, refant, tmod, tscr,
