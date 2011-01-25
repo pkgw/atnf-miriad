@@ -251,6 +251,7 @@
 *  rjs  28jun06 Prototype arguments and some tidying.
 *  rjs  09jul06 uvread_updated_uvw checks no. of antennas.
 *  mhw  08oct07 add selection on seeing using variable smonrms.
+*  mhw  25jan11 increase MAXVHANDS to 1024
 *
 * $Id$
 *===========================================================================*/
@@ -488,7 +489,7 @@ typedef struct {
 	WINDOW *win;
 		} UV;
 
-#define MAXVHANDS 128
+#define MAXVHANDS 1024
 
 static UV *uvs[MAXOPEN];
 static VARHAND *varhands[MAXVHANDS];
