@@ -1,10 +1,7 @@
-# Build host: hydra
+# Build host: ritchie
 #
 # The nightly linux build runs first and therefore remakes the doc files.
 # It is also responsible for remaking the User and Programmer Guides.
 00 22 * * 1-5 . $HOME/.profile ; cd $MIR && make MIRATNF=1 allsys 2>&1 | tee $MIRARCH/gmake.log
-#
-# Build the CABB branch for linux.
-00 23 * * 1-5 MIRCABB=1 . $HOME/.profile ; cd $MIR && make MIRATNF=1 allsys 2>&1 | tee $MIRARCH/gmake.log
 #
 # $Id$
