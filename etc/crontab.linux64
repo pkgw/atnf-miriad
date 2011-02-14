@@ -4,7 +4,4 @@
 # It has no special work to do.
 15 22 * * 1-5 . $HOME/.profile ; cd $MIR && make MIRATNF=1 allsys 2>&1 | tee $MIRARCH/gmake.log
 #
-# Build the CABB branch for linux64.
-15 23 * * 1-5 MIRCABB=1 . $HOME/.profile ; cd $MIR && make MIRATNF=1 allsys 2>&1 | tee $MIRARCH/gmake.log
-#
 # $Id$
