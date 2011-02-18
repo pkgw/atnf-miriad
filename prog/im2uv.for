@@ -266,7 +266,8 @@ c-----------------------------------------------------------------------
       real      epoch, vobs
       double precision cdelt, crpix, dec, f0, obsdec, obsra, ra,
      *          restfreq, sdf, sfreq, t
-      character ctype*32, line*80, object*32, observer*32, telescop*32
+      character algo*3, ctype*32, line*80, object*32, observer*32,
+     *          telescop*32
 c-----------------------------------------------------------------------
 c     Set up the output dataset.
       call uvset(tOut,'data','wide',0,1.0,1.0,1.0)
@@ -277,14 +278,13 @@ c     Set up the output dataset.
       call coInit(tIn)
 
 c     Frequency info.
-      call coFindAx(tIn,'frequency',iax)
+      call coSpcSet(tIn, 'FREQ', iax, algo)
       if (iax.eq.0) then
         ctype = 'FREQ-OBS'
         sfreq = 1.4
         sdf = 0.1
         f0 = sfreq
       else
-        call coVelSet(tIn,'freq')
         call coAxGet(tIn,iax,ctype,crpix,f0,sdf)
         call coCvt1(tIn,iax,'ap',1d0,'aw',sfreq)
       endif
