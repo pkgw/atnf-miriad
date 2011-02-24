@@ -67,7 +67,7 @@ c-----------------------------------------------------------------------
      *          nsize(MAXNAX), nstypes, ntypei, sax, strlen1(MAXNAX),
      *          strlen2(MAXNAX), strlen3(MAXNAX)
       real      data(MAXDIM), value
-      double precision dtemp, rfreq, pixel(MAXNAX), win(MAXNAX)
+      double precision rfreq, pixel(MAXNAX), win(MAXNAX)
       character bunit*9, ctypes(MAXNAX)*9, file*80, labtyp(MAXTYP)*6,
      *          sctypes(3)*4, str1*132, strout1(MAXNAX)*80,
      *          strout2(MAXNAX)*80, strout3(MAXNAX)*80, stypei*9,
@@ -135,9 +135,8 @@ c     Open file.
       endif
 
       call initco(lun)
-      call cogetd(lun,'naxis',dtemp)
-      naxis = nint(dtemp)
-      call cogetd(lun,'restfreq',rfreq)
+      call coGetI(lun, 'naxis', naxis)
+      call coGetD(lun, 'restfreq', rfreq)
 
 c     Initialize coordinate transformation routines and fish out CTYPES.
       do i = 1, naxis
