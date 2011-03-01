@@ -51,10 +51,11 @@ c-----------------------------------------------------------------------
       integer   binsrcha
       character versan*72
 
-      data switches/'frequency',  'radio', 'optical'/
-      data vtypes  /'FREQ',       'VELO',  'FELO'/
-      data frames  /'barycentre', 'lsr',   'observatory'/
-      data ftypes  /'HEL',        'LSR',   'OBS'/
+c     N.B. switches and frames must be in alphabetical order.
+      data switches/'frequency',  'optical', 'radio'/
+      data vtypes  /'FREQ',       'FELO',    'VELO'/
+      data frames  /'barycentre', 'lsr',     'observatory'/
+      data ftypes  /'HEL',        'LSR',     'OBS'/
 c-----------------------------------------------------------------------
       version = versan('velsw',
      *                 '$Revision$',
@@ -69,10 +70,8 @@ c     Get input parameters.
       call keymatch('axis',NFRAME, frames,1,frame,nf)
       call keyfin
 
-c     Check inputs.
+c     Open the input map.
       if (in.eq.' ') call bug('f','An input must be given')
-
-c     Open the input, and find the velocity axis.
       call xyopen(lIn,in,'old',MAXNAX,nsize)
 
       isw = binsrcha(switch,switches,NSWITCH)
