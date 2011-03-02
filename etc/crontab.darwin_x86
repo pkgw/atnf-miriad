@@ -1,4 +1,4 @@
-# Build host: cancer
+# Build host: pixie
 #
 # The nightly darwin_x86 build runs after linux but before sun4sol.
 # It has no special work to do.
