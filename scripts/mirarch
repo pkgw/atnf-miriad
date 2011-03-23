@@ -42,18 +42,14 @@
     MIRARCH=alpha
     ;;
 
-  ConvexOS)
-    MIRARCH=convex
-    ;;
-
   CYGWIN*)
     MIRARCH=cygwin
     ;;
 
   Darwin)
     case `uname -m` in
-    i*86)
-      MIRARCH=darwin_x86
+    i*86 | x86_64)
+      MIRARCH=darwin_x86_64
       ;;
     Power*)
       MIRARCH=darwin_ppc
