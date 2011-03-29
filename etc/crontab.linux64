@@ -1,4 +1,4 @@
-# Build host: delphinus
+# Build host: spitzer
 #
 # The nightly linux64 build runs after linux but before sun4sol.
 # It has no special work to do.
