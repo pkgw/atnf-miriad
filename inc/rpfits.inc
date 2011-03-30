@@ -19,7 +19,7 @@ C     source table (su), and polarizations (pol).
       INTEGER   ant_max, max_card, max_cu, max_fg, max_if, max_mt,
      :          max_nx, max_sc, max_su, pol_max
       PARAMETER (ant_max  =   16,
-     :           max_card =  650,
+     :           max_card = 2240,
      :           max_cu   =   32,
      :           max_fg   =   32,
      :           max_if   =   48,
