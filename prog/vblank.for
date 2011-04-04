@@ -1,6 +1,6 @@
       program vblank
 
-c= VBLANK - mask outlier pixels in velocity space
+c= VBLANK - mask outlier pixels on the spectral axis
 c& thw
 c: image-analysis
 c+
@@ -17,7 +17,7 @@ c       velocity axis and spikes far from the channels of actual
 c       emission are masked.
 c
 c       NOTE: Because flagging is only implemented for planes, the
-c       velocity axis must be axis 1.  Use REORDER first to make this
+c       spectral axis must be axis 1.  Use REORDER first to make this
 c       so:
 c         reorder in=file1 out=file2 mode='312'
 c         vblank  in=file2
@@ -38,10 +38,10 @@ c-----------------------------------------------------------------------
       include 'maxnax.h'
 
       logical   flags(MAXDIM)
-      integer   axlen(MAXNAX), blc(MAXNAX), i, i0, i1, iscan, ivaxis, j,
-     *          k, lIn, naxis, nflag, nscan, tol, trc(MAXNAX)
+      integer   axlen(MAXNAX), blc(MAXNAX), i, i0, i1, iscan, j, k, lIn,
+     *          naxis, nflag, nscan, spcAxI, tol, trc(MAXNAX)
       real      buf(MAXDIM)
-      character inp*80, msg*80, vaxis*1, version*72
+      character inp*80, msg*80, version*72
 
       external  versan
       character versan*72
@@ -67,11 +67,14 @@ c     Open the input image.
         trc(i) = axlen(i)
       enddo
 
-c     Find the velocity axis.
-      call fndaxnum(lIn, 'freq', vaxis, ivaxis)
-      call assertl(vaxis.ne.' ', 'Velocity axis not found in dataset')
-      call assertl(ivaxis.eq.1,
-     *          'Velocity axis must be axis 1 (use REORDER)')
+c     Find the spectral axis.
+      call coInit(lIn)
+      call coFindAx(lIn, 'spectral', spcAxI)
+      call coFin(lIn)
+
+      call assertl(spcAxI.ne.0, 'Spectral axis not found in dataset')
+      call assertl(spcAxI.eq.1,
+     *  'Spectral axis must be axis 1 (use REORDER)')
 
 c     Apply masking.
       nflag = 0
@@ -107,7 +110,7 @@ c     Report number of extra pixels flagged.
       call output(msg)
 
 c     Update history.
-      call hisopen(lIn,'append')
+      call hisopen (lIn,'append')
       call hiswrite(lIn,'VBLANK: '//version)
       call hisinput(lIn,'VBLANK')
       call hiswrite(lIn,'VBLANK: '//msg)
