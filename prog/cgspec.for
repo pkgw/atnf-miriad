@@ -769,7 +769,7 @@ c
       if (.not.igblank) then
         if (lgn.ge.0) call scrclose(lgn)
         do i = 1, maxcon
-          if (lcn(i).ne.0) call scrclose(lcn(i))
+          if (lcn(i).ge.0) call scrclose(lcn(i))
         enddo
       endif
       call pgupdt
