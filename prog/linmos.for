@@ -126,7 +126,7 @@ c-----------------------------------------------------------------------
 
       real      TOL
       integer   MAXIN, MAXLEN, MAXOPN
-      parameter (MAXIN=1024, MAXLEN=MAXIN*64, MAXOPN=6, TOL=0.01)
+      parameter (MAXIN=4096, MAXLEN=MAXIN*64, MAXOPN=6, TOL=0.01)
 
       logical   defrms, dosen, dogain, docar, exact, taper
       integer   axLen(3,MAXIN), i, itemp, k1(MAXIN), k2(MAXIN), length,
