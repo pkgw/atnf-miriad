@@ -17,7 +17,7 @@
 # System identification is "linux" rather than "linux64".
 
 # ratty flags.
-RATFLAGS := -b -s linux
+RATFLAGS := -s linux
 
 # intf2c flags.
 F2CFLAGS := -s linux
