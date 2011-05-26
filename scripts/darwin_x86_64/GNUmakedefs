@@ -14,10 +14,8 @@
 # Original: 2011/03/23, Mark Calabretta, ATNF
 # $Id$
 #=============================================================================
-# System identification is "linux" rather than "darwin_x86_64".
-
 # ratty flags.
-RATFLAGS := -s linux
+RATFLAGS := -s gfortran
 
 # intf2c flags.
 F2CFLAGS := -s linux

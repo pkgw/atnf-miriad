@@ -14,10 +14,8 @@
 # Original: 2006/09/13, Mark Calabretta, ATNF
 # $Id$
 #=============================================================================
-# System identification is "linux" rather than "linux64".
-
 # ratty flags.
-RATFLAGS := -s linux
+RATFLAGS := -s gfortran
 
 # intf2c flags.
 F2CFLAGS := -s linux
