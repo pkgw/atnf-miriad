@@ -14,8 +14,10 @@
 # Original: 2006/09/13, Mark Calabretta, ATNF
 # $Id$
 #=============================================================================
+# ratty flags.
+RATFLAGS := -b -s g77
 
-# GNU Fortran compiler flags.
+# GNU g77 compiler flags.
 FCSTD    := -ff90-intrinsics-hide
 FCOPT     = -O -fPIC $(FCSTD)
 
