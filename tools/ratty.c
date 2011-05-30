@@ -156,7 +156,14 @@ static void usage(void);
  *                 -1 if it probably shouldn't (subject to compiler options).
  */
 
-struct system {char *name;int doloop,prog,vector,bslash;} systems[] = {
+struct system {
+  char *name;
+  int doloop;
+  int prog;
+  int vector;
+  int bslash;
+} systems[] = {
+  { "unknown",  FALSE, FALSE, FALSE,  0 },
   { "alliant",  TRUE,  FALSE, TRUE,   0 },
   { "alpha",    TRUE,  FALSE, FALSE,  1 },
   { "convex",   TRUE,  FALSE, TRUE,  -1 },
@@ -168,24 +175,24 @@ struct system {char *name;int doloop,prog,vector,bslash;} systems[] = {
   { "linux",    TRUE,  FALSE, FALSE,  0 },
   { "sgi",      TRUE,  FALSE, FALSE,  0 },
   { "sun",      TRUE,  FALSE, FALSE,  1 },
-  { "unicos",   FALSE, TRUE,  TRUE,  -1 },
-  { "vms",      TRUE,  FALSE, FALSE, -1 },
   { "trace",    TRUE,  FALSE, FALSE,  0 },
-  { "unknown",  FALSE, FALSE, FALSE,  0 } };
+  { "unicos",   FALSE, TRUE,  TRUE,  -1 },
+  { "vms",      TRUE,  FALSE, FALSE, -1 }};
 
-#define SYS_ALPHA     1
-#define SYS_CFT       2
+#define SYS_UNKNOWN   0
+#define SYS_FX        1
+#define SYS_ALPHA     2
 #define SYS_CONVEX    3
 #define SYS_F2C       4
 #define SYS_F77       5
 #define SYS_G77       6
 #define SYS_GFORTRAN  7
-#define SYS_FX        9
-#define SYS_HPUX      9
-#define SYS_LINUX    10
-#define SYS_SGI      11
-#define SYS_SUN      12
-#define SYS_TRACE    13
+#define SYS_HPUX      8
+#define SYS_LINUX     9
+#define SYS_SGI      10
+#define SYS_SUN      11
+#define SYS_TRACE    12
+#define SYS_CFT      13
 #define SYS_VMS      14
 #define NSYS (sizeof(systems)/sizeof(struct system))
 
