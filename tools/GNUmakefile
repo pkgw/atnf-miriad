@@ -69,7 +69,7 @@ else
   % : $(PGMRBIND)/% ;
 
   $(PGMRBIND)/% : %.c
-	$(CC) $(CCDBG) -o $@ $<
+	$(CC) $(CDBG) -o $@ $<
 
   # Static and static pattern rules.
   #---------------------------------
@@ -77,7 +77,7 @@ else
 
   ifneq "$(READLINELIB)" ""
     $(PGMRBIND)/miriad : miriad.c
-	$(CC) -DREADLINE $(CCDBG) -o $@ $< $(READLINELIB)
+	$(CC) -DREADLINE $(CDBG) -o $@ $< $(READLINELIB)
   endif
 
   clean ::
