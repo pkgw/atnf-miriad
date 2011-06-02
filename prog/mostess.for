@@ -1156,7 +1156,7 @@ c-----------------------------------------------------------------------
       xc = 1 - xc
       yc = 1 - yc
       call coInit(lMap)
-      call pbInitc(pbObj,pbtype,lMap,'aw/aw/ap',radec)
+      call pbInitc(pbObj,pbtype,lMap,'aw/aw/ap',radec,0.0)
       call coFin(lMap)
 
       do j = 1, ny

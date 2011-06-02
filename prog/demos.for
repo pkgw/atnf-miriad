@@ -353,7 +353,7 @@ c       Initialise the primary beam object.
         xin(1) = ra
         xin(2) = dec
         xin(3) = k
-        call pbInitc(pbObj,pbtype,tmap,'aw/aw/ap',xin)
+        call pbInitc(pbObj,pbtype,tmap,'aw/aw/ap',xin,0.0)
 
         if (detaper) then
           call mosMIni(tmap,real(k))
