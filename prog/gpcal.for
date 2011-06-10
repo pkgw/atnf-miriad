@@ -543,7 +543,7 @@ c
         call writeo(tIn,'Leakage terms:')
         do j = 1, nants
           if (present(j)) then
-            write(line,'(1x,a,i2,a,f6.3,a,f6.3,a,f6.3,a,f6.3,a)')
+            write(line,'(1x,a,i2,a,f8.5,a,f8.5,a,f8.5,a,f8.5,a)')
      *      'Ant',j,':Dx,Dy = (',real(D(1,j)),',',aimag(D(1,j)),'),(',
      *                           real(D(2,j)),',',aimag(D(2,j)),')'
             call writeo(tIn,line)
