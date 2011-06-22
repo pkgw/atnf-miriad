@@ -82,16 +82,20 @@ ifeq "$(MAKEMODE)" "system"
 
     # For copying third-party libraries and associated utilities such as
     # PGPLOT, RPFITS, and WCSLIB into the Miriad system directories for
-    # export.  Darwin requires that the library be ranlib'd if moved.
+    # export.  Darwin requires that the library be ranlib'd if its time of
+    # last modification changes.
     define mir-copy
       -@ $(RM) $@
          cp $< $@
       -@ chgrp miriad $@
-      -@ case $* in lib*.a) echo $(RANLIB) $@ ; $(RANLIB) $@ ;; esac
+      -@ case $@ in *.a) echo $(RANLIB) $@ ; $(RANLIB) $@ ;; esac
       -@ chmod 664 $@
     endef
 
     $(MIRLIBD)/% : /usr/local/lib/%
+	   $(mir-copy)
+
+    $(MIRLIBD)/%_mir.a : /usr/local/lib/%.a
 	   $(mir-copy)
 
     $(MIRLIBD)/% : /usr/local/gnu/lib/%
@@ -149,7 +153,7 @@ ifeq "$(MAKEMODE)" "system"
 	-@ $(MAKE) -C scripts chkout
       endif
 
-    pgplot : $(patsubst %,$(MIRLIBD)/lib%.a,pgplot png z) \
+    pgplot : $(patsubst %,$(MIRLIBD)/lib%.a,$(PGPLOT) $(PNG) z) \
       $(addprefix $(MIRLIBD)/,grfont.dat rgb.txt) \
       $(addprefix $(MIRBIND)/,pgdisp pgxwin_server)
 
