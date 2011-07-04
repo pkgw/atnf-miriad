@@ -131,7 +131,7 @@ private int first=TRUE;
 static void hinit_c(void);
 static int hfind_nl(char *buf, int len);
 static void hcheckbuf_c(ITEM *item, off_t next, int *iostat);
-static void hwrite_fill_c(ITEM *item, IOB *iob, int next, int *iostat);
+static void hwrite_fill_c(ITEM *item, IOB *iob, off_t next, int *iostat);
 static void hcache_create_c(TREE *t, int *iostat);
 static void hcache_read_c(TREE *t, int *iostat);
 static int hname_check(char *name);
@@ -1167,7 +1167,7 @@ private void hcheckbuf_c(ITEM *item,off_t next,int *iostat)
   }
 }
 /************************************************************************/
-private void hwrite_fill_c(ITEM *item,IOB *iob,int next,int *iostat)
+private void hwrite_fill_c(ITEM *item, IOB *iob, off_t next,int *iostat)
 /*
   A nonaligned nonsequential write operation has been requested. Read in the
   portion that we are missing. We need to fill the i/o buffer up to at
