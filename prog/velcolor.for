@@ -33,12 +33,7 @@ c
 c$Id$
 c--
 c  History:
-c    06aug92 mchw  Adapted from RALINT task.
-c    16sep92 mchw  Added pivot and cleaned up code.  Stubs for other
-c                  axes.
-c    27feb93 mjs   use tmpdim.h instead of maxdim.h
-c    02jul97 rjs   cellscal change.
-c    23jul97 rjs   added pbtype.
+c    Refer to the RCS log, v1.1 includes prior revision information.
 c-----------------------------------------------------------------------
       include 'tmpdim.h'
 
@@ -48,11 +43,11 @@ c-----------------------------------------------------------------------
       integer   blc(MAXNAX), boxes(MAXBOXES), i, j, lin, lout, naxis,
      *          nsize(MAXNAX), size(MAXNAX), trc(MAXNAX)
       real      bhi, blo, clip(2), pivot
-      character in*64, out*64, line*72, version*72
+      character in*256, out*256, line*72, version*72
 
-      logical   keyprsnt
-      character versan*80
       external  keyprsnt, versan
+      logical   keyprsnt
+      character versan*72
 c-----------------------------------------------------------------------
       version = versan('velcolor',
      *                 '$Revision$',
