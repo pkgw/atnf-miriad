@@ -57,10 +57,7 @@ c
 c$Id$
 c--
 c  History:
-c    20jan94 jpw   Copied from MIRIAD program velplot
-c    13jul98 pjt   linux/g77 cleanup
-c    26aug98 pjt   fixed bug with long words in history file of .cf file
-c    02jan05 rjs   fix misdeclaration.
+c    Refer to the RCS log, v1.1 includes prior revision information.
 c-----------------------------------------------------------------------
       include 'clplot.h'
 
@@ -3707,7 +3704,7 @@ c     Save plot device type from menu.
 c     Loop through list of maps. Reset image vel and width.
       key='L'
 
-60    vel  = vlsr(1)
+ 10   vel  = vlsr(1)
       delv = vlsr(2) - vlsr(1)
       if (write.ne.'Y' .and. apint.ne.'Y') then
         call plPanels(imaps,windx,windy)
@@ -3780,9 +3777,8 @@ c           Plot contours and greyscale (if required).
             call plotcon(v,nx,ny,cf,tr)
 
 c           Plot labels.
-            write(c1,130) vmin(k)
-            write(c2,130) vmax(k)
-130         format(f9.3)
+            write(c1,'(f9.3)') vmin(k)
+            write(c2,'(f9.3)') vmax(k)
             label = '                         '
             label = c1//' - '//c2
             call pglab(xlabel,ylabel,label)
@@ -3836,11 +3832,12 @@ c           If one map and not hardcopy then call for cursor.
               call pgwnad(-xmin,-xmax,ymin,ymax)
               call cursor(v,nx,ny,key)
               call pgwnad(xmin,xmax,ymin,ymax)
-              if (key.eq.'E') goto 66
-              goto 60
+              if (key.eq.'E') goto 20
+              goto 10
             endif
           endif
-66      endif
+        endif
+ 20     continue
       enddo
 
 c     Finished plotting maps; replotting options.
@@ -3859,7 +3856,7 @@ c     Finished plotting maps; replotting options.
             if (length.ne.0) then
               read(ans,'(i1)') lwidth
             endif
-            goto 60
+            goto 10
           endif
         endif
       endif
@@ -4268,9 +4265,8 @@ c     Write out gaussian fits to ASCII file.
 110   format(x,f9.3,<ns>(1x,f9.3))
 #else
 
-c     This eliminates the need to use <ns> format, which works for f77 -g
-c     but not without, and not on cray.
-c
+c     This eliminates the need to use <ns> format, which works for '
+c     f77 -g' but not without, and not on cray.
 c     Note that fits are written with 5x velocity oversampling
       do while ((iostat.eq.0) .and. (k.le.(5*nc)))
         write(ichar10,'(1x,f9.3)') vlsr2(k)
