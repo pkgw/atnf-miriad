@@ -40,6 +40,16 @@ ifeq "$(MAKEMODE)" "system"
 	-@ echo "Rebuilding/updating Miriad for $(MIRARCH) machines."
 	-@ $(TIMER)
 
+  MIRRC : scripts/MIRRC.in
+	-@ echo ""
+	   sed -e "s,@MIRROOT@,$(MIR)," $< > $@
+	-@ chmod 644 $@
+
+  MIRRC.sh : scripts/MIRRC.sh.in
+	-@ echo ""
+	   sed -e "s,@MIRROOT@,$(MIR)," $< > $@
+	-@ chmod 644 $@
+
   cleansys ::
 	   $(RM) -r $(MIRTMPD)/*
 
