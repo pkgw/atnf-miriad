@@ -137,7 +137,7 @@ c-----------------------------------------------------------------------
       obstime(icrd2) = obstime(icrd1)
 
       defs(1,icrd2)  = defs(1,icrd1)
-      defs(2,icrd2)  = defs(3,icrd1)
+      defs(2,icrd2)  = defs(2,icrd1)
       defs(3,icrd2)  = defs(3,icrd1)
       defs(4,icrd2)  = defs(4,icrd1)
 
@@ -2733,7 +2733,7 @@ c     We did not find it.  If we are allowed to allocate one, do so.
         return
       endif
 
-      call bug('f','Unable to find coordinate object in coInit')
+      call bug('f','Unable to find coordinate object in coLoc')
       coLoc = 0
 
       end
