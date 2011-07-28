@@ -362,9 +362,16 @@ c     Axis defaults come initially from the input image.
       lDef = lIn
       doTCel = .false.
       do i = 1, nIAxes
+c       Is this a celestial axis?
         if (axMap(i).eq.ilng .or. axMap(i).eq.ilat) then
 c         Flag that celestial axes are being regridded.
           doTCel = .true.
+
+          if (doDesc) then
+c           Convert degrees to radians.
+            desc(1,i) = desc(1,i) * DD2R
+            desc(3,i) = desc(3,i) * DD2R
+          endif
         endif
 
 c       Set descriptors for the axes that will remain unchanged.
@@ -649,7 +656,7 @@ c-----------------------------------------------------------------------
       double precision epo2jul
 c-----------------------------------------------------------------------
       call coReInit(cOut)
-      if (.not.(doDesc .or. doEqEq .or. doGalEq)) return
+      if (.not.(doEqEq .or. doGalEq)) return
 
 c     Look for a celestial axis pair.
       call coFindAx(cOut,'longitude',ilng)
@@ -659,21 +666,6 @@ c     Look for a celestial axis pair.
 
       call coAxGet(cOut,ilng,ctype1,crpix1,crval1,cdelt1)
       call coAxGet(cOut,ilat,ctype2,crpix2,crval2,cdelt2)
-
-      if (doDesc) then
-c       Convert to radians.
-        crval1 = crval1 * DD2R
-        crval2 = crval2 * DD2R
-        cdelt1 = cdelt1 * DD2R
-        cdelt2 = cdelt2 * DD2R
-
-        if (.not.(doEqEq .or. doGalEq)) then
-          call coAxSet(cOut,ilng,ctype1,crpix1,crval1,cdelt1)
-          call coAxSet(cOut,ilat,ctype2,crpix2,crval2,cdelt2)
-          call coReInit(cOut)
-          return
-        endif
-      endif
 
 c     Extract the basic coordinate types, RA/DEC or GLON/GLAT.
       type1 = ' '
