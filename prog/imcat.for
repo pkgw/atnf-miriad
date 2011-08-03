@@ -146,6 +146,7 @@ c           circumstances cdelt and crval should not differ.
 
         warned = warned .or. warned1
         call xyclose(lIn)
+        axLen1(axis) = axLen1(axis) + axLen(axis)
       enddo
 
 c     Open the output and make its header from the first input image.
