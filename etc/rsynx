@@ -1,0 +1,66 @@
+#!/bin/sh
+#-----------------------------------------------------------------------------
+# Usage: rsynx [Mopra] [Narrabri] [Parkes]
+#-----------------------------------------------------------------------------
+# Run rsync to update /nfs/atapplic/miriad/... at Mopra, Narrabri, and Parkes.
+# It is assumed that ssh access for the destination host has been set up on
+# the source host.
+#
+# Original: 2011/08/09 MRC
+#-----------------------------------------------------------------------------
+  if [ "$LOGNAME" != mirmgr ]
+  then
+    printf "rsynx is expected to be run by mirmgr.\n" 1>&2
+    exit 1
+  fi
+
+  DELIM="--------------------------------------------"
+
+  DRYRUN=
+  SITES=
+
+  while [ "$#" -gt 0 ]
+  do
+    case $1 in
+    -d)
+      DRYRUN="--dry-run"
+      printf "\nWARNING: Doing a dry-run only.\n"
+      ;;
+    M*)
+      SITES="$SITES Mopra"
+      ;;
+    N*)
+      SITES="$SITES Narrabri"
+      ;;
+    P*)
+      SITES="$SITES Parkes"
+      ;;
+    esac
+
+    [ "$2" = "" ] && break
+
+    shift
+  done
+
+  [ "$SITES" ] || SITES="Mopra Narrabri Parkes"
+
+  SRC=/nfs/atapplic/miriad
+
+  date "+%n%a %Y/%m/%d %T %Z $DELIM%n"
+
+  for SITE in $SITES
+  do
+    [ "$SITE" = Mopra ]    && DST=bungle
+    [ "$SITE" = Narrabri ] && DST=kaputar
+    [ "$SITE" = Parkes ]   && DST=sagitta
+    DST="${DST}:/nfs/atapplic/"
+
+    printf "$SITE: Sending $SRC to $DST\n"
+    rsync $DRYRUN --archive --delete -v --exclude=.mirsync/ $SRC $DST
+
+    date "+%n%a %Y/%m/%d %T %Z $DELIM%n"
+  done
+
+  [ "$DRYRUN" ] && printf "\nWARNING: That was a dry run only.\n"
+
+  exit 0

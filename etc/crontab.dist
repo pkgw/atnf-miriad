@@ -1,0 +1,6 @@
+# rsynx host: ursa
+#
+# Updates the observatories after all the nightly builds have completed.
+30 00 * * 2-6 . $HOME/.profile ; $MIR/etc/rsynx 2>&1 | tee rsynx.log
+#
+# $Id$
