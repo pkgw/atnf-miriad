@@ -1,0 +1,6 @@
+# darwin_x86_64 build host: pixie
+#
+# The nightly build runs after linux.  It has no special work to do.
+15 22 * * 1-5 . $HOME/.profile ; cd $MIR && make allsys 2>&1 | tee $MIRARCH/gmake.log
+#
+# $Id$
