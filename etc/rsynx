@@ -56,7 +56,10 @@
     DST="${DST}:/nfs/atapplic/"
 
     printf "$SITE: Sending $SRC to $DST\n"
-    rsync $DRYRUN --archive --delete -v --exclude=.mirsync/ $SRC $DST
+    rsync $DRYRUN --archive --delete -v \
+      --exclude=.mirsync/ \
+      --exclude=etc/rsynx.log \
+      $SRC $DST
 
     date "+%n%a %Y/%m/%d %T %Z $DELIM%n"
   done
