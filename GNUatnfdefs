@@ -127,52 +127,57 @@ $(MIRINCD)/wcslib : /usr/local/include/wcslib
 	-@ mkdir -m 2775 -p -v $@
 	   cd $< && rsync -v --recursive --perms --delete . $@
 
-ifeq "$(MIRARCH)" "sun4sol"
-      # Regenerate the Miriad ftp distribution kits.  Requires the sun4sol
-      # variant of tar.
-      allsys :: $(MIRFTPS:%=$(MIRFTPD)/%)
+allsys :: $(MIRFTPS:%=$(MIRFTPD)/%)
 
-      dist : allsys configure
-	-@ echo ""
+# Regenerate the Miriad ftp distribution kits, requires GNU tar.
+ifneq "$(MIRARCH)" "sun4sol"
+  TAROPTS := -C .. -X .tarX -T .tarT --no-recursion
+
+  dist : configure
 	-@ $(TIMER)
-	   cd .. ; tar cf miriad/miriad-rcs.tar $(DISTRCS:%=miriad/%)
-	   gzip miriad-rcs.tar
-	-@ $(RM) $(MIRFTPD)/miriad-rcs.tar.gz
-	   mv miriad-rcs.tar.gz $(MIRFTPD)/
-	-@ echo ""
-	-@ $(TIMER)
-	-@ $(RM) .tarX
+	-@ $(RM) .tarT .tarX
 	 @ cd .. ; find miriad -path miriad/.mirsync -prune -o -name RCS | \
 	             sort > miriad/.tarX
 	 @ cd .. ; ls miriad/*/GNUmakedefs >> miriad/.tarX
-	   cd .. ; tar cXf miriad/.tarX miriad/miriad-code.tar $(DISTCODE:%=miriad/%)
-	   gzip miriad-code.tar
-	-@ $(RM) $(MIRFTPD)/miriad-code.tar.gz
-	   mv miriad-code.tar.gz $(MIRFTPD)/
 	-@ echo ""
+	 @ cd .. ; find $(DISTRCS:%=miriad/%)  | sort > miriad/.tarT
+	   tar cf miriad-rcs.tar $(TAROPTS)
+	   bzip2 miriad-rcs.tar
+	-@ $(RM) $(MIRFTPD)/miriad-rcs.tar.bz2
+	   mv miriad-rcs.tar.bz2 $(MIRFTPD)/
 	-@ $(TIMER)
+	-@ echo ""
+	 @ cd .. ; find $(DISTCODE:%=miriad/%) | sort > miriad/.tarT
+	   tar cf miriad-code.tar $(TAROPTS)
+	   bzip2 miriad-code.tar
+	-@ $(RM) $(MIRFTPD)/miriad-code.tar.bz2
+	   mv miriad-code.tar.bz2 $(MIRFTPD)/
+	-@ $(TIMER)
+	-@ echo ""
 	-@ $(RM) VERSION
 	   date -u +'%Y%m%d' > VERSION
 	-@ chmod 444 VERSION
-	   cd .. ; tar cXf miriad/.tarX miriad/miriad-common.tar $(DISTCOMM:%=miriad/%)
+	 @ cd .. ; find $(DISTCOMM:%=miriad/%) | sort > miriad/.tarT
+	   tar cf miriad-common.tar $(TAROPTS)
 	-@ $(RM) VERSION
-	   gzip miriad-common.tar
-	-@ $(RM) $(MIRFTPD)/miriad-common.tar.gz
-	   mv miriad-common.tar.gz $(MIRFTPD)/
-	-@ echo ""
+	   bzip2 miriad-common.tar
+	-@ $(RM) $(MIRFTPD)/miriad-common.tar.bz2
+	   mv miriad-common.tar.bz2 $(MIRFTPD)/
 	 @ for bin in $(DISTBINS) ; do \
-	     echo "" ; \
 	     $(TIMER) ; \
-	     echo "tar cf miriad-$$bin.tar $$bin" ; \
-	     tar cXf .tarX miriad-$$bin.tar -C .. miriad/$$bin ; \
-	     echo "gzip miriad-$$bin.tar" ; \
-	     gzip miriad-$$bin.tar ; \
-	     $(RM) $(MIRFTPD)/miriad-$$bin.tar.gz ; \
-	     echo "mv miriad-$$bin.tar.gz $(MIRFTPD)/" ; \
-	     chmod 664 miriad-$$bin.tar.gz ; \
-	     mv miriad-$$bin.tar.gz $(MIRFTPD)/ ; \
+	     echo "" ; \
+	     (cd .. ; find miriad/$$bin | sort > miriad/.tarT) ; \
+	     echo "tar cf miriad-$$bin.tar $(TAROPTS)" ; \
+	     tar cf miriad-$$bin.tar $(TAROPTS) ; \
+	     echo "bzip2 miriad-$$bin.tar" ; \
+	     bzip2 miriad-$$bin.tar ; \
+	     $(RM) $(MIRFTPD)/miriad-$$bin.tar.bz2 ; \
+	     echo "mv miriad-$$bin.tar.bz2 $(MIRFTPD)/" ; \
+	     chmod 664 miriad-$$bin.tar.bz2 ; \
+	     mv miriad-$$bin.tar.bz2 $(MIRFTPD)/ ; \
 	   done
-	-@ $(RM) .tarX
+	-@ $(RM) .tarT .tarX
+	-@ $(TIMER)
 endif
 
 configure : configure.ac
