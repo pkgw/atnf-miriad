@@ -88,7 +88,7 @@ $(MIRFTPD)/%.gz : %
 
 # Static and static pattern rules.
 #---------------------------------
-.PHONY : bookings dist pgplot rpfits rsynx updates wcslib
+.PHONY : bookings dist pgplot rpfits rsync rsynx updates wcslib
 
 # Update the copy of external libraries and include files via allsys.
 initial :: pgplot rpfits wcslib
@@ -129,7 +129,7 @@ $(MIRINCD)/wcslib : /usr/local/include/wcslib
 
 allsys :: $(MIRFTPS:%=$(MIRFTPD)/%)
 
-rsynx :
+rsync rsynx :
 	   $(MIR)/etc/rsynx
 
 # Regenerate the Miriad ftp distribution kits, requires GNU tar.
@@ -137,26 +137,26 @@ ifneq "$(MIRARCH)" "sun4sol"
   TAROPTS := -C .. -X .tarX -T .tarT --no-recursion
 
   dist : configure
+	-@ echo ""
 	-@ $(TIMER)
 	-@ $(RM) .tarT .tarX
 	 @ cd .. ; find miriad -path miriad/.mirsync -prune -o -name RCS | \
 	             sort > miriad/.tarX
 	 @ cd .. ; ls miriad/*/GNUmakedefs >> miriad/.tarX
-	-@ echo ""
 	 @ cd .. ; find $(DISTRCS:%=miriad/%)  | sort > miriad/.tarT
 	   tar cf miriad-rcs.tar $(TAROPTS)
 	   bzip2 miriad-rcs.tar
 	-@ $(RM) $(MIRFTPD)/miriad-rcs.tar.bz2
 	   mv miriad-rcs.tar.bz2 $(MIRFTPD)/
-	-@ $(TIMER)
 	-@ echo ""
+	-@ $(TIMER)
 	 @ cd .. ; find $(DISTCODE:%=miriad/%) | sort > miriad/.tarT
 	   tar cf miriad-code.tar $(TAROPTS)
 	   bzip2 miriad-code.tar
 	-@ $(RM) $(MIRFTPD)/miriad-code.tar.bz2
 	   mv miriad-code.tar.bz2 $(MIRFTPD)/
-	-@ $(TIMER)
 	-@ echo ""
+	-@ $(TIMER)
 	-@ $(RM) VERSION
 	   date -u +'%Y%m%d' > VERSION
 	-@ chmod 444 VERSION
@@ -167,8 +167,8 @@ ifneq "$(MIRARCH)" "sun4sol"
 	-@ $(RM) $(MIRFTPD)/miriad-common.tar.bz2
 	   mv miriad-common.tar.bz2 $(MIRFTPD)/
 	 @ for bin in $(DISTBINS) ; do \
-	     $(TIMER) ; \
 	     echo "" ; \
+	     $(TIMER) ; \
 	     (cd .. ; find miriad/$$bin | sort > miriad/.tarT) ; \
 	     echo "tar cf miriad-$$bin.tar $(TAROPTS)" ; \
 	     tar cf miriad-$$bin.tar $(TAROPTS) ; \
@@ -180,6 +180,7 @@ ifneq "$(MIRARCH)" "sun4sol"
 	     mv miriad-$$bin.tar.bz2 $(MIRFTPD)/ ; \
 	   done
 	-@ $(RM) .tarT .tarX
+	-@ echo ""
 	-@ $(TIMER)
 endif
 
