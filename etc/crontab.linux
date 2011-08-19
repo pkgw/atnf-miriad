@@ -4,4 +4,5 @@
 # It is also responsible for remaking the User and Programmer Guides.
 00 22 * * 1-5 . $HOME/.profile ; cd $MIR && make allsys 2>&1 | tee $MIRARCH/gmake.log
 #
+# $Source$
 # $Id$

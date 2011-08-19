@@ -6,4 +6,5 @@
 # Update the observatories after all the nightly builds have completed.
 30 23 * * 1-5 . $HOME/.profile ; cd $MIR && make MIRATNF=1 rsynx updates bookings 2>&1 | tee $MIR/etc/rsynx.log
 #
+# $Source$
 # $Id$

@@ -3,4 +3,5 @@
 # The nightly build runs after linux.  It has no special work to do.
 15 22 * * 1-5 . $HOME/.profile ; cd $MIR && gmake allsys 2>&1 | tee $MIRARCH/gmake.log
 #
+# $Source$
 # $Id$
