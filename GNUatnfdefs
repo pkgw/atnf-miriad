@@ -9,8 +9,8 @@
 #-----------------------------------------------------------------------------
 # Files distributed separately.
 MIRFTPS  := DISCLAIMER INSTALL.html \
-            progguide.ps.gz progguide_US.ps.gz \
-            userguide.ps.gz userguide_US.ps.gz
+            progguide.ps.bz2 progguide_US.ps.bz2 \
+            userguide.ps.bz2 userguide_US.ps.bz2
 
 # The Miriad distribution is split into RCS, code, common runtime files, and
 # platform-specific binary kits.
@@ -78,10 +78,10 @@ $(MIRFTPD)/% : %
 $(MIRFTPD)/% : etc/%
 	   $(mir-copy)
 
-$(MIRFTPD)/%.gz : %
+$(MIRFTPD)/%.bz2 : %
 	-@ $(RM) $@
 	   cp $< $(MIRFTPD)/$*
-	   gzip $(MIRFTPD)/$*
+	   bzip2 $(MIRFTPD)/$*
 	-@ chgrp miriad $@
 	-@ chmod 664 $@
 
@@ -127,16 +127,37 @@ $(MIRINCD)/wcslib : /usr/local/include/wcslib
 	-@ mkdir -m 2775 -p -v $@
 	   cd $< && rsync -v --recursive --perms --delete . $@
 
-allsys :: $(MIRFTPS:%=$(MIRFTPD)/%)
-
+# Update Miriad at the observatories.
 rsync rsynx :
 	   $(MIR)/etc/rsynx
 
-# Regenerate the Miriad ftp distribution kits, requires GNU tar.
+# Produce old-style source code updates.
+updates :
+	-@ echo ""
+	-@ $(TIMER)
+	-@ echo "Creating updates..."
+	 @ $(MIRBIND)/mirexport
+
+# Report visitors.
+bookings :
+	-@ echo ""
+	-@ $(TIMER)
+	-@ echo "Checking for users needing help..."
+	 @ cd $(MIRROOT)/at_friends && ./CheckBookings
+
+configure : configure.ac
+	-@ echo ""
+	-@ $(TIMER)
+	   autoconf
+
+# Regenerate the Miriad ftp distribution kits.
+dist :: $(MIRFTPS:%=$(MIRFTPD)/%)
+
 ifneq "$(MIRARCH)" "sun4sol"
+  # Requires GNU tar.
   TAROPTS := -C .. -X .tarX -T .tarT --no-recursion
 
-  dist : configure
+  dist :: configure
 	-@ echo ""
 	-@ $(TIMER)
 	-@ $(RM) .tarT .tarX
@@ -183,23 +204,6 @@ ifneq "$(MIRARCH)" "sun4sol"
 	-@ echo ""
 	-@ $(TIMER)
 endif
-
-configure : configure.ac
-	-@ echo ""
-	-@ $(TIMER)
-	   autoconf
-
-bookings :
-	-@ echo ""
-	-@ $(TIMER)
-	-@ echo "Checking for users needing help..."
-	 @ cd $(MIRROOT)/at_friends && ./CheckBookings
-
-updates :
-	-@ echo ""
-	-@ $(TIMER)
-	-@ echo "Creating updates..."
-	 @ $(MIRBIND)/mirexport
 
 help ::
 	-@ echo "       dist: allsys, then generate distribution kits."
