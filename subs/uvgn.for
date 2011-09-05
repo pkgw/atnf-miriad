@@ -434,7 +434,9 @@ c
 c  Assume that we fail!
 c
       grms = 1
-      flag = .false.
+      do k=0,nfbin
+        flag(k) = .false.
+      enddo
 c
 c  Determine the polarisation type index.
 c
