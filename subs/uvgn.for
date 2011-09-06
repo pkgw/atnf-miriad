@@ -262,7 +262,7 @@ c-----------------------------------------------------------------------
       integer iostat
       integer i,j,k,off,item
 c-----------------------------------------------------------------------
-      call haccess(tno,item,'gains','update',iostat)
+      call haccess(tno,item,'gains','append',iostat)
       if (iostat.ne.0) call UvGnBug(iostat,'accessing gains table')
 c
 c  Write the gain solutions
@@ -281,13 +281,14 @@ c
 c
 c  Write the binned gain solutions
 c
-      call haccess(tno,item,'gainsf','update',iostat)
+      call haccess(tno,item,'gainsf','append',iostat)
       if (iostat.ne.0) return
       call hwritei(item,nfbin,4,4,iostat)
       if (iostat.ne.0) call UvGnBug(iostat,'writing gainsf header')
       off = 8
       do j=1,nfbin
         do i=1,nsols
+          call hwrited(item,time(i),off,8,iostat)
           off = off + 8
           call hwriter(item,G(k),off,8*ngains,iostat)
           off = off + ngains * 8
