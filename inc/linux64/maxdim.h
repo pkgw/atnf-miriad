@@ -37,7 +37,7 @@ C     Maximum number of channels in spectral data.
 
 C     Maximum number of windows in visibility data.
       INTEGER   MAXWIN
-      PARAMETER(MAXWIN = 16)
+      PARAMETER(MAXWIN = 48)
 
 C     Maximum number of wideband channels.
       INTEGER   MAXWIDE
