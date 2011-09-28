@@ -41,7 +41,7 @@
 #define MAXCHAN 70000
 
 /* Maximum number of windows in uv data. */
-#define MAXWIN  16
+#define MAXWIN  48
 
 /* Maximum number of wideband channels. */
 #define MAXWIDE 18
