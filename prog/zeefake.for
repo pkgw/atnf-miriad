@@ -23,7 +23,7 @@ c@ imsize
 c       The output cube sizes, all three dimensions required (VXY).
 c
 c@ vinc
-c       The velocity increment along the cubes in Km/s.  No default.
+c       The velocity increment along the cubes in km/s.  No default.
 c
 c@ delv
 c       The Zeeman splitting (separation of split lines) in km/s.
@@ -314,7 +314,7 @@ c-----------------------------------------------------------------------
       call wrhdd(lun, 'crval3', 0d0)
       call wrhdd(lun, 'crval4', dble(index(stokes,'IQUV')))
 
-      call wrhda(lun, 'ctype1', 'VELO')
+      call wrhda(lun, 'ctype1', 'VRAD')
       call wrhda(lun, 'ctype2', 'RA---SIN')
       call wrhda(lun, 'ctype3', 'DEC--SIN')
       call wrhda(lun, 'ctype4', 'STOKES')
