@@ -58,13 +58,13 @@ c-----------------------------------------------------------------------
       double precision cdelt, crpix, crval
       character algo*3, ctype*9
 
-c     Splitting in Hz/G for various lines
+c     Splitting in Hz/G for various lines.
       data cfreq  /1420,   1665,     1667,     1720  /
       data zsplit /2.80e6, 3.2787e6, 1.9608e6, 0.6536e6/
 c-----------------------------------------------------------------------
 c     Get frequency increment in Hz.
       call coInit(lunI)
-      call coSpcSet(lunI, 'FREQ', ifrq, algo)
+      call coSpcSet(lunI, 'FREQ', ' ', ifrq, algo)
       if (ifrq.eq.0) call bug('f','No spectral axis')
       if (algo.ne.' ') call bug('f',
      *  'Can''t handle non-linear frequency axes')

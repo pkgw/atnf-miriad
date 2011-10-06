@@ -79,7 +79,7 @@ c       Get the coordinate type for non-linear axes.
 c         Spectral axes; change the spectral axis in coObj1 into that
 c         of coObj2.  coSpcSet handles frame conversions as well, e.g.
 c         VELO-HEL -> VELO-LSR, so vobs in coObj1 may also change.
-          call coSpcSet(coObj1, ctype2, ifrq, algo)
+          call coSpcSet(coObj1, ctype2, ' ', ifrq, algo)
 
         else if ((type1.eq.'RA' .or. type1.eq.'GLON') .and.
      *           (type2.eq.'RA' .or. type2.eq.'GLON')) then

@@ -33,7 +33,7 @@ c     Initialize the coordinate object.
       call coInit(tin)
 
 c     Switch spectral axis to frequency.
-      call coSpcSet(tin, 'FREQ', ifrq, algo)
+      call coSpcSet(tin, 'FREQ', ' ', ifrq, algo)
       if (ifrq.eq.0) then
         call coFin(tin)
         call bug('w',

@@ -233,7 +233,7 @@ c       Finish up with this subcommand.
      *          ctype(1:4).ne.'VOPT' .and.
      *          ctype(1:4).ne.'VELO' .and.
      *          ctype(1:4).ne.'FELO') then
-              call coSpcSet(lu, 'VRAD', iax, algo)
+              call coSpcSet(lu, 'VRAD', ' ', iax, algo)
             endif
           endif
         else
