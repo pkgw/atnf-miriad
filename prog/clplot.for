@@ -2760,7 +2760,7 @@ c     Reference pixel in box coordinates.
 
 c     Compute the radio velocity of each spectral channel.
       call coInit(lIn)
-      call coSpcSet(lIn, 'VRAD', ifrq, algo)
+      call coSpcSet(lIn, 'VRAD', ' ', ifrq, algo)
       if (ifrq.eq.0) call bug('f','No spectral axis in input image')
       if (algo.ne.' ') call bug('f','Non-linear radio velocity axis')
       do i = 1, nc

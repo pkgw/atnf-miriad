@@ -669,21 +669,21 @@ c     Read all required descriptors.
 
 c     Find the spectral axis and compute the frequency.
       call coInit(lIn)
-      call coSpcSet(lIn, 'FREQ', ifrq(k), algo)
+      call coSpcSet(lIn, 'FREQ', ' ', ifrq(k), algo)
 
       if (ifrq(k).eq.0) then
-        text = inName(:l2) // ' has no frequency axis'
+        text = inName(:l2) // ' has no spectral axis'
         call bug('f', text)
       endif
 
       if (ifrq(k).le.2) then
-        text = 'Frequency axis for ' // inName(:l2) //
+        text = 'Spectral axis for ' // inName(:l2) //
      *         ' is < 3; should be > 2.'
         call bug('f', text)
       endif
 
       if (axLen(k,ifrq(k)).gt.1) call bug('f',
-     *  'Frequency axis must be of length 1 only.')
+     *  'Spectral axis must be of length 1 only.')
 
       call coCvt1(lIn, ifrq(k), 'ap', 1d0, 'aw', dtemp)
       freq = dtemp
@@ -704,7 +704,7 @@ c     Compare descriptors.
       endif
 
       if (ifrq(2).ne.ifrq(1)) then
-        text = 'Frequency axis differs for ' //
+        text = 'Spectral axis differs for ' //
      *          inName(:l2) // ' & ' // name1(:l1)
         call bug('f', text)
       endif

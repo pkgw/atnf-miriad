@@ -696,12 +696,12 @@ c     Find frequency axis if rotating position angles back.
       parot = 0.0
       if (rm.ne.0.0) then
         call coInit(lq)
-        call coSpcSet(lq, 'FREQ', ifrq, algo)
+        call coSpcSet(lq, 'FREQ', ' ', ifrq, algo)
 
         if (ifrq.eq.0) call bug('f',
      *    'Could not find frequency axis for applying RM')
         if (ifrq.le.2) call bug('f',
-     *    'Frequency axis is either 1 or 2.0  These should be spatial')
+     *    'Frequency axis is either 1 or 2.  These should be spatial')
 
         if (ifrq.gt.3 .or. naxis(ifrq).eq.1) then
 c         Find frequency of pixel one.

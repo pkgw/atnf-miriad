@@ -230,11 +230,11 @@ c     Determine the scaling factor to convert uvlo and uvhi to lambda.
         endif
 
         if (unit.ne.'klambda') then
-          call coSpcSet(lIn1, 'FREQ', iax, algo)
+          call coSpcSet(lIn1, 'FREQ', ' ', iax, algo)
           if (iax.eq.0) call bug('f','No spectral axis in image 1')
           call coCvt1(lIn1, iax, 'op', 0d0, 'aw', freq1)
 
-          call coSpcSet(lIn2, 'FREQ', iax, algo)
+          call coSpcSet(lIn2, 'FREQ', ' ', iax, algo)
           if (iax.eq.0) call bug('f','No spectral axis in image 2')
           call coCvt1(lIn2, iax, 'op', 0d0, 'aw', freq2)
 

@@ -278,7 +278,7 @@ c     Set up the output dataset.
       call coInit(tIn)
 
 c     Frequency info.
-      call coSpcSet(tIn, 'FREQ', iax, algo)
+      call coSpcSet(tIn, 'FREQ', ' ', iax, algo)
       if (iax.eq.0) then
         ctype = 'FREQ-OBS'
         sfreq = 1.4

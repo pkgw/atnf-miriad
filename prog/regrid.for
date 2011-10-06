@@ -406,7 +406,7 @@ c       Reset descriptors from the template.
 c           Reset the spectral axis of the input coordinate object to
 c           match that of the output (may change vobs).  Preempts any
 c           change that pCvtInit might make by calling coSpcSet.
-            call coSpcSet(lIn, ctype, ispc, algo)
+            call coSpcSet(lIn, ctype, ' ', ispc, algo)
           endif
         enddo
 
