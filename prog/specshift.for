@@ -33,6 +33,7 @@ c        doblank    Don't wrap profile around; blank if out of range.
 c                   By default the edge channels are assumed to be
 c                   noise so the profile is wrapped when shifting
 c                   beyond edges.
+c$Id$
 c--
 c   History:
 c    Refer to the RCS log, v1.1 includes prior revision information.
@@ -101,7 +102,7 @@ c     Set regions.
 
 c     Find the spectral axis.
       call coInit(lIn)
-      call coSpcSet(lIn, 'VRAD', spcAxI, algo)
+      call coSpcSet(lIn, 'VRAD', ' ', spcAxI, algo)
       if (spcAxI.eq.0) call bug('f', 'No spectral axis in input cube')
       spcAxC = axC(spcAxI:spcAxI)
 

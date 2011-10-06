@@ -17,10 +17,8 @@ c       Assuming that the data were measured with equal frequency
 c       increments, some approximation is involved assigning a velocity
 c       axis increment for the optical convention.  In this case, the
 c       increment stored is correct at the reference pixel.
-c
 c@ in
 c       Name of the input image data set.  No default.
-c
 c@ axis
 c       This determines what the labelling on the spectral axis will
 c       be changed to.  Possible values are 'frequency', 'radio' (for
@@ -84,7 +82,7 @@ c     Open the input map.
 
 c     Perform the transformation.
       call coInit(lIn)
-      call coSpcSet(lIn, ctype, ifrq, algo)
+      call coSpcSet(lIn, ctype, ' ', ifrq, algo)
       if (ifrq.eq.0) call bug('f','No spectral axis in input image')
       call coWrite(lIn, lIn)
       call coFin(lIn)
