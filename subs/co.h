@@ -35,11 +35,11 @@ c     most of the remaining variables will be replaced by wcsprm.
      *          crpix(MAXNAX,MAXCRD), crval(MAXNAX,MAXCRD),
      *          eqnox(MAXCRD), obstime(MAXCRD), restfrq(MAXCRD),
      *          sinrot(MAXCRD), vobs(MAXCRD)
-      character ctype(MAXNAX,MAXCRD)*16
+      character ctype(MAXNAX,MAXCRD)*16, specsys(MAXCRD)*8
 
 c     N.B. though declared as an integer array, cel must be aligned on
 c     a double precision boundary.  Especially important on Suns.
       common /cocom/  crpix, cdelt, crval, cosrot, sinrot, restfrq,
      *                vobs, eqnox, obstime, cel, lus, nalloc, naxis,
      *                lngax, latax, frqax, cotype, defs, frqscl
-      common /cocomc/ ctype
+      common /cocomc/ ctype, specsys
