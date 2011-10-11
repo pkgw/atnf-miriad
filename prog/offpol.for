@@ -110,8 +110,10 @@ c     Get the inputs.
       crpix2 = dble(jc)
 
 c     Determine the FWHM of the primary beam at this frequency.
-      call coRaDec(coObj,'SIN',0d0,0d0)
-      call coAxSet(coObj,3,'FREQ',0d0,freq,0.1d0*freq)
+      call coCreate(3, coObj)
+      call coAxSet(coObj, 1, 'RA---SIN', 0d0, 0d0, 1d0)
+      call coAxSet(coObj, 2, 'DEC--SIN', 0d0, 0d0, 1d0)
+      call coAxSet(coObj, 3, 'FREQ', 0d0, freq, 0.1d0*freq)
       call coReinit(coObj)
       call pbInit(pbObj,'atca',coObj)
       call pbInfo(pbObj,pbfwhm,cutoff,maxrad)
@@ -265,7 +267,7 @@ c-----------------------------------------------------------------------
       integer nsize(4),coObj
       character line*64
 c-----------------------------------------------------------------------
-      call coCreate(coObj)
+      call coCreate(4, coObj)
       call coAxSet(coObj,1,'RA---SIN',crpix1,crval1,cdelt1)
       call coAxSet(coObj,2,'DEC--SIN',crpix2,crval2,cdelt2)
       call coAxSet(coObj,3,'FREQ',    1d0,sfreq,0.1d0)
