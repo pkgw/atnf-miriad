@@ -502,7 +502,7 @@ c
             xypcorr = xyp(refant+fbin*(n+1))*conjg(xypref)
             if ((polref .or. polsol .or. xyref) .and.
      *          abs(real(xypcorr)-1)+abs(aimag(xypcorr)).gt.ttol)
-     *                     call rotleaks(D,nants,xypcorr)
+     *             call rotleaks(D(1,1+nants*fbin),nants,xypcorr)
 
             write(line,'(a,i2,a,f7.3)')'Iter=',niter,
      *          ', Amplit/Phase Solution Error: ',epsi1
@@ -1191,7 +1191,7 @@ c
         Gain = cmplx(t2,t1*t2)
         epsi = abs(t1)
 
-        call rotleaks(D,nants,Gain)
+        call rotleaks(D(1,1,fbin),nants,Gain)
 
         do i = 1, nants
           xyp(i,fbin) = xyp(i,fbin) * Gain
