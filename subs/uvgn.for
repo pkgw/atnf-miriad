@@ -120,7 +120,7 @@ c
      *        call bug('f','Gain table size is incorrect')
 
       t1 = 1
-      t2 = 2
+      t2 = min(2,nsols)
 c
 c  Read in the gain solutions
 c
