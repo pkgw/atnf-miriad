@@ -487,7 +487,8 @@ c
             t1 = t2
             t2 = nsols + 1
             timetab(t2) = time + 1e6*dtime
-          else if (time.lt.timetab(t1)) then
+          else if (time.lt.timetab(t1).or.
+     *             (t1.eq.t2.and.time.eq.timetab(t1))) then
             t2 = t1
             t1 = 0
             timetab(t1) = time - 1e6*dtime
