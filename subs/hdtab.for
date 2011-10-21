@@ -305,7 +305,7 @@ c  Generate a coordinate object.
 c-----------------------------------------------------------------------
       include 'hdtab.h'
 c-----------------------------------------------------------------------
-      call coCreate(coObj)
+      call coCreate(3, coObj)
       call coAxSet(coObj,1,ctype1,0d0,crval1,cdelt1)
       call coAxSet(coObj,2,ctype2,0d0,crval2,cdelt2)
       call coAxSet(coObj,3,ctype3,1d0,crval3,cdelt3)
