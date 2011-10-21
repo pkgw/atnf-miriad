@@ -230,7 +230,6 @@ c       Must be less that 0.5.  The default is 0.05.
 c
 c$Id$
 c--
-c
 c  History:
 c    Refer to the RCS log, v1.1 includes prior revision information.
 c-----------------------------------------------------------------------
@@ -352,7 +351,7 @@ c     Descriptors, if given, must match the number in 'axes'.
 c   Set up the output coordinate system.
       call coInit(lIn)
       if (altPrj) call coAltPrj(lIn)
-      call coCreate(cOut)
+      call coCreate(naxes, cOut)
 
       call coFindAx(lIn, 'longitude', ilng)
       call coFindAx(lIn, 'latitude',  ilat)
