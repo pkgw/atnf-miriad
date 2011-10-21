@@ -1,4 +1,4 @@
-# linux build host: ritchie
+# linux build host: brage
 #
 # The nightly linux build runs first and therefore remakes the doc files.
 # It is also responsible for remaking the User and Programmer Guides.
