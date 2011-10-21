@@ -11,7 +11,8 @@ c       can be given.  Normally this will simply be a telescope name.
 c@ freq
 c       Frequency at which to determine the primary beam, in GHz.
 c       Default is 1.4 GHz.
-c@ bw   Bandwidth, in GHz.  The response is averaged over the bandwidth.
+c@ bw
+c       Bandwidth, in GHz.  The response is averaged over the bandwidth.
 c       The default is 0.
 c@ options
 c       Extra processing options:
