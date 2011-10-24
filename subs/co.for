@@ -229,7 +229,6 @@ c     Initialize the celprm struct.
       vobs(icrd)    = 0d0
       eqnox(icrd)   = 0d0
       obstime(icrd) = 0d0
-      naxis(icrd)   = 0
       frqscl(icrd)  = .true.
 
       end
