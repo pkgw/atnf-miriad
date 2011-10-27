@@ -1,14 +1,15 @@
 c-----------------------------------------------------------------------
-c* Axistype - Find the axis label and plane value in user friendly units
+c* Axistype - Find the axis label and plane value in user fiendly units
 c& mchw
 c: plotting
 c+
-      subroutine AxisType(lIn,axis,plane,ctype,label,value,units)
+      subroutine axisType(lIn,axis,plane,ctype,label,value,units)
 
-      integer lIn,axis,plane
-      character ctype*9,label*13,units*13
+      integer   lIn, axis, plane
+      character ctype*(*), label*13
       double precision value
-
+      character units*13
+c-----------------------------------------------------------------------
 c  Find the axis label and plane value in user friendly units.
 c
 c  Input:
@@ -27,42 +28,46 @@ c-----------------------------------------------------------------------
       include 'mirconst.h'
 
       integer   naxis
-      real      cdelt, crpix, crval
-      character caxis*1
+      double precision cdelt, crpix, crval
+      character cax*2
 
-      character angles*13, itoaf*1
       external  angles, itoaf
+      character angles*13, itoaf*2
 c-----------------------------------------------------------------------
 c     Get ctype and value for input plane.
-      caxis = itoaf(axis)
+      cax = itoaf(axis)
       call rdhdi(lIn, 'naxis', naxis, 1)
       if (axis.le.naxis) then
-        call rdhda(lIn, 'ctype'//caxis, ctype, ' ')
-        call rdhdr(lIn, 'crval'//caxis, crval, 0.0)
-        call rdhdr(lIn, 'crpix'//caxis, crpix, 0.0)
-        call rdhdr(lIn, 'cdelt'//caxis, cdelt, 0.0)
-        value = crval + (plane-crpix)*cdelt
+        call coInit(lIn)
+        call coCvt1(lIn, axis, 'ap', dble(plane), 'aw', value)
+        call coAxGet(lIn, axis, ctype, crpix, crval, cdelt)
 
 c       Convert to user friendly label and units.
         if (ctype(1:2).eq.'RA') then
           label = '     RA      '
           units = angles(value*DR2D/15d0)
+
         else if (ctype(1:3).eq.'DEC') then
           label = '     DEC     '
           units = angles(value*DR2D)
-        else if (ctype(1:4).eq.'VELO') then
+
+        else if (ctype(1:4).eq.'VRAD' .or. ctype(1:4).eq.'VOPT' .or.
+     *           ctype(1:4).eq.'VELO' .or. ctype(1:4).eq.'FELO') then
           label = '  Velocity   '
           write(units,'(g13.3)') value
+
         else if (ctype(1:4).eq.'FREQ') then
           label = '  Frequency  '
           write(units,'(g13.6)') value
+
         else
           label = ctype
           write(units,'(g13.6)') value
         endif
+
       else
         value = 0d0
-        label = 'no axis '//caxis
+        label = 'no axis '//cax
         units = ' '
       endif
 
