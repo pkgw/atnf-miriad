@@ -95,6 +95,7 @@ c    rjs  25feb98  Honour documentation so that a beam is not needed
 c                  when convolving.
 c    rjs  28jun01  Doc change only.
 c    mchw 07feb02  Change beamwidth format to handle ATA and ALMA.
+c    mhw  27oct11  Use ptrdiff type for memory allocations
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'mem.h'
@@ -102,7 +103,8 @@ c-----------------------------------------------------------------------
 
       logical   doBeam, doFit, doGaus, doMap
       integer   bmLen(3), cnvLen(2), i, lBeam, lMap, lModel, lOut,
-     *          mapLen(4), modLen(3), naxis, offset(3), pOut, x0, y0
+     *          mapLen(4), modLen(3), naxis, offset(3), x0, y0
+      ptrdiff   pOut
       real      fwhm(2), pa, rms
       character beam*64, iomode*8, line*72, map*64, mode*16, modl*64,
      *          outNam*64, version*72
@@ -237,7 +239,7 @@ c     Open the output, and create its header.
       if (doMap) call hdcopy(lMap,lOut,'mostable')
 
 c     Loop over the third dimension of the map.
-      call memAlloc(pOut,cnvLen(1)*cnvLen(2),'r')
+      call memAllop(pOut,cnvLen(1)*cnvLen(2),'r')
       do i = 1, mapLen(3)
         if (mod(i,10).eq.0 .or. (i.eq.1 .and. mapLen(3).ge.10))
      *    call output('Beginning plane '//itoaf(i))
@@ -258,7 +260,7 @@ c     Loop over the third dimension of the map.
       enddo
 
 c     All said and done.  Close up the files, and leave.
-      call memFree(pOut,cnvLen(1)*cnvLen(2),'r')
+      call memFrep(pOut,cnvLen(1)*cnvLen(2),'r')
       call restFin
       call xyclose(lModel)
       call xyclose(lOut)

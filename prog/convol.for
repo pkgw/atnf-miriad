@@ -99,6 +99,7 @@ c    rjs   05dec97 Change order of boxmask and boxinfo calls.
 c    bpw   12mar99 Increase size of map/beam/out to 512 to allow
 c                  directories.
 c    dpr   21jun01 Doc change only
+c    mhw   27oct11 Use ptrdiff type for memory allocations
 c  Bugs:
 c-----------------------------------------------------------------------
       include 'maxdim.h'
@@ -111,10 +112,11 @@ c-----------------------------------------------------------------------
 
       logical   asym, corr, divide, dogaus, doscale, final, rect,
      *          selfscal
-      integer   Box(MAXBOX), Runs(3,MAXRUNS), blc(3), handle, ifail,
+      integer   Box(MAXBOX), Runs(3,MAXRUNS), blc(3), ifail,
      *          iref, jref, k, l, lBeam, lMap, lOut, n1, n2, nPoint,
-     *          nRuns, naxis, nsize(MAXNAX), nx, ny, pDat, trc(3), xmax,
+     *          nRuns, naxis, nsize(MAXNAX), nx, ny, trc(3), xmax,
      *          xmin, xoff, ymax, ymin, yoff
+      ptrdiff   handle, pDat
       real      bmaj, bmaj1, bmin, bmin1, bpa, bpa1, crpix1, crpix2,
      *          factor, sigma, temp
       double precision cdelt1, cdelt2
@@ -285,7 +287,7 @@ c
       call xyopen(lOut,Out,'new',naxis,nsize)
       call header(lMap,lOut,min(naxis,3),blc,
      *  bunit,bmaj,bmin,bpa,version)
-      call MemAlloc(pDat,nsize(1)*nsize(2),'r')
+      call MemAllop(pDat,nsize(1)*nsize(2),'r')
 c
 c  Loop over the third dimension.
 c
