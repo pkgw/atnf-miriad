@@ -21,7 +21,7 @@ C     segvs in mfclean.  Note that, depending on the algorithm, MAXBUF
 C     may also play an important role in determining the maximum image
 C     size that can be handled.
       INTEGER   MAXDIM
-      PARAMETER(MAXDIM = 16*1024)
+      PARAMETER(MAXDIM = 32*1024)
 
 C     Maximum number of antennas (ATA=64).
       INTEGER   MAXANT
