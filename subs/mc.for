@@ -10,6 +10,9 @@ c		  via changes in mcExtent.
 c    rjs 12oct99  Change in subroutine name only.
 c    rjs 22mar00  Protect against trying to convolve up to something larger
 c		  than MAXDIM.
+c    rjs 12jul03  Guard against array bounds violations in mccnvl1.
+c    mhw 27oct11  Use ptrdiff type for memory allocations
+c
 c************************************************************************
 	subroutine mcInitFG(tno1,bmaj1,bmin1,bpa1)
 c
@@ -93,7 +96,7 @@ c
 	  n2d = n2d + n2d
 	endif
 	nWrk = n1d*n2d
-	call memAlloc(pWrk1,2*nWrk,'r')
+	call memAllop(pWrk1,2*nWrk,'r')
 	pWrk2 = pWrk1 + nWrk
 c
 c  Initialise a few other things.
@@ -140,9 +143,9 @@ c
 c  Allocate weight arrays if needed.
 c
 	if(nWts.lt.nox*noy)then
-	  if(nWts.gt.0)call memFree(pWts1,2*nWts,'r')
+	  if(nWts.gt.0)call memFrep(pWts1,2*nWts,'r')
 	  nWts = nox*noy
-	  call memAlloc(pWts1,2*nWts,'r')
+	  call memAllop(pWts1,2*nWts,'r')
 	  pWts2 = pWts1 + nWts
 	endif
 c
@@ -185,11 +188,13 @@ c
 c
 c  Aloocate memory, if needed.
 c
-	  if(xmin.le.xmax.and.ymin.le.ymax)then
+	  if(xmin.le.xmax.and.ymin.le.ymax.and.
+     *	     xlo.le.nix.and.xhi.ge.1.and.
+     *	     ylo.le.niy.and.yhi.ge.1)then
 	    if(nWrk.lt.mnx*mny)then
-	      if(nWrk.gt.0)call memFree(pWrk1,2*nWrk,'r')
+	      if(nWrk.gt.0)call memFrep(pWrk1,2*nWrk,'r')
 	      nWrk = mnx*mny
-	      call memAlloc(pWrk1,2*nWrk,'r')
+	      call memAllop(pWrk1,2*nWrk,'r')
 	      pWrk2 = pWrk1 + nWrk
 	    endif
 c
@@ -215,7 +220,8 @@ c************************************************************************
      *	  Resid,Pb,mnx,mny)
 c
 	implicit none
-	integer k,cnvl,pbObj,nix,niy,nox,noy,xoff,yoff
+        ptrdiff cnvl
+	integer k,pbObj,nix,niy,nox,noy,xoff,yoff
 	integer xlo,ylo,xhi,yhi,xmin,ymin,xmax,ymax,mnx,mny
 	real In(nix,niy),Out(nox,noy),Wts1(nox,noy),Wts3
 	real Resid(mnx,mny),Pb(mnx,mny)
@@ -239,7 +245,7 @@ c  Get the data and primary beam that we are interested in.
 c
 	do j=ylo,yhi
 	  if(j.gt.1.and.j.le.niy)then
-	    do i=xlo,0
+	    do i=xlo,min(0,xhi)
 	      Resid(i+ioff,j+joff) = 0
 	      Pb(i+ioff,j+joff) = pbGet(pbObj,real(i),real(j))
 	    enddo
@@ -248,7 +254,7 @@ c
 	      Pb(i+ioff,j+joff) = t
 	      Resid(i+ioff,j+joff) = In(i,j)*t*Wts1(i+xoff,j+yoff)
 	    enddo
-	    do i=nix+1,xhi
+	    do i=max(xlo,nix+1),xhi
 	      Pb(i+ioff,j+joff) = pbGet(pbObj,real(i),real(j))
 	      Resid(i+ioff,j+joff) = 0
 	    enddo
@@ -300,9 +306,9 @@ c
 c  Do we have enough buffer space?
 c
 	if(nWts.lt.npix)then
-	  if(nWts.gt.0)call memFree(pWts1,2*nWts,'r')
+	  if(nWts.gt.0)call memFrep(pWts1,2*nWts,'r')
 	  nWts = npix
-	  call memAlloc(pWts1,2*nWts,'r')
+	  call memAllop(pWts1,2*nWts,'r')
 	  pWts2 = pWts1 + npix
 	endif
 c
@@ -452,7 +458,8 @@ c************************************************************************
      *	  n,Out,Runs,nRuns,Pb,Resid,nscr)
 c
 	implicit none
-	integer cnvl,pbObj,n,nRuns,Runs(3,nRuns),nscr,k
+        ptrdiff cnvl
+	integer pbObj,n,nRuns,Runs(3,nRuns),nscr,k
 	integer xlo,ylo,xhi,yhi,xmin,ymin,xmax,ymax
 	real In(n),Out(n),Wt1(n),Wt3,Pb(nscr),Resid(nscr)
 c
@@ -666,7 +673,8 @@ c************************************************************************
 	subroutine mcInitC(k,cnvl1)
 c
 	implicit none
-	integer k,cnvl1
+	integer k
+        ptrdiff cnvl1
 c
 c  Initialise a convolver. We wait until the last minute to do this
 c  to avoid unnecessarily doing it if its not necessary.
@@ -674,16 +682,16 @@ c------------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'mem.h'
 	include 'mc.h'
-	integer pGaus
+	ptrdiff pGaus
 c
 c  If we have a gaussian, do it first.
 c
 	call xysetpl(tno,1,k)
 	if(doGaus)then
-	  call memAlloc(pGaus,n1*n2,'r')
+	  call memAllop(pGaus,n1*n2,'r')
 	  call mcGaus(tno,memr(pGaus),n1,n2,ic,jc,bmaj,bmin,bpa)
 	  call cnvlIniA(cnvl1,memr(pGaus),n1,n2,ic,jc,0.,flags)
-	  call memFree(pGaus,n1*n2,'r')
+	  call memFrep(pGaus,n1*n2,'r')
 	else
 	  call cnvlIniF(cnvl1,tno,n1,n2,ic,jc,0.,flags)
 	endif
@@ -736,6 +744,6 @@ c
 	  cnvl(k) = 0
 	enddo
 c
-	if(nWrk.gt.0)call memFree(pWrk1,2*nWrk,'r')
-	if(nWts.gt.0)call memFree(pWts1,2*nWts,'r')
+	if(nWrk.gt.0)call memFrep(pWrk1,2*nWrk,'r')
+	if(nWts.gt.0)call memFrep(pWts1,2*nWts,'r')
 	end
