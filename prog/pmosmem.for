@@ -159,7 +159,7 @@ c-----------------------------------------------------------------------
 
       logical   hdprsnt
       integer   len1
-      character itoaf*4, versan*80
+      character itoaf*4, versan*72
       external  hdprsnt, itoaf, len1, versan
 c-----------------------------------------------------------------------
       version = versan('pmosmem',
@@ -1409,9 +1409,9 @@ c
 c-----------------------------------------------------------------------
       integer   iax, lblc, ltrc
       double precision crpix
-      character cin*1, line*72, txtblc*32, txttrc*32
+      character cax*2, line*72, txtblc*32, txttrc*32
 
-      character itoaf*8
+      character itoaf*2
       external  itoaf
 c-----------------------------------------------------------------------
 c     Start by making a verbatim copy of the input header.
@@ -1420,10 +1420,10 @@ c     Start by making a verbatim copy of the input header.
 c     Update parameters that may have changed.
       do iax = 1, 3
         if (blc(iax).ne.1) then
-          cin = itoaf(iax)
-          call rdhdd(lMap, 'crpix'//cin, crpix, 1d0)
-          crpix = crpix - dble(blc(iax) + 1)
-          call wrhdd(lOut, 'crpix'//cin, crpix)
+          cax = itoaf(iax)
+          call rdhdd(lMap, 'crpix'//cax, crpix, 1d0)
+          crpix = crpix - dble(blc(iax) - 1)
+          call wrhdd(lOut, 'crpix'//cax, crpix)
         endif
       enddo
 
