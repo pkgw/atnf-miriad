@@ -569,7 +569,7 @@ c-----------------------------------------------------------------------
 
 c***********************************************************************
 
-      subroutine axstrip(iax, naxes, naxis, axmap, crval, crpix, cdelt,
+      subroutine axstrip(iax, naxes, axmap, naxis, crval, crpix, cdelt,
      *                   ctype)
 
       integer iax, naxes, axmap(naxes), naxis(naxes)
@@ -581,12 +581,13 @@ c
 c  Input:
 c    iax        Axis to strip
 c  Input/output
-c    naxes      Number of axes
+c    naxes      Number of axes.
+c    axmap      Axis mapping.
 c    naxis      Number of pixels on each axis.
-c    crval      Ref. values
-c    crpix      Ref. pixels
-c    cdelt      Increments
-c    ctype      Axis types
+c    crval      Reference values.
+c    crpix      Reference pixels.
+c    cdelt      Increments.
+c    ctype      Axis types.
 c-----------------------------------------------------------------------
       integer i
 c-----------------------------------------------------------------------
@@ -626,6 +627,7 @@ c  Input
 c    lin        Image to copy keywords from.
 c    naxes      Number of axes.
 c    naxis      Number of pixels on each axis.
+c    axmap      Axis mapping.
 c    out        Name of output image.
 c    btype      The type of image being opened.
 c                 'fractional_polarization'
