@@ -433,9 +433,11 @@ c
         supy = 0
         defWt = .false.
       endif
-      if (robust.eq.-10.and.(supx.gt.0.or.defWt)) call bug('i',
+      if (robust.eq.-10.and.(supx.gt.0.or.defWt)) then
+        call bug('i',
      *  'Using uniform weighting with robust unset is not recommended') 
-      if (mfs) call bug('i',' especially not for mfs data')
+        if (mfs) call bug('i',' especially not for mfs data')
+      endif
       call keyr('slop',slop,0.)
       if(slop.lt.0.or.slop.gt.1)call bug('f','Invalid slop value')
       call keymatch('slop',nslop,slops,1,slopmode,nout)
