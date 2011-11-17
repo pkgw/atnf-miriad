@@ -1083,7 +1083,7 @@ c
               Shigh=Shigh+flx(i,nfreq+1-j)
             enddo
             alpha = log(Shigh/Slow)/(Fhigh-Flow)
-            salpha = sflux(i)/flux(i)/(Fhigh-Flow)
+            salpha = sqrt(2.0)*sflux(i)/flux(i)/(Fhigh-Flow)
             write(line,21) alpha,salpha
             call output(line)
    21       format('  Spectral index:               ',f6.3,' +/- ',f6.3)
