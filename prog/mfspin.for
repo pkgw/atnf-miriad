@@ -393,7 +393,7 @@ c     Determine the frequency of channel 1.
       nu0 = 0.0
       call coInit(lMod)
       call coSpcSet(lMod, 'FREQ', ' ', ifrq, algo)
-      if (ifrq.eq.0) then
+      if (ifrq.ne.0) then
         call coCvt1(lMod, ifrq, 'ap', 1d0, 'aw', nu0)
       endif
       call coFin(lMod)
