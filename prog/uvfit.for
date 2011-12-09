@@ -227,6 +227,8 @@ c
 c
 c  Now do the binned solutions if requested        
 c
+        ntime=1
+        nfreq=1
         if(nvar.gt.0.and.(dt.gt.0.or.df.gt.0)) then
 c
 c         Determine time, freq, ranges to solve for
