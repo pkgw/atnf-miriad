@@ -3326,8 +3326,8 @@ c
             ik = nint(syscal(1,j,k))
             ij = nint(syscal(2,j,k))
             ok = ij.gt.0.and.ik.gt.0.and.ij.le.maxif.and.ik.le.maxant
-            if(ok.and.nq.ge.13) ok = syscal(13,j,k).eq.0
-            if(ok.or.unflag)then
+            if(ok.and.nq.ge.13) ok = syscal(13,j,k).eq.0.or.unflag
+            if(ok)then
               scinit(ij,ik) = .true.
               scbuf(ij,ik)  = .true.
               xyphase(ij,ik) = invert(ij)*syscal(3,j,k)
