@@ -52,6 +52,8 @@ c		      selected was not the first source in the file.
 c    rjs   08may00    Change incorrect call of keyf to keya.
 c    rjs   05sep00    Use double precision to avoid rounding of coords.
 c    rjs   19sep04    Copy across sensitivity model, if appropriate.
+c    rjs   18sep05    Correct incorrect type of keyd call.
+c    rjs   14dec11    Copy across nbpsols item.
 c***********************************************************************
 c= Uvedit - Editing of the baseline of a UV data set.
 c& jm
@@ -217,7 +219,7 @@ c
       character PROG*(*)
       parameter (PROG = 'UVEDIT: ')
       character VERSION*(*)
-      parameter (VERSION = 'version 1.8 19-Sep-04')
+      parameter (VERSION = 'version 1.8 14-Dec-2011')
 c
       double precision SECRAD, ASECRAD
 c  -------------(SECRAD = DPI / (12.d0 * 3600.d0))
@@ -347,10 +349,10 @@ c
       decabs = .FALSE.
 c RA.
       if (KeyPrsnt('ra')) then
-        call Keyd('ra', raoff, -100001.0)
+        call Keyd('ra', raoff, -100001.0d0)
         if (KeyPrsnt('ra')) then
-          call Keyd('ra', val1, -1.0)
-          call Keyd('ra', val2, -1.0)
+          call Keyd('ra', val1, -1.0d0)
+          call Keyd('ra', val2, -1.0d0)
           if ((val1 .lt. 0) .or. (val2 .lt. 0)) then
             errmsg = PROG // 'Incorrect RA entered.'
             call Bug('f', errmsg)
@@ -368,10 +370,10 @@ c RA.
       endif
 c Dec.
       if (KeyPrsnt('dec')) then
-        call Keyd('dec', decoff, -100001.0)
+        call Keyd('dec', decoff, -100001.0d0)
         if (KeyPrsnt('dec')) then
-          call Keyd('dec', val1, -1.0)
-          call Keyd('dec', val2, -1.0)
+          call Keyd('dec', val1, -1.0d0)
+          call Keyd('dec', val2, -1.0d0)
           if ((val1 .lt. 0) .or. (val2 .lt. 0)) then
             errmsg = PROG // 'Incorrect DEC entered.'
             call Bug('f', errmsg)
@@ -444,9 +446,9 @@ c  Initialize the antenna arrays.
             call Bug('f', errmsg)
           endif
           Nantpos = Nantpos + 1
-          call Keyd(antkey, XYZ(j, 1), 0.0)
-          call Keyd(antkey, XYZ(j, 2), 0.0)
-          call Keyd(antkey, XYZ(j, 3), 0.0)
+          call Keyd(antkey, XYZ(j, 1), 0.0d0)
+          call Keyd(antkey, XYZ(j, 2), 0.0d0)
+          call Keyd(antkey, XYZ(j, 3), 0.0d0)
           call Keyi(antkey, j, 0)
         enddo
         if (j .lt. 0) then
@@ -1099,6 +1101,7 @@ c
           call hdcopy(Lin,Lout,'freqs')
           call hdcopy(Lin,Lout,'nspect0')
           call hdcopy(Lin,Lout,'nchan0')
+	  call hdcopy(Lin,lOut,'nbpsols')
 	endif
 c
 	if(hdprsnt(Lin,'cgains'))then
