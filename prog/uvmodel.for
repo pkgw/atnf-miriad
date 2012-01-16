@@ -137,6 +137,7 @@ c    rjs  19jun97 Point source models can be different polarisations.
 c    rjs  26sep97 Re-add mhw's zero option.
 c    rjs  01dec98 More warning messages.
 c    rjs  03apr09 Fix long standing bug in "options=flag"
+c    mhw  16jan12 Use rec size for scr routines to handle larger files
 c-----------------------------------------------------------------------
       include 'maxdim.h'
 
@@ -278,7 +279,7 @@ c     Perform the copying.
         call uvread(tVis, preamble, uvdata, flags, MAXCHAN, nread)
         if (nread.ne.nchan) call bug('f',
      *    'No. channels  unexpectedly changed, when rereading data')
-        call scrread(tScr, buffer, (i-1)*length, length)
+        call scrread(tScr, buffer, (i-1), 1)
         call process(oper, buffer(1)*sigma, nchan, buffer(NHEAD+1),
      *               uvdata, flags)
 

@@ -124,10 +124,12 @@ c		  problems.
 c    rjs  01dec98 More warning messages.
 c    rjs  22mar00 Relax implicit assumption that XX/YY much stronger than XY/YX.
 c    rjs   8jan01 Fix buggy error message
+c    pjt  11feb02 Fix double + sign some complilers don't grok
+c    mhw  16jan12 Use rec size for scr routines to handle larger files
 c------------------------------------------------------------------------
 	include 'gpscal.h'
 	character version*(*)
-	parameter(version='GpsCal: version 1.0 8-Jan-01')
+	parameter(version='GpsCal: version 1.0 12-feb-02')
 	integer MAXSELS,nhead
 	parameter(MAXSELS=256,nhead=5)
 c
@@ -1421,8 +1423,8 @@ c
 c  Read the first record in the first file.
 c
 	length = 5*nchan + 5
-	offset = ivis*length
-	call scrread(tscr(1),In,offset,length)
+	offset = ivis
+	call scrread(tscr(1),In,offset,1)
 c
 	npol = nint(In(1))
 	dbl = In(3)
@@ -1435,7 +1437,7 @@ c
 	  offset = ivis*length
 	  do ipol=1,npol
 	    if(ipol.ne.1.or.ifile.ne.1)
-     *		call scrread(tscr(ifile),In,offset,length)
+     *		call scrread(tscr(ifile),In,offset,1)
 	    pol = nint(In(2))
 	    offset = offset + length
 	    if(ifile.eq.1)then
@@ -1775,7 +1777,7 @@ c
 	    Sum2(X,b1(i)) = Sum2(X,b1(i))
      *	      + (real(Gx(b2(i)))**2 + aimag(Gx(b2(i)))**2)*SumMM(XX,i)
      *	      + (real(Gy(b2(i)))**2 + aimag(Gy(b2(i)))**2)*SumMM(XY,i)
-	    Sum2(X,b2(i)) = Sum2(X,b2(i)) +
+	    Sum2(X,b2(i)) = Sum2(X,b2(i)) 
      *	      + (real(Gx(b1(i)))**2 + aimag(Gx(b1(i)))**2)*SumMM(XX,i)
      *	      + (real(Gy(b1(i)))**2 + aimag(Gy(b1(i)))**2)*SumMM(YX,i)
 c
@@ -1789,7 +1791,7 @@ c
 	    Sum2(Y,b1(i)) = Sum2(Y,b1(i))
      *	      + (real(Gy(b2(i)))**2 + aimag(Gy(b2(i)))**2)*SumMM(YY,i)
      *	      + (real(Gx(b2(i)))**2 + aimag(Gx(b2(i)))**2)*SumMM(YX,i)
-	    Sum2(Y,b2(i)) = Sum2(Y,b2(i)) +
+	    Sum2(Y,b2(i)) = Sum2(Y,b2(i)) 
      *	      + (real(Gy(b1(i)))**2 + aimag(Gy(b1(i)))**2)*SumMM(YY,i)
      *	      + (real(Gx(b1(i)))**2 + aimag(Gx(b1(i)))**2)*SumMM(XY,i)
 	  enddo

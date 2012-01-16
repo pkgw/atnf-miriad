@@ -147,6 +147,7 @@ c    rjs  01dec98 Added extra warning message.
 c    rjs  30aug99 Increase maxmod to 64
 c    rjs  14dec99 Ability to use model visibility datasets.
 c    dpr  17apr01 Increase MaxMod to 128
+c    mhw  16jan12 Use rec size for scr routines to handle larger files
 c
 c  Bugs/Shortcomings:
 c   * Selfcal should check that the user is not mixing different
@@ -661,7 +662,7 @@ c-----------------------------------------------------------------------
       length = NHEAD + 5*nchan
 
       do j = 1, nvis
-        call scrread(tscr,Out,(j-1)*length,length)
+        call scrread(tscr,Out,(j-1),1)
         itime = nint(Out(2)/interval)
         ihash = 2*itime + 1
         i = mod(itime,nHash)
