@@ -394,7 +394,7 @@ c     Get xlabel.
       else if (ctype.eq.'VRAD' .or. ctype(1:4).eq.'VELO') then
         xlabel = 'Radio velocity (km/s)'
       else if (ctype.eq.'VOPT-F2W' .or. ctype(1:4).eq.'FELO') then
-        xlabel = 'Optical felocity (km/s)'
+        xlabel = 'Optical velocity (km/s)'
       else
         xlabel = ctype(1:len1(ctype))
       endif

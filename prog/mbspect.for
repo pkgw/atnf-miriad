@@ -1237,7 +1237,7 @@ c     Construct x-axis label.
       else if (xaxis.eq.'VOPT' .or.
      *         xaxis.eq.'FELO' .or.
      *         xaxis.eq.'optical') then
-        xlabel = 'Optical felocity, \ficz\fr (km s\u-1\d)'
+        xlabel = 'Optical velocity, \ficz\fr (km s\u-1\d)'
       else
         xlabel = ctype(1:len1(ctype))
       endif
