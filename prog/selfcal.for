@@ -147,7 +147,7 @@ c    rjs  01dec98 Added extra warning message.
 c    rjs  30aug99 Increase maxmod to 64
 c    rjs  14dec99 Ability to use model visibility datasets.
 c    dpr  17apr01 Increase MaxMod to 128
-c    mhw  16jan12 Use rec size for scr routines to handle larger files
+c    mhw  16jan12 Use ptrdiff for scr routines to handle larger files
 c
 c  Bugs/Shortcomings:
 c   * Selfcal should check that the user is not mixing different
@@ -655,6 +655,7 @@ c-----------------------------------------------------------------------
       parameter (NHEAD = 3, MAXLEN = NHEAD + 5*MAXCHAN)
 
       integer   i, i1, i2, iBl, ihash, itime, j, k, length, sCount
+      ptrdiff   off
       real      mm, out(MAXLEN), sMM, sTime, sVV, vv, wgt
       complex   sVM, vm
 c-----------------------------------------------------------------------
@@ -662,7 +663,9 @@ c-----------------------------------------------------------------------
       length = NHEAD + 5*nchan
 
       do j = 1, nvis
-        call scrread(tscr,Out,(j-1),1)
+        off = j-1
+        off = off * length
+        call scrread(tscr,Out,off,length)
         itime = nint(Out(2)/interval)
         ihash = 2*itime + 1
         i = mod(itime,nHash)

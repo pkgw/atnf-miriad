@@ -1783,7 +1783,8 @@ c    allgood Means that none of the displayed spatial pixels had all
 c            displayed images blanked.  So don't mess around with masks
 c            anymore.
 c-----------------------------------------------------------------------
-      integer i, j, k, l, off, nim, nblim
+      integer i, j, k, l, nim, nblim
+      ptrdiff off
       real data(2)
 c-----------------------------------------------------------------------
 c     How many images did we display?
@@ -1871,7 +1872,8 @@ c     Input
 c       norm       0 -> blanked
 c-----------------------------------------------------------------------
       real data(2)
-      integer off, i, j, k, isiz, jsiz
+      integer i, j, k, isiz, jsiz
+      ptrdiff off
 c-----------------------------------------------------------------------
       isiz = (trc(1)-blc(1)+1)
       jsiz = (trc(2)-blc(2)+1)

@@ -2775,7 +2775,8 @@ c
       real t1(ntime),array(nchan,ntime,2)
       double precision day0
       include 'maxdim.h'
-      integer i,j,k,offset,length,pnt,bl,i0
+      integer i,j,k,length,pnt,bl,i0
+      ptrdiff offset
       real buf(2*MAXCHAN+3),t
 c      character status*80
 
@@ -3101,7 +3102,8 @@ c-----------------------------------------------------------------------
       double precision preamble(4),line(6),day1
       real buf(2*MAXCHAN+3),t,tprev,maxgap
       logical torder
-      integer vsrc,nread,length,offset,ant1,ant2,i,bl,i0
+      integer vsrc,nread,length,ant1,ant2,i,bl,i0
+      ptrdiff offset
 c
 c  Externals.
 c

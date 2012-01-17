@@ -607,11 +607,13 @@ c    n1,n2      Dimensions of the Out array.
 c    xlo,ylo    Blc of area to write.
 c    xhi,yhi    Trc of area to write.
 c-----------------------------------------------------------------------
-      integer j,offset,length
+      integer j,length
+      ptrdiff offset
 c-----------------------------------------------------------------------
 c     If the section of the x dimension that we want to right is pretty
 c     well the entire x axis, read the whole lot.
-      offset = (k-1)*n1*n2 + (ylo-1)*n1 + (xlo-1)
+      offset = (k-1)*n1
+      offset = offset*n2 + (ylo-1)*n1 + (xlo-1)
       if (10*(xhi-xlo+1).ge.8*n1) then
         length = n1*(yhi-ylo-1) + (n1-xlo+1) + xhi
         call scrRead(lScr,Out(xlo,ylo),offset,length)
@@ -642,10 +644,12 @@ c    n1,n2      Dimensions of the Out array.
 c    xlo,ylo    Blc of area to write.
 c    xhi,yhi    Trc of area to write.
 c-----------------------------------------------------------------------
-      integer j,offset,length
+      integer j,length
+      ptrdiff offset
 c-----------------------------------------------------------------------
 c     Try and block it into one call if that is possible.
-      offset = (k-1)*n1*n2 + (ylo-1)*n1 + (xlo-1)
+      offset = (k-1)*n1
+      offset = offset*n2 + (ylo-1)*n1 + (xlo-1)
       if (xlo.eq.1 .and. xhi.eq.n1) then
         length = n1*(yhi-ylo-1) + (n1-xlo+1) + xhi
         call scrWrite(lScr,Out(xlo,ylo),offset,length)

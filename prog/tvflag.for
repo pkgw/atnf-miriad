@@ -705,7 +705,8 @@ c    array	The gridded data.
 c    iflag	Flag for the gridded data.
 c-----------------------------------------------------------------------
 	include 'maxdim.h'
-	integer i,j,k,offset,length,pnt,bl,i0
+	integer i,j,k,length,pnt,bl,i0
+        ptrdiff offset
 	real buf(2*MAXCHAN+3),t
 c
 	if(nchan.gt.MAXCHAN)call bug('f','Too many channels')
@@ -1028,7 +1029,8 @@ c-----------------------------------------------------------------------
 	double precision preamble(4),line(6),day1
 	real buf(2*MAXCHAN+3),t,tprev,maxgap
 	logical torder
-	integer vsrc,nread,length,offset,ant1,ant2,i,bl,i0
+	integer vsrc,nread,length,ant1,ant2,i,bl,i0
+        ptrdiff offset
 c
 c  Externals.
 c

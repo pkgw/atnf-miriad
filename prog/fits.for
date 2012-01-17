@@ -2682,7 +2682,8 @@ c-----------------------------------------------------------------------
 
       integer i,i0
       integer tIn,tScr,tOut,vSrc
-      integer nread,nvis,nVisRef,offset,length,velref,nchan
+      integer nread,nvis,nVisRef,length,velref,nchan
+      ptrdiff offset
       integer nSrc,iSrc
       integer ant1,ant2
       real wt,epoch
@@ -3307,6 +3308,7 @@ c
       character num*8,num2*8
       real In(uvRandom+1+3*maxchan),Out(uvRandom+3*maxPol*maxchan)
       real Time,wt
+      ptrdiff offset
 
 c     Externals.
       character itoaf*8,PolsC2P*2
@@ -3349,7 +3351,8 @@ c
       wt = 0
 
       do j = 1, nvis
-        call scrread(tScr,In,(j-1),1)
+        offset = j-1
+        call scrread(tScr,In, offset,1)
         P = nint(In(1))
         iP = pols(P)
 c

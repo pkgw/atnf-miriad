@@ -40,11 +40,13 @@ c
       integer nchanlist(maxfreq)
       real scratch(maxchan)
       integer lin, lins, npol, i, nchan, nscr, irec,
-     +  offset, ant1, ant2, nant, nbin, nif, lastit, it
+     +  ant1, ant2, nant, nbin, nif, lastit, it
+      ptrdiff offset
       integer ibin,iif,ipol,iant1,iant2,b,r,pol,bin,ifno
       character in*40, ctime*18
       logical flags(maxchan), some, brief
-      integer flagoff(2,maxrec), offauto(MAXANT,maxpol,MAXWIN,maxbin)
+      ptrdiff flagoff(2,maxrec)
+      ptrdiff offauto(MAXANT,maxpol,MAXWIN,maxbin)
       integer recnum(MAXBASE,maxpol,MAXWIN,maxbin),polidx(4)
       character  aline*100
       integer ntot,ngood,ngood2,ngood3,nflag
