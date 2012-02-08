@@ -384,7 +384,7 @@ c
 c Open image and see if axes in radians
 c
       call opimcg(maxnax, in, lin, size, naxis)
-      call initco(lin)
+      call coInit(lin)
       call rdhda(lin, 'bunit', units, ' ')
       radians = .false.
       call axfndco(lin, 'RAD', 0, 1, iax)
@@ -834,7 +834,7 @@ c
       call memfree(ipnim, win(1)*win(2), 'i')
       if (.not.noimage .and. dopixel .and. trfun.ne.'lin')
      *   call memfree(ipims, win(1)*win(2), 'i')
-      call finco(lin)
+      call coFin(lin)
       call xyclose(lin)
       if (fslval.ne.' ') call txtclose(lval)
       if (fslposo.ne.' ') call txtclose(lposo)
