@@ -29,8 +29,8 @@ c     most of the remaining variables will be replaced by wcsprm.
 
       logical   defs(4,MAXCRD), frqscl(MAXCRD)
       integer   cel(CELLEN,MAXCRD), cotype(MAXNAX,MAXCRD),
-     *          frqax(MAXCRD), latax(MAXCRD), lngax(MAXCRD),
-     *          lus(MAXCRD), nalloc(MAXCRD), naxis(MAXCRD)
+     *          latax(MAXCRD), lngax(MAXCRD), lus(MAXCRD),
+     *          nalloc(MAXCRD), naxis(MAXCRD), spcax(MAXCRD)
       double precision cdelt(MAXNAX,MAXCRD), cosrot(MAXCRD),
      *          crpix(MAXNAX,MAXCRD), crval(MAXNAX,MAXCRD),
      *          eqnox(MAXCRD), obstime(MAXCRD), restfrq(MAXCRD),
@@ -41,5 +41,5 @@ c     N.B. though declared as an integer array, cel must be aligned on
 c     a double precision boundary.  Especially important on Suns.
       common /cocom/  crpix, cdelt, crval, cosrot, sinrot, restfrq,
      *                vobs, eqnox, obstime, cel, lus, nalloc, naxis,
-     *                lngax, latax, frqax, cotype, defs, frqscl
+     *                lngax, latax, spcax, cotype, defs, frqscl
       common /cocomc/ ctype, specsys
