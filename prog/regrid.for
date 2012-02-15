@@ -503,6 +503,7 @@ c     Finished with the template image.
 c     The remaining coordinate parameters come from the input image.
       call coCpyD(lIn, cOut, 'obstime')
       call coCpyD(lIn, cOut, 'restfreq')
+      call coCpyA(lIn, cOut, 'specsys')
       call coCpyD(lIn, cOut, 'vobs')
 
 c     Set up output celestial coordinates.
@@ -975,8 +976,8 @@ c-----------------------------------------------------------------------
 
 c     Follows the list of keywords in HEADCP (headcopy.for) with the
 c     omission of coordinate keywords, cellscal, epoch, obstime,
-c     restfreq, and vobs, which are handled by coWrite, and the addition
-c     of rms (but not datamin or datamax).
+c     restfreq, specsys, and vobs, which are handled by coWrite, and the
+c     addition of rms (but not datamin or datamax).
       integer   NKEYS
       parameter (NKEYS=22)
       character keyw(NKEYS)*8
