@@ -67,6 +67,9 @@ c    rjs  16nov03 Added extra variables. pressmb, wind,winddir,axismax
 c    rjs  10may05 Increase buffer size.
 c    rjs  26may05 Add pntra,pntdec to list of know variables.
 c    rjs  19jun05 More spaces in log file.
+c    rjs  01jan06 Added definition of ref pointing solution.
+c    rjs  08jan07 Added knowledge of chi2.
+c    rjs  06jun11 Support for some new variables written by CABB.
 c
 c  Bugs:
 c    ?? Perfect?
@@ -74,7 +77,7 @@ c------------------------------------------------------------------------
 	character version*(*)
 	integer MAXPNTS
 	parameter(MAXPNTS=1000000)
-	parameter(version='VarPlt: version 1.1 19-Jun-05')
+	parameter(version='VarPlt: version 1.1 08-Jan-07')
 	logical doplot,dolog,dotime,dounwrap
 	character vis*64,device*64,logfile*64,xaxis*16,yaxis*16
 	character xtype*1,ytype*1,xunit*16,yunit*16,calday*24
@@ -884,7 +887,7 @@ c  in the table.
 c
 	integer nvars
 	double precision rad2deg,rad2arc,rad2hr
-	parameter(nvars=64)
+	parameter(nvars=72)
 	parameter(rad2deg=180.d0/pi,rad2arc=3600.d0*rad2deg)
 	parameter(rad2hr=12.d0/pi)
 c
@@ -912,6 +915,7 @@ c
      *	  'axismax ','arcsec  ',    NANTS, 1.d0,
      *	  'axisrms ','arcsec  ',    NANTS, 1.d0,
      *	  'chi     ','degrees ',	1, rad2deg,
+     *	  'chi2    ','degrees ',	1, rad2deg,
      *	  'coord   ','nanosec ',	1, 1.d0,
      *	  'corbw   ','GHz     ',	1, 1.d0,
      *	  'corfin  ','GHz     ',	1, 1.d0,
@@ -920,9 +924,9 @@ c
      *	  'dewpoint','celsius ',	1, 1.d0,
      *	  'dra     ','arcsec  ',	1, rad2arc,
      *	  'epoch   ','years   ',	1, 1.d0,
-     *	  'evector ','degrees ',	1, rad2deg,
-     *	  'focus   ','volts   ',	1, 1.d0/
+     *	  'evector ','degrees ',	1, rad2deg/
 	data (names(i),units(i),dim2s(i),scales(i),i=18,34)/	
+     *	  'focus   ','volts   ',	1, 1.d0,
      *	  'freq    ','GHz     ',	1, 1.d0,
      *	  'freqif  ','GHz     ',	1, 1.d0,
      *	  'inttime ','seconds ',	1, 1.d0,
@@ -938,9 +942,9 @@ c
      *	  'phaselo1','degrees ',	1, rad2deg,
      *	  'phaselo2','degrees ',	1, rad2deg,
      *	  'phasem1 ','degrees ',	1, rad2deg,
-     *	  'plangle ','degrees ',	1, 1.d0,
-     *	  'plmaj   ','arcsec  ',	1, 1.d0/
-	data (names(i),units(i),dim2s(i),scales(i),i=35,52)/
+     *	  'plangle ','degrees ',	1, 1.d0/
+	data (names(i),units(i),dim2s(i),scales(i),i=35,51)/
+     *	  'plmaj   ','arcsec  ',	1, 1.d0,
      *	  'plmin   ','arcsec  ',	1, 1.d0,
      *	  'pltb    ','Kelvin  ',	1, 1.d0,
      *	  'pntdec  ','degrees ',	1, rad2deg,
@@ -948,6 +952,7 @@ c
      *	  'precipmm','mm      ',	1, 1.d0,
      *	  'pressmb ','mB      ',        1, 1.d0,
      *	  'ra      ','hours   ',	1, rad2hr,
+     *	  'refpnt  ','arcsec  ',    NANTS, 1.d0,
      *	  'relhumid','percent?',	1, 1.d0,
      *	  'restfreq','GHz     ',	1, 1.d0,
      *	  'sdf     ','GHz     ',	1, 1.d0,
@@ -955,22 +960,29 @@ c
      *	  'systemp ','Kelvin  ',   NSPECT, 1.d0,
      *	  'temp    ','celsius ',    NTEMP, 1.d0,
      *	  'time    ','hours   ',	1, 0.d0,
-     *	  'tpower  ','volts   ',  NTPOWER, 1.d0,
+     *	  'tpower  ','volts   ',  NTPOWER, 1.d0/
+	data (names(i),units(i),dim2s(i),scales(i),i=52,68)/
      *	  'ut      ','hours   ',	1, rad2hr,
      *	  'veldop  ','km/sec  ',	1, 1.d0,
-     *	  'vsource ','km/sec  ',	1, 1.d0/
-	data (names(i),units(i),dim2s(i),scales(i),i=53,nvars)/
+     *	  'vsource ','km/sec  ',	1, 1.d0,
      *	  'wfreq   ','GHz     ',	1, 1.d0,
      *	  'wind    ','km/h    ',        1, 1.d0,
      *    'winddir ','degrees ',        1, 1.d0,
      *	  'windmph ','mph     ',	1, 1.d0,
      *	  'wsystemp','Kelvin  ',    NWIDE, 1.d0,
      *	  'wwidth  ','GHz     ',	1, 1.d0,
+     *	  'xcaljy  ','Jansky  ',   NSPECT, 1.d0,
+     *	  'xgtp    ',' ',          NSPECT, 1.d0,
      *    'xsampler','percent ',   NSPECT, 1.d0,
+     *    'xsdo    ',' ',          NSPECT, 1.d0,
      *	  'xtsys   ','Kelvin  ',   NSPECT, 1.d0,
      *    'xyamp   ','Jy      ',   NSPECT, 1.d0,
      *	  'xyphase ','degrees ',   NSPECT, rad2deg,
+     *	  'ycaljy  ','Jansky  ',   NSPECT, 1.d0/
+	data (names(i),units(i),dim2s(i),scales(i),i=69,nvars)/
+     *	  'ygtp    ',' ',          NSPECT, 1.d0,
      *    'ysampler','percent ',   NSPECT, 1.d0,
+     *    'ysdo    ',' ',          NSPECT, 1.d0,
      *	  'ytsys   ','Kelvin  ',   NSPECT, 1.d0/
 c
 	ndim1 = 0
