@@ -661,14 +661,13 @@ c-----------------------------------------------------------------------
       integer    NVMAX, SYMB
       parameter (NVMAX = 100, SYMB = 17)
 
-      double precision vert(2,NVMAX),  pix(3), pixbs(2),
-     *  win(3), wout(3)
-      real vx(NVMAX), vy(NVMAX)
-      character str1*30, str2*30, str*60, line*500, ans*1, typei(3)*6,
-     *  typeo(3)*6
-      integer il1, il2, i, ip, il, maxlen, nv, irad(2), iostat, bin(2),
-     *  naxis3, naxis
-      logical good, more, rads
+      logical   good, more
+      integer   bin(2), i, il, il1, il2, iostat, ip, maxlen, naxis,
+     *          naxis3, nv
+      real      vx(NVMAX), vy(NVMAX)
+      double precision pix(3), pixbs(2), vert(2,NVMAX), win(3), wout(3)
+      character algo*3, ans*1, axtype*9, line*500, str*60, str1*30,
+     *          str2*30, typei(3)*6, typeo(3)*6, units*6, wtype*9
 
       integer len1, ci
 c-----------------------------------------------------------------------
@@ -682,15 +681,13 @@ c-----------------------------------------------------------------------
      *  ('Click middle button (enter D) to delete previous vertex')
       call output('Click right button  (enter X) to finish polygon')
       call output(' ')
-c
-c Do we have an axes in radians, can't output locations
-c in arcsecond offsets otherwise.
-c
-      call axfndco(img, 'RAD', 0, 1, irad(1))
-      call axfndco(img, 'RAD', 0, 2, irad(2))
-      rads = .true.
-      if (irad(1)*irad(2).eq.0) rads = .false.
-      if (.not.rads) doabs = .true.
+
+c     Are the axes in radians?  Can't output locations in arcsecond
+c     offsets otherwise.
+      call coAxType(img, 1, axtype, wtype, algo, units)
+      if (units.ne.'rad') doabs = .true.
+      call coAxType(img, 2, axtype, wtype, algo, units)
+      if (units.ne.'rad') doabs = .true.
 
       bin(1) = ibin
       bin(2) = jbin
