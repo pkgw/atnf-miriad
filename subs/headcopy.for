@@ -57,7 +57,7 @@ c-----------------------------------------------------------------------
       parameter (CRPIX = 1, CDELT = 2, CRVAL = 3, CTYPE = 4)
 
       integer   NKEYW
-      parameter (NKEYW = 26)
+      parameter (NKEYW = 27)
 
       logical   noPerm, verbtm
       integer   axLen, iAxIn, iAxOut, jAxIn, jAxOut, nAxOut, k, m
@@ -81,8 +81,8 @@ c     present in the input image.
      *    'cellscal', 'date-obs', 'epoch   ', 'instrume', 'ltype   ',
      *    'lstart  ', 'lstep   ', 'lwidth  ', 'mostable', 'niters  ',
      *    'object  ', 'observer', 'obsra   ', 'obsdec  ', 'obstime ',
-     *    'pbfwhm  ', 'pbtype  ', 'restfreq', 'telescop', 'vobs    ',
-     *    'history '/
+     *    'pbfwhm  ', 'pbtype  ', 'restfreq', 'specsys',  'telescop',
+     *    'vobs    ', 'history '/
 c-----------------------------------------------------------------------
       call rdhdi(lOut, 'naxis', nAxOut, 0)
 
