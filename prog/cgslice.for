@@ -333,28 +333,28 @@ c-----------------------------------------------------------------------
      *          donylab(2), dopixel, dowedge, doxrng, dunsl, eqscale,
      *          first, gaps, noimage, none, radians, redisp
       integer   bgcol, blc(3), coltab, concol, grpbeg(maxchan),
-     *          his(NBINS), i, iax, ibin(2), icol, ierr, ilen, iostat,
-     *          ipage, ipim, ipims, ipnim, ipp, ipsle(MAXNSL),
-     *          ipsls(MAXNSL), ipslx(MAXNSL), ipsly(MAXNSL), j, jbin(2),
-     *          jj, k, kbin(2), krng(2), labcol, lin, lmod, lposi,
-     *          lposo, lval, naxis, ngrp(maxchan), ngrps, nlast, nlevs,
-     *          nseg(MAXNSL), nslice, nslp(MAXNSL), nx, ny, 
-     *          seg(2,maxdim), size(maxnax), slbcol, slpos(6,MAXNSL),
-     *          slsize(MAXNSL), srtlev(MAXLEV), trc(3), wedcod,
-     *          win(maxnax)
+     *          his(NBINS), i, ibin(2), icol, ierr, ilen, iostat, ipage,
+     *          ipim, ipims, ipnim, ipp, ipsle(MAXNSL), ipsls(MAXNSL),
+     *          ipslx(MAXNSL), ipsly(MAXNSL), j, jbin(2), jj, k,
+     *          kbin(2), krng(2), labcol, lin, lmod, lposi, lposo, lval,
+     *          naxis, ngrp(maxchan), ngrps, nlast, nlevs, nseg(MAXNSL),
+     *          nslice, nslp(MAXNSL), nx, ny, pgbeg, seg(2,maxdim),
+     *          size(maxnax), slbcol, slpos(6,MAXNSL), slsize(MAXNSL),
+     *          srtlev(MAXLEV), trc(3), wedcod, win(maxnax)
       real      blank, bound(4,MAXNSL), cs(3), cumhis(NBINS), dmm(3),
      *          groff, levs(MAXLEV), pixr(2), pixr2(2), scale(2), slev,
      *          sxmax, sxmin, symax, symin, tfvp(4), tr(6), vblc(2,2),
      *          vtrc(2,2), vx, vxgap, vxsize, vy, vygap, vysize,
      *          wdgvp(4), xdispl, xdispls, xrange(2), ydispb, ydispbs,
      *          yrange(2)
-      character fslmod*80, fslposi*80, fslposo*80, fslval*80, hard*20,
-     *          in*64, labtyp(3)*6, levtyp*1, ltype(NLTYPE)*6, pdev*64,
-     *          trfun*3, units*16, val3form*20, version*72, xlabel*40,
-     *          xlabel2*40, ylabel*40, ylabel2*40
+      character algo*3, axtype*9, fslmod*80, fslposi*80, fslposo*80,
+     *          fslval*80, hard*20, in*64, labtyp(3)*6, levtyp*1,
+     *          ltype(NLTYPE)*6, pdev*64, trfun*3, units*16,
+     *          val3form*20, wtype*9, version*72, xlabel*40, xlabel2*40,
+     *          ylabel*40, ylabel2*40
 
-      external len1, pgbeg, versan
-      integer  len1, pgbeg
+      external len1, versan
+      integer  len1
       character versan*72
 
       data ltype  /'hms   ', 'dms   ', 'abspix', 'relpix',
@@ -383,10 +383,11 @@ c     Open image and see if axes in radians.
       call opimcg(maxnax, in, lin, size, naxis)
       call coInit(lin)
 
-      radians = .false.
-      call axfndco(lin, 'RAD', 0, 1, iax)
-      if (iax.eq.1) call axfndco(lin, 'RAD', 0, 2, iax)
-      if (iax.eq.1) radians = .true.
+      radians = .true.
+      call coAxType(lIn, 1, axtype, wtype, algo, units)
+      if (units.ne.'rad') radians = .false.
+      call coAxType(lIn, 2, axtype, wtype, algo, units)
+      if (units.ne.'rad') radians = .false.
 
 c     Finish key inputs for region of interest now.
       call rdhda(lin, 'bunit', units, ' ')
