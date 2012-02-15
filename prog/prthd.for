@@ -315,6 +315,12 @@ c     Rest frequency.
         call logwrite(line,more)
       endif
 
+c     Doppler frame.
+      call rdhda(tno, 'specsys', aval1, ' ')
+      if (aval1.ne.' ') then
+        call logwrite('Doppler reference frame:     '//aval1,more)
+      endif
+
 c     Observatory radial velocity.
       if (hdprsnt(tno,'vobs')) then
         call rdhdr(tno,'vobs',rval1,0.0)
