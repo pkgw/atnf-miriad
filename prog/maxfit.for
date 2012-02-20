@@ -197,8 +197,8 @@ c     Convert coordinates.
         typesi(iax) = 'abspix'
       enddo
       call setoaco(lun, 'off', naxis, 0, typeso)
-      call w2wfco(lun, naxis, typesi, ' ', pixmax, typeso, ' ',
-     *             .false., strout, strlen)
+      call w2wfco(lun, naxis, typesi, pixmax, typeso, .false., strout,
+     *            strlen)
 
 c     Tell user.
       do iax = 1, naxis
@@ -221,8 +221,8 @@ c     Compute world coordinate.
 
 c     Convert coordinates.
       call setoaco(lun, 'abs', naxis, 0, typeso)
-      call w2wfco(lun, naxis, typesi, ' ', pixmax, typeso, ' ',
-     *            .false., strout, strlen)
+      call w2wfco(lun, naxis, typesi, pixmax, typeso, .false., strout,
+     *            strlen)
 
 c     Tell user.
       do iax = 1, naxis
