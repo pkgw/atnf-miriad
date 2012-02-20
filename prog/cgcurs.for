@@ -721,7 +721,7 @@ c           Convert unbinned full image pixels to true arcsec offsets.
             do i = 1, nv
               win(1) = vert(1,i)
               win(2) = vert(2,i)
-              call w2wco(img, naxis, typei, ' ', win, typeo, ' ', wout)
+              call w2wco(img, naxis, typei, win, typeo, wout)
               vert(1,i) = wout(1)
               vert(2,i) = wout(2)
             enddo
@@ -921,10 +921,10 @@ c             Write separator to log file.
 c           Convert absolute pixel to true world coordinate formatted
 c           strings with and without units.
             call setoaco(img, 'abs', naxis, 0, typeo)
-            call w2wfco(img, naxis, typei, ' ', pix, typeo, ' ',
-     *                  .true., wstr, wl)
-            call w2wfco(img, naxis, typei, ' ', pix, typeo, ' ',
-     *                  .false., vstr, vl)
+            call w2wfco(img, naxis, typei, pix, typeo, .true.,
+     *                  wstr, wl)
+            call w2wfco(img, naxis, typei, pix, typeo, .false.,
+     *                  vstr, vl)
 
             line = 'World coordinates x,y         : '//
      *              vstr(1)(1:vl(1))//', '//vstr(2)(1:vl(2))
@@ -937,8 +937,8 @@ c           Write log files.
 
               if (cgspec) then
                 write(line, 5) typeo(1)(1:len1(typeo(1))),
-     *                          typeo(2)(1:len1(typeo(2))),
-     *                          wstr(1)(1:wl(1)), wstr(2)(1:wl(2))
+     *                         typeo(2)(1:len1(typeo(2))),
+     *                         wstr(1)(1:wl(1)), wstr(2)(1:wl(2))
 5               format(a, 1x, a, 1x, a, 1x, a)
                 call txtwrite(lcurs, line, len1(line), iostat)
               endif
@@ -960,8 +960,8 @@ c           Write log files.
 c           Convert absolute pixel to true offset world coordinate
 c           formatted strings.
             call setoaco(img, 'off', naxis, 0, typeo)
-            call w2wfco(img, naxis, typei, ' ', pix,  typeo, ' ',
-     *                  .false., wstr, wl)
+            call w2wfco(img, naxis, typei, pix,  typeo, .false.,
+     *                  wstr, wl)
             line = 'Offset world coordinates x,y  : '//
      *              wstr(1)(1:wl(1))//', '//wstr(2)(1:wl(2))
             call output(line)
@@ -972,8 +972,8 @@ c           Absolute pixels.
             typeo(1) = 'abspix'
             typeo(2) = 'abspix'
             typeo(3) = 'abspix'
-            call w2wfco(img, naxis, typei, ' ', pix, typeo, ' ',
-     *                  .true., wstr, wl)
+            call w2wfco(img, naxis, typei, pix, typeo, .true.,
+     *                  wstr, wl)
             if (naxis.gt.2) then
               write(line, 10) wstr(1)(1:wl(1)), wstr(2)(1:wl(2)),
      *                         wstr(3)(1:wl(3))
@@ -1294,8 +1294,8 @@ c             in absolute world coordinates.
               typeo(3) = 'abspix'
               pix(1) = imin
               pix(2) = jmin
-              call w2wfco(img, naxis, typei, ' ', pix, typeo, ' ',
-     *                    .false., wstr, wl)
+              call w2wfco(img, naxis, typei, pix, typeo, .false.,
+       *                  wstr, wl)
               line = 'Data minimum at '//
      *              wstr(1)(1:wl(1))//', '//wstr(2)(1:wl(2))
               call output(line)
@@ -1305,8 +1305,8 @@ c             in absolute world coordinates.
               call ppconcg(2, blc(2), jbin, jmax)
               pix(1) = imax
               pix(2) = jmax
-              call w2wfco(img, naxis, typei, ' ', pix, typeo, ' ',
-     *                    .false., wstr, wl)
+              call w2wfco(img, naxis, typei, pix, typeo, .false.,
+       *                  wstr, wl)
               line = 'Data maximum at '//
      *              wstr(1)(1:wl(1))//', '//wstr(2)(1:wl(2))
               call output(line)
@@ -1316,8 +1316,8 @@ c             Now give location in absolute world coordinate.
               call setoaco(img, 'abs', naxis, 0, typeo)
               pix(1) = imin
               pix(2) = jmin
-              call w2wfco(img, naxis, typei, ' ', pix, typeo, ' ',
-     *                    .false., wstr, wl)
+              call w2wfco(img, naxis, typei, pix, typeo, .false.,
+       *                  wstr, wl)
               line = 'Data minimum at '//
      *              wstr(1)(1:wl(1))//', '//wstr(2)(1:wl(2))
               call output(line)
@@ -1325,8 +1325,8 @@ c             Now give location in absolute world coordinate.
 
               pix(1) = imax
               pix(2) = jmax
-              call w2wfco(img, naxis, typei, ' ', pix, typeo, ' ',
-     *                    .false., wstr, wl)
+              call w2wfco(img, naxis, typei, pix, typeo, .false.,
+       *                  wstr, wl)
               line = 'Data maximum at '//
      *              wstr(1)(1:wl(1))//', '//wstr(2)(1:wl(2))
               call output(line)
@@ -1802,8 +1802,8 @@ c     Find increments.
         typei(i) = 'relpix'
       enddo
 
-      call w2wco(img, 2, typei, ' ', pix1, typeo, ' ', w1)
-      call w2wco(img, 2, typei, ' ', pix2, typeo, ' ', w2)
+      call w2wco(img, 2, typei, pix1, typeo, w1)
+      call w2wco(img, 2, typei, pix2, typeo, w2)
       winc(1) = w2(1) - w1(1)
       winc(2) = w2(2) - w1(2)
 
