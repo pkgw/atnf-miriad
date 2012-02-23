@@ -2936,11 +2936,11 @@ c-----------------------------------------------------------------------
       else if (axtype.eq.'latitude') then
         itype = LATTYP
       else if (axtype.eq.'spectral') then
-        if (ctypei.eq.'FREQ' .or. ctypei.eq.'FREQUENCY') then
+        if (wtype.eq.'FREQ' .or. wtype.eq.'FREQUENCY') then
           itype = FRQTYP
-        else if (ctypei.eq.'VELO' .or. ctypei.eq.'VELOCITY') then
+        else if (wtype.eq.'VELO' .or. wtype.eq.'VELOCITY') then
           itype = VELTYP
-        else if (ctypei.eq.'FELO' .or. ctypei.eq.'FELOCITY') then
+        else if (wtype.eq.'FELO' .or. wtype.eq.'FELOCITY') then
           itype = FELTYP
         endif
       endif
