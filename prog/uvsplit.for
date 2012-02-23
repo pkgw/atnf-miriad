@@ -701,6 +701,8 @@ c
 c  Update the system temperature and the XY phase.
 c
 	call UpdVar(lVis,lOut,ifno,nspect,'systemp')
+	call UpdVar(lVis,lOut,ifno,nspect,'xtsys')
+	call UpdVar(lVis,lOut,ifno,nspect,'ytsys')        
 	call UpdVar(lVis,lOut,ifno,nspect,'xyphase')
 c
 	end
