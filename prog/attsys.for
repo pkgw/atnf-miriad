@@ -127,7 +127,7 @@ c
 c
 c  Get first record.
 c
-	call uvread(lVis,preamble,data,flags,MAXCHAN,nchan)
+	call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
 c
 c  If auto mode has been requested, check that the "tcorr" variable
 c  is present.
@@ -142,8 +142,9 @@ c
 c
 	dowhile(nchan.gt.0)
           update=.false.
-	  call uvrdvri(lVis,'pol',pol,0)
-	  call uvrdvri(lVis,'npol',npol,0)
+	  call uvDatGti('pol',pol)
+          write(*,*) 'pol = ',pol
+	  call uvDatGti('npol',npol)
 c
 	  if(uvvarUpd(vupd))then
 	    call uvprobvr(lVis,'nschan',type,length,updated)
@@ -200,10 +201,8 @@ c
 	  endif
 c
 	  call varCopy(lVis,lOut)
-	  if(npol.gt.0)then
-	    call uvputvri(lOut,'npol',npol,1)
-	    call uvputvri(lOut,'pol',pol,1)
-	  endif
+	  call uvputvri(lOut,'pol',pol,1)
+	  call uvputvri(lOut,'npol',npol,1)
           if ((redo.or.scale).and.update) then
             k=0
             do i=1,nif
@@ -223,10 +222,10 @@ c
             call uvputvrr(lOut,'systemp',systemp,nst)      
           endif
 	  call uvwrite(lOut,preamble,data,flags,nchan)
-	  call uvread(lVis,preamble,data,flags,MAXCHAN,nchan)
+	  call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
 	enddo
 c
-	call uvclose(lVis)
+	call uvDatCls()
 	call uvclose(lOut)
 	end
 c************************************************************************
@@ -320,8 +319,8 @@ c
 c
 c Set up calibration flags
 c
-        uvflags = 'dslr3'
-        l = 5
+        uvflags = '3'
+        l = 1
         if(.not.present(7))then
           l = l + 1
           uvflags(l:l) = 'c'
