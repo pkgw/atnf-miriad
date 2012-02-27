@@ -143,7 +143,6 @@ c
 	dowhile(nchan.gt.0)
           update=.false.
 	  call uvDatGti('pol',pol)
-          write(*,*) 'pol = ',pol
 	  call uvDatGti('npol',npol)
 c
 	  if(uvvarUpd(vupd))then
