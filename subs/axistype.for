@@ -40,7 +40,7 @@ c     Get coordinate type and value for input plane.
       if (axis.le.naxis) then
         call coInit(lIn)
         call coCvt1(lIn, axis, 'ap', dble(plane), 'aw', value)
-        call coGetA(lIn, 'ctype'//cax, ctype, ' ')
+        call coGetA(lIn, 'ctype'//cax, ctype)
         call coCtype(ctype, axtype, wtype, algo, units)
 
 c       Convert to user friendly label and formatted value.
