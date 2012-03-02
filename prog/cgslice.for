@@ -347,11 +347,10 @@ c-----------------------------------------------------------------------
      *          vtrc(2,2), vx, vxgap, vxsize, vy, vygap, vysize,
      *          wdgvp(4), xdispl, xdispls, xrange(2), ydispb, ydispbs,
      *          yrange(2)
-      character algo*3, axtype*9, fslmod*80, fslposi*80, fslposo*80,
-     *          fslval*80, hard*20, in*64, labtyp(3)*6, levtyp*1,
-     *          ltype(NLTYPE)*6, pdev*64, trfun*3, units*16,
-     *          val3form*20, wtype*9, version*72, xlabel*40, xlabel2*40,
-     *          ylabel*40, ylabel2*40
+      character axtype*16, fslmod*80, fslposi*80, fslposo*80, fslval*80,
+     *          hard*20, in*64, labtyp(3)*6, levtyp*1, ltype(NLTYPE)*6,
+     *          pdev*64, trfun*3, units*8, val3form*20, wtype*16,
+     *          version*72, xlabel*40, xlabel2*40, ylabel*40, ylabel2*40
 
       external len1, versan
       integer  len1
@@ -384,9 +383,9 @@ c     Open image and see if axes in radians.
       call coInit(lin)
 
       radians = .true.
-      call coAxType(lIn, 1, axtype, wtype, algo, units)
+      call coAxType(lIn, 1, axtype, wtype, units)
       if (units.ne.'rad') radians = .false.
-      call coAxType(lIn, 2, axtype, wtype, algo, units)
+      call coAxType(lIn, 2, axtype, wtype, units)
       if (units.ne.'rad') radians = .false.
 
 c     Finish key inputs for region of interest now.

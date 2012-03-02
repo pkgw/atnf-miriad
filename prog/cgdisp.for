@@ -1101,7 +1101,7 @@ c-----------------------------------------------------------------------
       include 'mirconst.h'
 
       real      lrot
-      character algo*3, axtype*9, line*80, units*6, wtype*9
+      character axtype*16, line*80, units*8, wtype*16
 
       external  len1
       integer   len1
@@ -1117,9 +1117,9 @@ c       Do the axes have radian units?  These are the only ones for
 c       which we can convert the beam size in radians to world
 c       coordinates.
         pres = .true.
-        call coAxType(lIn, 1, axtype, wtype, algo, units)
+        call coAxType(lIn, 1, axtype, wtype, units)
         if (units.ne.'rad') pres = .false.
-        call coAxType(lIn, 2, axtype, wtype, algo, units)
+        call coAxType(lIn, 2, axtype, wtype, units)
         if (units.ne.'rad') pres = .false.
 
         if (.not.pres) then
