@@ -108,7 +108,7 @@ c-----------------------------------------------------------------------
       logical   coordini, more, dounit
       integer   boxtype, i, ilat, ilng, ispc, k2, length,k1, lu(3), n,
      *          nshape, nsize(MAXNAX), offset, spare, tmp(4)
-      character algo*3, spec*4096, type*9, types(NTYPES)*9, units*8,
+      character algo*8, spec*4096, type*9, types(NTYPES)*9, units*8,
      *          wtype*16, xytype*6, ztype*6
 
       external  keyprsnt, len1
@@ -227,7 +227,7 @@ c       Finish up with this subcommand.
 
           else if (boxtype.eq.KMS) then
             ispc = 0
-            call coAxType(lu, ispc, 'spectral', wtype, algo, units)
+            call coAxType(lu, ispc, 'spectral', wtype, units)
             if (ispc.ne.3) call BoxBug(spec,'No spectral axis present')
 
             if (units.ne.'km/s') then
