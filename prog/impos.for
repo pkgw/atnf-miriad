@@ -198,8 +198,10 @@ c     Set order in which spectral axes will be listed.
 
 
 c     World coordinate.
-      call coSpcSet(lIn, sctypes(1), ' ', ispc, algo)
-      if (algo.ne.' ') sctypes(1)(5:) = '-'//algo
+      if (dospec) then
+        call coSpcSet(lIn, sctypes(1), ' ', ispc, algo)
+        if (algo.ne.' ') sctypes(1)(5:) = '-'//algo
+      endif
       call setoaco(lIn, 'abs', nelem, 0, typeo)
       call w2wfco(lIn, nelem, typep, pixcrd, typeo, .false., strout,
      *            strlen)
@@ -228,7 +230,9 @@ c     World coordinate.
 
 
 c     Offset world coordinate.
-      call coSpcSet(lIn, sctypes(1)(:4), ' ', ispc, algo)
+      if (dospec) then
+        call coSpcSet(lIn, sctypes(1)(:4), ' ', ispc, algo)
+      endif
       call setoaco(lIn, 'off', nelem, 0, typeo)
       call w2wfco(lIn, nelem, typep, pixcrd, typeo, .false., strout,
      *            strlen)
