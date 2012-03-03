@@ -2765,7 +2765,7 @@ c     The remaining parameters.
       endif
 
 c     Write vobs only if already present.
-      if (hdprsnt(lu, 'vobs')) then
+      if (vobs(icrd).ne.0d0) then
         call wrhdd(tno, 'vobs', vobs(icrd))
       endif
 
