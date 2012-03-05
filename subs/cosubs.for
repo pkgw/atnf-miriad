@@ -507,9 +507,11 @@ c     Format results.
 
         else if (typeo(iax).eq.'hms') then
           strout(iax) = hangleh(wout(iax))
+          il = len1(strout(iax))
 
         else if (typeo(iax).eq.'dms') then
           strout(iax) = rangle(wout(iax))
+          il = len1(strout(iax))
 
         else
           str='W2WFCO: Unrecognized coordinate type ('//typeo(iax)//')'
