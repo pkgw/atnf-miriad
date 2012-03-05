@@ -695,7 +695,7 @@ c-----------------------------------------------------------------------
       logical   match
       integer   icrd, jax, length, status
       double precision restfrq
-      character code*3, axtype*16
+      character axtype*16, stype*4
 
       external  coLoc, len1
       integer   coLoc, len1
@@ -716,9 +716,15 @@ c     Do the special cases.
         if (iax.gt.0) then
           status = spcgtd(spc(1,icrd), SPC_RESTFRQ, restfrq)
           if (restfrq.le.0d0) then
-c           OK provided that the base type is frequency.
-            status = spcgtc(spc(1,icrd), SPC_CODE, code)
-            if (code(:1).ne.'F') iax = 0
+c           OK provided that the base type is not velocity.
+            status = spcgtc(spc(1,icrd), SPC_TYPE, stype)
+            if (stype.eq.'VRAD' .or.
+     *          stype.eq.'VOPT' .or.
+     *          stype.eq.'ZOPT' .or.
+     *          stype.eq.'VELO' .or.
+     *          stype.eq.'BETA') then
+              iax = 0
+            endif
           endif
         endif
 
