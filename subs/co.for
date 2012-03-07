@@ -3685,7 +3685,7 @@ c         Pixel coordinates are required.
           endif
 
 c         Note the conversion from Miriad to WCSLIB units and back.
-          status = spcs2x(spc, 1, 1, 1, s*spcvt(icrd), x, stat)
+          status = spcs2x(spc(1,icrd), 1, 1, 1, s*spcvt(icrd), x, stat)
           x2 = (x / spcvt(icrd)) / cdelt(ispc,icrd)
 
           if (.not.x2off) x2 = x2 + crpix(ispc,icrd)
