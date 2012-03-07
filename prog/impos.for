@@ -310,7 +310,7 @@ c     Absolute pixels.
         call output(' ')
         call output('Absolute pixels')
         do ielem = 1, nelem
-          il = strlen(ielem)
+          call pader(strout(ielem), il)
           write(text, 10) ielem, ctypes(ielem), strout(ielem)(:il)
           call output(text)
         enddo
@@ -328,7 +328,7 @@ c     Offset pixels.
         call output(' ')
         call output('Offset pixels')
         do ielem = 1, nelem
-          il = strlen(ielem)
+          call pader(strout(ielem), il)
           write(text, 10) ielem, ctypes(ielem), strout(ielem)(:il)
           call output(text)
         enddo
@@ -474,8 +474,8 @@ c-----------------------------------------------------------------------
       if (k.gt.0) then
         str2(5-k:) = str(1:len1(str))
       else
-        k = index(str,'.')
-        str2(4-k:) = str(1:len1(str))
+        k = min(index(str,'.'),4)
+        str2(5-k:) = str(1:len1(str))
       endif
 
       str = str2
