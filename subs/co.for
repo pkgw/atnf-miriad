@@ -2970,8 +2970,6 @@ c             Record all parameters, including zero-valued ones.
             enddo
           endif
         endif
-
-        status = celpti(cel(1,icrd), CEL_PRJ, prj, 0)
       endif
 
 c     The remaining parameters.
