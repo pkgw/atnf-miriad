@@ -49,7 +49,8 @@ c-----------------------------------------------------------------------
       integer   axlen(MAXNAX), boxes(MAXBOXES), coords(MAXNAX), i,
      *          iblc(MAXNAX), ictrpx, itrc(MAXNAX), ivelpx, j, jold,
      *          lIn, lOut, lTem, naxis, nchan, nprofs, spcAxI,
-     *          taxlen(MAXNAX), viraxlen(MAXNAX), vircsz(MAXNAX)
+     *          taxlen(MAXNAX), viraxlen(MAXNAX)
+      ptrdiff   vircsz(MAXNAX),pix
       real      rdat(MAXDIM), fracshift, refpix, tdat(MAXDIM),
      *          work(MAXDIM)
       double precision b(MAXDIM), c(MAXDIM), d(MAXDIM), seval, u, vel,
@@ -146,7 +147,8 @@ c     Set velocity reference pixel.
 
       do i = 1, nprofs
 c       Read the profile.
-        call xyzs2c(lIn, i, coords)
+        pix = i
+        call xyzs2c(lIn, pix, coords)
         call xyzread(lIn, coords, rdat, mask, nchan)
 
 c       Read the velocity from the image.

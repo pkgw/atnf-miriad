@@ -40,7 +40,8 @@ c-----------------------------------------------------------------------
       integer   axlen(MAXNAX), boxes(MAXBOXES), i, iblc(MAXNAX),
      *          itrc(MAXNAX), j, lIn, lOut, naxis, nchan, nprofiles,
      *          oblc(MAXNAX), otrc(MAXNAX), spcAxI, viraxlen(MAXNAX),
-     *          vircsz(MAXNAX), width
+     *          width
+      ptrdiff   vircsz(MAXNAX)
       real      coeffs(MAXWIDTH*2+1), rdat(MAXDIM), work(MAXWIDTH*2+1)
       character axC*7, inp*1024, object*8, outp*1024, spcAxC, version*72
 
@@ -97,6 +98,7 @@ c     Set up for reading the spectral axis.
       call xyzsetup(lIn, spcAxC, iblc, itrc, viraxlen, vircsz)
       nchan     = viraxlen(1)
       nprofiles = vircsz(naxis) / vircsz(1)
+      if (nprofiles.lt.0) call bug('f','Integer overflow in hanning')
 
 c     Open the output image and set up for writing.
       do i = 1, naxis

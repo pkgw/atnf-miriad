@@ -384,7 +384,8 @@ c-----------------------------------------------------------------------
      *          sblc(MAXNAX), sgrps(2,MAXDIM), size(MAXNAX), sizespec,
      *          slines(2,MAXSPEC), snaxis, srtlev(MAXLEV,MAXCON),
      *          ssize(MAXNAX), strc(MAXNAX), tflen(0:2), trc(3),
-     *          vircsiz(MAXNAX), virsiz(MAXNAX), win(MAXNAX)
+     *          virsiz(MAXNAX), win(MAXNAX)
+      ptrdiff   vircsiz(MAXNAX)
       real      blankc, blankg, break(MAXCON), cmm(3,MAXCON), cs(2),
      *          cumhis(NBINS), gmm(3), groff, imax, imin, irange(2),
      *          iscale(MAXSPEC), levs(MAXLEV,MAXCON), pixr(2),

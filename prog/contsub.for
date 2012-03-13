@@ -144,8 +144,8 @@ c     data algopts must be adapted.
       integer   axlen(MAXNAX), axMap(MAXNAX), blc(MAXNAX),
      *          boxes(MAXBOXES), i, inpblc(MAXNAX), inptrc(MAXNAX),
      *          maxranges, n, naxis, naxis1, nterms, oaxlen(MAXNAX),
-     *          spcAxI, trc(MAXNAX), viraxlen(MAXNAX),
-     *          vircubesize(MAXNAX)
+     *          spcAxI, trc(MAXNAX), viraxlen(MAXNAX)
+      ptrdiff   vircubesize(MAXNAX)
       character algopts(NOPT)*10, axC*7, con*1024, inp*1024, itoaf*1,
      *          out*1024, outopts(NOPTO)*10, spcAxC*1
 
@@ -277,6 +277,7 @@ c     Set up xyzio routines for input dataset.
 c     Figure out number of profiles to do and their length.
       nChan = viraxlen(1)
       nSpec = vircubesize(naxis) / vircubesize(1)
+      if (nSpec.lt.0) call bug('f','Integer overflow in contsub')
 
 
 c     Create the output image, if required.
@@ -429,6 +430,7 @@ c-----------------------------------------------------------------------
       integer   nterms, profilenr
       real      continuum, data(MAXDIM), linedata(MAXDIM)
       character string*80
+      ptrdiff   pix
 c-----------------------------------------------------------------------
       if (algorithm(1:4).eq.'poly') then
          call atoif(algorithm(5:), nterms, ok)
@@ -458,8 +460,10 @@ c-----------------------------------------------------------------------
 c       if( mod(profilenr,1000).eq.0 ) print*,profilenr,continuum
         if (lOut.ne.0)
      *    call xyzprfwr(lOut, profilenr, linedata,  mask, nChan)
-        if (lCon.ne.0 .and. algorithm(1:4).ne.'subt')
-     *    call xyzpixwr(lCon, profilenr, continuum, cmask)
+        if (lCon.ne.0 .and. algorithm(1:4).ne.'subt') then
+          pix = profilenr
+          call xyzpixwr(lCon, pix, continuum, cmask)
+        endif
       enddo
 
       end
@@ -684,8 +688,10 @@ c Subtrac find the continuum from the input continuum dataset and
 c subtracts it.
 c-----------------------------------------------------------------------
       integer   k
+      ptrdiff   pix
 c-----------------------------------------------------------------------
-      call xyzpixrd(lCon, profilenr, continuum, cmask)
+      pix = profilenr
+      call xyzpixrd(lCon, pix, continuum, cmask)
       if (.not.cmask) continuum = 0
       do k = 1, nChan
         linedata(k) = data(k) - continuum
