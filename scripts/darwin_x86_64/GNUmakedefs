@@ -15,10 +15,10 @@
 # $Id$
 #=============================================================================
 # ratty flags.
-RATFLAGS := -s gfortran
+RATFLAGS := -s gfortran -p 'integer(kind=8)'
 
 # intf2c flags.
-F2CFLAGS := -s linux
+F2CFLAGS := -s linux -p long
 
 # Object library utilities.  Assuming that gfortran is used to compile and
 # link, it may be important to generate an unsorted table-of-contents to
