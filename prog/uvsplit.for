@@ -203,7 +203,7 @@ c    clobber
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer MAXINDX
-	parameter(MAXINDX=99)
+	parameter(MAXINDX=1025)
 c
 	complex data(MAXCHAN)
 	logical flags(MAXCHAN),skip
