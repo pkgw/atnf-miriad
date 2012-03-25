@@ -436,7 +436,7 @@ c         Note, we only want the _location_ of the peak from xcorr...
 c         We are looking at the P spectrum itself (standard method)
           call findmax(numphi,absp,maxabsp,maxabspi)
         endif
-        if(maxabspi.eq.0) call bug('f','Error finding Pmax')
+        if(maxabspi.eq.0) goto 10
 c       If it's below the cutoff, exit the loop
         if(maxabsp.lt.cut) goto 10
         n = n+1
