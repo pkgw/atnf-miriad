@@ -191,7 +191,7 @@ c   read ascii input of user header variable values and stick them
 c   into the appropriate arrays (non-table input)
 c
 	if (tabfile .eq. ' ') then
-	   call readval(hdvar,varval,nval)
+	   call readval(varval,nval)
 	endif
 c
 c  Read the first record in visfile
@@ -469,13 +469,13 @@ c           write(*,*) 'Updating not there ',vtype,nvals
 	ENDIF
 	END
 c***********************************************************************
-        subroutine readval(hdvar,varval,nvals)
+        subroutine readval(varval,nvals)
 c
 c   read ascii input of user header variable values and stick them
 c   into the appropriate arrays
 c
 	integer nvals
-	character hdvar*(*),varval(nvals)*(*)
+	character varval(nvals)*(*)
 c
         include 'uvputhd.h'
 	character vtype*1
