@@ -1419,7 +1419,7 @@ c         Celestial axis?
             coords(i) = coords(i)*R2D
           endif
 
-          write(cvalues(i), '(f10.1,2x)') coords(i)
+          write(cvalues(i), '(f11.2,1x)') coords(i)
         endif
       enddo
 
@@ -1672,7 +1672,6 @@ c         Construct the output line for the typed list.
             write(fmt,30) nstat-1
  30         format('(',i1,'(1pg10.3),i8)')
           endif
-
           write(temp, fmt=fmt) (statarr(j,i),j=1,nstat-1),
      *      nint(statarr(nstat,i))
 
