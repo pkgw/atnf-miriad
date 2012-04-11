@@ -392,7 +392,7 @@ c  Create the output header for the transformed file.
 c-----------------------------------------------------------------------
       integer   iax
       double precision cdelt, crpix, crval
-      character algo*3, bunit*32, cax*2, ctype*16
+      character algo*3, bunit*32, cax*2, ctype*16, text*64
 
       external  itoaf
       character itoaf*2
@@ -460,9 +460,11 @@ c     Determine the correct bunit.
 
 c     Update history.
       call hisopen(lOut,'append')
-      call hiswrite(lOut, 'FFT: Miriad ' // version)
+      text = 'FFT: Miriad ' // version
+      call hiswrite(lOut, text)
       call hisinput(lOut, 'FFT')
-      call hiswrite(lOut, 'FFT: File is ' // otype // ' data.')
+      text = 'FFT: File is ' // otype // ' data.'
+      call hiswrite(lOut, text)
       call hisclose(lOut)
 
       end
