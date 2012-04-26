@@ -83,8 +83,9 @@ c-----------------------------------------------------------------------
      *          naxis, nBeam(2), nDef(3), niter, nMap(2), nMod(3),
      *          nOut(MAXNAX), npnt, nx, ny, offset(3), pbObj(MAXPNT),
      *          x0(MAXPNT), y0(MAXPNT)
-      ptrdiff   pDChi, pDef, pEst, pMap, pNewDChi, pNewEst, pNewRes,
-     *          pRes, pTmp, pWt, Cnvl(MAXPNT)
+      ptrdiff   pDChi, pDef, pEst, pMap, pNewDChi
+      ptrdiff   pNewEst, pNewRes, pRes
+      ptrdiff   pTmp, pWt, Cnvl(MAXPNT)
       real      Alpha, Beta, ClipLev, De, Df, Flux, Grad11, GradEE,
      *          GradEF, GradEH, GradEJ, GradFF, GradFH, GradFJ, GradHH,
      *          GradJJ, Immax, Immin, J0, J1, OStLen1, OStLen2, Q, Qest,
