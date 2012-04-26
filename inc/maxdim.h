@@ -36,4 +36,9 @@ C     Maximum number of windows in visibility data.
 C     Maximum number of wideband channels.
       INTEGER   MAXWIDE
       PARAMETER(MAXWIDE = 18)
+
+C     Maximum number of frequency bins in gains table
+      INTEGER   MAXFBIN
+      PARAMETER(MAXFBIN = 16)
 C=======================================================================
+
