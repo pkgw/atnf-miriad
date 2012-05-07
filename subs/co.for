@@ -801,7 +801,6 @@ c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
       icrd = coLoc(lu,.false.)
 
-      axtype = ' '
       wtype  = ' '
       units  = ' '
 
@@ -816,6 +815,7 @@ c       Don't alter axtype - it might be given as a character constant.
         call coCtype(ctype(iax,icrd), dummy, wtype, algo, units, scl)
 
       else
+        axtype = ' '
         call coCtype(ctype(iax,icrd), axtype, wtype, algo, units, scl)
       endif
 
