@@ -161,7 +161,12 @@ c                   only to create the normal beam.  If the spectral
 c                   dirty beam is created, this is saved as an extra
 c                   plane in the beam dataset.
 c         mosaic    Process multiple pointings, and generate a linear
-c                   mosaic of these pointings.
+c                   mosaic of these pointings. For single pointings
+c                   to be combined with linmos you can use this to 
+c                   specify a common reference position with the
+c                   offset parameter. Observations using OTF mosaicing
+c                   always need to specify this to ensure the moving
+c                   beam is handled properly.
 c         imaginary Make imaginary image for non-Hermitian data
 c                   (holography).
 c         amplitude Produce a image using the data amplitudes only.  The
