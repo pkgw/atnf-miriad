@@ -81,7 +81,7 @@ c
 c
 c  All said and done. Release allocated memory, and return.
 c
-      call MemFree(Trans,space,'r')
+      call MemFrep(Trans,space,'r')
       end
 
 c***********************************************************************
