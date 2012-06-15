@@ -599,7 +599,7 @@ c     Fish out axis.
 
 c***********************************************************************
 
-c* w2wfsCO -- Convert a coordinate for a single axis and format
+c* w2wsfCO -- Convert a coordinate for a single axis and format
 c& nebk
 c: coordinates
 c+
