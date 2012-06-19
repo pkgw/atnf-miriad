@@ -50,16 +50,19 @@ c--
 c  History:
 c    ??????? rjs  Original version.
 c    05dec95 rjs  Documented.
+c    18sep05 rjs  Fix up type inconsistency flaw.
+c     8may12 pjt  converted to memallop() and ptrdiff
 c------------------------------------------------------------------------
 	real epsfcn,tol
 	parameter(epsfcn=1e-3,tol=1e-6)
 	include 'maxdim.h'
 	include 'mem.h'
-	integer lwa,wa,iwa
+	integer lwa
+        ptrdiff wa,iwa
 c
 	lwa = m*n + 5*n + 2*m
-	call memalloc(wa,lwa,'r')
-	call memalloc(iwa,n,'i')
+	call memallop(wa,lwa,'r')
+	call memallop(iwa,n,'i')
 	call lmdiff(FCN,m,n,x,memr(wa),epsfcn,tol,
      *	  ifail1,memi(iwa),memr(wa+m),lwa-m)
 c
@@ -75,18 +78,19 @@ c  Get the covariance and rms back.
 c
 	ifail2 = ifail1
 	if(ifail2.eq.0)call getcovar(FCN,m,n,x,memr(wa),memr(wa+m),
-     *	    epsfcn,covar,rms,ifail2)
+     *	  memi(iwa),epsfcn,covar,rms,ifail2)
 c
 c  Free up memory.
 c
-	call memfree(wa,lwa,'r')
-	call memfree(iwa,n,'i')
+	call memfrep(iwa,n,'i')
+	call memfrep(wa,lwa,'r')
 	end
 c************************************************************************
-	subroutine getcovar(FCN,m,n,x,fvec,wrk,epsfcn,covar,rms,ifail)
+	subroutine getcovar(FCN,m,n,x,fvec,wrk,pivot,
+     *			epsfcn,covar,rms,ifail)
 c
 	implicit none
-	integer m,n,ifail
+	integer m,n,ifail,pivot(n)
 	real fvec(m),x(n),wrk(m,n+1),epsfcn,rms
 	external FCN
 	real covar(n,n)
@@ -128,6 +132,6 @@ c
 c
 c  Invert it.
 c
-	call krout(0,n,0,covar,n,rtemp,0,ifail,wrk(1,1),wrk(1,2))
+	call krout(0,n,0,covar,n,rtemp,0,ifail,pivot,wrk)
 c
 	end
