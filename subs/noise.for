@@ -16,6 +16,10 @@ c    rjs  24oct99  Added "save" statement in "ran" function.
 c    rjs  04jul00  Use double precision arithmetic in "ran" to avoid some
 c		   machine rounding biases.
 c    rjs  18oct00  Setting the seedon "vms-style" machines was not working.
+c    mc   12mar07  external for ran fixes gfortran problem
+c    pjt  20mar07  merged previous MIR4 fortran standards
+c
+c $Id$
 c************************************************************************
 c
 c  Choose which random number style we are to use. We have three choices:
@@ -123,6 +127,9 @@ c------------------------------------------------------------------------
 	real ran
 	integer iseed
 	logical first
+#ifdef inc_ran
+	external ran
+#endif
 	save first
 	common/noisecom/iseed
 	data first/.true./
@@ -130,7 +137,7 @@ c------------------------------------------------------------------------
 	  call setseed(0)
 	  first = .false.
 	endif
-c	
+
 	do i=1,n
 	  data(i) = ran(iseed)
 	enddo
@@ -192,6 +199,8 @@ c
 c  Output:
 c    data	An array of gaussian noise.
 c--
+c  TODO:  what about the Box-Mueller (polar) method 
+c         see Knuth, vol. 2, p. 104.
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	integer i,j,l,ltot
