@@ -150,7 +150,8 @@ c       Write spectrum to this ascii file. Spectral axis units are as
 c       specified by the xaxis keyword. Default is no output file.
 c@ comment
 c       A one-line comment which is written into the logfile and any
-c       plot.
+c       plot. If the comment contains spaces you need to enclose it
+c       in single quotes.
 c
 c Note that this program does not report its version number so that gif
 c and ps output can be piped.
