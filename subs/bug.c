@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "miriad.h"
-/*#include "sysdep.h"*/
+#include "sysdep.h"
 
 char *errmsg_c();
 
