@@ -3274,8 +3274,8 @@ c       angular units.
         pType(2) = pType(1)
       endif
 
-      call chkaxco(lun, pType(1), 1, ' ')
-      call chkaxco(lun, pType(2), 2, ' ')
+      call chkaxco(lun, pType(1), 1)
+      call chkaxco(lun, pType(2), 2)
 
 
 c     Get overlay position in pixel coordinates.
