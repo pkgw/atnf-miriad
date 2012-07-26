@@ -974,7 +974,7 @@ c     plot value, on this baseline, or on all baselines
             region_width=0
             last_nflags=nflags
 	    call Thres(memR(iDat),memI(iFlg),nchan,ntime,chans,times,
-     *          bases,flagval,MAXEDIT,nflags,cbl,t1,datamax,1)
+     *          bases,flagval,MAXEDIT,nflags,cbl,t1,-datamax,0)
             do_flag=.true.
             if (pressed(1:1).eq.'V') then
               do i=last_nflags+1,nflags
