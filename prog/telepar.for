@@ -25,7 +25,8 @@ c    mchw 26aug03 Add Nasmyth
 c    sdw  8jul06  Doesnt print all characteristics !
 c                 added subdiam,ew,nants,ellimt
 c                 also tried to improve formatting.
-c    rjs 23apr10  Reworked formatting was failing on some machines.
+c    pjt   1aug08 keyword reminder
+c    rjs  23apr10 Reworked formatting was failing on some machines.
 c                 Rework the formatting again.
 c-----------------------------------------------------------------------
       include 'mirconst.h'
@@ -51,6 +52,7 @@ c-----------------------------------------------------------------------
 
       if(nobs.eq.0)then
         call obsPrint
+        call output('Use telescop= to select observatories')
       endif
 
       do i=1,nobs
