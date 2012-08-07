@@ -53,6 +53,13 @@ c	RA-Dec offset of desired phase center relative to phase center
 c	of original uv dataset in arcseconds. Source of interest should be 
 c	at the phase center in the typical use of this program. 
 c	Default = 0.0,0.0.
+c@ type
+c       Calculate the amplitude and standard deviation for each bin based on 
+c       the real and imaginary components (total) or just based on the real 
+c       component (real). The "real" option is useful if your expected source 
+c       visibility is entirely real -- i.e. a point source or circularly 
+c       symmetric source at the phase center. 
+c       Possible options are "total" and "real". Default: total.
 c@ device
 c	Plot device name. If not specified, no plot is created.
 c@ log  
@@ -63,6 +70,13 @@ c	lgm 25mar92 Original version started as offshoot of uvaver.
 c       mjs 08apr92 Variable name mod so it compiles on Convex.
 c       mjs 13mar93 pgplot subr names have less than 7 chars.
 c	rjs 26aug94 Better coordinate handling. Fix a few problems.
+c       lgm 03mar97 Corrected standard deviation calculation
+c       pjt  3may99 proper logopen/close interface; better line= stmts
+c	mchw 16may02 format change on output listing.
+c       jhz 12aug05 implemented input of multiple uv data sets
+c                   and processing annular averaging of the visibility
+c                   from a bundle of uv files.
+c       mhw 07aug12 Merge carma mods and clean up a bit
 c  Bugs:
 c------------------------------------------------------------------------
 	include 'maxdim.h'
@@ -74,13 +88,13 @@ c
 	parameter (maxbins = 200)
 c
 	character version*(*)
-	parameter(version='UvAmp: version 1.0 26-Aug-94')
+	parameter(version='UvAmp: version 2.1 12-Aug-05')
 	character uvflags*8,line*80,pldev*60,logfile*60
-	character bunit*10
+	character bunit*10,type*5
 	integer tIn,i,nread,numdat(maxbins),numbins,ibin
 	real sdatr2(maxbins),sdati2(maxbins),uuvamp(maxbins)
         real sigmean(maxbins),top(maxbins)
-	real uvdist(maxbins),rdat,idat,sigr2,sigi2,binsiz,uvd
+	real uvdist(maxbins),rdat,idat,sigr2,sigi2,binsiz,uvd,sigtot
 	real dra,ddec,ratio(maxbins),phaz,bot(maxbins)
 	real xzero(2),yzero(2),maxamp,minamp,expect(maxbins)
 	logical ampsc,klam
@@ -89,9 +103,13 @@ c
 	complex data(maxchan),sumdat(maxbins)
 	logical flags(maxchan)
 c
+        character  vis*80
+        integer ifile,nfiles,len1
+c
 c  Externals.
 c
 	logical uvDatOpn,more
+        character itoaf*3
 c
 	more   = .true.
 c
@@ -106,14 +124,28 @@ c
 	call keya('bin',bunit,'nsec')
 	call keyr('offset',dra,0.0)
 	call keyr('offset',ddec,0.0)
+        call keya('type',type,'total')
+        if(type .eq. 'real') then
+          line = ' Using only the real components in calculations'
+          call output(line)
+        else
+          line = ' Using the real and imaginary components ' //
+     *           'in calculations '
+          call output(line)
+        endif
+        call output('  ')
 	call keya('device',pldev,' ')
 	call keya('log',logfile,' ')
 	call keyfin
 c
+c       check a number of input files
+c
+         call uvdatgti ('nfiles', nfiles)
+c
 c   Check input parameters
 c
 	if(numbins .lt. 0. .or. binsiz .le. 0.) 
-     1		call bug('f','Bins improperly specified')
+     *		call bug('f','Bins improperly specified')
 	if(numbins .gt. maxbins) then
 	   write(line,'('' Maximum allow bins = '',i5)') maxbins
 	   call bug('f',line)
@@ -137,47 +169,62 @@ c
 c
 c  Open the input uv file and output logfile.
 c
-	if(.not.uvDatOpn(tIn))call bug('f','Error opening input')
-	if(logfile .ne. ' ') call LogOpen(logfile,' ')
+          call LogOpen(logfile,' ')
+
+        do ifile=1,nfiles
+	   if(.not.uvDatOpn(tIn))call bug('f','Error opening input')
+           call   uvdatgta ('name', vis)
+           if(vis.eq.' ') call bug('f',
+     *       'Input visibility file is missing')
+           call output('Processing input '//itoaf(ifile)//': '//
+     *       vis(1:len1(vis)))
+ 
 c
 c  Convert dra,ddec from true to grid offsets.
 c
-	call OffCvt(tIn,dra,ddec)
+           call OffCvt(tIn,dra,ddec)
 c
 c   Loop over data accumulating points in bins and squared quantities for
 c   calculations of formal error in result. The phaz rotates the phase 
 c   center of the data to the desired position.
 c
-	call uvDatRd(preamble,data,flags,maxchan,nread)
-	dowhile(nread.gt.0)
-	   call uvinfo(tIn,'sfreq',chfreq)
-	   uvd  = (preamble(1)*preamble(1) + preamble(2)*
-     1				preamble(2))**0.5
-           ibin = uvd/binsiz + 1
- 	   do i=1,nread
-	      freq = chfreq(i)
-	      if(klam) ibin = (freq*uvd/1000.0)/binsiz + 1
-	      if(flags(i).and.ibin.le.numbins) then
-		 phaz = -((preamble(1) * dra) + (preamble(2) * ddec)) *
-     1			2.0*pi*freq
-		 data(i) = data(i) * cmplx(cos(phaz),sin(phaz))
-	         sumdat(ibin) = sumdat(ibin) + data(i)
-	         numdat(ibin) = numdat(ibin) + 1
-	         sdatr2(ibin) = sdatr2(ibin) + 
-     1				real(data(i))*real(data(i))
-	         sdati2(ibin) = sdati2(ibin) + 
-     1				aimag(data(i))*aimag(data(i))
-	      endif
+           call uvDatRd(preamble,data,flags,maxchan,nread)
+	   dowhile(nread.gt.0)
+	      call uvinfo(tIn,'sfreq',chfreq)
+	      uvd  = (preamble(1)*preamble(1) + preamble(2)*
+     *	              preamble(2))**0.5
+              ibin = uvd/binsiz + 1
+ 	      do i=1,nread
+	         freq = chfreq(i)
+	         if(klam) ibin = (freq*uvd/1000.0)/binsiz + 1
+	         if(flags(i).and.ibin.le.numbins) then
+		    phaz = -((preamble(1) * dra) + 
+     *			     (preamble(2) * ddec)) * 2.0*pi*freq
+		    data(i) = data(i) * cmplx(cos(phaz),sin(phaz))
+	            sumdat(ibin) = sumdat(ibin) + data(i)
+	            numdat(ibin) = numdat(ibin) + 1
+	            sdatr2(ibin) = sdatr2(ibin) + 
+     *                             real(data(i))*real(data(i))
+	            sdati2(ibin) = sdati2(ibin) + 
+     *                             aimag(data(i))*aimag(data(i))
+	         endif
+	      enddo
+	      call uvDatRd(preamble,data,flags,maxchan,nread)
 	   enddo
-	   call uvDatRd(preamble,data,flags,maxchan,nread)
-	enddo
+c
+c  Close up the vis file.
+c
+           call uvdatcls
+        end do
+
+
 c
 c  Write out header stuff for log file
 c
 	line='                 Output Visibility Amplitudes'
         call LogWrite(line,more)
-	line(1:50)='     uv limits      amplitude   sigma      S/N   '
-        line(51:70)='expect      #pnts   '
+	line='     uv limits        amplitude   sigma      S/N   ' //
+     *       'expect      #pnts   '
 	call LogWrite(line,more)
 	if(klam) then
 	   call LogWrite('       (klam) ',more)
@@ -190,12 +237,19 @@ c  in mean, singal-to-noise, and expectational value for zero signal
 c
 	do i=1,numbins
 	   if(numdat(i) .gt. 2) then
-	      rdat = real(sumdat(i))/numdat(i)
-	      idat = aimag(sumdat(i))/numdat(i)
-	      uuvamp(i) = (rdat*rdat + idat*idat)**0.5
+	      rdat  = real(sumdat(i))/numdat(i)
+	      idat  = aimag(sumdat(i))/numdat(i)
 	      sigr2 = (sdatr2(i) - numdat(i)*rdat*rdat)/(numdat(i)-1)
 	      sigi2 = (sdati2(i) - numdat(i)*idat*idat)/(numdat(i)-1)
-	      sigmean(i) = ((sigr2 + sigi2)/(numdat(i)-2))**0.5
+              if(type .eq. 'real') then
+                uuvamp(i) = (rdat*rdat)**0.5
+                sigtot = sigr2
+              else
+	        uuvamp(i) = (rdat*rdat + idat*idat)**0.5
+                sigtot = (rdat*rdat/(uuvamp(i)*uuvamp(i)))*sigr2 +
+     *                   (idat*idat/(uuvamp(i)*uuvamp(i)))*sigi2
+              endif
+	      sigmean(i) = (sigtot/(numdat(i)-2))**0.5
 	      if(sigmean(i).gt.0)then
 		ratio(i) = uuvamp(i)/sigmean(i)
 	      else
@@ -209,9 +263,9 @@ c
 	      expect(i)  = 0.0
 	   endif
 	   write(line,
-     0     '(f8.1,1x,f8.1,2x,1pe9.2,1x,e9.2,2x,0pf6.1,2x,1pe9.2,2x,i8)') 
-     1          binsiz*(i-1),binsiz*i,uuvamp(i),
-     2		sigmean(i),ratio(i),expect(i),numdat(i)
+     *     '(f9.2,1x,f9.2,2x,1pe9.2,1x,e9.2,2x,0pf6.1,2x,1pe9.2,2x,i8)') 
+     *          binsiz*(i-1),binsiz*i,uuvamp(i),
+     *		sigmean(i),ratio(i),expect(i),numdat(i)
 	   call LogWrite(line,more)
 	enddo
 c
@@ -261,7 +315,6 @@ c
 	   call pgend
 	endif
 	call LogClose
-	call uvDatCls
 c
 	end
 c************************************************************************
