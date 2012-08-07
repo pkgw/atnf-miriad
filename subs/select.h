@@ -1,12 +1,13 @@
 	integer TIME,ANTS,UV,POINT,AMP,VISNO,WINDOW,UVN,OR,DRA,DDEC
 	integer INC,POL,ON,DAYTIME,SHADOW,AUTO,FREQ,SOURCE,RA,DEC
-	integer BIN
+        integer BIN,HA,LST,ELEV,DAZIM,DELEV,PURPOSE,SEEING
 	integer ITYPE,NSIZE,LOVAL,HIVAL,MDVAL,NTYPES
 	parameter(TIME=1,ANTS=2,UV=3,POINT=4,AMP=5,VISNO=6,WINDOW=7)
 	parameter(UVN=8,OR=9,DRA=10,DDEC=11,INC=12,POL=13,ON=14)
 	parameter(SHADOW=15,AUTO=16,FREQ=17,SOURCE=18)
-	parameter(RA=19,DEC=20,BIN=21)
-	parameter(NTYPES=21,DAYTIME=NTYPES+1)
+	parameter(RA=19,DEC=20,BIN=21,HA=22,LST=23,ELEV=24)
+	parameter(DAZIM=25,DELEV=26,PURPOSE=27,SEEING=28)
+	parameter(NTYPES=28,DAYTIME=NTYPES+1)
 	parameter(ITYPE=0,NSIZE=1,LOVAL=2,HIVAL=3,MDVAL=4)
 	character types(NTYPES)*12
 	data types(TIME)   /'time        '/
@@ -30,3 +31,11 @@
 	data types(RA)     /'ra          '/
 	data types(DEC)    /'dec         '/
 	data types(BIN)	   /'bin         '/
+	data types(HA)     /'ha          '/
+	data types(LST)    /'lst         '/
+	data types(ELEV)   /'elevation   '/
+	data types(DAZIM)  /'dazim       '/
+	data types(DELEV)  /'delev       '/
+        data types(PURPOSE)/'purpose     '/
+	data types(SEEING) /'seeing      '/
+
