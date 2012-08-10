@@ -61,6 +61,11 @@
 	Select visibilities with the rms pointing error in the range p1 to p2
 	arcseconds. If only one number is given, p1 is taken as 0.
 
+	  seeing(p1,p2)
+	Select visibilities with the rms seeing (pathlength) in the range 
+        p1 to p2 microns. If only one number is given, p1 is taken as 0.
+        The corresponding uv variable is called smonrms.
+
 	  polarization(p1,p2,p3,...)
 	Select visibilities on the basis of their polarization/Stokes parameter.
 	p1,p2,p3,... can be selected from "i,q,u,v,xx,yy,xy,yx,rr,ll,rl,lr"
@@ -71,6 +76,11 @@
 	Select correlations from the particular source. Several sources
 	can be given. An asterisk in the source name is treated as a
 	wildcard.
+
+	  purpose(p1,p2,...)
+	Select correlations with the particular purpose (CARMA) or 
+        calcode (ATCA). 
+        Several values can be given.
 
 	  frequency(f1,f2)
 	Select correlations, where the sky frequency of the first correlation
@@ -90,6 +100,19 @@
 	If "d" is zero, then the actual diameter of the antennas (if known) is used. 
 	If some data is shadowed, it is advisable to use an antenna diameter value 
 	greater than the physical antenna size (e.g. 20% larger).
+
+	  ha(h1,h2)
+	Select based on the hour angle of the data. h1 and h2 are the
+	hour angle (in decimal hours).
+
+	  elevation(e1,e2)
+	Select data based on the elevation at which the data were observed.
+	e1 and e2 give the elevation range in degrees.
+
+	  lst(l1,l2)
+	Select data based on the LST of the observation. l1 and l2 are the
+	start and end LST values, and can be given in the form hh:mm:ss
+	or in decimal hours.
 
 	  bin(b1,b2)
 	Select visibilities which have pulsar bin numbers in the range
