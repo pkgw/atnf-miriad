@@ -167,7 +167,7 @@ c-----------------------------------------------------------------------
       include 'maxdim.h'
 
       integer maxBeam,maxCmp1,maxCmp2,maxBox,maxRun,maxP
-      parameter (maxCmp1=66000,maxCmp2=32000,maxP=257)
+      parameter (maxCmp1=10000000,maxCmp2=320000,maxP=8193)
       parameter (maxBeam=maxP*maxP,maxBox=3*MAXDIM,maxRun=3*maxDim)
 
       integer Boxes(maxBox),Run(3,maxRun),nPoint,nRun
@@ -259,6 +259,8 @@ c
 c
 c  Determine the CLEAN algorithm that is to be used.
 c
+      print *,'nPoint=',nPoint,', maxCmp1=',maxCmp1
+      print *,'nx,ny=',nx,ny,', maxPatch=',maxPatch
       if ((mode.eq.'any' .or. mode.eq.'hogbom') .and.
      *    nPoint.le.maxCmp1 .and.
      *    (2*nx-1).le.maxPatch .and. (2*ny-1).le.maxPatch) then
