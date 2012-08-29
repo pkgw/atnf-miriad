@@ -215,10 +215,15 @@ c                   descriptors is modified (shift and expansion or
 c                   contraction) by an integral number of pixels so that
 c                   it completely encloses the input.
 c         equisw    Switch the output coordinate system between J2000
-c                   and B1950 equatorial.
+c                   and B1950 equatorial.  The output map will be
+c                   reoriented so that north is upwards, though the
+c                   coordinate graticule may be oblique nonetheless.
 c         galeqsw   Switch the output coordinate system between galactic
 c                   and equatorial.  Galactic switches implicitly to
-c                   equatorial J2000.
+c                   equatorial J2000.  The output map will be reoriented
+c                   so that the north pole (equatorial or galactic) is
+c                   upwards, though the coordinate graticule may be
+c                   oblique nonetheless.
 c         nearest   Use nearest neighbour interpolation rather than the
 c                   default cubic interpolation.
 c       If the equatorial coordinate system is not specified in the
@@ -646,6 +651,9 @@ c  Set up output celestial coordinates.
 c-----------------------------------------------------------------------
       include 'mirconst.h'
 
+      double precision UNDEF
+      parameter (UNDEF = 999d0)
+
       logical   doeqnx, gotone
       integer   ilat, ilng
       double precision cdelt1, cdelt2, crpix1, crpix2, crval1, crval2,
@@ -825,6 +833,11 @@ c     Switch equatorial coordinates?
 
         call coAxSet(cOut,ilng,ctype1,crpix1,crval1,cdelt1)
         call coAxSet(cOut,ilat,ctype2,crpix2,crval2,cdelt2)
+
+c       Put coordinates in the normal orientation, i.e. with north up.
+        call coSetD(cOut,'lonpole',UNDEF)
+        call coSetD(cOut,'latpole',UNDEF)
+
         call coSetD(cOut,'epoch',eqnox)
         call coSetD(cOut,'obstime',obstime)
 
