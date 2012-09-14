@@ -2868,7 +2868,7 @@ c
       maxval=0.0
 c     first make a masked value array
       if (subbkgnd) then
-        call subconvl(valarray,t1,xdim,ydim,iflag,flagpar(3),flagpar(4))
+        call subconvl(valarray,t1,xdim,ydim,iflag,flagpar(2),flagpar(3))
       else
         do i=1,xdim
            do j=1,ydim
@@ -3024,7 +3024,7 @@ c
 c  Save the result. Note we require a reasonable weight for the
 c  convolved value (a few isolated points will be zeroed instead)
 c
-              if (wtsum.gt.maxwt/4) then
+              if (wtsum-1.gt.maxwt/4) then
                 valarray(j,i,2) = acc/wtsum
               else 
                 valarray(j,i,2) = 0
@@ -3069,7 +3069,7 @@ c
                   wtsum = wtsum + wt
                 endif
 	      enddo
-              if (wtsum.gt.maxwt/4) then
+              if (wtsum-1.gt.maxwt/4) then
                 c(j) = acc/wtsum
               else 
                 c(j) = 0
