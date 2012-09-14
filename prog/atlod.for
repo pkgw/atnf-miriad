@@ -336,6 +336,7 @@ c    mhw  23nov10 Fix for CABB 33 channel (64MHz) mode
 c    mhw  07feb11 Add edge keyword to control birdie/edge flagging
 c    mhw  29may12 Try to make opcorr more accurate for wide bands
 c    mhw  15jun12 Fix index errors in opcor change
+c    mhw  12sep12 Drop edge channels for 16cm data with birdie option
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -3780,8 +3781,8 @@ c
                   c1=(1.05-sfreq(i))/sdf(i)
                   c2=(3.15-sfreq(i))/sdf(i)
                 endif
-                ch1=min(nint(c1),nint(c2))
-                ch2=max(nint(c1),nint(c2))
+                ch1=max(ch1,min(nint(c1),nint(c2)))
+                ch2=min(ch2,max(nint(c1),nint(c2)))
               endif
               do j=0,ch1
                 flags(offset+j)=.false.
