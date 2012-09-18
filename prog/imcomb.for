@@ -287,10 +287,10 @@ c  Fill in average value of 3rd axis for 2d images
         wt=0
         do i=1, nIn
           call rdhdd(tIn(i), 'crval3', f, 0d0)
-          fout = fout + f/rms(i)**2
+          fout = fout + log(f)/rms(i)**2
           wt = wt + 1/rms(i)**2
         enddo
-        fout = fout / wt
+        fout = exp(fout/wt)
         call wrhdd(tOut,'crval3',fout)
       endif
 
