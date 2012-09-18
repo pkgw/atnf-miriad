@@ -1138,11 +1138,12 @@ c  Output:
 c    Rms2       An estimate of the rms noise in the output map.
 c    umax,vmax  Maximum u and v values.
 c-----------------------------------------------------------------------
+      include 'maxdim.h'
       integer InU,InV,InW,InPnt,InRms,InFreq,InWt,InData
       parameter(InU=0,InV=1,InW=2,InPnt=3,InRms=4,InFreq=5,InWt=6,
      *          InData=8)
       integer maxrun
-      parameter(maxrun=8192)
+      parameter(maxrun=8*MAXCHAN+8)
 c
       real Wts(maxrun/(InData+2)),Vis(maxrun),logFreq0,Wt,SumWt,t
       integer i,j,k,l,size,step,n,u,v,offcorr,nbeam,ncorr,ipnt
