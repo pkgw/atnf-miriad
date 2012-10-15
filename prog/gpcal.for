@@ -241,6 +241,7 @@ c                    iteration process.  Add (and correct!) misc
 c                    comments to the code.
 c    mhw     03sep10 Use mean freq of all data used for flux cal
 c    mhw     15feb11 Solve for leakage in frequency bins
+c    mhw     15oct12 Remove freq dep gains and leakages if nfbin=1
 c
 c  Miscellaneous notes:
 c ---------------------
@@ -2865,7 +2866,12 @@ c
       call wrhdi(tIn,'nsols',nsoln)
       call wrhdd(tIn,'interval',0.5d0)
       
-      if (nfbin.le.1) return
+      if (nfbin.le.1) then
+        call hdelete(tIn,'gainsf',iostat)
+        call hdelete(tIn,'leakagef',iostat)
+        call hdelete(tIn,'nfbin',iostat)
+        return
+      endif
 c
 c  Now write the gains for the frequency binned solutions
 c
@@ -3009,7 +3015,12 @@ c
       endif
       call hdaccess(item,iostat)
       if (iostat.ne.0) call bugno('f',iostat)
-      if (nfbin.le.1) return
+      if (nfbin.le.1) then
+        call hdelete(tIn,'gainsf',iostat)
+        call hdelete(tIn,'leakagef',iostat)
+        call hdelete(tIn,'nfbin',iostat)
+        return
+      endif
 c
 c  Now write the frequency binned leakages
 c
