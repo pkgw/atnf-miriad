@@ -255,7 +255,7 @@ c
 c
 c  Report on the results.
 c
-	if(nvar.gt.0)call Report(rms)
+	if(nvar.gt.0)call Report(rms, dolog)
 c
 c  Write out the results.
 c
@@ -820,26 +820,33 @@ c
    41	      format('  Pos  angle error (degrees):',1pe9.2)
 	      call output(line)
 	    endif
+	  endif
 c
 c       Write log records
 c
-	    write(line,42) i,objects(srctype(i)),flux(i),l0a,m0a,
-     *       f1,f2,p
-   42	    format(i3,1x,a,1p,g14.4,0p,f10.3,f10.3,2f10.4,f9.1)
-	    call output(line)
-	    if (dolog) call logwrite(line,more)
-	    write(line,43) sflux(i),sl0a,sm0a,sf1,sf2,sp
-   43	    format(12x,1p,e14.2,0p,2f10.3,2f10.4,f9.1)
-	    call output(line)
-	    if (dolog) call logwrite(line,more)
-	    write(line,44) alph0(i),alph1(i),alph2(i)
-   44	    format(12x,1p,3g14.4)
-	    call output(line)
-	    if (dolog) call logwrite(line,more)
-	    write(line,45) salph0(i),salph1(i),salph2(i)
-   45	    format(12x,1p,3g14.4)
-	    call output(line)
-	    if (dolog) call logwrite(line,more)
+	  if (dolog) then
+	     if(srctype(i).eq.DISK.or.srctype(i).eq.GAUSSIAN.or.
+     *          srctype(i).eq.SHELL.or.srctype(i).eq.RING)then
+	        write(line,42) i,objects(srctype(i)),flux(i),l0a,m0a,
+     *                         f1,f2,p
+ 42		format(i3,1x,a,1p,g14.4,0p,f10.3,f10.3,2f10.4,f9.1)
+		call logwrite(line,more)
+		write(line,43) sflux(i),sl0a,sm0a,sf1,sf2,sp
+ 43		format(12x,1p,e14.2,0p,2f10.3,2f10.4,f9.1)
+	     else
+	        write(line,45) i,objects(srctype(i)),flux(i),l0a,m0a
+ 45		format(i3,1x,a,1p,g14.4,0p,f10.3,f10.3)
+		call logwrite(line,more)
+		write(line,46) sflux(i),sl0a,sm0a
+ 46		format(12x,1p,e14.2,0p,2f10.3)
+	     endif
+	     call logwrite(line,more)
+	     write(line,48) alph0(i),alph1(i),alph2(i)
+ 48	     format(12x,1p,3g14.4)
+	     call logwrite(line,more)
+	     write(line,50) salph0(i),salph1(i),salph2(i)
+ 50	     format(12x,1p,3g14.4)
+	     call logwrite(line,more)
 	  endif
 	enddo
 	call output('------------------------------------------------')
