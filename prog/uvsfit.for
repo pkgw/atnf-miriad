@@ -144,6 +144,7 @@ c--
 c  History:
 c    dmcc 12jan12  Original version, adapted from uvfit version 14jan05.
 c    dmcc 10oct12  Adapted for spectral curvature and for general use.
+c    dmcc 22oct12  Include ref freq in output log; fix errors in logging.
 c-----------------------------------------------------------------------
 	include 'maxdim.h'
 	include 'uvsfit.h'
@@ -224,9 +225,6 @@ c
 	if (freqref .eq. 0.0) then
 	   freqref = freq(1)
 	endif
-	write(line,23) freqref,freq(1),nvis
- 23	format('freqref : ',2f12.6,i12)
-c	call output(line)
 c
 c  Pack the things that we are going to solve for.
 c
@@ -723,14 +721,17 @@ c
 	call output('------------------------------------------------')
 	if (dolog) call loginput('uvsfit')
 c
-
+	write(line,3)freqref
+    3	format('Reference frequency (GHz): ',f7.3)
+	call output(line)
 	write(line,5)rms
     5	format('RMS residual is',1pe10.3)
 	call output(line)
 	call output(' ')
 	if (dolog) then
-	   write(line,6) rms
- 6	   format('RMSresidual ',1pe10.3)
+	   write(line,3)freqref
+	   call logwrite(line,more)
+	   write(line,5) rms
 	   call logwrite(line, more)
 	endif
 c
