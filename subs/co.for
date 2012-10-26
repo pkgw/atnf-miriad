@@ -57,6 +57,7 @@ c      coFin(lu)
 c
 c  History:
 c    Refer to the RCS log, v1.1 includes prior revision information.
+c    mhw 26oct12  Initialize coordinate scale to 1
 c
 c  CARMA customizations:
 c    pkgw  2012may25  Extract some error messages from wcslib
@@ -165,6 +166,7 @@ c     Assume linear unless recognized as otherwise.
       wtype  = ' '
       algo   = ' '
       units  = ' '
+      scl    = 1d0
 
       if (ctypei.eq.' ') return
 
