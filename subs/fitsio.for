@@ -489,17 +489,24 @@ c
         if (BypPix(lu).eq.2) then
           call hread3j(item(lu),array,offset3,BypPix(lu)*length,
      *                                                        iostat)
-        else
+        else if (BypPix(lu).eq.4) then
           call hread3i(item(lu),array,offset3,BypPix(lu)*length,
+     *                                                        iostat)
+        else if (BypPix(lu).eq.8) then
+          call hread3d(item(lu),darray,offset3,BypPix(lu)*length,
      *                                                        iostat)
         endif
         if (iostat.ne.0) call bugno('f',iostat)
-        if (float(lu)) then
+        if (float(lu).and.BypPix(lu).eq.4) then
           do i = 1, length
             flags(i) = (2139095040.gt.array(i) .or.
      *                  array(i).gt.2147483647) .and.
      *                 (-8388608.gt.array(i) .or.
      *                  array(i).gt.-1)
+          enddo
+        else if (BypPix(lu).eq.8) then
+          do i = 1, length
+            flags(i) = darray(i).ne.blank
           enddo
         else
           do i = 1, length
