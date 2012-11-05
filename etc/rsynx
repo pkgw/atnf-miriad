@@ -46,10 +46,12 @@
   [ "$SITES" ] || SITES="Mopra Narrabri Parkes"
 
   # For remote hosts running Linux.
+  RSYNCSSH="ssh -i ${HOME}/.ssh/id_dsa"
   RSYNCL="/usr/bin/rsync $DRYRUN --verbose --archive --delete --compress \
            --rsync-path=/usr/bin/rsync"
 
   # For remote hosts running Solaris.
+  #RSYNCSSH="ssh -1 -i ${HOME}/.ssh/identity"
   RSYNCS="/usr/bin/rsync $DRYRUN --verbose --archive --delete --compress \
            --rsync-path=/usr/local/bin/rsync"
 
@@ -67,7 +69,7 @@
     DST="${DST}:/nfs/atapplic/"
 
     printf "$SITE: Sending $SRC to $DST\n"
-    $RSYNC_CMD \
+    $RSYNC_CMD  -e "$RSYNCSSH" \
       --exclude=.mirsync/ \
       --exclude=etc/rsynx.log \
       $SRC $DST
