@@ -1,10 +1,11 @@
 #!/bin/sh
 #-----------------------------------------------------------------------------
-# Usage: rsynx [Mopra] [Narrabri] [Parkes]
+# Usage: rsynx [-d] [Mopra] [Narrabri] [Parkes]
 #-----------------------------------------------------------------------------
 # Run rsync to update /nfs/atapplic/miriad/... at Mopra, Narrabri, and Parkes.
 # It is assumed that ssh access for the destination host has been set up on
-# the source host.
+# the source host. You need the remote host in .ssh/known_hosts and you must
+# add id_rsa.pub to .ssh/authorized_keys on the other end.
 #
 # Original: 2011/08/09 MRC
 #-----------------------------------------------------------------------------
@@ -44,19 +45,29 @@
 
   [ "$SITES" ] || SITES="Mopra Narrabri Parkes"
 
+  # For remote hosts running Linux.
+  RSYNCL="/usr/bin/rsync $DRYRUN --verbose --archive --delete --compress \
+           --rsync-path=/usr/bin/rsync"
+
+  # For remote hosts running Solaris.
+  RSYNCS="/usr/bin/rsync $DRYRUN --verbose --archive --delete --compress \
+           --rsync-path=/usr/local/bin/rsync"
+
   SRC=/nfs/atapplic/miriad
 
   date "+%n%a %Y/%m/%d %T %Z $DELIM%n"
 
   for SITE in $SITES
   do
-    [ "$SITE" = Mopra ]    && DST=bungle
-    [ "$SITE" = Narrabri ] && DST=kaputar
-    [ "$SITE" = Parkes ]   && DST=sagitta
+    case "$SITE" in
+        Mopra)    DST=warrum;  RSYNC_CMD="$RSYNCL" ;;
+        Narrabri) DST=zephir;  RSYNC_CMD="$RSYNCL" ;;
+        Parkes)   DST=sagitta; RSYNC_CMD="$RSYNCS" ;;
+    esac
     DST="${DST}:/nfs/atapplic/"
 
     printf "$SITE: Sending $SRC to $DST\n"
-    rsync $DRYRUN --archive --delete -v \
+    $RSYNC_CMD \
       --exclude=.mirsync/ \
       --exclude=etc/rsynx.log \
       $SRC $DST
