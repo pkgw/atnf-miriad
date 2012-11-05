@@ -64,7 +64,7 @@
     case "$SITE" in
         Mopra)    DST=warrum;  RSYNC_CMD="$RSYNCL" ;;
         Narrabri) DST=zephir;  RSYNC_CMD="$RSYNCL" ;;
-        Parkes)   DST=sagitta; RSYNC_CMD="$RSYNCS" ;;
+        Parkes)   DST=auriga;  RSYNC_CMD="$RSYNCL" ;;
     esac
     DST="${DST}:/nfs/atapplic/"
 
