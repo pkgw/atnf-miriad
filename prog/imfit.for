@@ -127,6 +127,7 @@ c    rjs  30jun99 Ditto.
 c    paj  28Mar03 Fix bug in uncertainty estimates
 c    mhw  16oct12 Add error estimate for integrated flux
 c                 and give position error ellipse
+c    mhw  06dec12 Fix reported position angle of error ellipse
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
@@ -1042,7 +1043,7 @@ c
             endif
             if (spema(i)+spemi(i).gt.0) then
               write(line,46) sfac*spema(i)*R2AS,sfac*spemi(i)*R2AS,
-     *          sfac*pepa(i)*R2D
+     *          pepa(i)*R2D
   46          format('  Pos error ellipse (arcsec):',
      *               2f10.3,1x,f8.2)
               call output(line)
