@@ -337,6 +337,7 @@ c    mhw  07feb11 Add edge keyword to control birdie/edge flagging
 c    mhw  29may12 Try to make opcorr more accurate for wide bands
 c    mhw  15jun12 Fix index errors in opcor change
 c    mhw  12sep12 Drop edge channels for 16cm data with birdie option
+c    mhw  07dec12 Fix 29may12 opcor code again - how did it ever work?
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -1958,7 +1959,7 @@ c
           do i=1,nchan
             i1 = 1+(i-1)/(nchan/(nop-1.0))
             i2 = i1+1
-            f = sfreq + (i-1)*sdf
+            f = (sfreq + (i-1)*sdf)*1d9
             df = freq(i2)-freq(i1)
             data(i) = (fac(i1)*(freq(i2)-f)/df+
      *                 fac(i2)*(f-freq(i1))/df)
