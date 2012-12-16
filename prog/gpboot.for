@@ -71,8 +71,8 @@ c
 c  Get the input parameters.
 c
 	version = versan('gpboot',
-     *                   '$Revision: 1.0',
-     *                   '$Date: ')
+     *                   '$Revision$',
+     *                   '$Date$')
 	call keyini
 	call keya('cal',cal,' ')
 	call keya('vis',vis,' ')
