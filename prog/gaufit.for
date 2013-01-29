@@ -498,7 +498,7 @@ c-----------------------------------------------------------------------
       external  len1
       integer   len1
 
-      data axC /'XYZABCD '/
+      data axC /'xyzabcd '/
 c-----------------------------------------------------------------------
 c     Open and get dimensions of input dataset: naxis.
       if (status.eq.'old') then
@@ -514,11 +514,11 @@ c     Open and get dimensions of input dataset: naxis.
 c     Determine the axis to fit.
       if (status.eq.'old' .and. fitAxI.eq.0) then
         call keya('fitaxis', fitAxis, 'SPECTRAL')
-        call ucase(fitAxis)
 
         if (len1(fitAxis).eq.1) then
           fitAxI = index(axC, fitAxis)
         else
+          call ucase(fitAxis)
           if (fitAxis.eq.'LON') then
             fitAxis = 'LONGITUDE'
           else if (fitAxis.eq.'LAT') then
