@@ -338,6 +338,7 @@ c    mhw  29may12 Try to make opcorr more accurate for wide bands
 c    mhw  15jun12 Fix index errors in opcor change
 c    mhw  12sep12 Drop edge channels for 16cm data with birdie option
 c    mhw  07dec12 Fix 29may12 opcor code again - how did it ever work?
+c    mhw  29jan13 Fix nscans skip and read code - RPEOF call hangs
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -2632,10 +2633,12 @@ c
 c
 c  Check if we have run out of records of interest. If so, skip to the
 c  end of the file and pretend we have hit EOF.
+c  Note: commented out because it fails - RPEOF call hangs indefinitely
+c  Replaced by code 2 blocks down.
 c
-          else if(scanproc.gt.0.and.scanno.gt.scanskip+scanproc)then
-            call RPEOF(jstat)
-            if(jstat.eq.0)jstat = 3
+c          else if(scanproc.gt.0.and.scanno.gt.scanskip+scanproc)then
+c            call RPEOF(jstat)
+c            if(jstat.eq.0)jstat = 3
 c
 c  Handle a SYSCAL record. If it appears to belong to this integration,
 c  send it through to the Poke routines right away. Otherwise, end the
@@ -2664,6 +2667,7 @@ c
             fgbad = fgbad + 1
           else
             ok = scanno.gt.scanskip
+            if (scanproc.gt.0) ok=ok.and.scanno.le.scanskip+scanproc
             if(ok.and.NewScan)then
               call dayjul(datobs,jday0)
               time = ut / (3600.d0*24.d0) + jday0
