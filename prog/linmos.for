@@ -159,6 +159,7 @@ c     Get and check inputs.
       call keyini
       nIn = 0
       offset = 0
+      mfs = .false.
       call keyf('in',inName,' ')
       do while (inName.ne.' ')
         nIn = nIn + 1
