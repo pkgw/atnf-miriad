@@ -138,6 +138,8 @@ c	    rjs     09dec97 Make antennas used message more robust.
 c	    rjs     11mar98 Some FORTRAN standardisation, to appease g77.
 c	    rjs     30aug99 Increase outline to 256 chars.
 c	    tw	    26aug04 allow fractional edge flagging using edge<0
+c           rjs     26nov05 Change to avoid compiler bug.
+c           mhw     13mar13 Cope with 128 antennas (MWA)
 c************************************************************************
 c uvflag works as follows:
 c It reads the name of the first visibility file.
@@ -679,7 +681,7 @@ c counts(6,j) = number of flags changed from bad to good
 c j=1 for channel linetype, j=2 for wide linetype
 
       integer function counting( type, oldflags, newflags, nchan )
-      integer count, totcount, inittot
+      integer tcount, totcount, inittot
 
       character*(*)    type
       logical	       oldflags(*), newflags(*)
@@ -716,10 +718,10 @@ c
 c
       return
 
-      entry count(nr,type)
+      entry tcount(nr,type)
       if( type.eq.'channel' ) j = 1
       if( type.eq.'wide'    ) j = 2
-      count = counts(nr,j)
+      tcount = counts(nr,j)
       return
       entry totcount(nr,lt)
       totcount = totcnts(nr,lt)
@@ -865,7 +867,7 @@ c number of good, bad and changed flags.
       logical	       wrhead
       save	       wrhead
       character*79     outline
-      integer	       count, counts(4), i
+      integer	       tcount, counts(4), i
       data	       wrhead / .TRUE. /
 
 c Get identification number of this record
@@ -893,7 +895,7 @@ c coded as yymmmdd:hh:mm:ss; extract antennae from baselinenumber
 	 wrhead = ropt.eq.'full'
       endif
       do i = 1, 4
-	 counts(i) = count(i,type)
+	 counts(i) = tcount(i,type)
       enddo
       write( outline, '('//
      *	     'i4,1x,	  a1,1x,     f8.4,1x, f8.4,1x, a,1x,'//
@@ -970,9 +972,9 @@ c Entry antuse produces an output line with the result.
 
       integer	       ant1, ant2
       include	       'maxdim.h'
-      logical	       antused ( MAXANT )
+      logical	       antused ( MAXANT+1 )
       save	       antused
-      integer	       i, n
+      integer	       i, n, first, last
       character        line*64
       character        outline*(*)
 c
@@ -981,7 +983,7 @@ c
       integer	       len1
       character        itoaf*4
 
-      data	       antused / MAXANT*.FALSE. /
+      data	       antused / MAXANT*.FALSE.,.FALSE. /
 
       call basant( antcode, ant1, ant2 )
       if( ant1.lt.1 .or. ant1.gt.MAXANT ) then
@@ -1001,11 +1003,22 @@ c
       entry antuse( outline )
       outline = 'Antennas used:'
       i = len1( outline ) + 1
-      do n = 1, MAXANT
-	if( antused(n) )then
-	  outline(i+1:i+2) = itoaf(n)
-	  i = len1(outline(1:i+2)) + 1
-	  outline(i:i) = ','
+      first = 0
+      last = 0
+      do n = 1, MAXANT+1
+        if (antused(n)) then
+          if (first.eq.0) first=n
+          last = n
+	else if (first.gt.0) then
+          outline(i+1:i+3) = itoaf(first)
+          i = len1(outline(1:i+3)) + 1
+	  if (last.gt.first) then
+            outline(i:i) = '-'
+            outline(i+1:i+3) = itoaf(last)
+            i = len1(outline(1:i+3)) + 1
+          endif
+          outline(i:i) = ','
+          first = 0
 	endif
       enddo
       outline(i:i) = ' '
