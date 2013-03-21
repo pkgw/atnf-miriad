@@ -151,6 +151,7 @@ c
 c  History:
 c    Refer to the RCS log, v1.1 includes prior revision information.
 c    mhw 26oct12  Initialize map rotation to zero
+c    rjs 21mar13  Fix check for buffer overflow in uvin.
 c
 c-----------------------------------------------------------------------
       integer   MAXBOXES
@@ -373,12 +374,11 @@ c-----------------------------------------------------------------------
       call fitclose(lu)
 
       end
-
 c***********************************************************************
-
       subroutine uvin(in,out,velsys,altr,altrpix,altrval,dochi,
      *                        compress,lefty,varwt,dobl,version)
-
+c
+      implicit none
       character in*(*),out*(*)
       integer velsys
       logical altr,dochi,compress,lefty,varwt,dobl
@@ -426,12 +426,13 @@ c     Externals.
       integer len1,PolCvt
       character itoaf*8
       double precision fuvGetT0,antbas
-c-----------------------------------------------------------------------
+c
 c  Open the input FITS and output Miriad files.
 c
       call fuvOpen(lu,in,'old',nvis,npol,nfreq)
       call fitrdhdi(lu,'BITPIX',bitpix,16)
-      if (npol*nfreq.gt.4*maxchan) call bug('f','Too many channels')
+      if(npol.gt.4)call bug('f','Too many polarizations')
+      if(nfreq.gt.maxchan) call bug('f','Too many channels')
 c
 c  Copy parameters to the output file, and do some general fiddling.
 c  If the data in the input FITS file is not 16 bit integers, set it so
@@ -2644,15 +2645,13 @@ c-----------------------------------------------------------------------
         zerowt = zerowt .or. visibs(j+2).eq.0
         j = j + 3*npol
       enddo
-
+c
       end
-
 c***********************************************************************
-
       subroutine uvout(out,version)
-
+c
       character out*(*),version*(*)
-c-----------------------------------------------------------------------
+c
 c  Write out a UV FITS file.
 c
 c  Inputs:
