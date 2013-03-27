@@ -1106,7 +1106,7 @@ c
 	 write( outline, '( ''Good:  '', 3x, f12.0, 1x, f12.0 )' )
      *	       totcnt(1), totcnt(3)
 	 if( .not.flagval ) write( outline( len1(outline)+1 : ), '('//
-     *	       '4x, ''Changed to bad: '', i10 )' ) totcnt(5)
+     *	       '4x, ''Changed to bad: '', f12.0 )' ) totcnt(5)
 	 call lhwr( outline, unit, apply )
 
 	 write( outline, '( ''Bad:   '', 3x, f12.0, 1x, f12.0 )' )
