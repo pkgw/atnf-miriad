@@ -140,11 +140,9 @@ c
      *                 '$Revision$',
      *                 '$Date$')
 
-      call output( version )
 c
 c  Read the inputs.
 c
-	call output(version)
  	call keyini
 	call GetOpt(dovar,dodata,dospect,dosigma,doarray,dosrc,
      *			dobrief,docal,dopol,dopass)

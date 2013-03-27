@@ -178,7 +178,6 @@ c again until the list is exhausted.
      *                 '$Revision$',
      *                 '$Date$')
 
-      call output( version )
       call keyini
       call keyf( 'vis', vis, ' ' )
       call inputs( vis, sels,nsels, line,type,
