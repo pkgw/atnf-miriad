@@ -2877,14 +2877,14 @@ cc
      *  nb, np, ipt, il, ilen, icol
       character xlabel*100, ylabel*100, ans*1, devdef*80,
      *  str*80, units*10
-      character*2 fmt(2), polstr(12)*2, hard*3
+      character*2 fmt(3), polstr(12)*2, hard*3
       logical new, more, redef, none, doauto
 
       integer pgbeg, len1
       character polsc2p*2
 
       save cols
-      data fmt /'i1', 'i2'/
+      data fmt /'i1', 'i2', 'i3'/
       data cols1 /1, 7, 2, 5, 3, 4, 6, 8, 9,  10, 11, 12/
       data cols2 /1, 2, 5, 3, 4, 6, 8, 9, 10, 11, 12, 13/
 c-----------------------------------------------------------------------
@@ -3335,7 +3335,7 @@ c-----------------------------------------------------------------------
 cc
       character str1*2,aline*80
       integer i, j
-      character itoaf*2,stcat*80
+      character itoaf*3,stcat*80
 c-----------------------------------------------------------------------
 c
 c Loop over size of BUFFER polarization dimension
