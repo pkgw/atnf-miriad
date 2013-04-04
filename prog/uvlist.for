@@ -479,8 +479,13 @@ c
 	    endif
 	    call amphase(data(i+j-1),amp(j),phas(j))
 	  enddo
-	  write(line,'(5(i5,f7.2,i4,a))') 
+          if (i+j-1.lt.10000) then
+            write(line,'(5(i4,f7.2,i4,a1))') 
      *		      (i+j-1,amp(j),nint(phas(j)),cflag(j),j=1,nchand)
+          else
+            write(line,'(5(i5,f6.1,i4,a1))') 
+     *		      (i+j-1,amp(j),nint(phas(j)),cflag(j),j=1,nchand)
+          endif
 	  call LogWrite(line,more)
 	enddo
 c
