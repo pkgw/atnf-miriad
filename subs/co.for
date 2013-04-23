@@ -107,7 +107,7 @@ c-----------------------------------------------------------------------
       include 'wcslib/spc.inc'
 
       integer    NWTYPE, NPCODE, NSCODE
-      parameter (NWTYPE = 29, NPCODE = 29, NSCODE = 14)
+      parameter (NWTYPE = 30, NPCODE = 29, NSCODE = 14)
 
       integer   i, k, status
       character aipsfr*8, axtypes(NWTYPE)*9, cunits(NWTYPE)*6,
@@ -119,6 +119,7 @@ c-----------------------------------------------------------------------
 
 c     Recognised wtypes; this list must be in alphabetical order.
       data (wtypes(i),axtypes(i),cunits(i),i=1,NWTYPE)/
+     *  'ABSNAT   ', 'linear   ', 'rad   ',
      *  'ANGLE    ', 'linear   ', 'rad   ',
      *  'AWAV     ', 'spectral ', 'm     ',
      *  'BETA     ', 'spectral ', '      ',
