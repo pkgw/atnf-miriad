@@ -30,7 +30,7 @@ c------------------------------------------------------------------------
       call output(' Max number of spectral windows  = '//itoaf(MAXWIN))
       call output(' Max number of wideband channels = '//itoaf(MAXWIDE))
       call output(' Max number of frequency bins    = '//itoaf(MAXFBIN))
-      call output()
+      call output(' ')
       call output(' To increase these limits, edit maxdim.h and ')
       call output(' maxdimc.h and rebuild miriad from source.')
       call output(' Note that there are architecture specific versions')
