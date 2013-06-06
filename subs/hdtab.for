@@ -343,9 +343,13 @@ c     Determine the FWHM of the telescope.
         call coFin(coObj)
       endif
 
-      nx = max(nint(abs(fwhm/cdelt1)),1)
-      ny = max(nint(abs(fwhm/cdelt2)),1)
-
+      if (nx.gt.0.and.ny.gt.0) then
+        nx = max(nint(abs(nx*fwhm/cdelt1)),1)
+        ny = max(nint(abs(ny*fwhm/cdelt2)),1)
+      else
+        nx = max(nint(abs(fwhm/cdelt1)),1)
+        ny = max(nint(abs(fwhm/cdelt2)),1)
+      endif
       end
 
 c***********************************************************************
