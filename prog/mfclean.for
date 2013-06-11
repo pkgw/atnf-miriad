@@ -75,7 +75,9 @@ c@ region
 c       This specifies the region to be Cleaned.  See the User's Manual
 c       for instructions on how to specify this.  The default is
 c       generally inadequate, and a smaller region should be explicitly
-c       specified.
+c       specified. An easy way to do this is using the percentage option
+c       of region. When the beam is the same size as the image use 
+c       region=perc(33), for a 'double' size beam use region=perc(66).
 c@ minpatch
 c       The minimum patch size when performing minor iterations.
 c       Default is 511, but make it larger if you are having problems
