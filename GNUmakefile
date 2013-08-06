@@ -19,7 +19,7 @@ ifeq "$(MAKEMODE)" "system"
   # Subdirectories in which to invoke "allsys", in order.
   #------------------------------------------------------
   ALLSYSD  += $(findstring linpack,$(SUBDIRS))
-  ALLSYSD  += tools scripts inc subs prog spec guides
+  ALLSYSD  += tools scripts inc subs prog spec specdoc guides
 
   show ::
 	-@ echo ""
