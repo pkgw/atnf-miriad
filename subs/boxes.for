@@ -114,7 +114,7 @@ c-----------------------------------------------------------------------
       logical   coordini, more, dounit
       integer   boxtype, i, ilat, ilng, ispc, k2, length,k1, lu(3), n,
      *          nshape, nsize(MAXNAX), offset, spare, tmp(4)
-      character algo*8, spec*4096, type*9, types(NTYPES)*10, units*8,
+      character algo*8, spec*4096, type*10, types(NTYPES)*10, units*8,
      *          wtype*16, xytype*6, ztype*6
 
       external  keyprsnt, len1
