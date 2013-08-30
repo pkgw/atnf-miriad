@@ -356,7 +356,7 @@ c Externals
 c
       integer membuf
       logical uvdatopn
-      character itoaf*2, versan*80, version*80
+      character itoaf*2, versan*72, version*72
 c
 c Initialize
 c

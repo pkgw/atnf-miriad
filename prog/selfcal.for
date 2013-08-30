@@ -177,12 +177,12 @@ c-----------------------------------------------------------------------
       real      clip, flux(2), interval, lstart, lstep, lwidth,
      *          offset(2), sels(MAXSELS)
       character flag1*8, flag2*8, ltype*32, Models(MAXMOD)*64,
-     *          obstype*32, version*80, vis*64
+     *          obstype*32, version*72, vis*64
       double precision sfreq(MAXCHAN)
 
 c     Externals.
       logical   hdprsnt
-      character versan*80
+      character versan*72
       external  hdprsnt, header, versan
 c-----------------------------------------------------------------------
       version = versan('selfcal',

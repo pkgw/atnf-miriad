@@ -107,7 +107,7 @@ c-----------------------------------------------------------------------
 
       logical   BoxRect
       integer   Fill
-      character versan*80
+      character versan*72
       external  boxrect, fill, paction, vaction, versan
 c-----------------------------------------------------------------------
       version = versan('odnh3',

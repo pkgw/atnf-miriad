@@ -68,7 +68,7 @@ c-----------------------------------------------------------------------
       character cax*1, ctype(MAXNAX)*16, ctypei*16, inName(3)*80,
      *          outNam*80, wflag*1, version*72
 
-      character itoaf*1, versan*80
+      character itoaf*1, versan*72
       external  itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('velimage',

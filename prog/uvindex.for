@@ -72,7 +72,7 @@ c
 	integer pols(PolMin:PolMax),pol
 	integer lIn,i,j,j1,nvis,nants,l
 	character vis*64,logf*64,date*18,line*80,ras*14,decs*14
-        character version*80
+        character version*72
 	double precision time,tprev,total
 	real dra,ddec,interval,inttime
 c
@@ -95,7 +95,7 @@ c
 c  Externals
 c
 	integer len1,uvscan
-	character rangle*14,hangle*14,PolsC2P*2,itoaf*8,versan*80
+	character rangle*14,hangle*14,PolsC2P*2,itoaf*8,versan*72
 	logical uvvarupd
 c----------------------------------------------------------------------c
         version = versan ('uvindex',

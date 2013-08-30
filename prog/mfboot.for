@@ -94,7 +94,7 @@ c    mhw     16jun11 Fix triple mode spectral index correction
 c    mhw     27jun13 Fix nospec option
 c------------------------------------------------------------------------
 	include 'maxdim.h'
-	character version*80
+	character version*72
 	integer MAXVIS,MAXPNT
 	parameter(MAXVIS=32,MAXPNT=4000000)
 c
@@ -118,7 +118,7 @@ c  Externals.
 c
 	logical uvDatOpn,uvVarUpd,hdPrsnt
 	integer plLook
-	character streal*16, versan*80
+	character streal*16, versan*72
         
         version = versan('mfboot',
      *                   '$Revision$',  

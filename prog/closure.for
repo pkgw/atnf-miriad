@@ -108,7 +108,7 @@ c-----------------------------------------------------------------------
 	parameter(PolMin=-8,PolMax=4,MAXPOL=2)
 c
 	logical avall,notrip,doamp,doerr,quad,dolog
-	character uvflags*16,device*64,version*80
+	character uvflags*16,device*64,version*72
 	real interval,yrange(2)
 	integer nx,ny,nread,i,j,mpnts,mplots,tno,pnt1,pnt2
 	integer npol,polcvt(PolMin:PolMax),p,ant1,ant2,nants,bl
@@ -141,7 +141,7 @@ c
 c  Externals.
 c
 	logical uvDatOpn
-	character versan*80
+	character versan*72
 c-----------------------------------------------------------------------
       version = versan ('closure',
      :                  '$Revision$',

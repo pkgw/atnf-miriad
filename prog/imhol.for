@@ -103,7 +103,7 @@ c-----------------------------------------------------------------------
       character bflag, blstr*7, inIm*64, inRe*64, line*80, outMag(2)*64,
      *          outPA(2)*64, ustr*8, version*72
 
-      character versan*80
+      character versan*72
       external  versan
 c-----------------------------------------------------------------------
       version = versan('imhol',

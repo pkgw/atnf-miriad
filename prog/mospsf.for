@@ -55,7 +55,7 @@ c-----------------------------------------------------------------------
       character beam*64, coin*12, out*64, version*72
 
       logical   keyprsnt
-      character versan*80
+      character versan*72
       external  keyprsnt, versan
 c-----------------------------------------------------------------------
       version = versan('mospsf',

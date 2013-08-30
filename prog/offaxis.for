@@ -73,11 +73,11 @@ c-----------------------------------------------------------------------
       real      chi, clip
       double precision preamble(5), sfreq(MAXCHAN)
       complex   sim(MAXCHAN,4), uvdata(MAXCHAN,4)
-      character ltype*16, model*64, out*64, uvflags*16, version*80
+      character ltype*16, model*64, out*64, uvflags*16, version*72
 
 c     Externals.
       logical   uvDatOpn
-      character itoaf*8, versan*80
+      character itoaf*8, versan*72
 c-----------------------------------------------------------------------
       version = versan('offaxis',
      :                 '$Revision$',

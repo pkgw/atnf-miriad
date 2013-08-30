@@ -276,7 +276,7 @@ c
       character Modes(NMODE)*10
       character Lines(2)*8
       character Commands(MAXCMD)*10
-      character version*80
+      character version*72
       integer Lin, nchan, MostChan, channel
       integer maxxpix, maxypix, levels, msglen
       integer jx0, jy0, nout, ncmd
@@ -298,7 +298,7 @@ c  Externals.
 c
       integer Len1
       logical KeyPrsnt
-      character versan*80
+      character versan*72
 c
       data Modes / 'amplitude', 'phase','real', 'imaginary'/
       data Lines / 'channel', 'wide'/

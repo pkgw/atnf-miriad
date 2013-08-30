@@ -131,12 +131,12 @@ c
 	double precision preamble(4),time0
 	complex data(MAXCHAN)
 	logical flags(MAXCHAN)
-	character version*80
+	character version*72
 c
 c  Externals.
 c
 	logical uvDatOpn,uvVarUpd
-	character PolsC2P*2, versan*80
+	character PolsC2P*2, versan*72
 	integer len1
 c
 c  Get the user parameters.

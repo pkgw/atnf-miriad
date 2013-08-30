@@ -73,11 +73,11 @@ c-----------------------------------------------------------------------
       double precision lst, preamble(8)
       complex data1(MAXCHAN), data2(MAXCHAN)
       character ctemp*12, ltype*16, mode*12, modes(NMODES)*12, out*64,
-     *          version*80, vis1*64, vis2*64
+     *          version*72, vis1*64, vis2*64
 
 c     Externals.
       logical hdprsnt
-      character versan*80
+      character versan*72
 
       data modes/'difference  ','one         ','two         ',
      *           '-difference ','-one        ','-two        '/

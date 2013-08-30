@@ -90,8 +90,8 @@ c-------------------------------------------------------------------------
       integer lenline,imax,ncmax
       logical pos
       character line*80,positns*3
-      character*80 head1,head2,version
-      character versan*80
+      character*80 head1,head2
+      character*72 version,versan
       external  versan
 
 c.....dynamic memory pointers

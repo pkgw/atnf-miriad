@@ -112,7 +112,7 @@ c-----------------------------------------------------------------------
       equivalence (sc_buffer(1), sc_cal(1,1,1))
 
       integer   len1
-      character hangle*12, rangle*12, versan*80
+      character hangle*12, rangle*12, versan*72
       external  hangle, len1, rangle, versan
 c-----------------------------------------------------------------------
       versn = versan ('mopfix',

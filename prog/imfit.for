@@ -136,7 +136,7 @@ c-----------------------------------------------------------------------
       integer MAXBOX,MAXVAR
       parameter (MAXBOX=1024,MAXVAR=30)
 
-      character in*64, out*64, object*32, version*80
+      character in*64, out*64, object*32, version*72
       real clip,x(MAXVAR),covar(MAXVAR*MAXVAR),rms,trms
       real bmaj,bmin,bpa,bvol,bvolp
       logical dores,inten,defsrc,doOut,dofit
@@ -147,7 +147,7 @@ c-----------------------------------------------------------------------
 
 c     Externals.
       logical PolsPara
-      character itoaf*2, versan*80
+      character itoaf*2, versan*72
       external FUNCTION
 c-----------------------------------------------------------------------
       version = versan ('imfit',

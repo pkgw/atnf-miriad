@@ -84,7 +84,7 @@ c-----------------------------------------------------------------------
      *          vfacm, vfacp, vinc, vrefp, vrefv, vrms, vsumsq
       character iout*64, iuout*64, line*80, type*1, vout*64, version*72
 
-      character versan*80
+      character versan*72
       external  versan
 c-----------------------------------------------------------------------
       version = versan('zeefake',

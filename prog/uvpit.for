@@ -68,7 +68,7 @@ c
 	real tol,epsfcn
 	parameter(tol=1e-6,epsfcn=1e-3)
 c
-	character out*64, ltype*16, version*80
+	character out*64, ltype*16, version*72
 	integer lIn,lOut
 	integer nread,ifail,i,nvar,npol
 	real x(MAXVAR),rms
@@ -81,7 +81,7 @@ c
 c
 c  Externals.
 c
-        character itoaf*8, versan*80
+        character itoaf*8, versan*72
 	logical uvDatOpn
         external FUNCTION
 c

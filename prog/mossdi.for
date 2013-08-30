@@ -66,9 +66,9 @@ c-----------------------------------------------------------------------
       ptrdiff   pEst, pRes, pStep, pStepR, pWt
       real      clip, cutoff, dmax, dmin, drms, flux, gain
       character BeamNam*64, line*64, MapNam*64, ModelNam*64, OutNam*64,
-     *          version*80
+     *          version*72
 
-      character itoaf*8, versan*80
+      character itoaf*8, versan*72
       external  itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('mossdi',

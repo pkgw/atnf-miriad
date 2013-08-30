@@ -75,7 +75,7 @@ c-----------------------------------------------------------------------
 	parameter(PolMin=-8,PolMax=4)
 c
 	logical dotrip,polp,dopara,donorm
-	character con*8,line*80,sources(MAXSRC)*16,uvflags*16,version*80
+	character con*8,line*80,sources(MAXSRC)*16,uvflags*16,version*72
 	real scat2,SSms,flux,flux2,SSmm,rp,ip,SconN,SConD,norm
 	integer ncorr
 	complex SSdm
@@ -104,7 +104,7 @@ c
 c  Externals.
 c
 	logical uvDatOpn,uvVarUpd
-	character versan*80
+	character versan*72
 c-----------------------------------------------------------------------
       version = versan ('calred',
      :                  '$Revision$',

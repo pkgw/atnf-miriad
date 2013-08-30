@@ -68,10 +68,10 @@ c-----------------------------------------------------------------------
      *          nx, ny, order(2), pCont, pErr
       real      dnu, maxerr, nu, off1, off2, thetax, thetay, x, y
       double precision cdelt1, cdelt2, crpix1, crpix2, f0, finc
-      character aorder*3, hline*80, in*64, line*80, out*64, version*80
+      character aorder*3, hline*80, in*64, line*80, out*64, version*72
 
       logical   hdprsnt
-      character versan*80
+      character versan*72
       external  hdprsnt, versan
 c-----------------------------------------------------------------------
       version = versan('conterr',

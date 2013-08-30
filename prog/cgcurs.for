@@ -226,7 +226,7 @@ c-----------------------------------------------------------------------
 
       character labtyp(2)*6
       character img(2)*64, pdev*64, xlabel*40, ylabel*40,
-     *  trfun*3, levtyp*1, result*3, val3form*20, versan*80, version*80
+     *  trfun*3, levtyp*1, result*3, val3form*20, versan*72, version*72
 
       logical cgdisp, cgspec, cmore, cursor, display, do3pix, do3val,
      *        doabs, doabut, doaxlab, doaylab, doblnk, dobox, docont,

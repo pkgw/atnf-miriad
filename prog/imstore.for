@@ -78,7 +78,7 @@ c
       PARAMETER(RAD2SEC=3600.0*180.0/PI)
 c
       CHARACTER file*132,line*256,mode*20,logfile*132,
-     *          ctype1*10, ctype2*10, format*30, units*20, version*80
+     *          ctype1*10, ctype2*10, format*30, units*20, version*72
       INTEGER nsize(MAXNAX),plane(MAXNAX)
       INTEGER blc(MAXNAX),trc(MAXNAX)
       INTEGER i,j,k, npoints
@@ -96,7 +96,7 @@ c
 c  Externals.
 c
       LOGICAL keyprsnt, astaxis
-      character versan*80
+      character versan*72
 c
       data unitss/'relative','absolute'/
       data modes /'dump    ','uvgen   ','nemo    '/

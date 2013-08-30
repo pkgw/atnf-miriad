@@ -151,7 +151,7 @@ c-----------------------------------------------------------------------
 	integer maxOut
 	parameter (maxOut=4)
 c
-	character out(maxOut)*64, ltype*16, version*80, line*80
+	character out(maxOut)*64, ltype*16, version*72, line*80
 	character logfile*64
 	integer lIn,lOut,nout
 	integer nread,ifail1,ifail2,i,nvar,npol,pol,iOut
@@ -162,7 +162,7 @@ c
 c
 c  Externals.
 c
-        character itoaf*8, versan*80
+        character itoaf*8, versan*72
 	logical uvDatOpn
         external FUNCTION
 c-----------------------------------------------------------------------

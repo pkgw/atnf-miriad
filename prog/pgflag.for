@@ -409,7 +409,7 @@ c
       integer MAXTIME,MAXEDIT
       parameter(MAXTIME=10000,MAXEDIT=10000000)
 c
-      character versan*80, version*80
+      character versan*72, version*72
       character device*80,xaxis*12,yaxis*12,uvflags*12,val*16
       character device2*80
       integer devicenum,device2num

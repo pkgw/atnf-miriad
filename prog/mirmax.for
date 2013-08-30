@@ -13,8 +13,8 @@ c
 c------------------------------------------------------------------------
       include 'maxdim.h'
       
-      character version*80
-      character versan*80, itoaf*10
+      character version*72
+      character versan*72, itoaf*10
       external versan, itoaf
 c------------------------------------------------------------------------
       version = versan('mirmax',

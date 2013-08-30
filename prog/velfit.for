@@ -79,7 +79,7 @@ c-----------------------------------------------------------------------
      *          logNam*80, version*72
 
       integer   len1
-      character itoaf*1, versan*80
+      character itoaf*1, versan*72
       external  itoaf, len1, versan
 c-----------------------------------------------------------------------
       version = versan('velfit',

@@ -295,7 +295,7 @@ c-----------------------------------------------------------------------
       double precision time(MAXDSOLN)
 
       logical   keyprsnt, uvDatOpn
-      character itoaf*3, versan*80
+      character itoaf*3, versan*72
       external  itoaf, keyprsnt, uvDatOpn
 c-----------------------------------------------------------------------
       version = versan('gpcal',

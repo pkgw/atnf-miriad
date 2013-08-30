@@ -261,11 +261,11 @@ c-----------------------------------------------------------------------
       double precision cdelt, crpix, crval, desc(4,MAXNAX), latpol,
      *          llrot, lonpol, phi0, pv(0:29), theta0
       character algo*3, ctype*16, in*64, keyw*8, line*64, out*64,
-     *          pcode*3, pcodes(NPCODE)*3, tin*64, version*80
+     *          pcode*3, pcodes(NPCODE)*3, tin*64, version*72
 
       external  hdprsnt, itoaf, keyprsnt, versan
       logical   hdprsnt, keyprsnt
-      character itoaf*2, versan*80
+      character itoaf*2, versan*72
 
 c     Projection codes.
       data pcodes /

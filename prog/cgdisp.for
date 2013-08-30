@@ -614,7 +614,7 @@ c     Plotting parameters.
      *  lhead, concol(MAXCON), veccol, boxcol, bemcol, ovrcol, labcol
       logical doaxlab, doaylab, donxlab(2), donylab(2)
       character cin(MAXCON)*64, gin*64, vin(2)*64, mskin*64, bin*64,
-     *  ltypes(MAXTYP)*6, versan*80, version*80
+     *  ltypes(MAXTYP)*6, versan*72, version*72
 
       real levs(MAXLEV,MAXCON), pixr(2,maxchan), tr(6), bmin(MAXCON+4),
      *  bmaj(MAXCON+4), bpa(MAXCON+4), scale(2), cs(4), pixr2(2),

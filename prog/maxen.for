@@ -156,7 +156,7 @@ c-----------------------------------------------------------------------
       common Data
 
       integer   ismax
-      character itoaf*4, versan*80
+      character itoaf*4, versan*72
       external  ismax, itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('maxen',

@@ -43,7 +43,7 @@ c-----------------------------------------------------------------------
       character caxis*1, in(MAXMAP)*80, out*80, version*72, wflag*1
 
       logical   hdprsnt
-      character itoaf*1, versan*80
+      character itoaf*1, versan*72
       external  hdprsnt, itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('imcat',

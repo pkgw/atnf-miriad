@@ -89,7 +89,7 @@ c-----------------------------------------------------------------------
      *          type(NTYPE)*8, version*72
 
       logical   hdprsnt
-      character versan*80
+      character versan*72
       external  hdprsnt, versan
 
       common data

@@ -51,7 +51,7 @@ c-----------------------------------------------------------------------
 
       integer   len1
       logical   hdprsnt
-      character versan*80
+      character versan*72
       external  hdprsnt, len1, versan
 
       common ref

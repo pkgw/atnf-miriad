@@ -76,7 +76,7 @@ c    mhw  12jun13 Fix apply mode, add relax option
 c  Bugs:
 c    None?
 c------------------------------------------------------------------------
-	character version*80
+	character version*72
 	logical dopol,docal,dopass,docopy,relax
 	integer iostat,tIn,tOut
 	character vis*64,out*64,mode*8,line*64
@@ -85,7 +85,7 @@ c
 c  Externals.
 c
 	logical hdprsnt
-        character*80 versan
+        character*72 versan
 c
 	version = versan('gpcopy',
      *                   '$Revision$',

@@ -82,7 +82,7 @@ c     Set default plotting parameters.
       data levels/15,30,45,60,75,90,0,0,0,0/,nlevels/6/
       data nclumps/0/
 
-      character versan*80, version*80
+      character versan*72, version*72
 
 c  real ary(128*128*64)=1048576 reals = 4 MBytes
 c  real ary(256*256*128)=8388608 reals = 32 MBytes

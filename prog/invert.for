@@ -371,7 +371,7 @@ c
       real umax,vmax,wdu,wdv,tu,tv,rms,robust
       real ChanWt(MAXPOL*MAXCHAN)
       character maps(MAXPOL)*64,beam*64,uvflags*16,mode*16,vis*64
-      character line*64, version*80
+      character line*64, version*72
       double precision ra0,dec0,offset(2),lmn(3),x(2)
       integer i,j,k,nmap,tscr,nvis,nchan,npol,npnt,coObj,pols(MAXPOL)
       integer nx,ny,bnx,bny,mnx,mny,wnu,wnv
@@ -393,7 +393,7 @@ c  Externals.
 c
       logical keyprsnt
       integer nextpow2
-      character itoaf*10, polsc2p*3, versan*80
+      character itoaf*10, polsc2p*3, versan*72
 c
       data slops/'zero        ','interpolate '/
 c-----------------------------------------------------------------------

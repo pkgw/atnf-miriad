@@ -31,7 +31,7 @@ c-----------------------------------------------------------------------
      *          nsize2(3), shift(2)
       character in1*64, in2*64, out*64, text*80, version*72
 
-      character versan*80
+      character versan*72
       external  versan
 c-----------------------------------------------------------------------
       version = versan('shifty',

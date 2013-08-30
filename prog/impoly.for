@@ -78,7 +78,7 @@ c-----------------------------------------------------------------------
       CHARACTER in*80, mesg*80, msg*100, out*80, version*72
 
       INTEGER   len1
-      CHARACTER versan*80
+      CHARACTER versan*72
       EXTERNAL  len1, versan
 c-----------------------------------------------------------------------
       version = versan('impoly',

@@ -136,7 +136,7 @@ c-----------------------------------------------------------------------
         integer maxOut
         parameter (maxOut=10)
 c
-	character out(maxOut)*64, ltype*16, version*80
+	character out(maxOut)*64, ltype*16, version*72
         character calday1*20, calday2*20
         character*16 fix2(MAXSRC)
 	integer lIn,lOut,nout
@@ -151,7 +151,7 @@ c
 c
 c  Externals.
 c
-        character itoaf*8, dtoaf*8, versan*80
+        character itoaf*8, dtoaf*8, versan*72
 	logical uvDatOpn
         external FUNCTION,FUNCTION1
 c-----------------------------------------------------------------------

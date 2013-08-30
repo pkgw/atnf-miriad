@@ -74,7 +74,7 @@ c    mhw  06mar12 Use JyperK from uv file for conversion
 c
 c------------------------------------------------------------------------
         include 'maxdim.h'
-        character version*80
+        character version*72
         character uvflags*12,ltype*16,out*64
         integer npol,Snpol,tIn,tOut,vupd,nread,nrec,i,nbin,naver
         real inttime,jyperk
@@ -88,7 +88,7 @@ c
 c  Externals.
 c
         logical uvDatOpn,uvVarUpd
-        character versan*80
+        character versan*72
 c
 c  Get the input parameters.
 c

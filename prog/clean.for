@@ -181,7 +181,7 @@ c-----------------------------------------------------------------------
       real Histo(MAXP/2+1),BemPatch(MAXBEAM)
       integer ICmp(MAXCMP1),JCmp(MAXCMP1)
 
-      character Mode*8,Moded*8,Text*7,flags*8,version*80
+      character Mode*8,Moded*8,Text*7,flags*8,version*72
       real Cutoff,Gain,Phat,Speed,Clip,defClip,Limit
       logical NegStop,Positive,Pad,Asym,NegFound,More,FFTIni,steermsg
       integer MaxNiter,oNiter,Niter,totNiter,minPatch,maxPatch
@@ -197,7 +197,7 @@ c-----------------------------------------------------------------------
       common Data
 
 c     Externals.
-      character itoaf*8, versan*80
+      character itoaf*8, versan*72
 c-----------------------------------------------------------------------
       version = versan ('clean',
      *                  '$Revision$',

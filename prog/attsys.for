@@ -63,7 +63,7 @@ c    12jan12 mhw  Fix array indexing and add inverse option
 c    23feb12 mhw  Add scale option
 c------------------------------------------------------------------------
 	include 'maxdim.h'
-	character version*80
+	character version*72
 	integer lVis,lOut,vupd,pol,npol,i1,i2,i,j,k
 	logical updated,doapply,auto,redo,update,inv,scale
 	character vis*64,out*64,type*1,uvflags*12
@@ -79,7 +79,7 @@ c
 c  Externals.
 c
 	logical uvvarUpd
-        character versan*80
+        character versan*72
 c
 	version = versan('attsys',
      *                   '$Revision$',

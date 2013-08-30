@@ -78,7 +78,7 @@ c    Name of the output dataset. No default.
 c$Id$
 c-----------------------------------------------------------------------
 	include 'uvputhd.h'
-	character version*80
+	character version*72
 	character varval(MAXVAL)*30,hdvar*10,time0*32
         character outfile*80,infile*80,tabfile*80
         character except(20)*10,newtype*1,line*256,ctype*1
@@ -91,7 +91,7 @@ c-----------------------------------------------------------------------
 c
 c Externals
 c
-        character*80 versan
+        character*72 versan
 c-----------------------------------------------------------------------
         version = versan ('uvputhd',
      :                    '$Revision$',

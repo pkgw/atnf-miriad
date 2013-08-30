@@ -64,7 +64,7 @@ c-----------------------------------------------------------------------
 
 * functions
       integer   len1
-      character hangle*12, rangle*12, versan*80
+      character hangle*12, rangle*12, versan*72
 
 *--------------------------------------------------------------
       versn = versan ('fakeotf',

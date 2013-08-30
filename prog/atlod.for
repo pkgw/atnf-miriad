@@ -346,7 +346,7 @@ c-----------------------------------------------------------------------
         integer MAXFILES,MAXTIMES,MAXSIM
         parameter(MAXFILES=128,MAXTIMES=32,MAXSIM=34)
 c
-        character in(MAXFILES)*128,line*64,out*64,t1*18,t2*18,version*80
+        character in(MAXFILES)*128,line*64,out*64,t1*18,t2*18,version*72
         integer tno,ntimes
         integer ifile,ifsel(MAXSIM),nsel,nfreq,iostat,nfiles,nopcorr,i
         double precision rfreq(2),times(2,MAXTIMES)
@@ -358,7 +358,7 @@ c
 c
 c  Externals.
 c
-        character itoaf*8, rperr*32, versan*80
+        character itoaf*8, rperr*32, versan*72
 c-----------------------------------------------------------------------
       version = versan ('atlod',
      :                  '$Revision$',

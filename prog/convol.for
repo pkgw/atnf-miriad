@@ -124,7 +124,7 @@ c-----------------------------------------------------------------------
      *          version*72
 
       logical   BoxRect,keyprsnt
-      character itoaf*8, versan*80
+      character itoaf*8, versan*72
       external  boxrect, itoaf, keyprsnt, versan
 c-----------------------------------------------------------------------
       version = versan('convol',

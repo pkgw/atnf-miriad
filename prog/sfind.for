@@ -526,7 +526,7 @@ c-----------------------------------------------------------------------
       data dmm /1e30, -1e30, -1.0/
       data gaps, doabut, dotr /.false., .false., .false./
 
-      character versan*80, version*80
+      character versan*72, version*72
 c-----------------------------------------------------------------------
       version = versan('sfind',
      *                 '$Revision$',

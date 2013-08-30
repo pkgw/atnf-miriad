@@ -52,7 +52,7 @@ c-----------------------------------------------------------------------
 	integer MAXSRC,MAXPOL,MAXWIN
 	parameter(MAXSRC=32,MAXPOL=4,MAXWIN=18)
 c
-	character sources(MAXSRC)*24,out*64,version*80
+	character sources(MAXSRC)*24,out*64,version*72
 	integer nsrc,nspw,npol,pol(MAXPOL),nchan(MAXWIN)
 	integer i,nant,jstat,isrc
 	double precision radec(MAXSRC,2),freq(MAXWIN),bw(MAXWIN),
@@ -64,7 +64,7 @@ c
 c
 c  Externals.
 c
-	character versan*80
+	character versan*72
 c-----------------------------------------------------------------------
       version = versan ('rpgen',
      :                  '$Revision$',

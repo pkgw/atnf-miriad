@@ -64,11 +64,11 @@ c-----------------------------------------------------------------------
       double precision cdelti(MAXNAX), cdelto(MAXNAX), crpixi(MAXNAX),
      *          crpixo(MAXNAX), crvali(MAXNAX)
       character in*64, itoaf*1, line*80, opts(NOPTS)*8, out*64, str*1,
-     *          version*80
+     *          version*72
 
 c     Externals.
       logical hdprsnt
-      character versan*80
+      character versan*72
 
       data opts /'sum     '/
 c-----------------------------------------------------------------------

@@ -119,7 +119,7 @@ c-----------------------------------------------------------------------
       character beam*64, iomode*8, line*72, map*64, mode*16, modl*64,
      *          outNam*64, version*72
 
-      character itoaf*4, versan*80
+      character itoaf*4, versan*72
       external  itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('restor',

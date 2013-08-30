@@ -33,7 +33,7 @@ c  Bugs and Shortcomings:
 c    ? Perfect ?
 c------------------------------------------------------------------------
 	include 'maxdim.h'
-	character version*80
+	character version*72
 	logical dovec
 	double precision interval
 	character vis*64
@@ -42,7 +42,7 @@ c------------------------------------------------------------------------
 c
 c  Externals
 c
-        character versan*80
+        character versan*72
 c------------------------------------------------------------------------
         version = versan('gpaver',
      *                   '$Revision$',

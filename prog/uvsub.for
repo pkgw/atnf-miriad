@@ -73,7 +73,7 @@ c-----------------------------------------------------------------------
       double precision arg, delv, model(4,MAXMOD), preamble(4),
      :        sfreq(MAXCHAN), vel(MAXCHAN), uv(2), x(2)
       complex data(MAXCHAN)
-      character ltype*8, modl*80, out*80, versan*80, version*80, vis*80
+      character ltype*8, modl*80, out*80, versan*72, version*72, vis*80
 
       character ltypes(2)*8
       data ltypes /'channel ','velocity'/

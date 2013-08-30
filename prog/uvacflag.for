@@ -32,7 +32,7 @@ c-----------------------------------------------------------------------
       integer match_time,match_freq
       parameter (maxpol = 4, maxbin=32, maxrec=10000000,
      +           maxtime=10000, maxfreq=100)
-      character versan*80, version*80
+      character versan*72, version*72
 c
       complex data(maxchan)
       double precision pream(4), freq,df, timelist(maxtime),

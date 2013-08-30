@@ -63,11 +63,11 @@ c     Observatory latitude.
      *          pb, pbfwhm, psi, q, rad, s2chi, u, x, xx, xy, y, yx, yy
       double precision cdelt1, cdelt2, crpix1, crpix2, crval1, crval2,
      *          dha, freq, ha, ha0, ha1
-      character stokId(8)*2, out*64, version*80
+      character stokId(8)*2, out*64, version*72
 
       external  len1, versan
       integer   len1
-      character versan*80
+      character versan*72
 
       data stokes / 1,   2,   3,   4,   -5,   -6,   -7,   -8 /
       data stokId /'i', 'q', 'u', 'v', 'xx', 'yy', 'xy', 'yx'/

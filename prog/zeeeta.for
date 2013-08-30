@@ -53,7 +53,7 @@ c-----------------------------------------------------------------------
       character ader*2, aveop*1, in*24, out*24, version*72
 
       external  versan
-      character versan*80
+      character versan*72
 c-----------------------------------------------------------------------
       version = versan('zeeeta',
      *                 '$Revision$',

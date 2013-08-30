@@ -155,12 +155,12 @@ c
       logical mask(maxdim),dopb,keep,domedian,domode,natural,dotab
       logical dout,dospline
       character in*80,logf*80,line*132,cin*1,ctype*9,caxis*13,units*13
-      character btype*25,pbtype*16,out*80, version*80
+      character btype*25,pbtype*16,out*80, version*72
 c
 c  Externals.
 c
       integer len1
-      character itoaf*1, versan*80
+      character itoaf*1, versan*72
       real pbget
       double precision seval
 

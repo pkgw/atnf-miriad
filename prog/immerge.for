@@ -124,7 +124,7 @@ c-----------------------------------------------------------------------
 
       logical   keyprsnt
       integer   nextpow2
-      character versan*80
+      character versan*72
       external keyprsnt, nextpow2, versan
 
       data units/'klambda     ','meters      ','nanoseconds ',

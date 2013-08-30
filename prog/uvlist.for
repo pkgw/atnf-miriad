@@ -120,7 +120,7 @@ c   23apr10 rjs  - Recognised blanked antenna numbers in "array" printout.
 c   27mar13 mhw  - Print > 10000 channels correctly
 c------------------------------------------------------------------------
 	include 'maxdim.h'
-	character*80 version,versan
+	character*72 version,versan
 c
 	character out*50,last*1,date*18,uvflags*8
 	complex data(MAXCHAN)

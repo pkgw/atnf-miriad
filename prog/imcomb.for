@@ -76,9 +76,9 @@ c-----------------------------------------------------------------------
      *        tno(MAXIN)
       real    blctrc(6,MAXIN), rms(MAXIN), rms0
       double precision f(MAXIN)
-      character in(MAXIN)*64, line*80, out*64, version*80
+      character in(MAXIN)*64, line*80, out*64, version*72
 
-      character stcat*80, versan*80
+      character stcat*80, versan*72
       external  stcat, versan
 c-----------------------------------------------------------------------
       version = versan ('imcomb',

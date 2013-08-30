@@ -152,8 +152,8 @@ c the flagging is done.
 c Then it asks for the next visibility file and does the whole process
 c again until the list is exhausted.
 
-      character*80 versan
-      character*80 version
+      character*72 versan
+      character*72 version
 
       character*64     vis
 

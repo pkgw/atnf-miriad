@@ -193,7 +193,7 @@ c-----------------------------------------------------------------------
       integer naxis,n1,n2,n1d,n2d,ic,jc,nx,ny,ntmp
       integer xmin,xmax,ymin,ymax,xoff,yoff,zoff
       character MapNam*64,BeamNam*64,ModelNam*64,OutNam*64,line*72
-      character logf*64, version*80
+      character logf*64, version*72
       integer lMap,lBeam,lModel,lOut
       integer nMap(3),nBeam(3),nModel(3),nOut(4)
       real EstASum
@@ -202,7 +202,7 @@ c-----------------------------------------------------------------------
       real dat(maxBuf)
       common dat
 
-      character itoaf*8, versan*80
+      character itoaf*8, versan*72
       external  itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('mfclean',

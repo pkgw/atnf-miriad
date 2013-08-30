@@ -92,7 +92,7 @@ c-----------------------------------------------------------------------
      *          cm(MAXDIM,MAXPOWER+1), rope(MAXDIM*MAXCHAN), y(MAXDIM)
       character aline*72, cont*128, in*128, out*128, version*72
 
-      character versan*80
+      character versan*72
       external  versan
 c-----------------------------------------------------------------------
       version = versan('pcsub',

@@ -156,10 +156,10 @@ c-----------------------------------------------------------------------
       real      blctrc(4,MAXIN), extent(4), rms(MAXIN), sigt, xoff,
      *          yoff, bw, wt
       double precision f, fout
-      character inName*64, inbuf*(MAXLEN), outNam*64, version*80
+      character inName*64, inbuf*(MAXLEN), outNam*64, version*72
 
       integer   len1
-      character versan*80
+      character versan*72
       external  len1, versan
 c-----------------------------------------------------------------------
       version = versan ('linmos',

@@ -161,7 +161,7 @@ c-----------------------------------------------------------------------
       external  hdprsnt, header, keyprsnt, polsp2c, versan
       logical   hdprsnt, keyprsnt
       integer   polsp2c
-      character versan*80
+      character versan*72
 c-----------------------------------------------------------------------
       version = versan('uvmodel',
      *                 '$Revision$',

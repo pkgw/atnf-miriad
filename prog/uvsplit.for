@@ -92,7 +92,7 @@ c------------------------------------------------------------------------
 	integer MAXSELS
 	parameter(MAXSELS=256)
 c
-	character version*80
+	character version*72
 	character vis*64,dtype*1
 	integer tvis
 	real sels(MAXSELS),maxwidth
@@ -104,7 +104,7 @@ c
 c  Externals.
 c
 	logical SelProbe
-        character versan*80
+        character versan*72
 c------------------------------------------------------------------------
         version = versan ('uvsplit',
      *                    '$Revision$',

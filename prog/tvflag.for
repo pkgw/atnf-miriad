@@ -240,7 +240,7 @@ c
       character Vis*132, Server*132
       character Line*30, errmsg*80
       character apri*9
-      character Opts(NOPT)*10, version*80
+      character Opts(NOPT)*10, version*72
       integer Lin, nchan, MostChan, channel
       integer maxxpix, maxypix, levels, msglen
       integer jx0, jy0, nout
@@ -260,7 +260,7 @@ c  Externals.
 c
       integer Len1
       logical KeyPrsnt
-      character versan*80
+      character versan*72
 c
       data Opts / 'amplitude', 'phase','real', 'imaginary'/
 c

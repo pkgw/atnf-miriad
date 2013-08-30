@@ -33,7 +33,7 @@ c-----------------------------------------------------------------------
       real      data(MAXDIM), dmm(2), npix, npix2, val
       character in*64, line*132, out*64, version*72
 
-      character versan*80
+      character versan*72
       external  versan
 c-----------------------------------------------------------------------
       version = versan('imblr',

@@ -89,7 +89,7 @@ c-----------------------------------------------------------------------
       character opts(NOPTS)*9,
      -          calday*18,
      -          file*64,
-     -          version*80
+     -          version*72
 
       logical   present(NOPTS),
      -          baseline(MAXBASE),
@@ -104,7 +104,7 @@ c-----------------------------------------------------------------------
 c     external declarations
 
       integer   len1
-      character versan*80
+      character versan*72
 
 c     initialise some variables
 

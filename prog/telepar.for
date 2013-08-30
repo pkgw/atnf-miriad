@@ -37,10 +37,10 @@ c-----------------------------------------------------------------------
       logical ok
       integer i, n, nobs
       double precision value
-      character observ*12, observs(MAXOBS)*12, string*20, version*80
+      character observ*12, observs(MAXOBS)*12, string*20, version*72
 
 c     Externals.
-      character rangle*20, versan*80
+      character rangle*20, versan*72
 c-----------------------------------------------------------------------
       version = versan ('telepar',
      :                  '$Revision$',

@@ -89,13 +89,13 @@ c-----------------------------------------------------------------------
       complex acc(MAXCHAN1*MAXBIN*MAXPOL), data(MAXCHAN1)
       double precision offset(2), preamble(4), sfreq(MAXCHAN1), shift(2)
       character device*80, flux*9, fluxes(NFLUX)*9, logfile*80,
-     :        uvflags*16, version*80, xaxes(NXAXES)*9, xaxis*9,
+     :        uvflags*16, version*72, xaxes(NXAXES)*9, xaxis*9,
      :        yaxes(NYAXES)*9, yaxis*9, title*80
 
 c     Externals.
       logical uvDatOpn,keyprsnt
       integer pgbeg,len1
-      character itoaf*8, versan*80
+      character itoaf*8, versan*72
 
       data xaxes/'bin      '/
       data yaxes/'flux     ','frequency','channel  '/

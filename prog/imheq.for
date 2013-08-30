@@ -63,7 +63,7 @@ c-----------------------------------------------------------------------
      *          cumhis(MAXBIN), xp(MAXBIN), ymax, yp(MAXBIN,2)
       character device*80, in*80, out*80, version*72
 
-      character versan*80
+      character versan*72
       external  versan
 
       data bmin2, bmax2 /1e32, -1e32/

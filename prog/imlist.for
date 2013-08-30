@@ -84,10 +84,10 @@ c-----------------------------------------------------------------------
       integer blc(MAXNAX),trc(MAXNAX)
       integer lin,fldsize,npnt
       logical more,dodata,dostat,domos
-      character in*64,out*64,format*10, version*80
+      character in*64,out*64,format*10, version*72
 
 c     Externals.
-      character versan*80
+      character versan*72
 c-----------------------------------------------------------------------
       version = versan ('imlist',
      :                  '$Revision$',

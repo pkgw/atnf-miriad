@@ -91,7 +91,7 @@ c-----------------------------------------------------------------------
      *          vis(MAXVIS)*64
 
       integer   len1
-      character itoaf*3, versan*80
+      character itoaf*3, versan*72
       external  itoaf, len1, versan
 c-----------------------------------------------------------------------
       version = versan('demos',

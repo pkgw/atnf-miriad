@@ -124,7 +124,7 @@ c-----------------------------------------------------------------------
      *          title*80, version*72, xlabel*80, ylabel*80
 
       integer   pgbeg
-      character versan*80
+      character versan*72
       external  pgbeg, versan
 
       data c /MAXPC*0d0/

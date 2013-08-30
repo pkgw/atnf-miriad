@@ -58,10 +58,10 @@ c-----------------------------------------------------------------------
      *          outPlane(MAXNAX), trc(MAXNAX)
       real      mapIn(MAXDIM), mapOut(MAXDIM)
       double precision cdelt, crpix
-      character inName*80, keyw*8, outNam*80, version*90
+      character inName*80, keyw*8, outNam*80, version*72
 
       logical   BoxRect, hdprsnt
-      character itoaf*1, versan*80
+      character itoaf*1, versan*72
       external  BoxRect, hdprsnt, itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('imsub',

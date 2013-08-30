@@ -74,11 +74,11 @@ c-----------------------------------------------------------------------
      *          nstop
       real      beamx, beamy
       double precision bmaj, bmin, bpa, cdelt1, cdelt2
-      character filein*40, filecf*40, line1*80, line2*80, version*80,
+      character filein*40, filecf*40, line1*80, line2*80, version*72,
      *          xtension*3
 
       integer   len1
-      character versan*80
+      character versan*72
       external  len1, versan
 
       ptrdiff   Ia, Ipos, Ipos1, Ireg, It

@@ -38,10 +38,10 @@ c-----------------------------------------------------------------------
       integer   i, icrpix, iimax, iimin, imsize, ioff, j, jcrpix, jjmax,
      *          jjmin, joff, lout, nsize(3)
       real      pixel, row(MAXDIM)
-      character in*64, log*64, out*64, version*80
+      character in*64, log*64, out*64, version*72
 
       external  versan
-      character versan*80
+      character versan*72
 
       data row /MAXDIM*0.0/
 c-----------------------------------------------------------------------

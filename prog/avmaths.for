@@ -78,9 +78,9 @@ c-----------------------------------------------------------------------
      *          size(MAXNAX), size3, trc(MAXNAX), xblc, xtrc, yblc, ytrc
       real      buffer(MAXBUF), rline(MAXDIM)
       double precision cdelt3, zav
-      character aline*72, in*80, out*80, str*1, version*80
+      character aline*72, in*80, out*80, str*1, version*72
 
-      character itoaf*1, versan*80
+      character itoaf*1, versan*72
       external  itoaf, versan
 
       common buffer

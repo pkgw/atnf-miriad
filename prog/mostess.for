@@ -95,7 +95,7 @@ c-----------------------------------------------------------------------
      *          MapNam(MAXPNT)*64, ModNam*64, OutNam*64, version*72
 
       integer   ismax
-      character itoaf*4, versan*80
+      character itoaf*4, versan*72
       external  ismax, itoaf, versan
 c-----------------------------------------------------------------------
       version = versan('mostess',
