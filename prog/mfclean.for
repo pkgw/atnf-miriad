@@ -282,7 +282,7 @@ c
       n1d = 2*min(n1d,xmin-1,nMap(1)-xmax,nx-1) + 1
       n2d = min(jc-1,n2-jc) - ny + 1
       n2d = 2*min(n2d,ymin-1,nMap(2)-ymax,ny-1) + 1
-      write(line,'(a,i4,a,i4)')'Sub-beam size is',n1d,' by',n2d
+      write(line,'(a,i6,a,i6)')'Sub-beam size is',n1d,' by',n2d
       call output(line)
       if (n1d.lt.5 .or. n2d.lt.5) then
         call bug('w','Sub-beam size is too small')
