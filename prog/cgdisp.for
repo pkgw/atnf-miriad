@@ -139,6 +139,7 @@ c               6: rgb
 c               7: background
 c               8: heat
 c               9: absolute b&w
+c              10-19: cubehelix (by D. Green, google cubehelix for info)
 c           Negate the table number to reverse the lookup table.
 c
 c       The transfer function changes available with OPTIONS=FIDDLE
@@ -594,6 +595,7 @@ c--
 c  History:
 c    Refer to the RCS log, v1.1 includes prior revision information.
 c    pjt   2013jul24  committed ptrdiff based alloc/free
+c    mhw   2013sep13  Add cubehelix colour scheme
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
