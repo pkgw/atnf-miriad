@@ -7,8 +7,13 @@ c               centre.
 c& jbs
 c: uv analysis
 c+
-c	UVSPEC plots averaged spectra of a visibility dataset. Averaging can
-c	be in both time and frequency
+c	UVFMEAS plots averaged spectra of a visibility dataset. It is
+c       used to measure the spectral behaviour of a continuum source,
+c       and can perform high order polynomial fits to the data. In this
+c       way, a flux density at a particular frequency can be more
+c       accurately determined. Multiple sets at different frequencies
+c       can be simultaneously plotted, allowing you to make a global
+c       fit over a wider range of frequencies, which may be more accurate.
 c@ vis
 c	The name of the input uv data sets. Several can be given (wild
 c	cards are supported). No default.
@@ -21,7 +26,9 @@ c	The default is all channels (or all wide channels if there are no
 c	spectral channels).
 c@ stokes
 c	The Stokes/polarization types to be plotted. The default is to
-c	plot those polarizations present in the input files.
+c	plot those polarizations present in the input files. Stokes
+c       parameters will not however be overplot on each other; only one
+c       polarization will be plotted at a time.
 c@ hann
 c	Hanning smoothing width (an odd integer).  Smoothing is
 c	applied after averaging. Default is 1 (no Hanning smoothing).
