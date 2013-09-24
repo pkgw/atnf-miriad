@@ -1401,12 +1401,12 @@ c  Input/Output:
 c    vis        The visibility data.
 c-----------------------------------------------------------------------
       integer i,j,n
-      Complex Gain, Gain1, Gain2,g, expi
+      Complex Gain0, Gain, Gain1, Gain2,g, expi
       real mag,fac
-
-      Gain = G1(1) * conjg(G2(1) * gAtm)
+      Gain0 = G1(1) * conjg(G2(1) * gAtm)
       n = max(1,nchan-1)
       do i=1,nchan
+        Gain = 1
         if (dodelay) then
           fac = (nchan-i*1.0)/n
           g = G1(1)/G1(2)
@@ -1428,10 +1428,9 @@ c
           Gain = Gain * Gain1 * conjg(Gain2)
         endif
         do j=1,npol
-          vis(i,j) = Gain * vis(i,j)
+          vis(i,j) = Gain0 * Gain * vis(i,j)
         enddo
       enddo
-
       end
 c***********************************************************************
       subroutine NoiseAdd(vis,nchan,maxchan1,npol,rms)
