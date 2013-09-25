@@ -556,8 +556,8 @@ c
 c  Calculate the average error with the supplied fit.
 	      fitdiffsum=0.0
 	      do j=1,nchan
-		 fitdiffsum = fitdiffsum + abs(fit(i) - ufit(i)) /
-     *               ufit(i)
+		 fitdiffsum = fitdiffsum + abs(fit(j) - ufit(j)) /
+     *               ufit(j)
 	      enddo
 	      fitdiffsum = fitdiffsum / nchan
 	      write(line,'(a,1pe11.3)') 'Average fit error: ',fitdiffsum
