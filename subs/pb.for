@@ -929,9 +929,9 @@ c  The new 16cm ATCA beam fits - some of these fits need improving
 c  and updates are expected - put this in for testing purposes
 c     
       do i=1, 14
-         fl = 1.298+(i-1)*1.28 - 0.064
+         fl = 1.298+(i-1)*0.128 - 0.064
          fh = fl + 0.128
-         if (i.eq.0) fl=1.0
+         if (i.eq.1) fl=1.0
          if (i.eq.14) fh=3.2
         call pbAdd('ATCA16', fl,fh, 47.9, 0.03, IPOLY,
      *                NATCA16,atca16(1,i),'Reciprocal 4th order poly')
