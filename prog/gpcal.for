@@ -243,6 +243,7 @@ c    mhw     03sep10 Use mean freq of all data used for flux cal
 c    mhw     15feb11 Solve for leakage in frequency bins
 c    mhw     15oct12 Remove freq dep gains and leakages if nfbin=1
 c    mhw     24jan13 Avoid producing NaNs in the gains or leakages
+c    mhw     31oct13 Check nchan>=nfbin
 c
 c  Miscellaneous notes:
 c ---------------------
@@ -2359,6 +2360,8 @@ c-----------------------------------------------------------------------
       call uvrewind(tIn)
       call uvDatRd(preamble,Data(1,XX),flag(1,XX),MAXCHAN,nchan)
       if (nchan.eq.0) call bug('f','No data read from input file')
+      if (nchan.lt.nfbin) call bug('f',
+     *   'The number of channels is less than the number of bins')
 c
 c  Get the source and frequency of the first data.
 c
