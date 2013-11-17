@@ -41,7 +41,7 @@
 # Append the visitor schedule.
   setenv SCHEDULE http://www.atnf.csiro.au/people/visitor_schedule.html
   lynx -dump -width=110 "$SCHEDULE" | \
-    sed -n -e '{/staff/d;s/^        //p;}' >> mail.txt
+    sed -ne '{/Visitor Schedule/,$p}' | sed -n -e '{/staff/d;s/^        //p;}' >> mail.txt
 
 # Mail it to interested parties.
   mail -s "Disk bookings and visitor schedule" \
