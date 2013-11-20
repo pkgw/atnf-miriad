@@ -515,6 +515,7 @@ c
 c  Now apply them.
 c
         if (relax) then
+          int1 = max(0.5d0,int1)
           call GnApply1(ngains,nfeeds,ntau,nfbin,
      *	  memc(pGain1),memd(pTim1),nsols1,int1,
      *	  memc(pGain2),memd(pTim2),nsols2,
