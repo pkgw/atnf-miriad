@@ -4005,3 +4005,182 @@ and in a way to be consistent with all the other changes happening.
 03apr09	rjs	invert.for,mapper.for - Changes to make use of scrRecSz routine and
 		so relax largefile problems.
 06apr09 rjs	ellint.for,imcfn.for - Eliminate DO loops which are not integer valued.
+10apr09 mchw - uvswap Added XY and YX swap.  
+16apr09 mchw - uvswap Added options=xywap     
+21apr09 ghh - rmclean Version 1.6: increased allowed size of frequency
+23apr09 rjs - closure Increase buffer dimension to allow it to
+23apr09 rjs - fgflag Increase buffer size to allow it to
+24apr09 rjs - gpcal xyphase array was being ignored in some
+27apr09 rjs - gpnorm Added option zeroflag.    
+27apr09 rjs - uvaflag Fix spurious warning when using options=nofreq. Change
+29apr09 rjs - itemize Added options=nocompact     
+30apr09 rjs - gpcal Fix bug in handling of strongly circularly
+05may09 rjs - gpnorm Deduced xyphase was being applied with the
+07may09 rjs - gpnorm Compare gain tables. xyleak option.  
+14may09 rjs - gplist Original version.     
+14may09 rjs - mfcal Simple handling of Doppler tracking. Squeeze out
+26may09 rjs - uvdump Original version.     
+02jun09 rjs - itemize Changed call to mkeyf to mkeya. 
+03jun09 mhw - atlod Fix syscal handling for CABB gtp, sdo
+18jun09 rjs - uvlist - Number antennas in "array" printout. 
+23jun09 rjs - closure Longer plot labels.    
+30jun09 pjt - uvimage fixed labeling bug in output cube 
+24jul09 rjs - blcal options=replace. Make the default "interval" to infinite
+07aug09 mhw - mfcal Add time variable passbands   
+26aug09 mhw - gpplt Handle multiple bandpass solution intervals  
+02sep09 mhw - gpcopy Handle multiple bandpass solution intervals  
+07sep09 mhw - calred More digits for correlation count  
+07sep09 mhw - mfboot Use central frequency for planet parameters 
+08sep09 rjs - mfcal Bug handling when first solution interval was
+14sep09 mhw - atlod Make sure birdie is ignored for CABB
+23sep09 vjm - itemize Explain the term "item"; mention gethd. 
+29sep09 mhw - atlod Actually, make it do something useful instead,
+29sep09 mhw - mfcal Time variable bandpass bug fixes  
+29sep09 mhw - uvsplit Fix freq axis mislabeling bug  
+29sep09 rjs - gpnorm Fail when bandpass tables are present. 
+01oct09 rjs - mfcal Handle missing antennas slightly better.  
+14oct09 mhw - uvsplit Separate out identical freqs on different IFs
+17dec09 rjs - mfcal There was a bug in packit/unpackit where
+02feb10 mhw - uvspec Add sdo option to look at CABB
+24mar10 mhw - mfboot Correct spectral index too   
+28mar10 mhw - atlod Use IF number instead of IF chain
+13apr10 mhw - atlod Record ifchain in file, allow multiple values
+21apr10 mhw - uvspec Fix axis label and plot accuracy issues
+21apr10 rjs - qvack Fix counting of number of correlations flagged.
+23apr10 rjs - telepar Reworked formatting was failing on some machines.
+23apr10 rjs - uvlist - Recognised blanked antenna numbers in "array"
+11may10 rjs - uvzflag Adapted from uvaflag.    
+28jun10 mhw - atlod Add options nopack, notsys, process auto corr
+08jul10 mhw - atrecal Original version, based on uvaver.  
+22jul10 mhw - atlod Fix ischan calculation.    
+03sep10 mhw - gpcal Use mean freq of all data used
+19oct10 mhw - atlod Update 20/13 band - now 1-3 GHz
+26oct10 mhw - atlod Fix birdie flagging in 20/13 cm band
+26oct10 mhw - psrplt Fix indexing calculations for acc array, add
+11nov10 mhw - atlod Record scan direction for otfmos scans 
+12nov10 mrc - imdiff headcopy -> headcp    
+23nov10 mhw - atlod Fix for CABB 33 channel (64MHz) mode
+25nov10 mhw - linmos Cope with OTF mosaics using extra parameters
+07feb11 mhw - atlod Add edge keyword to control birdie/edge flagging
+15feb11 mhw - gpcal Solve for leakage in frequency bins 
+01mar11 mhw - gpedit Added options=invert     
+03mar11 mhw - linmos Add bandwidth     
+23mar11 mhw - atwvr Modify atscfix to become atwvr  
+05apr11 mhw - uvgen Change epoch to J2000   
+14apr11 mhw - mfcal Fix hash function overflow by moving to
+19apr11 ghh - rmclean Version 1.7: increased allowed size of phi
+06jun11 mhw - uvsplit Split by calcode    
+06jun11 rjs - varplt Support for some new variables written by
+08jun11 rjs - fgflag Make "interval" 0.5 sec.   
+16jun11 mhw - mfboot Fix triple mode spectral index correction 
+22jun11 mhw - atwvr Add pol code back in  
+17jul11 mchw - uvflux VLBI: average amplitude of vector average for
+20jul11 mhw - attsys Incorporate tsysfix program by jra  
+01aug11 mhw - uvgen Add variation with frequency in phase and
+11aug11 mhw - gpcopy Copy gainsf and leakagef tables  
+08sep11 mhw - gpedit Handle freq binned gains   
+27oct11 mhw - clean - Use ptrdiff type for memory allocations
+27oct11 mhw - convol Use ptrdiff type for memory allocations 
+27oct11 mhw - mfclean - Use ptrdiff type for memory allocations
+27oct11 mhw - mfspin Use ptrdiff type for memory allocations 
+27oct11 mhw - mosmem Use ptrdiff type for memory allocations 
+27oct11 mhw - mossdi Use ptrdiff type for memory allocations 
+27oct11 mhw - mostess Use ptrdiff type for memory allocations 
+27oct11 mhw - pmosmem Use ptrdiff type for memory allocations 
+27oct11 mhw - restor Use ptrdiff type for memory allocations 
+02nov11 mhw - uvcat add l to uvflags to make sure
+07nov11 mhw - invert Add warning for uniform weighting and mfs
+07nov11 mhw - uvfit Add frequency and time binning  
+23nov11 mhw - uvindex Display rest frequency and ifchain  
+23nov11 mhw - uvsplit Split by ifchain, pass ifchain variable along
+25nov11 mhw - attsys Make tsysif an array and update tsys
+01dec11 pkgw - imframe Undo the halving of MAXBUF so we
+13dec11 pjt - planets Added some moon options   
+14dec11 rjs - uvedit Copy across nbpsols item.   
+05jan12 jbs - uvfmeas Derived from uvspec.    
+12jan12 dmcc - uvsfit Original version, adapted from uvfit version 14jan05.
+12jan12 mhw - attsys Fix array indexing and add inverse option
+16jan12 mhw - gpscal Use ptrdiff for scr routines to handle
+16jan12 mhw - selfcal Use ptrdiff for scr routines to handle
+17jan12 mhw - imdiff Use ptrdiff for scr routines  
+17jan12 mhw - invert Handle larger files by using ptrdiff type
+17jan12 mhw - uvmodel Use ptrdiff for scr routines to handle
+03feb12 mhw - uvaflag Add nobin option    
+22feb12 mhw - atrecal Cleanup, remove unwanted options   
+23feb12 mhw - attsys Add scale option    
+06mar12 mhw - atrecal Use JyperK from uv file for conversion
+06mar12 mhw - invert Add fsystemp option    
+25mar12 mhw - rmclean Cope with blanked pixels   
+29mar12 vjm - varlist Handle longer dataset names   
+29mar12 vjm - varmerge Support longer filenames, consistent with var*.for 
+29mar12 vjm - varplt Support longer names of vis files, consistent
+17apr12 mhw - uvaflag Add freq option    
+23apr12 mhw - gpaver Handle frequency bins (gainsf table)  
+09may12 jbs - uvfmeas First released source.    
+11may12 pjt - uvcat deal with bfmask(nspect) and bfmask(1)  
+29may12 mhw - atlod Try to make opcorr more accurate for
+07jun12 mhw - uvcat Handle ifchain correctly when selecting windows 
+15jun12 mhw - atlod Fix index errors in opcor change 
+05jul12 mhw - clstats use memallop/memfrep, remove size limits  
+07aug12 mhw - uvamp Merge carma mods and clean up a
+07aug12 mhw - uvcat Merge atca and carma version (ifchain and
+24aug12 mhw - mfclean - Increase max patch and image size
+28aug12 mhw - mfclean - Change default minpatch and add control
+29aug12 mhw - imcomb Add fqaver option    
+01sep12 rjs - fgflag Rewrite and fix some flawed code (get
+07sep12 mhw - uvspec Add hdr option, useful for plotting rfi
+12sep12 mhw - atlod Drop edge channels for 16cm data with
+18sep12 mhw - demos Change to pbinitc argument list  
+18sep12 mhw - linmos Use correct frequencies when not all the
+21sep12 mhw - atwvr Add log file    
+09oct12 mhw - atwvr Use closest correction slot instead of preceeding
+10oct12 dmcc - uvsfit Adapted for spectral curvature and for general
+15oct12 mhw - gpcal Remove freq dep gains and leakages if
+15oct12 mhw - uvcat Make sure sfreq appears in output, even
+16oct12 mhw - imfit Add error estimate for integrated flux 
+19oct12 mhw - uvfit Write multiple output files (copied from uvsfit)
+22oct12 dmcc - uvsfit Include ref freq in output log; fix
+24oct12 vjm - mfcal Tidy up text explaining the interval options.
+26oct12 mhw - fits Initialize map rotation to zero  
+01nov12 mhw - transfix Update docs for file locations  
+05nov12 mhw - uvcat Revert some of the 07aug changes -
+06dec12 mhw - imfit Fix reported position angle of error ellipse
+07dec12 mhw - atlod Fix 29may12 opcor code again - how
+20dec12 mhw - atwvr Add uvrange parameter    
+17jan13 mhw - restor Add mfs option    
+23jan13 mhw - linmos Handle 2nd plane (mfs I*alpha) in input
+24jan13 mhw - gpcal Avoid producing NaNs in the gains or
+29jan13 mhw - atlod Fix nscans skip and read code -
+12mar13 mhw - uvimage Adapt for atnf, increase cube size to
+13mar13 mhw - uvflag Cope with 128 antennas (MWA)  
+15mar13 mhw - uvimage Add options time,freq and improve axis labelling
+21mar13 rjs - fits Fix check for buffer overflow in uvin.
+26mar13 vjm - uvflag Convert version numbering to versan().  
+27mar13 mhw - uvflag Cope with larger number of visibilities 
+27mar13 mhw - uvlist - Print > 10000 channels correctly 
+29mar13 ghh - rmclean Version 1.8: add ability to not derotate
+02apr13 mhw - mfcal Avoid producing NaNs when there are zeroes
+09apr13 mrc - uvedit Fix handling of negative dec between 0
+10apr13 mhw - selfcal Add nfbin parameter    
+03may13 mhw - linmos Extension to previous and add options=frequency 
+09may13 mhw - selfcal Add mmfs option    
+13may13 mhw - gpcopy Handle gainsf in 'merge' and 'apply' mode
+13may13 mhw - mfspin Read mosaic table for pointing centre if
+23may13 mhw - mirmax Original version     
+31may13 mhw - rmclean merge 1.8 into miriad version,  
+03jun13 mhw - invert Add beam and res options to imsize
+12jun13 mhw - gpcopy Fix apply mode, add relax option 
+20jun13 mhw - imcomb Fix fqaver option - failed for >
+27jun13 mhw - mfboot Fix nospec option    
+27jun13 mhw - psrplt Add title parameter    
+06aug13 mhw - uvflux Add long option    
+15aug13 mhw - calred Expand docs and digits.   
+09sep13 mhw - atfix Fix optimization bug causing tsys jumps at
+14oct13 mhw - linmos Add alpha option    
+22oct13 mhw - atlod Apply patches by vjm to fix some
+22oct13 mhw - mfspin Cope with restored (I,I*alpha) images  
+31oct13 mhw - gpcal Check nchan>=nfbin     
+31oct13 mhw - gplist List gainsf/leakagef table info   
+15nov13 mhw - linmos Add cutoff keyword    
+18nov13 mhw - uvspec Add noise, mnoise    
+20nov13 mhw - gpcopy Change the way the relax option works
