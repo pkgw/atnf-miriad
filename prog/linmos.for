@@ -589,7 +589,7 @@ c         Process this plane.
             yoff = yoff + 1
 
             do i = xlo, xhi
-              if (pBeam(i).lt.cutoff) then
+              if (pBeam(i).le.cutoff) then
 c               The weight is zero.
                 go to 10
               endif
