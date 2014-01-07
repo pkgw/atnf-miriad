@@ -1110,11 +1110,11 @@ c
 	qualt=0.0
 	do j=1,nd
 	   bda(j)=0.
-	   bdc(j)=dint*(j-1)
+	   bdc(j)=dint*(j-1)+xranged(1)
 	   bdn(j)=0
 	   do k=1,nuvd
-	      if (uvd(k).ge.(dint*(j-1)).and.
-     *            uvd(k).lt.(dint*j)) then
+	      if (uvd(k).ge.(dint*(j-1)+xranged(1)).and.
+     *            uvd(k).lt.(dint*j+xranged(1))) then
 		 bda(j)=bda(j)+uva(k)
 		 bdn(j)=bdn(j)+1
 	      endif
