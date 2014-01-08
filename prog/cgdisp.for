@@ -596,6 +596,7 @@ c  History:
 c    Refer to the RCS log, v1.1 includes prior revision information.
 c    pjt   2013jul24  committed ptrdiff based alloc/free
 c    mhw   2013sep13  Add cubehelix colour scheme
+c    mhw   2014jan08  Fix circle overlay for non lat/long axes
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
@@ -3602,8 +3603,8 @@ c         Some other axis types.  rho is measured from the x-axis.
 
           do j = 1, nVtx
             theta = dble(2*(j-1))*DD2R
-            x = rmaj * cos(phi)
-            y = rmin * sin(phi)
+            x = rmaj * cos(theta)
+            y = rmin * sin(theta)
             wIn(1) = wCen(1) + x*cosrho + y*sinrho
             wIn(2) = wCen(2) - x*sinrho + y*cosrho
 
