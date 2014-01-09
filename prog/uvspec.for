@@ -553,8 +553,10 @@ c
         dosdo   = index(ytitle,'SDO').gt.0
         donoise = ytitle(1:5).eq.'Noise'
         if(domnoise) ytitle = 'Noise in mean'
-        if (.not.dophase) ytitle=stcat(ytitle,' (Jy)')
-        if (dophase) ytitle=stcat(ytitle,' (deg)')
+        if (first) then
+          if (.not.dophase) ytitle=stcat(ytitle,' (Jy)')
+          if (dophase) ytitle=stcat(ytitle,' (deg)')
+        endif
 c
 c  Determine the number of good baselines.
 c
