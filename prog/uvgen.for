@@ -616,7 +616,7 @@ c
 c  Check other things to simulate.
 c
       donoise = tsys.gt.0
-      dogains = arms.gt.0.or.prms.gt.0.or.patm.gt.0.
+      dogains = arms.gt.0.or.prms.gt.0.or.patm.gt.0.or.doband
       doleak = leakrms.gt.0
       doatm = patm.gt.0.
 
