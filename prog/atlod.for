@@ -2919,8 +2919,8 @@ c
 c
 c  Give summary about flagging.
 c
-        if(version.le.' ')version='unknown'
-        call liner('RPFITS file version is '//version)
+        if(rpfitsversion.le.' ')rpfitsversion='unknown'
+        call liner('RPFITS file version is '//rpfitsversion)
         call PokeStat(nrec,fgbad,fgoffsrc,fginvant,fgsysc,fgsam,fgcal)
 c
 c  We are done. Close up, and return the error code.
