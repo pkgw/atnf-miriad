@@ -138,15 +138,16 @@ c-----------------------------------------------------------------------
 c  Write the header for the output image.
 c-----------------------------------------------------------------------
       character itoaf*2
+      integer iostat
       external  itoaf
 c-----------------------------------------------------------------------
 c     Make a verbatim copy of the input header.
       call headcp(tIn, tOut, 0, 0, 0, 0)
 
 c     Delete header parameters that shouldn't have been copied.
-      call hdelete(tIn, tOut, 'bmaj')
-      call hdelete(tIn, tOut, 'bmin')
-      call hdelete(tIn, tOut, 'bpa')
+      call hdelete(tOut, 'bmaj',iostat)
+      call hdelete(tOut, 'bmin',iostat)
+      call hdelete(tOut, 'bpa',iostat)
 
 c     Copy the mask (not done by headcp).
       call hdcopy(tIn, tOut, 'mask')
