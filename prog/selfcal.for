@@ -159,6 +159,7 @@ c    dpr  17apr01 Increase MaxMod to 128
 c    mhw  16jan12 Use ptrdiff for scr routines to handle larger files
 c    mhw  10apr13 Add nfbin parameter
 c    mhw  09may13 Add mmfs option
+c    mhw  12mar14 Initialize nchan in point source case
 c
 c  Bugs/Shortcomings:
 c   * Selfcal should check that the user is not mixing different
@@ -281,9 +282,9 @@ c
         call output('Reading the visibility file ...')
         call SelfSet(.true.,MinAnts)
         call SelApply(tvis,sels,.true.)
+        call getFreq(tvis,sfreq,numchan)
         call Model(flag2,tvis,0,offset,flux,tscr,
      *                        NHEAD,header,nchan,nvis)
-        call getFreq(tvis,sfreq,numchan)
         call SelfIni(nfbin)
         call output('Accumulating statistics ...')
         call SelfAcc(tscr,numchan,numchan,1,nvis,interval,sfreq)
