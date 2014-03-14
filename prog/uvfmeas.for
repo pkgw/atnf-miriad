@@ -145,6 +145,7 @@ c
 c
 c  Externals.
 c
+        integer len1
 	logical uvDatOpn
 	character PolsC2P*2
 	character versan*80
@@ -503,14 +504,14 @@ c	   do j=1,mnchan
 		 write(line, '(a)') 'Coeff:'
 		 do j=1,poly+1
 		    oline=line
-		    write(line,'(a,1pe11.3)') oline(1:len_trim(oline)),
+		    write(line,'(a,1pe11.3)') oline(1:len1(oline)),
      *                 fitparams(j)
 		 enddo
 		 oline=line
 		 if (dolog) then
-		    write(line,'(a,a)') oline(1:len_trim(oline)),' log'
+		    write(line,'(a,a)') oline(1:len1(oline)),' log'
 		 else
-		    write(line,'(a,a)') oline(1:len_trim(oline)),' lin'
+		    write(line,'(a,a)') oline(1:len1(oline)),' lin'
 		 endif
 		 call output(line)
 	      endif
