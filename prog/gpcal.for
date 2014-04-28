@@ -321,7 +321,7 @@ c
       call keyr('flux',flux(2,0),0.0)
       call keyr('flux',flux(3,0),0.0)
       call keyr('flux',flux(4,0),0.0)
-      call keyr('spec',reffreq,1.0)
+      call keyd('spec',reffreq,1.d0)
       call keyr('spec',alpha(1),0.0)
       call keyr('spec',alpha(2),0.0)
       call keyr('spec',alpha(3),0.0)
@@ -451,11 +451,13 @@ c
         enddo
       else
         do i=0,n
-          lfr = log(freq(i)/reffreq)
-          al = alpha(1)+lfr*(alpha(2)+lfr*alpha(3))
-          do j=1,4
-            flux(j,i) = flux(j,0)*(freq(i)/reffreq)**al
-          enddo
+          if (freq(i).gt.0) then
+            lfr = log(freq(i)/reffreq)
+            al = alpha(1)+lfr*(alpha(2)+lfr*alpha(3))
+            do j=1,4
+              flux(j,i) = flux(j,0)*(freq(i)/reffreq)**al
+            enddo
+          endif
         enddo
         
       endif
