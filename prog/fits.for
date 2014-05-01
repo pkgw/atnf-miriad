@@ -152,6 +152,7 @@ c  History:
 c    Refer to the RCS log, v1.1 includes prior revision information.
 c    mhw 26oct12  Initialize map rotation to zero
 c    rjs 21mar13  Fix check for buffer overflow in uvin.
+c    mhw 01may14  Cope with HPX rotation
 c
 c-----------------------------------------------------------------------
       integer   MAXBOXES
@@ -4075,17 +4076,19 @@ c-----------------------------------------------------------------------
       call fitrdhdd(lIn,'CROTA'//itoaf(ilat),crota2,0d0)
       crota2 = crota2*DD2R
 
-      call fitrdhdd(lIn,m0ij(pc,ilng,ilng),pc11,cos(crota2))
-      if (crota2.ne.0d0) then
-        call fitrdhdd(lIn,m0ij(pc,ilng,ilat), pc12,
+      call fitrdhdd(lIn,m0ij(pc,ilng,ilng),dtemp,cos(crota2))
+      call fitrdhdd(lIn,mi_j(pc,ilng,ilng),pc11,dtemp)
+      
+      call fitrdhdd(lIn,m0ij(pc,ilng,ilat),dtemp,
      *                  -sin(crota2)*cdelt2/cdelt1)
-        call fitrdhdd(lIn,m0ij(pc,ilat,ilng), pc21,
+      call fitrdhdd(lIn,mi_j(pc,ilng,ilat),pc12,dtemp)
+      
+      call fitrdhdd(lIn,m0ij(pc,ilat,ilng),dtemp,
      *                   sin(crota2)*cdelt1/cdelt2)
-      else
-        pc12 = 0d0
-        pc21 = 0d0
-      endif
-      call fitrdhdd(lIn,m0ij(pc,ilat,ilat),pc22,cos(crota2))
+      call fitrdhdd(lIn,mi_j(pc,ilat,ilng),pc21,dtemp)
+      
+      call fitrdhdd(lIn,m0ij(pc,ilat,ilat),dtemp,cos(crota2))
+      call fitrdhdd(lIn,mi_j(pc,ilat,ilat),pc22,dtemp)
 
       call fitrdhdd(lIn,m0ij(cd,ilng,ilng),dtemp,pc11*cdelt1)
       call fitrdhdd(lIn,mi_j(cd,ilng,ilng),cd11,dtemp)
@@ -4108,7 +4111,7 @@ c     Convert matrix elements to cdelt1, cdelt2, and llrot.
         call bug('w','Using some mean rotation')
       endif
       llrot  = (crota1 + crota2)/2d0
-      if (abs(llrot).lt.1d-300) llrot=0d0
+      if (abs(llrot).lt.1d-30) llrot=0d0
       cdelt1 = cd11/cos(llrot)
       cdelt2 = cd22/cos(llrot)
 
