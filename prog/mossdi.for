@@ -22,8 +22,8 @@ c       CLEAN loop gain. The default is 0.1.
 c@ niters
 c       The maximum number of iterations. The default is 100.
 c@ cutoff
-c       Iterating stops if the maximum falls below this level.  The
-c       default is 0.
+c       Iterating stops if the absolute maximum residual falls below t
+c       his level.  The default is 0.
 c@ clip
 c       This sets the relative clip level.  Values are typically 0.75 to
 c       0.9.  The default is 0.9.
