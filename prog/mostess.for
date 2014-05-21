@@ -74,9 +74,6 @@ c-----------------------------------------------------------------------
       integer gull,cornwell
       parameter (gull=1,cornwell=2)
 
-      integer MAXPNT
-      parameter (MAXPNT=350)
-
       logical   converge, doflux, positive, verbose
       integer   i, icentre, jcentre, lBeam, lDef, lMap,
      *          lMod, lOut, maxniter, measure, mnx, mny, n, n1, n2,

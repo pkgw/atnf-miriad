@@ -80,14 +80,14 @@ c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'mirconst.h'
 
-      integer MAXSELS, MAXPNT, MAXVIS
-      parameter (MAXSELS=256, MAXPNT=2048, MAXVIS=128)
+      integer MAXSELS, MAXPNTS, MAXVIS
+      parameter (MAXSELS=256, MAXPNTS=2048, MAXVIS=128)
 
       logical   detaper
       integer   i, iax, imsize(2), lout, npnt, nsize(3), nvis, tmap
       real      sels(MAXSELS)
-      double precision dec(MAXPNT), ra(MAXPNT)
-      character map*64, name*64, out*64, pbtype(MAXPNT)*16, version*72,
+      double precision dec(MAXPNTS), ra(MAXPNTS)
+      character map*64, name*64, out*64, pbtype(MAXPNTS)*16, version*72,
      *          vis(MAXVIS)*64
 
       integer   len1
@@ -138,7 +138,7 @@ c
 c
 c  Get the pointing centres, etc, associated with the vis dataset.
 c
-      call GetPnt(vis,nvis,sels,MAXPNT,npnt,ra,dec,pbtype)
+      call GetPnt(vis,nvis,sels,MAXPNTS,npnt,ra,dec,pbtype)
       call output('Number of pointings: '//itoaf(npnt))
 c
 c  Process each of the pointings.

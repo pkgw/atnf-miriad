@@ -1671,6 +1671,7 @@ c
 c  Outputs via the uvgencom common.
 c-----------------------------------------------------------------------
       integer i
+      include 'maxdim.h'
       include 'uvgen.h'
 c
 c  Determine down-conversion chain characteristics.

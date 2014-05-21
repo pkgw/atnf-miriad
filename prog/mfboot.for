@@ -97,8 +97,8 @@ c    mhw     24apr14 Allow higher order flux models
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*72
-	integer MAXVIS,MAXPNT
-	parameter(MAXVIS=32,MAXPNT=4000000)
+	integer MAXVIS,MAXPNTS
+	parameter(MAXVIS=32,MAXPNTS=4000000)
 c
 	character vis(MAXVIS)*64,source*32,line*64,device*64,mode*8
 	character psource*32
@@ -109,7 +109,7 @@ c
 	double precision SumXX(2),SumXY(2),SumF(2),preamble(4),time0
 	complex data(MAXCHAN),d(2)
 	logical flags(MAXCHAN)
-	real xval(MAXPNT),ydval(MAXPNT),ymval(MAXPNT)
+	real xval(MAXPNTS),ydval(MAXPNTS),ymval(MAXPNTS)
 	integer npnt,SumN(2)
 c
 	complex db(2,MAXBASE)
@@ -198,7 +198,7 @@ c
      *         db,mb,fb,sb,nb,nbl)
 	    else
 	      call acc(mode.eq.'vector',preamble,d,m,f,s,n,
-     *		SumXX,SumXY,SumF,SumN,MAXPNT,npnt,xval,ydval,ymval)
+     *		SumXX,SumXY,SumF,SumN,MAXPNTS,npnt,xval,ydval,ymval)
 	    endif
 	    call uvDatRd(preamble,data,flags,MAXCHAN,nchan)
 	  enddo
