@@ -45,3 +45,6 @@
 
 /* Maximum number of wideband channels. */
 #define MAXWIDE 18
+
+/* Maximum number of mosaic pointings. */
+#define MAXPNT 20000

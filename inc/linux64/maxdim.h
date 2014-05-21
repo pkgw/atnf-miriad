@@ -46,4 +46,8 @@ C     Maximum number of wideband channels.
 C     Maximum number of frequency bins in gains table
       INTEGER   MAXFBIN
       PARAMETER(MAXFBIN = 16)
+
+C     Maximum number of mosaic pointings
+      INTEGER   MAXPNT
+      PARAMETER(MAXPNT = 20000)
 C=======================================================================
