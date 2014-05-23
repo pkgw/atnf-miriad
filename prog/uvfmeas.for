@@ -1371,6 +1371,11 @@ c  Number of clipping iterations
 c  Clip level (sigma)
 	clip=3.0
 
+c  Initialise the fit parameters.
+        do i=1,11
+	   fitparams(i) = 0.
+	enddo
+
 c  Apply mask and check for negative numbers.
 	hasneg=.FALSE.
 	do i = 1, nchan
