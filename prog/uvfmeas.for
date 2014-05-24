@@ -932,7 +932,7 @@ c
 	  call pgldev
 	  call bug('f','Error opening graphics device')
 	endif
-	call pgsch(real(max(nx,ny))**0.4)
+	call pgsch(real(max(nx,ny))**0.6)
 	call pgqinf('hardcopy',hard,hlen)
 	if(hard.eq.'YES')call pgscf(2)
 	end
@@ -1044,7 +1044,7 @@ c
         symbol = 17
 c
 	call pgpage
-	call pgsch(2.)
+c	call pgsch(2.)
 	call pgvstd
 c
         xoff = 0
