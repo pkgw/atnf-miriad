@@ -1,7 +1,8 @@
 # linux64 build host: spitzer
 #
-# The nightly build runs after linux.  It has no special work to do.
-15 22 * * 1-5 . $HOME/.profile ; cd $MIR && make allsys 2>&1 | tee $MIRARCH/gmake.log
+# The nightly linux64 build runs first and therefore remakes the doc files.
+# It is also responsible for remaking the User and Programmer Guides.
+00 22 * * 1-5 . $HOME/.profile ; cd $MIR && make allsys 2>&1 | tee $MIRARCH/gmake.log
 #
 # $Source$
 # $Id$
