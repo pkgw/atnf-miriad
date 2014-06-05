@@ -94,6 +94,7 @@ c    mhw     24mar10 Correct spectral index too
 c    mhw     16jun11 Fix triple mode spectral index correction
 c    mhw     27jun13 Fix nospec option
 c    mhw     24apr14 Allow higher order flux models
+c    mhw     05jun14 Avoid creating inconsistent gain tables
 c------------------------------------------------------------------------
 	include 'maxdim.h'
 	character version*72
@@ -103,7 +104,7 @@ c
 	character vis(MAXVIS)*64,source*32,line*64,device*64,mode*8
 	character psource*32
 	logical noapply,nospec
-	integer nvis,lVis,vsource,nchan,iplanet,i,n(2),nants
+	integer nvis,lVis,vsource,nchan,iplanet,i,n(2),nants,nfeeds
 	real fac,f(2),m(2),s,uflux(5),clip
         real f0,f1,f2,fac1,fac2,alpha
 	double precision SumXX(2),SumXY(2),SumF(2),preamble(4),time0
@@ -119,7 +120,7 @@ c
 c  Externals.
 c
 	logical uvDatOpn,uvVarUpd,hdPrsnt
-	integer plLook
+	integer plLook,len1
 	character streal*16, versan*72
         
         version = versan('mfboot',
@@ -258,14 +259,16 @@ c
 	      call uvscan(lVis,'baseline')
 	      call uvrdvrd(lVis,'time',time0,0.d0)
 	      call uvrdvri(lVis,'nants',nants,0)
-	      call gainWri(lVis,fac,time0,nants)
+	      call rdhdi(lVis,'nfeeds',nfeeds,1)
+	      call gainWri(lVis,fac,time0,nants,nfeeds)
 	    endif
             if (.not.nospec) then
               if(hdPrsnt(lVis,'bandpass')) then
                 call bpSca(lVis,f0,alpha)
 	      else
-	        call bug('w','Cannot adjust spectral slope because'//
-     *                       ' there is no bandpass table')        
+	        call bug('w','Cannot adjust spectral slope for '
+     *            //vis(i)(1:len1(vis(i)))//
+     *          ' because it has no bandpass table')        
 	      endif 
             endif        
 	    call hisopen(lVis,'append')
@@ -742,29 +745,29 @@ c
 
 	end
 c************************************************************************
-	subroutine gainWri(lVis,fac,time,nants)
+	subroutine gainWri(lVis,fac,time,nants,nfeeds)
 c
 	implicit none
 	real fac
 	double precision time
-	integer nants,lVis
+	integer nants,nfeeds,lVis
 c
 c------------------------------------------------------------------------
 	include 'maxdim.h'
-	complex gains(MAXANT)
+	complex gains(MAXANT*2)
 	integer header(2),i,item,iostat
 c
-	do i=1,nants
+	do i=1,nants*nfeeds
 	  gains(i) = fac
 	enddo
 c
 c  Create the gains table.
 c
 	call wrhdd(lVis,'interval',2.d0)
-	call wrhdi(lVis,'ngains',nants)
+	call wrhdi(lVis,'ngains',nants*nfeeds)
 	call wrhdi(lVis,'nsols',1)
 	call wrhdi(lVis,'ntau',0)
-	call wrhdi(lVis,'nfeeds',1)
+	call wrhdi(lVis,'nfeeds',nfeeds)
 	call haccess(lVis,item,'gains','write',iostat)
 	if(iostat.ne.0)then
 	  call bug('w','Error opening output gains item')
@@ -777,7 +780,7 @@ c
 	if(iostat.ne.0)call bugno('f',iostat)
 	call hwrited(item,time,8,8,iostat)
 	if(iostat.ne.0)call bugno('f',iostat)
-	call hwriter(item,gains,16,8*nants,iostat)
+	call hwriter(item,gains,16,8*nants*nfeeds,iostat)
 	if(iostat.ne.0)call bugno('f',iostat)
 	call hdaccess(item,iostat)
 	end
