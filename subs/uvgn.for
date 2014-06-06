@@ -606,7 +606,7 @@ c
           if (flag(k)) then
             epsi = 0
             if (t1.ne.t2) 
-    *         epsi = (timetab(t2)-time)/(timetab(t2)-timetab(t1))
+     *         epsi = (timetab(t2)-time)/(timetab(t2)-timetab(t1))
 
             g = ga1/ga2
             mag = abs(g)
