@@ -34,13 +34,14 @@ c-----------------------------------------------------------------------
      *          freqref(MAXCONFG), lat(MAXCONFG), long(MAXCONFG),
      *          raapp(MAXSRC), raepo(MAXSRC), restfreq(MAXSRC*MAXIF),
      *          sdf(MAXIF*MAXFREQ), sfreq(MAXIF*MAXFREQ),
-     *          timeoff(MAXCONFG), timeref, tprev, veldop(MAXSRC)
+     *          timeoff(MAXCONFG), timeref, tprev, veldop(MAXSRC),
+     *		height(MAXCONFG)
       character observer*16, source(MAXSRC)*20, telescop*16
 
       common /tables/ raepo, decepo, raapp, decapp, dra, ddec, sfreq,
      *          freqoff, restfreq, veldop, antpos, timeoff, freqref,
-     *          epoch, lat, long, tprev, timeref, eq, sdf, dnu, evec,
-     *          systemp, jyperk, velref, nsrc, nif, nchan, nfreq,
+     *          epoch, lat, long, height, tprev, timeref, eq, sdf, dnu,
+     *		evec, systemp, jyperk, velref, nsrc, nif, nchan, nfreq,
      *          nconfig, nants, srcids, freqids, srcid, freqid, srcidx,
      *          freqidx, sindx, findx, mount, velsys, config, mosaic,
      *          velcomp, llok, emok, systok, jok, inited
