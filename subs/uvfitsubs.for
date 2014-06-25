@@ -4,6 +4,8 @@ c  rjs  13feb90 Adapted from the velocalc routines, which these routines
 c		replace.
 c  rjs  10aug93 Used maxdim.h. How did this do so long without being found?
 c  mjs  12mar94 rename file -> uvfitsubs.for (so name is unique in miriad).
+c  rjs   7sep94 Change in uvfit2 to avoid integer overflow for nchan>1000.
+c  mhw  26jun14 Change uvfit2 to avoid spurious warnings due to roundoff
 c************************************************************************
 c*uvfit1 -- Fit a constant to an "object" returned by uvinfo.
 c:uv-data
@@ -103,7 +105,8 @@ c  Use standard formulae to calculate the sum of (i-1) and the sum of
 c  (i-1)**2.
 c
 	  Sx  = n*(n-1)/2
-	  Sxx = ( 2*(n-1)**3 + 3*(n-1)**2 + (n-1) ) / 6
+	  Sxx = (n-1)**2
+	  Sxx = ( 2*Sxx*(n-1) + 3*(n-1)**2 + (n-1) ) / 6
 c
 c  Calculate b and a, using standard linear least squares formulae.
 c
@@ -111,9 +114,11 @@ c
 	  a = (n*Sxy - Sx*Sy)/(n*Sxx - Sx*Sx)
 c
 c  Calculate the rms error of the fit.
+c  This suffers from roundoff - give up when epsi is too small
 c
-	  epsi = Syy - 2*a*Sxy - 2*b*Sy + a*a*Sxx
-     *		+ n*b*b + 2*a*b*Sx
+	  epsi = n*b*b + Syy - 2*b*Sy- 2*a*Sxy  + a*a*Sxx
+     *		+  2*a*b*Sx
+          if (abs(epsi)<max(abs(Syy),abs(n*b*b))*1e-14) epsi=0
 	  epsi = sqrt(max(epsi/n,0.0d0))
 	endif
 c
