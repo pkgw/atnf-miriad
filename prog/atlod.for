@@ -606,7 +606,7 @@ c  Input:
 c    tno        Handle of the output uv data-set.
 c    dobary     Velocity restframe is the barycentre.
 c-----------------------------------------------------------------------
-        double precision latitude,longitud,dtemp
+        double precision latitude,longitud,height,dtemp
         real chioff
         integer mount
         logical ok
@@ -614,16 +614,21 @@ c
         call uvputvrr(tno,'epoch',2000.,1)
         call uvputvrr(tno,'vsource',0.,1)
         call obspar('ATCA','latitude',latitude,ok)
-        if(ok)call obspar('ATCA','longitude',longitud,ok)
+        if(.not.ok)call bug('f','Could not get ATCA latitude')
+	call obspar('ATCA','longitude',longitud,ok)
+        if(.not.ok)call bug('f','Could not get ATCA longitude')
+	call obspar('ATCA','height',height,ok)
+	if(.not.ok)call bug('f','Could not get ATCA height')
         if(ok)call obspar('ATCA','evector',dtemp,ok)
         if(ok)chioff = dtemp
         if(ok)call obspar('ATCA','mount',dtemp,ok)
         if(ok)mount = dtemp
         if(.not.ok)then
-          call bug('w','Unable to determine telescope lat/long')
+          call bug('w','Unable to determine telescope info')
         else
           call uvputvrd(tno,'latitud',latitude,1)
           call uvputvrd(tno,'longitu',longitud,1)
+          call uvputvrd(tno,'height',height,1)
           call uvputvrr(tno,'evector',chioff,1)
           call uvputvri(tno,'mount',mount,1)
         endif
@@ -648,6 +653,7 @@ c
 c  Initialise the Poke routines.
 c-----------------------------------------------------------------------
         include 'atlod.h'
+	double precision height
         integer bl,p,iif,bin
         logical ok
 c
@@ -708,6 +714,9 @@ c
         if(.not.ok)call bug('f','Could not get ATCA latitude')
         call obspar('ATCA','longitude',long,ok)
         if(.not.ok)call bug('f','Could not get ATCA longitude')
+	call obspar('ATCA','height',height,ok)
+	if(.not.ok)call bug('f','Could not get ATCA height')
+	call llh2xyz(lat,long,height,xyzref(1),xyzref(2),xyzref(3))
 c
         end
 c***********************************************************************
@@ -1182,20 +1191,18 @@ c
         newpnt = .true.
         end
 c***********************************************************************
-        subroutine PokeAnt(n,x,y,z,sing)
+        subroutine PokeAnt(n,x,y,z)
 c
         integer n
         double precision x(n),y(n),z(n)
-        logical sing
 c
 c  Set antenna coordinates.
 c
 c-----------------------------------------------------------------------
         include 'atlod.h'
         include 'mirconst.h'
-        double precision r,z0,cost,sint,temp,antpos(3*ATANT)
+        double precision r,z0,cost,sint,antpos(3*ATANT),temp
         integer i
-        logical more
 c
 c  Check the number of antennas.
 c
@@ -1205,32 +1212,23 @@ c
 c  Convert them to the Miriad system: y is local East, z is parallel to
 c  pole.  Units are nanosecs.
 c
-        i = 1
-        more = .true.
-        dowhile(more)
-          r = sqrt(x(i)*x(i) + y(i)*y(i))
-          more = r.eq.0
-          if(more)i = i + 1
-          more = more.and.i.le.nants
-        enddo
-        if(i.gt.nants)then
-          if(.not.sing)
-     *      call bug('w','Antenna table is identically 0!!')
-          cost = 1
-          sint = 0
-          z0 = 0
-        else
-          cost = x(i) / r
-          sint = y(i) / r
-          z0 = z(i)
-        endif
+	r = sqrt(xyzref(1)*xyzref(1) + xyzref(2)*xyzref(2))
+        cost = xyzref(1) / r
+        sint = xyzref(2) / r
+        z0 = xyzref(3)
 c
         do i=1,nants
-          temp = x(i)*cost + y(i)*sint - r
-          antpos(i)         = (1d9/DCMKS) * temp
-          temp = -x(i)*sint + y(i)*cost
-          antpos(i+nants)   = (1d9/DCMKS) * temp
-          antpos(i+2*nants) = (1d9/DCMKS) * (z(i)-z0)
+	  if(abs(x(i))+abs(y(i))+abs(z(i)).eq.0)then
+	    antpos(i)         = 999999.d0
+	    antpos(i+nants)   = 999999.d0
+	    antpos(i+2*nants) = 999999.d0
+	  else
+            temp = x(i)*cost + y(i)*sint - r
+            antpos(i)         = (1d9/DCMKS) * temp
+            temp = -x(i)*sint + y(i)*cost
+	    antpos(i+nants)   = (1d9/DCMKS) * temp
+	    antpos(i+2*nants) = (1d9/DCMKS) * (z(i)-z0)
+	  endif
         enddo
         call uvputvrd(tno,'antpos',antpos,3*nants)
 c
@@ -1676,7 +1674,7 @@ c
           lst = lst + eqeq(tdash)
           call uvputvrd(tno,'lst',lst,1)
 c
-c  Compute the az and el of the telescopes.c
+c  Compute the az and el of the antennas.
 c
           call azel(obsra,obsdec,lst,lat,az,el)
           call uvputvrd(tno,'antaz',az*180.d0/DPI,1)
@@ -2742,7 +2740,7 @@ c
                 call Poke1st(time,nifs(simno),nant,cabb)
                 if(NewScan)call PokeMisc(instrument,rp_observer,
      *                                          version,sctype)
-                if(an_found)call PokeAnt(nant,x,y,z,sing)
+                if(an_found)call PokeAnt(nant,x,y,z)
                 if(NewScan.or.NewFreq)then
                   kband = .false.
                   qband = .false.
@@ -3707,13 +3705,11 @@ c
         common/rficom/rfifreq,nrfi
 c
 c  CABB 1MHz continuum mode birdies (2049*1 MHz)
-c        
-        integer b1(NBIRDIE1)
-        data b1/640,256,768,1408,1280,1920,1792,1176,156,128,1152/
-c
 c  CABB 64 MHz continuum mode birdies (33*64 MHz)
 c        
+        integer b1(NBIRDIE1)
         integer b2(NBIRDIE2)
+        data b1/640,256,768,1408,1280,1920,1792,1176,156,128,1152/
         data b2/8,16,24/
 c        
         if (nrfi.gt.0) then
