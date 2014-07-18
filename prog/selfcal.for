@@ -9,7 +9,7 @@ c       visibility data.  Either phase only or amplitude and phase
 c       calibration can be performed.  The input to SELCAL are a
 c       visibility data file, and model images.  This program then
 c       calculates the visibilities corresponding to the model,
-c       accumulates the statistics needed to determine the antennae
+c       accumulates the statistics needed to determine the antenna
 c       solutions, and then calculates the self-cal solutions.
 c@ vis
 c       Name of input visibility data file. No default.
@@ -64,8 +64,8 @@ c         relax      Relax the convergence criteria. This is useful when
 c                    selfcal'ing with a very poor model.
 c         noscale    Do not scale the gains.  By default the gains are
 c                    scaled so that the rms gain amplitude is 1.  In
-c                    this way, the total flux is not contrained to agree
-c                    with the model.
+c                    this way, the total flux is not constrained to
+c                    agree with the model.
 c         mosaic     This causes SELFCAL to select only those
 c                    visibilities whose observing center is within plus
 c                    or minus three pixels of the model reference pixel.
@@ -81,7 +81,7 @@ c       The default is 3 for options=phase and 4 for options=amplitude.
 c@ refant
 c       This sets the reference antenna, which is given a phase angle of
 c       zero.  The default, for a given solution interval, is the
-c       antennae with the greatest weight.
+c       antenna with the greatest weight.
 c@ flux
 c       If MODEL is blank, then the flux density (Jy) of a point source
 c       model can be specified here.  The default is 1.
