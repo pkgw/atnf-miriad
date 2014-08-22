@@ -550,7 +550,7 @@ c     Set label displacements from axes.
 c     Work out view port sizes and increments.
       call vpsizcg(dofull, dofid, ncon, gin, ' ', nspec, ' ',
      *  MAXLEV, nlevs, srtlev, levs, slev, 1, 1, cs, xdispl, ydispb,
-     *  gaps, doabut, dotr, 1, WEDWID, TFDISP, labtyp, vxmin, vymin,
+     *  gaps, doabut, dotr, 1, WEDWID, TFDISP, labtyp, 0, vxmin, vymin,
      *  vymax, vxgap, vygap, vxsize, vysize, tfvp, wdgvp)
 
 c     Adjust viewport increments and start locations if equal scales

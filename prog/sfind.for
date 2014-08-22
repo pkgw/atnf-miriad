@@ -635,7 +635,7 @@ c the viewport size of sub-plots.
 c
        call vpsizcg(.false., dofid, 0, ' ', ' ', 0, ' ', maxlev,
      *   nlevs, srtlev, levs, slev, nx, ny, cs, xdispl, ydispb,
-     *   gaps, doabut, dotr, wedcod, wedwid, tfdisp, labtyp, vxmin,
+     *   gaps, doabut, dotr, wedcod, wedwid, tfdisp, labtyp, 0, vxmin,
      *   vymin, vymax, vxgap, vygap, vxsize, vysize, tfvp, wdgvp)
 c
 c Adjust viewport increments and start locations if equal scales
