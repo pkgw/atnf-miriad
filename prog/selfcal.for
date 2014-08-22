@@ -65,7 +65,9 @@ c                    selfcal'ing with a very poor model.
 c         noscale    Do not scale the gains.  By default the gains are
 c                    scaled so that the rms gain amplitude is 1.  In
 c                    this way, the total flux is not constrained to
-c                    agree with the model.
+c                    agree with the model. If you are using nfbin>1
+c                    you may need this to make the data follow the 
+c                    spectral shape of the model.
 c         mosaic     This causes SELFCAL to select only those
 c                    visibilities whose observing center is within plus
 c                    or minus three pixels of the model reference pixel.
