@@ -1119,8 +1119,8 @@ c  Plot any flux indicator lines.
 		 call pgmtxt('T',0.6,1.0,1.0,'Scalar Average')
 	      endif
 	   enddo
-	   call pgsci(1)
 	endif
+	call pgsci(1)
 c
 c  The polarisation label.
 c
