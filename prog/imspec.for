@@ -1647,7 +1647,7 @@ c***********************************************************************
 c-----------------------------------------------------------------------
       integer          nstat
       character*80     line, temp
-      character*17     fmt
+      character*20     fmt
       character*9      typ, cubetype
       character*5      itoaf
       integer          i, j, len1
@@ -1664,7 +1664,7 @@ c         Construct the output line for the typed list.
 
           if (plotvar(EFMT).eq.1) then
             write(fmt,10) nstat-1
- 10         format('(',i1,'(1pe10.3),i8)')
+ 10         format('(',i1,'(1pe10.3,1x),i8)')
           else if (plotvar(GSPAC).eq.1) then
             write(fmt,20) nstat-1
  20         format('(',i1,'(1pg10.2),i8)')
