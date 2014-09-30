@@ -66,7 +66,7 @@ c----------------------------------------------------------------------c
 	include 'maxdim.h'
 	integer MAXSRC,MAXFREQ,MAXSPECT
 	integer PolMin,PolMax,PolI
-	parameter(MAXSRC=8192,MAXFREQ=128,MAXSPECT=18)
+	parameter(MAXSRC=8192,MAXFREQ=128,MAXSPECT=MAXWIN)
 	parameter(PolMin=-8,PolMax=4,PolI=1)
 c
 	integer pols(PolMin:PolMax),pol
