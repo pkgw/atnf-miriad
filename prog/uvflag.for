@@ -142,6 +142,7 @@ c           rjs     26nov05 Change to avoid compiler bug.
 c           mhw     13mar13 Cope with 128 antennas (MWA)
 c           vjm     26mar13 Convert version numbering to versan().
 c           mhw     27mar13 Cope with larger number of visibilities
+c           mhw     01oct14 Use MAXWIN instead of 32
 c************************************************************************
 c uvflag works as follows:
 c It reads the name of the first visibility file.
@@ -498,6 +499,7 @@ c new input datafile. It also opens it.
 
       subroutine setup( vis, sels, line,type, usech, unit )
 
+      include 'maxdim.h'
       character*(*)    vis
       real	       sels(*)
       integer	       line(*)
@@ -505,7 +507,7 @@ c new input datafile. It also opens it.
       logical	       usech(*)
       integer	       unit
 
-      integer	       nchan, nwins, stwin(32), chwin(32)
+      integer	       nchan, nwins, stwin(MAXWIN), chwin(MAXWIN)
       integer	       chan, chnr, win, boxnri, stawin, midwin, endwin
       integer	       i, inittot
 
