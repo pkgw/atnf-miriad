@@ -3783,7 +3783,7 @@ c
               ch2=2049*(1.0-edge/200)
 c
 c             20cm band range 1131-1875, 13cm band range 1975-2675
-c             new 16cm band: 1050-3150
+c             new 16cm band: 1050-3500
 c
               cfreq=sfreq(i)+(nfreq(i)/2)*sdf(i)
               if (cfreq.gt.1.d0.and.cfreq.lt.3.0d0) then
@@ -3797,7 +3797,7 @@ c
                   endif
                 else
                   c1=(1.05-sfreq(i))/sdf(i)
-                  c2=(3.15-sfreq(i))/sdf(i)
+                  c2=(3.50-sfreq(i))/sdf(i)
                 endif
                 ch1=max(ch1,min(nint(c1),nint(c2)))
                 ch2=min(ch2,max(nint(c1),nint(c2)))
