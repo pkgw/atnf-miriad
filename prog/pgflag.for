@@ -610,9 +610,11 @@ c
       previous_pressed=' '
       icmd=1
       ncmd=len1(command)
-      if (ncmd.gt.0.and.command(ncmd:ncmd).ne.'n') then
-        ncmd=ncmd+1
-        command(ncmd:ncmd)='n'
+      if (ncmd.gt.0) then
+        if (command(ncmd:ncmd).ne.'n') then
+          ncmd=ncmd+1
+          command(ncmd:ncmd)='n'
+        endif
       endif
       do while (keep_looping)
          if (needread .eqv. .true.) then
