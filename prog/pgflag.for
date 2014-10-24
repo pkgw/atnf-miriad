@@ -3935,9 +3935,15 @@ c
             t=buf(2)+(dble(buf(3))-day0)
             do pnt=1,ntime
                if (t1(pnt).gt.-1.0) then
-                  if (((t1(pnt).le.t).and.(t.lt.t1(pnt+1))).or.
-     *               ((t1(pnt+1).eq.-2).and.(t.lt.t1(pnt+2))).or.
-     *               ((t1(pnt).le.t).and.(pnt.eq.ntime)))goto 10
+                  if (pnt.le.ntime-1) then
+                     if ((t1(pnt).le.t).and.(t.lt.t1(pnt+1))) goto 10
+                     if (pnt.le.ntime-2) then
+                        if ((t1(pnt+1).eq.-2).and.
+     *                      (t.lt.t1(pnt+2))) goto 10
+                     endif
+                  else
+                     if(t1(pnt).le.t) goto 10
+                  endif
                endif
             enddo
 c            write(status,'(A,F20.10)') 'Time slot miscalculation',t
