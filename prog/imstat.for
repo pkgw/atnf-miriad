@@ -1,4 +1,4 @@
-      program imstsp
+      program imstat
 
 c= IMSTAT - calculate and plot map statistics
 c& bpw
@@ -1646,8 +1646,8 @@ c***********************************************************************
       integer          dim, level, nlevels
 c-----------------------------------------------------------------------
       integer          nstat
-      character*80     line, temp
-      character*17     fmt
+      character*85     line, temp
+      character*20     fmt
       character*9      typ, cubetype
       character*5      itoaf
       integer          i, j, len1
@@ -1663,8 +1663,13 @@ c         Construct the output line for the typed list.
      *      write(line, '(i6,1x, a)') nint(iarr(i)), carr(i)
 
           if (plotvar(EFMT).eq.1) then
-            write(fmt,10) nstat-1
- 10         format('(',i1,'(1pe10.3),i8)')
+            if (plotvar(GSPAC).eq.1) then
+              write(fmt,10) nstat-1
+ 10           format('(',i1,'(1pe10.3,1x),i8)')
+            else
+              write(fmt,15) nstat-1
+ 15           format('(',i1,'(1pe10.3),i8)')
+	    endif
           else if (plotvar(GSPAC).eq.1) then
             write(fmt,20) nstat-1
  20         format('(',i1,'(1pg10.2),i8)')
