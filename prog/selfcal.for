@@ -163,6 +163,7 @@ c    mhw  10apr13 Add nfbin parameter
 c    mhw  09may13 Add mmfs option
 c    mhw  12mar14 Initialize nchan in point source case
 c    mhw  16jul14 Fixed binned solution interpolation
+c    mhw  27jan15 Fix number of solutions written
 c
 c  Bugs/Shortcomings:
 c   * Selfcal should check that the user is not mixing different
@@ -976,6 +977,7 @@ c-----------------------------------------------------------------------
       include 'maxdim.h'
       logical Convrg
       integer i,k,k0,nbad,iostat,item,offset,header(2),nmerge,fbin
+      integer nbad0
       double precision dtime,dtemp
       character line*80
       complex G(MAXANT)
@@ -1030,6 +1032,7 @@ c       Calculate statistics.
         call CalcStat(tgains,nsols,nbl,nants,SumVM(1,1,fbin),
      *    SumMM(1,fbin),SumVV(1,1,fbin),
      *    Weight(1,1,fbin),Count(1,fbin),Gains(1,1,fbin))
+        if (fbin.eq.0) nbad0=nbad
       enddo
 
 
@@ -1074,7 +1077,7 @@ c     Write some extra information for the gains table.
       dtemp = interval
       call wrhdd(tgains,'interval',dtemp)
       call wrhdi(tgains,'ngains',nants)
-      call wrhdi(tgains,'nsols',nsols-nbad-nmerge)
+      call wrhdi(tgains,'nsols',nsols-nbad0-nmerge)
       call wrhdi(tgains,'nfeeds',1)
       call wrhdi(tgains,'ntau',0)
       
