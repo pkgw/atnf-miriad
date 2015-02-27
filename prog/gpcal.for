@@ -357,7 +357,7 @@ c
       if (nfbin.gt.1) n = nfbin
       do i=1,n
         do j=1,4
-          flux(j,i) = flux(j,0)
+           call keyr('flux',flux(j,i),flux(j,0))
         enddo
       enddo
 c
