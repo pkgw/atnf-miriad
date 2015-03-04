@@ -163,7 +163,7 @@
 
   # Add rsync options.
   RSYNC="$RSYNC --verbose"
-  RSYNC="$RSYNC --compress --rsh=ssh --rsync-path=/usr/local/bin/rsync"
+  RSYNC="$RSYNC --compress --rsh=ssh"
   RSYNC="$RSYNC --delete --links --perms --recursive"
   if [ "$DOBIN" = 1 ]
   then
