@@ -24,11 +24,14 @@ c       If not, linear interpolation is performed to regrid using the
 c       first image as the template.  LINMOS's ability to do this is
 c       inferior to task REGRID.  The intensity units of all the inputs,
 c       and the pixel size and alignment of the third dimension are
-c       assumed to be the same.
+c       assumed to be the same. Mosaicing fields with different 
+c       resolution together will cause errors in the fluxdensities of
+c       sources.
 c@ out
 c       The name of the output cube.  No default.  The center and pixel
 c       size of the first input image is used as the grid system of the
-c       output.
+c       output. The synthesized beam parameters are also taken from the
+c       first image header - you may want to pick a better average beam.
 c@ rms
 c       RMS noise level in each of the input cubes.  If not specified,
 c       the value is taken from the 'rms' item in the input image header
