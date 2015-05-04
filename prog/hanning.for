@@ -5,9 +5,9 @@ c& bpw
 c: map combination
 c+
 c       Hanning does a Hann or boxcar smooth on the spectral axis of
-c       a Miriad dataset.  It determines the axis from the header, or
-c       else assumes that it is the z-axis.  Masked pixels are zeroed
-c       before smoothing.
+c       a Miriad image cube.  It determines the axis from the header,
+c       or else assumes that it is the z-axis.  Masked pixels are 
+c       zeroed before smoothing.
 c
 c@ in
 c        The input image.  No default.
