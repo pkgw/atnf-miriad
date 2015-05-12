@@ -226,9 +226,9 @@ c     Write ascii spectrum if desired.
         call txtwrite(lOut,'Spectral axis type = '//vctype,30,iostat)
         call txtwrite(lOut,comment,len1(comment),iostat)
         do i = 1, nchan
-          write(line,'(1pe12.5,3x,1pe12.5,3x,1pe12.5)')
+          write(line,'(1pe12.5,3x,1pe18.9,3x,1pe12.5)')
      *      chan(i),value(i),spec(i)
-          call txtwrite(lOut, line, 45, iostat)
+          call txtwrite(lOut, line, 48, iostat)
           if (iostat.ne.0) call bug('f', 'Error writing output file')
         enddo
         call txtclose(lOut)
