@@ -8,7 +8,7 @@
 # $Id$
 #-----------------------------------------------------------------------------
 # Files distributed separately.
-MIRFTPS  := DISCLAIMER INSTALL.html \
+MIRFTPS  := DISCLAIMER INSTALL.html MacBinaryInstall.html \
             progguide.ps.bz2 progguide_US.ps.bz2 \
             userguide.ps.bz2 userguide_US.ps.bz2
 
@@ -17,7 +17,7 @@ MIRFTPS  := DISCLAIMER INSTALL.html \
 DISTRCS  := .rcs RCS */RCS */*/RCS */*/*/RCS
 DISTCODE := GNUmake* config configure configure.ac
 DISTCODE += guides inc linpack prog spec subs tests tools
-DISTCOMM := DISCLAIMER INSTALL.html VERSION progguide* userguide*
+DISTCOMM := DISCLAIMER INSTALL.html MacBinaryInstall.html VERSION progguide* userguide*
 DISTCOMM += cat doc html man scripts specdoc
 DISTBINS := $(subst /bin,,$(wildcard */bin))
 
