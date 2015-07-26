@@ -128,6 +128,7 @@ c    paj  28Mar03 Fix bug in uncertainty estimates
 c    mhw  16oct12 Add error estimate for integrated flux
 c                 and give position error ellipse
 c    mhw  06dec12 Fix reported position angle of error ellipse
+c    mhw  27jul15 Increase number of digits in error estimates
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
@@ -1036,9 +1037,13 @@ c
   40        format('  Offset Position (arcsec):  ',2f10.0)
   41        format('  Offset Position (arcsec):  ',2f10.3)
             call output(line)
-            if (sl0(i)+sm0(i).gt.0) then
-              write(line,45) sfac*sl0(i)*R2AS, sfac*sm0(i)*R2AS
-  45          format('  Positional errors (arcsec):',2f10.3)
+            if (sfac*min(sl0(i),sm0(i))*R2AS.gt.0.01) then
+              write(line,42) sfac*sl0(i)*R2AS, sfac*sm0(i)*R2AS
+  42          format('  Positional errors (arcsec):',2f10.3)
+              call output(line)
+            else if (sl0(i)+sm0(i).gt.0) then
+              write(line,43) sfac*sl0(i)*R2AS, sfac*sm0(i)*R2AS
+  43          format('  Positional errors (arcsec):',2f10.5)
               call output(line)
             endif
             if (spema(i)+spemi(i).gt.0) then
