@@ -341,7 +341,8 @@ c    mhw  07dec12 Fix 29may12 opcor code again - how did it ever work?
 c    mhw  29jan13 Fix nscans skip and read code - RPEOF call hangs
 c    mhw  22oct13 Apply patches by vjm to fix some string overflows
 c    rjs  17jul14 Changes to correct antenna table
-c    mhw  25jul14 Deal with historical rfiflag files 
+c    mhw  25jul14 Deal with historical rfiflag files
+c    mhw  27jul15 Fix problem loading some CABB zoom data
 c
 c $Id$
 c-----------------------------------------------------------------------
@@ -1616,8 +1617,8 @@ c
         if(newfreq)then
           if(doif)then
             do iif=2,nifs
-              if(nbin(iif).ne.nbin(1))    call bug('f',
-     *          'Number of bins differ between IFs. '//
+              if(nbin(iif).gt.0.and.nbin(iif).ne.nbin(1))
+     *           call bug('f','Number of bins differ between IFs. '//
      *          'Use options=noif.')
               if(nstoke(iif).ne.nstoke(1))call bug('f',
      *          'Number of polarisations differ between IFs. '//
