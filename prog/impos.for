@@ -85,7 +85,7 @@ c-----------------------------------------------------------------------
      *          strlen(MAXNAX)
       real      map(MAXDIM), value
       double precision rfreq, pixcrd(MAXNAX), win(MAXNAX)
-      character algo*8, axtype*16, bunit*9, ctypes(MAXNAX)*8, file*80,
+      character algo*8, axtype*16, bunit*9, ctypes(MAXNAX)*8, file*256,
      *          labtyp(MAXTYP)*6, opts(NOPTS)*8, sctypes(5)*16,
      *          specsys*16, str1*132, strout(MAXNAX)*80, stypei*16,
      *          stypes(6)*16, text*132, typei(MAXNAX)*6,
