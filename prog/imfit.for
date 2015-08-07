@@ -1031,19 +1031,22 @@ c
             endif
             if (max(abs(l0(i)),abs(m0(i)))*R2AS.gt.9999.5) then
               write(line,40) l0(i)*R2AS, m0(i)*R2AS
-            else
+            else if (sfac*min(sl0(i),sm0(i))*R2AS.gt.0.01) then
               write(line,41) l0(i)*R2AS, m0(i)*R2AS
+            else
+              write(line,42) l0(i)*R2AS, m0(i)*R2AS
             endif
   40        format('  Offset Position (arcsec):  ',2f10.0)
   41        format('  Offset Position (arcsec):  ',2f10.3)
+  42        format('  Offset Position (arcsec):  ',2f10.5)
             call output(line)
             if (sfac*min(sl0(i),sm0(i))*R2AS.gt.0.01) then
-              write(line,42) sfac*sl0(i)*R2AS, sfac*sm0(i)*R2AS
-  42          format('  Positional errors (arcsec):',2f10.3)
+              write(line,43) sfac*sl0(i)*R2AS, sfac*sm0(i)*R2AS
+  43          format('  Positional errors (arcsec):',2f10.3)
               call output(line)
             else if (sl0(i)+sm0(i).gt.0) then
-              write(line,43) sfac*sl0(i)*R2AS, sfac*sm0(i)*R2AS
-  43          format('  Positional errors (arcsec):',2f10.5)
+              write(line,44) sfac*sl0(i)*R2AS, sfac*sm0(i)*R2AS
+  44          format('  Positional errors (arcsec):',2f10.5)
               call output(line)
             endif
             if (spema(i)+spemi(i).gt.0) then
