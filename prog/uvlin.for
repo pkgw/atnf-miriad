@@ -71,7 +71,7 @@ c	   continuum   The output data-set is the continuum data. This
 c	               has the same number of channels as the input
 c	               data-set.
 c          ratio       The output data-set is the input data divided by
-c                      the fitted continuum data.
+c                      the fitted continuum data minus one.
 c@ options
 c	This gives extra processing options. Several options can be given,
 c	each separated by commas. They may be abbreivated to the minimum
@@ -897,8 +897,9 @@ c
 	  nread = nchan
 	else if(mode.eq.'ratio') then
           do i=1,nchan
-            if (cont(i).ne.0) data(i) = data(i) / cont(i)
+            if (cont(i).ne.0) data(i) = data(i) / cont(i) - 1
           enddo
+          nread = nchan
         else
 	  call bug('f','Unrecognised mode in ProcAll')
 	endif
