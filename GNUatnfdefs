@@ -47,6 +47,9 @@ define mir-copy
   -@ chmod 664 $@
 endef
 
+$(MIRLIBD)/% : /usr/lib/%
+	   $(mir-copy)
+
 $(MIRLIBD)/% : /usr/local/lib/%
 	   $(mir-copy)
 
@@ -54,9 +57,6 @@ $(MIRLIBD)/%_mir.a : /usr/local/lib/%.a
 	   $(mir-copy)
 
 $(MIRLIBD)/% : /usr/local/gnu/lib/%
-	   $(mir-copy)
-
-$(MIRLIBD)/% : /usr/lib/%
 	   $(mir-copy)
 
 $(MIRBIND)/% : /usr/local/bin/%
@@ -123,7 +123,7 @@ $(MIRINCD)/rpfits.inc : /usr/local/include/rpfits.inc
 wcslib : $(MIRINCD)/wcslib $(MIRLIBD)/libwcs.a \
       $(addprefix $(MIRBIND)/,HPXcvt fitshdr wcsgrid wcsware)
 
-$(MIRINCD)/wcslib : /usr/local/include/wcslib
+$(MIRINCD)/wcslib : /usr/include/wcslib
 	-@ mkdir -m 2775 -p -v $@
 	   cd $< && rsync -v --recursive --perms --delete . $@
 
