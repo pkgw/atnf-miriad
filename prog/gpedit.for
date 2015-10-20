@@ -939,7 +939,8 @@ c
         dohan  = present(12)
         dobox  = present(13)
         if(.not.(domult.or.dorep.or.doflag.or.doamp.or.dophas.or.
-     *    dorefl.or.dozm.or.doscal.or.dup.or.doinv.or.doext))
+     *    dorefl.or.dozm.or.doscal.or.dup.or.doinv.or.doext.or.
+     *    dohan.or.dobox))
      *    dorep = .true.
         if (doext.and.dohan.or.doext.and.dobox.or.dohan.and.dobox)
      *    call bug('f','Please specify a single option out of '//
