@@ -188,7 +188,7 @@ c-----------------------------------------------------------------------
       integer naxis,n1,n2,icentre,jcentre,nx,ny
       integer blc(3),trc(3),xmin,xmax,ymin,ymax
       integer k,nRun,nPoint,xoff,yoff,zoff
-      character MapNam*64,BeamNam*64,ModelNam*64,OutNam*64,line*72
+      character MapNam*256,BeamNam*256,ModelNam*256,OutNam*256,line*72
       integer lMap,lBeam,lModel,lOut
       integer nMap(3),nBeam(3),nModel(3),nOut(4)
       real EstASum,Flux
