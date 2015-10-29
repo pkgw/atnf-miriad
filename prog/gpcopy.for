@@ -84,7 +84,7 @@ c------------------------------------------------------------------------
 	character version*72
 	logical dopol,docal,dopass,docopy,relax
 	integer iostat,tIn,tOut
-	character vis*64,out*64,mode*8,line*64
+	character vis*256,out*256,mode*8,line*64
 	double precision interval
 c
 c  Externals.
