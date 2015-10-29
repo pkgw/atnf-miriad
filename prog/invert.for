@@ -374,7 +374,7 @@ c
       real cellx,celly,fwhmx,fwhmy,freq0,slop,supx,supy,ppbx,ppby
       real umax,vmax,wdu,wdv,tu,tv,rms,robust
       real ChanWt(MAXPOL*MAXCHAN)
-      character maps(MAXPOL)*64,beam*64,uvflags*16,mode*16,vis*64
+      character maps(MAXPOL)*256,beam*256,uvflags*16,mode*16,vis*64
       character line*64, version*72
       double precision ra0,dec0,offset(2),lmn(3),x(2)
       integer i,j,k,nmap,tscr,nvis,nchan,npol,npnt,coObj,pols(MAXPOL)

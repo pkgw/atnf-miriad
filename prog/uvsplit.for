@@ -94,7 +94,7 @@ c------------------------------------------------------------------------
 	parameter(MAXSELS=256)
 c
 	character version*72
-	character vis*64,dtype*1
+	character vis*256,dtype*1
 	integer tvis
 	real sels(MAXSELS),maxwidth
 	integer length,i

@@ -36,7 +36,7 @@ c------------------------------------------------------------------------
 	character version*72
 	logical dovec
 	double precision interval
-	character vis*64
+	character vis*256
 	integer iostat
 	integer tVis
 c

@@ -118,8 +118,8 @@ c-----------------------------------------------------------------------
      *          mapLen(4), modLen(3), naxis, offset(3), x0, y0
       ptrdiff   pOut
       real      fwhm(2), pa, rms
-      character beam*64, iomode*8, line*72, map*64, mode*16, modl*64,
-     *          outNam*64, version*72
+      character beam*256, iomode*8, line*72, map*256, mode*16, modl*256,
+     *          outNam*256, version*72
 
       character itoaf*4, versan*72
       external  itoaf, versan
