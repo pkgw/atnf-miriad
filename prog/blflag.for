@@ -142,7 +142,7 @@ c-----------------------------------------------------------------------
 c     Before increasing MAXDAT, check that it does not cause linking to
 c     fail with truncated relocations.
       integer    MAXDAT
-      parameter (MAXDAT = 2*MAXBUF)
+      parameter (MAXDAT = 64*1024*1024)
 
       logical   finish, havebl(MAXBASE), noapply, nobase, nofqaver, rms,
      *          scalar, selgen
