@@ -183,7 +183,7 @@ c       Unrecognized, assumed linear.
 
         k = len1(ctypei)
         umsg = 'Assuming the '//ctypei(:k)//' axis is linear.'
-        call bug('w', umsg)
+c        call bug('w', umsg)
         return
       endif
 
@@ -224,7 +224,7 @@ c       Unrecognized projection code, revert to linear.
 
         k = len1(ctypei)
         umsg = 'Assuming the '//ctypei(:k)//' axis is linear.'
-        call bug('w', umsg)
+c        call bug('w', umsg)
 
       else if (axtype.eq.'spectral') then
         if (ctypei.eq.'FREQUENCY') then
@@ -262,7 +262,7 @@ c       Unrecognized spectral code, revert to linear.
 
         k = len1(ctypei)
         umsg = 'Assuming the '//ctypei(:k)//' axis is linear.'
-        call bug('w', umsg)
+c        call bug('w', umsg)
       endif
 
       end
