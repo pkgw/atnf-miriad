@@ -77,9 +77,10 @@ c	            spectral features in the bandpass calibrator.  If
 c	            less than 50% of the channels are good, the 
 c	            interpolation (extrapolation) is not done and those
 c	            channels will not have a bandpass solution
-c	  oldflux   This causes MFCAL to use a pre-August 1994 ATCA flux
-c	            density scale. See the help on "oldflux" for more
-c	            information.
+c	  oldflux   This causes MFCAL to use the pre-August 1994 ATCA flux
+c	            density scale below 11 GHz and and the pre-May 2016 mm 
+c                   fluxscale above 11 GHz.
+c                   See the help on "oldflux" for more information.
 c@ tol
 c	Solution convergence tolerance. Default is 0.001.
 c$Id$
@@ -375,7 +376,7 @@ c
 c  Scale the gains if we have no idea what the source flux really was.
 c
 	if(defflux)then
-	  call GainScal(flux,MemC(pGains),npol*nants*nsoln)
+	  call GainScal(flux(1),MemC(pGains),npol*nants*nsoln)
 	  write(line,'(a,f8.3)')'I flux density: ',flux(1)
 	  call output(line)
 	endif
@@ -1097,14 +1098,26 @@ c
 	src = source
 	if(src.eq.'1934-638'.or.src.eq.'1934'.or.
      *			src.eq.'1939-637')then
-	  if(oldflux)then
-	    src = 'old1934'
-	    call output('Using pre-Aug94 ATCA flux scale for 1934-638')
-	  else
-	    call bug('w',
-     *			'Using post-Aug94 ATCA flux scale for 1934-638')
-	  endif
-	endif
+          if (oldflux) then
+            src = 'old1934'
+            if (freq0.lt.10.7) then
+              call bug('w',
+     *         'Using pre-Aug94 ATCA flux scale for 1934-638.')
+            else
+              call bug('w',
+     *         'Using pre-May2016 ATCA flux scale for 1934-638.')
+            endif
+          else
+            src = '1934-638'
+            if (freq0.lt.11.15) then
+              call output(
+     *         'Using post-Aug94 ATCA flux scale for 1934-638.')
+            else
+              call output(
+     *         'Using post-May2016 ATCA flux scale for 1934-638.')
+            endif
+          endif
+        endif
 	if(defflux)call CalStoke(src,'i',freq,sflux,nchan,ierr)
 	if(ierr.eq.2)then
 	  if(alpha(1).eq.0.and.alpha(2).eq.0.and.alpha(3).eq.0)then

@@ -116,9 +116,10 @@ c         xyvary     The XY phase varies with time.  By default the XY
 c                    phase is assumed to remain constant.
 c         qusolve    Solve for Q and U fluxes. Good parallactic
 c                    angle coverage is required for this.
-c         oldflux    This causes GPCAL to use a pre-August 1994 ATCA
-c                    flux density scale.  See the help on "oldflux" for
-c                    more information.
+c         oldflux    This causes GPCAL to use the pre-August 1994 ATCA
+c                    flux density scale below 11 GHz and the
+c                    pre-May 2016 mm fluxscale above 11 GHz.
+c                    See the help on "oldflux" for more information.
 c         nopol      Do not solve for the instrumental polarisation
 c                    leakage characteristics. The default is to solve
 c                    for the polarisation leakages on all feeds except
@@ -3240,10 +3241,22 @@ c-----------------------------------------------------------------------
      *    src.eq.'1939-637') then
         if (oldflux) then
           src = 'old1934'
-          call bug('w','Using pre-Aug94 ATCA flux scale for 1934-638.')
+          if (freq.lt.10.7) then
+            call bug('w',
+     *       'Using pre-Aug94 ATCA flux scale for 1934-638.')
+          else
+            call bug('w',
+     *       'Using pre-May2016 ATCA flux scale for 1934-638.')
+          endif
         else
           src = '1934-638'
-          call output('Using post-Aug94 ATCA flux scale for 1934-638.')
+          if (freq.lt.11.15) then
+            call output(
+     *       'Using post-Aug94 ATCA flux scale for 1934-638.')
+          else
+            call output(
+     *       'Using post-May2016 ATCA flux scale for 1934-638')
+          endif
         endif
       endif
 
