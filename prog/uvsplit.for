@@ -85,6 +85,7 @@ c    mhw  14oct09 Separate out identical freqs on different IFs
 c    mhw  06jun11 Split by calcode
 c    mhw  23nov11 Split by ifchain, pass ifchain variable along
 c    mhw  31jul15 Split zooms that are less than 1 MHz apart
+c    rjs  09may16 Fix bug when using nowin,nofreq together.
 c  Bugs:
 c   the full xtsys and ytsys variables are passed to split files,
 c   but for the systemp variable only the appropriate data (if) is copied
@@ -771,7 +772,9 @@ c
 c  Do we already have this file.
 c
 	tindx = 0
-	if(.not.wins(tifno))return
+	if(tifno.gt.0)then
+	  if(.not.wins(tifno))return
+	endif
 	if(nfiles.gt.0)tindx = binsrcha(name,out,nfiles)
 	if(tindx.gt.0)tindx = indx(tindx)
 c
