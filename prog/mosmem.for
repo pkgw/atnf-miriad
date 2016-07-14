@@ -168,6 +168,8 @@ c                  estimate to zero.
 c    nebk 07sep04  Add some words about the output information mosmem
 c                  spits out as it goes
 c    mhw  27oct11  Use ptrdiff type for memory allocations
+c    mhw  14jul16  Reset Qa parameter every plane, background level in-
+c                  creases after emission encountered in cube otherwise      
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       include 'maxnax.h'
@@ -195,7 +197,7 @@ c-----------------------------------------------------------------------
      *          GradEJ, GradFF, GradFH, GradFJ, GradHH, GradJJ, Immax,
      *          Immin, J0, J1, OStLen1, OStLen2, Qa, Qb, Qest, Rmsa,
      *          Rmsb, rmsfaca, rmsfacb, StLen1, StLen2, StLim, temp,
-     *          TFlux, Tol, TRms, Trms2
+     *          TFlux, Tol, TRms, Trms2, Qai
       character BeamNam*64, BeamSin*64, DefNam*64, entropy*8, line*80,
      *          MapNam*64, MapSin*64, ModelNam*64, OutNam*64, version*72
 
@@ -225,7 +227,7 @@ c
       call keya('default',DefNam,' ')
       call keyr('tol',Tol,0.01)
       call keyi('niters',maxniter,30)
-      call keyr('q',Qa,0.0)
+      call keyr('q',Qai,0.0)
       qb = 0
       if (dosingle) call keyr('q',Qb,0.0)
       call keyr('rmsfac',rmsfaca,1.0)
@@ -327,7 +329,8 @@ c
       write(line,'(a,f6.1)')'For '//BeamNam(1:len1(BeamNam))//
      *        ', an estimate of Q is',Qest
       call output(line)
-      if (Qa.gt.0.0) then
+      if (Qai.gt.0.0) then
+        Qa=Qai
         write(line,'(a,1pg8.1)')
      *                'Using user given pixels per beam of',Qa
         call output(line)
@@ -398,6 +401,12 @@ c  Loop.
 c
       maxPoint = 0
       do k = kmin, kmax
+c       reset Qa every plane to avoid increasing background         
+        if (Qai.gt.0.0) then
+          Qa=Qai
+        else
+          Qa = Qest
+        endif
         if (kmin.ne.kmax) call output('Plane: '//itoaf(k))
 
         call BoxRuns(1,k,' ',boxes,Run,MaxRun,nRun,
@@ -498,7 +507,9 @@ c
           TFlux = TFlux / ffacDef
         endif
         if (Tflux.le.0) then
-          call GetRms(memr(pWta),nPoint,TFlux)
+           call GetRms(memr(pWta),nPoint,TFlux)
+           print *,'TFlux after getrms=',TFlux
+           print *,RmsFaca,nPoint,Qa
           TFlux = RmsFaca*TFlux*nPoint/Qa
         endif
         call DefFudge(nPoint,memr(pDef),TFlux)
