@@ -887,7 +887,7 @@ c***********************************************************************
       double precision function calcrms(sum, sumsq, npoints, ok)
 
       double precision sum, sumsq
-      integer   npoints
+      ptrdiff   npoints
       logical   ok
 c-----------------------------------------------------------------------
       double precision rms
