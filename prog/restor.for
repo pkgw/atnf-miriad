@@ -759,7 +759,7 @@ c     A retry has been built in to cope with beams with high sidelobes
 c       Now perform the fit using a proper least squares routine.
         call nllsqu(3,nP*nP,x,dx,MAXITER,0.0,0.005/3,.true.,ifail,
      *    func,derive,f,fp,dx,dfdx,aa)
-        if (retry.eq.2.and.ifail.eq.3) then
+        if (retry.eq.2.and.ifail.gt.0) then
 	   thresh=0.33
 	else
 	   retry=1
