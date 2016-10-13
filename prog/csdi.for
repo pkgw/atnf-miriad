@@ -4,35 +4,35 @@ c= csdi - Complex Steer Clean
 c& rjs mchw
 c: deconvolution
 c+
-c       CSDI is a MIRIAD task that performs the complex Steer Clean 
-c       algorithm, which takes a Stokes Q and U dirty map and beam, 
-c       and produces two output maps that consist of the Stokes Q and  
+c       CSDI is a MIRIAD task that performs the complex Steer or Hogbom Clean
+c       algorithm, which takes a Stokes Q and U dirty map and beam,
+c       and produces two output maps that consist of the Stokes Q and
 c       Stokes U Clean components.
-c       These outputs can be input to RESTOR to produce a "clean" image.  
+c       These outputs can be input to RESTOR to produce a "clean" image.
 c       The model could be from a previous CSDI run, or from other
 c       deconvolution tasks.
 c
-c       Full details of the algorithm are found in: 
-c       Pratley & Johnston-Hollitt, “An improved method for polarimetric 
-c       image restoration in interferometry", MNRAS, 2016. ArXiv: 1606.01482. 
+c       Full details of the algorithm are found in:
+c       Pratley & Johnston-Hollitt, “An improved method for polarimetric
+c       image restoration in interferometry", MNRAS, 2016. ArXiv: 1606.01482.
 c	Please acknowledge this work in publications using the code.
-c       
+c
 c@ map
 c       The input Stokes Q and U dirty maps, which should have units of
 c       Jy/beam. No default.
+c@ beam
+c       The input of Stokes I, Q or U dirty beam. No default
 c@ model
-c       Initial models of the Stokes Q and U deconvolved images. This  
+c       Initial models of the Stokes Q and U deconvolved images. This
 c       could be the output from a previous run of CSDI, or the output of
 c       other deconvolution tasks. It must have flux units of
 c       Jy/pixel. The default is no model (i.e. a zero map).
-c@ beam
-c       The input of Stokes I, Q or U dirty beam. No default
 c@ out
-c       The names of the Stokes Q and U output map. The units of the  
+c       The names of the Stokes Q and U output map. The units of the
 c       output will be Jy/pixel.  The files will contain the contribution
-c       of the input models.  They should have a different name to the 
+c       of the input models.  They should have a different name to the
 c       input model (if any).  They can be input to RESTOR or CSDI (as a
-c       model,to do more cleaning)   
+c       model,to do more cleaning)
 c@ gain
 c       The minor iteration loop gain. Default is 0.1.
 c@ options
@@ -42,8 +42,8 @@ c         asym      The beam is asymmetric.  By default CLEAN assumes
 c                   the beam has a 180 degree rotation symmetry, which
 c                   is the norm for beams in radio-astronomy.
 c         pad       Double the beam size by padding it with zeros. This
-c                   will give you better stability if you are daring enough 
-c                   to CLEAN an area more than half the size 
+c                   will give you better stability if you are daring enough
+c                   to CLEAN an area more than half the size
 c                   (in each dimension) of the dirty beam.
 c@ cutoff
 c       CLEAN finishes either when the absolute maximum residual falls
@@ -59,6 +59,11 @@ c@ region
 c       This specifies the region to be Cleaned.  See the help on
 c       "region" for more information.  The default is the largest
 c       region that can be deconvolved safely.
+c@ mode
+c       This can be either "hogbom", "steer" or "any", and
+c       determines the Clean algorithm used. If the mode is "any", then
+c       CLEAN determines which is the best algorithm to use. The default
+c       is "any".
 c@ clip
 c       This sets the relative clip level in Steer mode. Values are
 c       typically 0.75 to 0.9. The default is image dependent.
@@ -68,7 +73,8 @@ c--
 c  CSDI History:
 c    lp  02aug15 - Original version modified from clean.for, v1.13
 c    lp & mjh Jun 16 - updated task explanations and added paper reference
-c    mhw 10jun16 - Some tidying up for inclusion in Miriad distribution      
+c    mhw 10jun16 - Some tidying up for inclusion in Miriad distribution
+c    mhw 13oct16 - Add Hogbom mode back in
 c
 c  Important Constants:
 c    MaxDim     The max linear dimension of an input (or output) image.
@@ -87,18 +93,20 @@ c               vectorisable code straightforward to write.
 c-----------------------------------------------------------------------
       include 'maxdim.h'
       integer MAXBEAM,MAXCMP1,MAXCMP2,MAXBOX,MAXRUN,MAXP
-      parameter (MAXCMP1 = 66000, MAXCMP2 = 32000, MAXP = 257,
+      parameter (MAXCMP1 = 100000000, MAXCMP2 = 320000, MAXP = 8193,
      *           MAXBEAM = MAXP*MAXP, MAXBOX = 3*MAXDIM,
      *           MAXRUN = 3*MAXDIM)
 
       real Data(MaxBuf)
       integer Boxes(MAXBOX),Run(3,MAXRUN),MaxMap
       ptrdiff pBem,pMap,pEst,pRes,upMap,upEst,upRes
-      real Histo(MAXP/2+1)
+      real Histo((MAXP-1)/2+1),BemPatch(MAXBEAM)
+      integer ICmp(MAXCMP1),JCmp(MAXCMP1)
+
 
       character Mode*8,Moded*8,Text*7,flags*8,version*72
       real Cutoff,Gain,Phat,Speed,Clip,defClip,Limit
-      logical NegStop,Positive,Pad,Asym,NegFound,More,FFTIni,steermsg
+      logical Pad,Asym,More,FFTIni,steermsg
       integer MaxNiter,oNiter,Niter,totNiter,minPatch,maxPatch
       integer totNiter1,totNiter2
       integer naxis,n1,n2,icentre,jcentre,nx,ny
@@ -125,7 +133,7 @@ c  Get the input parameters.
 c
       call inputs(MapNam,uMapNam,BeamNam,ModelNam,uModelNam,
      *     OutNam,uOutNam,MaxNiter,
-     *     NegStop,positive,pad,asym,Cutoff,Boxes,MAXBOX,MinPatch,Gain
+     *     pad,asym,Cutoff,Boxes,MAXBOX,MinPatch,Gain
      *     ,PHat,Speed,Clip,mode)
 c
 c  Open the beam, get some characteristics about it, then read in the
@@ -152,12 +160,16 @@ c
         minPatch = maxPatch
       endif
 
+      if (mode.eq.'steer' .or. mode.eq.'any') then
         defClip = 0.2*Histo(1) + 0.8*Histo(2)
         if (Clip.eq.0) then
           Clip = defClip
         else if (Clip.lt.defClip) then
           call bug('w','Clip level seems small')
         endif
+      endif
+      if (mode.ne.'steer')
+     *   call GetPatch(lBeam,BemPatch,maxPatch,PHat,icentre,jcentre)
 
 c  Open the map, and determine the area being cleaned.
 c
@@ -206,7 +218,7 @@ c
         call rdhdi(ulModel,'niters',totNiter2,0)
         call AlignIni(ulModel,ulMap,nMap(1),nMap(2),nMap(3),
      *                                      xoff,yoff,zoff)
-        totNiter = NINT((totNiter1+totNiter2)*0.5)        
+        totNiter = NINT((totNiter1+totNiter2)*0.5)
       else
         totNiter = 0
       endif
@@ -240,6 +252,16 @@ c  Determine the CLEAN algorithm that is to be used.
 c
         if (nPoint.gt.0) then
           moded = mode
+          if ((mode.eq.'any' .or. mode.eq.'hogbom') .and.
+     *      nPoint.le.MAXCMP1 .and.
+     *      (2*nx-1).le.maxPatch .and. (2*ny-1).le.maxPatch) then
+            moded = 'hogbom'
+          else if (mode.eq.'hogbom') then
+            call bug('w','Cannot use Hogbom algorithm -- using Steer')
+            moded = 'steer'
+          else
+            moded = mode
+          endif
 c
 c  Initialise the FFT of the beam if needed.
 c
@@ -261,19 +283,19 @@ c
             call NoModel(Data(pMap),Data(pEst),Data(pRes),nPoint)
             call NoModel(Data(upMap),Data(upEst),Data(upRes),nPoint)
           else
-              call output('Subtracting initial model ...')
-              call AlignGet(lModel,Run,nRun,k,xmin+xoff-1,ymin+yoff-1,
-       *        zoff,nModel(1),nModel(2),nModel(3),
-       *        Data(pEst),MaxMap,nPoint)
-              call Diff(pBem,Data(pEst),Data(pMap),Data(pRes),
-       *        nPoint,nx,ny,Run,nRun)
-              call SumAbs(EstASum,Data(pEst),nPoint)
-              call AlignGet(ulModel,Run,nRun,k,xmin+xoff-1,ymin+yoff-1,
-       *        zoff,nModel(1),nModel(2),nModel(3),
-       *        Data(upEst),MaxMap,nPoint)
-              call Diff(pBem,Data(upEst),Data(upMap),Data(upRes),
-       *        nPoint,nx,ny,Run,nRun)
-              call SumAbs(uEstASum,Data(upEst),nPoint)
+            call output('Subtracting initial model ...')
+            call AlignGet(lModel,Run,nRun,k,xmin+xoff-1,ymin+yoff-1,
+     *        zoff,nModel(1),nModel(2),nModel(3),
+     *        Data(pEst),MaxMap,nPoint)
+            call Diff(pBem,Data(pEst),Data(pMap),Data(pRes),
+     *        nPoint,nx,ny,Run,nRun)
+            call SumAbs(EstASum,Data(pEst),nPoint)
+            call AlignGet(ulModel,Run,nRun,k,xmin+xoff-1,ymin+yoff-1,
+     *        zoff,nModel(1),nModel(2),nModel(3),
+     *        Data(upEst),MaxMap,nPoint)
+            call Diff(pBem,Data(upEst),Data(upMap),Data(upRes),
+     *        nPoint,nx,ny,Run,nRun)
+            call SumAbs(uEstASum,Data(upEst),nPoint)
           endif
           call Stats(Data(pRes),nPoint,ResMin,ResMax,ResAMax,ResRms)
           call Stats(Data(upRes),nPoint,uResMin,uResMax,uResAMax,
@@ -289,7 +311,6 @@ c
         call maxPol(Data(pRes),Data(upRes),nPoint,maxPres)
         Niter = 0
         oNiter = 0
-        negFound = .false.
         More = (nPoint.gt.0 .and. ResMin.ne.ResMax .and.
         * uResMin.ne.uResMax)
         Limit = 0
@@ -303,16 +324,24 @@ c
             call output(line)
             steermsg = .false.
           endif
-          call ComplexSteer(pBem,Data(pRes),Data(upRes),Data(pEst),
+          if (moded.eq.'hogbom') then
+            call ComplexHogbom(MaxPatch,BemPatch,nx,ny
+     *            ,Data(pRes),Data(upRes),Data(pEst),Data(upEst),
+     *            ICmp,JCmp,nPoint,Run,nRun,EstASum,uEstASum,
+     *            Cutoff,Gain,MaxNiter,
+     *            Niter)
+            text = ' Hogbom'
+          else if (moded.eq.'steer') then
+            call ComplexSteer(pBem,Data(pRes),Data(upRes),Data(pEst),
      *        Data(upEst),Data(pMap),Data(upMap),
      *        nPoint,nx,ny,Clip*maxPres,Gain,Niter,Run,nRun)
-          text = ' Steer'
-
+            text = ' Steer'
+          endif
 c
 c  Output some messages to assure the user that the computer has not
 c  crashed.
 c
-            
+
             call Stats(Data(pRes),nPoint,ResMin,ResMax,ResAMax,ResRms)
             call Stats(Data(upRes),nPoint,uResMin,uResMax,uResAMax
      *         ,uResRms)
@@ -325,7 +354,7 @@ c
      *         ResMin,ResMax,ResRms
             call output(line)
             write(line,'(a,1p3e12.3)')' uResidual min,max,rms: ',
-     *                              uResMin,uResMax,uResRms
+     *         uResMin,uResMax,uResRms
             call output(line)
             write(line,'(a,1p3e12.3)')' maxPres, clip*maxPres: ',
      *         maxPres, Clip*maxPres
@@ -336,16 +365,10 @@ c
             call output(line)
           endif
 c
-c  If we are doing Steer iterations, see if the next iteration would run
-c  into negative components.
-c
-          if (moded.eq.'steer')
-     *      negFound = negFound .or. (-Clip*ResAMax.gt.ResMin)
-c
 c  Check for convergence.
 c
-          more = .not.((negFound .and. negStop) .or. (Niter.eq.oNiter)
-     *              .or. (ResAMax.le.Cutoff) .or. (Niter.ge.MaxNiter))
+          more = .not.((Niter.eq.oNiter)
+     *              .or. (maxPres.le.Cutoff) .or. (Niter.ge.MaxNiter))
         enddo
 c
 c  Give a message about what terminated the iterations.
@@ -356,12 +379,10 @@ c
           nPoint = 0
         else if (nPoint.eq.0) then
           call output('No region selected in this plane')
-       else if (maxPres.le.Cutoff) then
+        else if (maxPres.le.Cutoff) then
           call output(' Stopping -- Clean cutoff limit reached')
         else if (Niter.ge.MaxNiter) then
           call output(' Stopping -- Maximum iterations performed')
-        else if (NegStop .and. NegFound) then
-          call output(' Stopping -- Negative components encountered')
         else if (oNiter.eq.Niter) then
           call output(' Stopping -- Could not find more components')
         endif
@@ -449,7 +470,7 @@ c***********************************************************************
       real qData(n),uData(n)
       real Dmax
 c-----------------------------------------------------------------------
-c  Calculate every conceivably wanted statistic.
+c  Calculate maximum polarized Flux.
 c
 c  Input:
 c    n          Number of points.
@@ -477,14 +498,52 @@ c
 
 c***********************************************************************
 
+      subroutine GetPatch(lBeam,Patch,maxPatch,PHat,ic,jc)
+
+      integer lBeam,maxPatch,ic,jc
+      real Patch(maxPatch,maxPatch),PHat
+c-----------------------------------------------------------------------
+c  Read in the central portion of the beam.
+c
+c  Inputs:
+c    lBeam      Handle of the file containing the beam.
+c    maxPatch   The full width of the patch to be read in.
+c    ic,jc      Location of the centre pixel of the beam.
+c    PHat       Prussian hat.
+c
+c  Output:
+c    Patch      The read in central portion of the beam.
+c-----------------------------------------------------------------------
+      include 'maxdim.h'
+      integer imin,imax,jmin,jmax,i,j
+      real Data(MAXDIM)
+c-----------------------------------------------------------------------
+      imin = ic - maxPatch/2
+      imax = imin + maxPatch - 1
+      jmin = jc - maxPatch/2
+      jmax = jmin + maxPatch - 1
+
+      do j = jmin, jmax
+        call xyread(lBeam,j,Data)
+        do i = imin, imax
+          Patch(i-imin+1,j-jmin+1) = Data(i)
+        enddo
+      enddo
+
+      Patch(ic-imin+1,jc-jmin+1) = Patch(ic-imin+1,jc-jmin+1) + PHat
+
+      end
+
+c***********************************************************************
+
       subroutine inputs(qmap,umap,beam,qestimate,uestimate,qout,uout,
-     *     Niter,negStop,positive,pad,asym,cutoff,box,maxbox,minpatch,
+     *     Niter,pad,asym,cutoff,box,maxbox,minpatch,
      *     gain,phat,speed,clip,mode)
 
       integer Niter, minpatch, maxbox
       integer box(maxbox)
       real cutoff,gain,phat,speed,clip
-      logical negStop,positive,pad,asym
+      logical pad,asym
       character qmap*(*),umap*(*),beam*(*),qestimate*(*),uestimate*(*)
       character qout*(*),uout*(*),mode*(*)
 c-----------------------------------------------------------------------
@@ -506,9 +565,6 @@ c                  first).  The default Cutoff is 0 (i.e. iterate
 c                  forever), and the default number of minor iterations
 c                  is 250.  This is the total number of iterations to
 c                  do.
-c      negStop     Stop on first negative component.
-c      positive    Constrain the output components to be positive
-c                  valued.
 c      pad         Zero pad the beam to a bigger size.
 c      asym        The beam is asymmetric.
 c      minpatch    The minimum beam patch width.
@@ -528,20 +584,19 @@ c-----------------------------------------------------------------------
       call keya('model', uestimate,' ')
       call keya('out', qout, ' ')
       call keya('out', uout, ' ')
-      if (qmap.eq.' ' .or. umap.eq.' ' .or. beam.eq.' ' 
+      if (qmap.eq.' ' .or. umap.eq.' ' .or. beam.eq.' '
      *     .or. qout.eq.' ' .or. uout.eq.' ' .or.
      *    (qestimate.ne.' '.and.uestimate.eq.' ')) then
          call bug('f', 'A file name was missing from the parameters')
       endif
-      call GetOpt(negstop,positive,pad,asym)
+      call GetOpt(pad,asym)
       call keyi('niters', Niter, 250)
       if (Niter.le.0) call bug('f', 'NITERS must be positive')
       call keyr('cutoff', cutoff,0.0)
 
       call BoxInput('region',qmap,box,maxbox)
 
-      call keyi('minpatch', minpatch, 51)
-      minpatch = 51
+      call keyi('minpatch', minpatch, 511)
       call keyr('gain', gain, 0.1)
       if (gain.le.0 .or. gain.gt.1)
      *  call bug('f','Bad gain value, it must be in the range (0,1]')
@@ -552,39 +607,35 @@ c-----------------------------------------------------------------------
       call keyr('clip', clip, 0.0)
       if (clip.lt.0 .or. clip.gt.1)
      *  call bug('f','Bad clip value, it must be in the range [0,1]')
-c      call keya('mode',mode,'steer')
-c      if (mode.ne.'clark' .and.
-c     *    mode.ne.'steer' .and.
-c     *    mode.ne.'any'   .and.
-c     *    mode.ne.'hogbom')
-      mode='steer'
+      call keya('mode',mode,'steer')
+      if (mode.ne.'steer' .and.
+     *    mode.ne.'any'   .and.
+     *    mode.ne.'hogbom') mode='steer'
       call keyfin
 
       end
 
 c***********************************************************************
 
-      subroutine GetOpt(negstop,positive,pad,asym)
+      subroutine GetOpt(pad,asym)
 
-      logical negstop,positive,pad,asym
+      logical pad,asym
 c-----------------------------------------------------------------------
 c  Get extra processing options.
 c
 c  Output:
-c    negstop
-c    positive
+c    pad
+c    asym
 c-----------------------------------------------------------------------
       integer NOPTS
-      parameter (NOPTS = 4)
-      character opts(NOPTS)*8
+      parameter (NOPTS = 2)
+      character opts(NOPTS)*4
       logical present(NOPTS)
-      data opts/'negstop ','positive','pad     ','asym    '/
+      data opts/'pad ','asym'/
 c-----------------------------------------------------------------------
       call options('options',opts,present,NOPTS)
-      negstop  = .false.
-      positive = .false.
-      pad      = present(3)
-      asym     = present(4)
+      pad      = present(1)
+      asym     = present(2)
 
       end
 
@@ -638,7 +689,7 @@ c     Write crap to the history file, to attempt (ha!) to appease Neil.
         write(line,'(''CLEAN: Steer Clip Level = '',f6.3)') Clip
         call hiswrite(lOut,line)
       endif
-      call hiswrite(lOut,'CLEAN: Minpatch = ' // itoaf(minpatch))
+c      call hiswrite(lOut,'CLEAN: Minpatch = ' // itoaf(minpatch))
       call hiswrite(lOut,'CLEAN: Total Iterations = ' // itoaf(niters))
       call hisclose(lOut)
 
@@ -874,7 +925,7 @@ c
 c  Convolve it with the dirty beam.
 c
       call CnvlR(pBem,qTemp,nx,ny,Run,nRun,qTemp,'c')
-      call CnvlR(pBem,uTemp,nx,ny,Run,nRun,uTemp,'c')      
+      call CnvlR(pBem,uTemp,nx,ny,Run,nRun,uTemp,'c')
 c
 c  "Temp" now contains the new estimate convolved with the dirty beam.
 c  Determine the optimum gain to apply to minimise the residuals.
@@ -905,7 +956,7 @@ c       which may however not be the best choice in all cases.
 c       In case of problems, you can try a lower value for the
 c       task option Gain before changing MinOptGain (gmx - 07mar04).
 c
-c       Choosing to scale the complex damping by magnitude rather than 
+c       Choosing to scale the complex damping by magnitude rather than
 c       individual components. This will keep the method consistent under
 c       choice of Q and U axes.
       mag = (qSumRE*qSumRE + uSumRE*uSumRE)/(SumEE*SumEE)
@@ -924,9 +975,9 @@ c
             qEstimate(i) = qEstimate(i) + zr
             uEstimate(i) = uEstimate(i) + zi
          endif
-         Call ComplexMultiply(qg, ug, qTemp(i), uTemp(i), zr, zi)        
+         Call ComplexMultiply(qg, ug, qTemp(i), uTemp(i), zr, zi)
          qResidual(i) = qResidual(i) - zr
-         uResidual(i) = uResidual(i) - zi 
+         uResidual(i) = uResidual(i) - zi
       enddo
 
       end
@@ -946,6 +997,271 @@ c    zr, zi     Real and imaginary part of output
 c-----------------------------------------------------------------------
       zr = pr*qr - pi*qi
       zi = pr*qi + pi*qr
+      end
+c***********************************************************************
+      subroutine ComplexHogbom(n,Patch,nx,ny,qRCmp,uRCmp,qCCmp,uCCmp,
+     *     ICmp,JCmp,nCmp,Run,nRun,qEstASum,uEstASum,Cutoff,Gain,
+     *     MaxNiter,Niter)
+
+      integer nx,ny,nCmp,nRun,n
+      integer ICmp(nCmp),JCmp(nCmp),Run(3,nRun)
+      real qRCmp(nCmp),qCCmp(nCmp),Patch(n,n)
+      real uRCmp(nCmp),uCCmp(nCmp)
+      real Cutoff,Gain,qEstASum,uEstASum
+      integer MaxNiter,Niter
+c-----------------------------------------------------------------------
+c  Perform a Hogbom Clean.
+c
+c  Inputs:
+c    Patch      The beam.
+c    n          Size of the beam.
+c    nx,ny      Size of the input image.
+c    nCmp       Number of pixels.
+c    maxNiter   Maximum number of iterations to be performed.
+c    Gain       Loop gain.
+c    Cutoff     Stop when the residuals fall below the cutoff.
+c    Run(3,nRun) This specifices the runs of the input image that are to
+c               be processed.
+c
+c  Input/Output:
+c    RCmp       Residuals.
+c    CCmp       The image estimate.
+c    Niter      Number of iterations to be performed.
+c    EstASum    Sum of the absolute value of the estimate.
+c
+c  Scratch:
+c    ICmp       Coordinate in x of a pixel.
+c    JCmp       Coordinate in y of a pixel.
+c
+c
+c  Internal Crap:
+c    Ymap       See SubComp for an explanation.
+c
+c-----------------------------------------------------------------------
+      include 'maxdim.h'
+      integer i,j,Ncmpd,x0,y0,n0,itemp
+      integer YMap(MAXDIM+1)
+c-----------------------------------------------------------------------
+c
+c  Clear out YMap.
+c
+      do j = 1, ny+1
+        YMap(j) = 0
+      enddo
+c
+c  Fill in the array giving the coordinates of the residuals, and
+c  accumulate the number of residuals in each row into YMap.
+c
+      Ncmpd = 0
+      do j = 1, nRun
+        y0 = Run(1,j)
+        x0 = Run(2,j)-1
+        n0 = Run(3,j) - x0
+        do i = 1, n0
+          Ncmpd = Ncmpd + 1
+          Icmp(Ncmpd) = x0 + i
+          Jcmp(Ncmpd) = y0
+        enddo
+        Ymap(y0) = Ymap(y0) + n0
+      enddo
+c      if (Ncmpd.ne.Ncmp) call bug('f','Internal bug in Hogbom - 1')
+c
+c  YMap currently contains the number of residuals found in a particular
+c  row.  Convert this so that YMap(j) gives the total number of peak
+c  residuals in rows 1 to j-1.
+c
+      Ncmpd = 0
+      do j = 1, ny+1
+        itemp = Ncmpd
+        Ncmpd = Ncmpd + Ymap(j)
+        YMap(j) = itemp
+      enddo
+c      if (Ncmpd.ne.Ncmp) call bug('f','Internal bug in Hogbom - 2')
+c
+c  Ready to perform the subtraction step. Lets go.
+c
+      call ComplexSubComp(nx,ny,Ymap,Patch,n,n/2,Gain,MaxNiter,
+     *     0.0,0.0,Cutoff,qEstASum,uEstASum,Icmp,Jcmp,qRcmp,
+     *     uRcmp,qCcmp,uCcmp,Ncmp,Niter)
+      end
+
+c***********************************************************************
+
+      subroutine ComplexSubComp(nx,ny,Ymap,Patch,n,PWidth,Gain,
+      *    MaxNiter,g,Speed,Limit,qEstASum,uEstASum,
+      *    Icmp,Jcmp,qRcmp,uRcmp,qCcmp,uCcmp,Ncmp,Niter)
+
+      integer nx,ny,n,Ncmp,Niter,MaxNiter,PWidth
+      real Speed,Limit,Gain,g,qEstASum,uEstASum
+      integer Icmp(Ncmp),Jcmp(Ncmp),Ymap(ny+1)
+      real Patch(n,n),qRcmp(Ncmp),qCcmp(Ncmp),uRcmp(Ncmp),uCcmp(Ncmp)
+c-----------------------------------------------------------------------
+c  Perform minor iterations. This quits performing minor iterations when
+c
+c   ResMax < Limit * (1+ sum(|component|/(EstAMax+sum(|component|)))
+c
+c  This is different to that suggested by Clark, but has the advantage
+c  that it does not depend on iteration number.
+c
+c  Inputs:
+c    Icmp,Jcmp  Coordinates of each residual peak.
+c    Ncmp       Number of residual peaks.
+c    Gain       Loop gain.
+c    Speed      Speed up factor.  A factor of zero reverts to a Clark
+c               Clean.
+c    g          Yet another parameter to control the end of the minor
+c               cycles.
+c    Limit      All residuals above LIMIT are included in the residual
+c               peaks.
+c    MaxNiter   Maximum number of minor iterations to be performed.
+c    Patch      Beam patch.
+c    n          Dimension of beam patch.  This is an odd number.  The
+c               patch is square. The peak is at n/2+1
+c    PWidth     Patch half width to be used.
+c    ny         Number of rows in the residuals.
+c    Ymap       When cleaning the table of residuals, we need to
+c               determine where residuals corresponding to a given range
+c               of j exist.  Ymap(j) gives the index of the table entry
+c               before that contains, or would have contained, line j
+c               residuals.
+c
+c  Input/Outputs:
+c    Rcmp       Flux at each residual peak.
+c    CCmp
+c    Niter      Number of minor iterations completed.
+c    EstASum    Absolute sum of the current model.
+c
+c  Outputs:
+c    zerocmp    True if the iterating was stopped by a zero component.
+c-----------------------------------------------------------------------
+      integer MAXRUN
+      parameter (MAXRUN = 4096)
+      integer i,i0,j0,k,ktot,ltot,NIndx
+      integer Pk,p,ipk,jpk,ipkd,jpkd
+      real TermRes,qResMax,uResMax,qWts,uWts,alpha
+      integer Temp(MAXRUN),Indx(MAXRUN)
+      logical more,ZeroCmp
+c-----------------------------------------------------------------------
+c
+c  Initialise.
+c
+      call ComplexGetPk(Ncmp,qRcmp,uRcmp,Gain,Pk,qWts,uWts)
+      qResMax = qRcmp(Pk)
+      uResMax = uRcmp(Pk)
+      TermRes = Limit
+      alpha = g * Limit**(Speed+1)
+      ZeroCmp = qWts.eq.0.and.uWts.eq.0
+c
+c  Loop until no more. Start with some house keeping.
+c
+      more = abs(qResMax**2+uResMax**2).gt.TermRes**2 .and.
+     *       Niter.lt.MaxNiter .and. .not.ZeroCmp
+      do while (more)
+c
+c  Add the peaks to be subtracted into the components list, and
+c  do some added house keeping.
+c
+        qEstASum = qEstASum - abs(qCCmp(pk))
+        uEstASum = uEstASum - abs(uCCmp(pk))
+        qCcmp(Pk) = qCcmp(Pk) + qWts
+        uCcmp(Pk) = uCcmp(Pk) + uWts
+        qEstASum = qEstASum + abs(qCCmp(pk))
+        uEstASum = uEstASum + abs(uCCmp(pk))
+        ipk = Icmp(Pk)
+        jpk = Jcmp(Pk)
+        ipkd = ipk - (n/2 + 1)
+        jpkd = jpk - (n/2 + 1)
+c
+c  Find the residuals which have suitable y values.
+c
+        i = max(1, jpk-PWidth)
+        k = Ymap(i)
+        i = min(ny,jpk+PWidth)
+        ktot = Ymap(i+1)
+c
+c  Find the residuals which have suitable x values, then subtract.  If
+c  the beam does not cover the extent of the subimage, we have to go
+c  through the process of determining which pixels are covered.  This
+c  is done in a clunchy vectorised fashion.
+c
+        if (max(nx-ipk,ipk-1).gt.PWidth) then
+          do while (k.lt.ktot)
+            ltot = min(ktot-k,MAXRUN)
+            do i = k+1, k+ltot
+              Temp(i-k) = abs(Icmp(i)-ipk)
+            enddo
+
+            call whenile(ltot,Temp,1,PWidth,Indx,Nindx)
+c#ivdep
+            do i = 1, Nindx
+              p = k + Indx(i)
+              i0 = Icmp(p) - ipkd
+              j0 = Jcmp(p) - jpkd
+              qRcmp(p) = qRcmp(p) - qWts * Patch(i0,j0)
+              uRcmp(p) = uRcmp(p) - uWts * Patch(i0,j0)
+            enddo
+            k = k + ltot
+          enddo
+
+        else
+          do i = k+1, ktot
+            qRCmp(i) =
+            *   qRCmp(i) - qWts * Patch(ICmp(i)-ipkd,JCmp(i)-jpkd)
+            uRCmp(i) =
+            *   uRCmp(i) - uWts * Patch(ICmp(i)-ipkd,JCmp(i)-jpkd)
+          enddo
+        endif
+c
+c  Ready for the next loop.
+c
+        Niter = Niter + 1
+        TermRes = TermRes + alpha * sqrt(qWts**2+uWts**2) /
+     *   (sqrt(qEstASum**2+uEstASum**2) *
+     *    sqrt(qResMax**2+uResMax**2)**Speed)
+        call ComplexGetPk(Ncmp,qRcmp,uRcmp,Gain,Pk,qWts,uWts)
+        qResMax = qRcmp(Pk)
+        uResMax = uRcmp(Pk)
+        zeroCmp = qWts.eq.0.and.uWts.eq.0
+        more = abs(qResMax**2+uResMax**2).gt.TermRes**2 .and.
+     *         Niter.lt.MaxNiter .and. .not.zeroCmp
+      enddo
+      end
+
+c***********************************************************************
+      subroutine ComplexGetPk(Ncmp,qRcmp,uRcmp,Gain,Pk,qWts,uWts)
+
+      integer Ncmp,Pk
+      real qRcmp(Ncmp),uRcmp(Ncmp),Gain,qWts,uWts
+c-----------------------------------------------------------------------
+c  Determine the position and value of the next delta.
+c
+c  Input:
+c    Ncmp       Number of residuals/components.
+c    Rcmp       The residuals.
+c    Ccmp       The current components.
+c    Gain       The loop gain.
+c    positive   True if the components must always be positive.
+c  Output:
+c    Pk         The index of the delta.
+c    Wts        Value of the delta.
+c-----------------------------------------------------------------------
+      integer i
+      real temp,maxv
+c-----------------------------------------------------------------------
+      maxv = 0
+      Pk = 1
+      qWts = 0
+      uWts = 0
+      do i = 1, Ncmp
+         temp = qRcmp(i)*qRcmp(i) + uRcmp(i)*uRcmp(i)
+         if (temp.gt.maxv) then
+            maxv = temp
+            Pk = i
+         endif
+      enddo
+      qWts = Gain * qRcmp(Pk)
+      uWts = Gain * uRcmp(Pk)
+
       end
 
 c***********************************************************************
